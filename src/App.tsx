@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Panel } from './components/Panel.tsx'
 import { panelRegistry } from './controls/panel.ts'
 import { resolvePatch, reportHasWarnings, type ResolveReport } from './patch/resolve.ts'
 import { createPatch, type Patch } from './patch/schema.ts'
@@ -88,9 +89,10 @@ export function App() {
       <section>
         <h2>Panel</h2>
         <p>
-          {panelRegistry.controls.length} controls in {panelRegistry.sections.length} sections.
-          {panelRegistry.controls.length === 0 && ' No controls defined yet.'}
+          {panelRegistry.controls.length} controls in {panelRegistry.sections.length} sections — all
+          placeholders, laid out for review. None of them has a range, positions or a default yet.
         </p>
+        <Panel registry={panelRegistry} />
       </section>
 
       <section>

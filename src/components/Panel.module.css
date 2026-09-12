@@ -1,0 +1,106 @@
+/* Structural only: enough box and gap to check that controls sit in the right
+   section, group and order against the patch sheet. No colour, type or texture
+   decisions — those are the project owner's, and nothing here should survive
+   contact with a real design. */
+
+.panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid;
+  padding: 8px;
+}
+
+.sectionBody {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1;
+}
+
+.sectionLabel {
+  margin: 8px 0 0;
+  font-size: 1rem;
+  font-weight: normal;
+  text-align: center;
+}
+
+.run,
+.group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.group {
+  border: 1px dashed;
+  padding: 6px;
+}
+
+.groupLabel {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: normal;
+}
+
+.control {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 90px;
+  font-size: 0.7rem;
+  text-align: center;
+}
+
+.slot {
+  border: 1px solid;
+  width: 40px;
+  height: 40px;
+}
+
+.slot[data-shape='knob'],
+.slot[data-shape='selector'],
+.slot[data-shape='lamp'],
+.slot[data-shape='jack'] {
+  border-radius: 50%;
+}
+
+.slot[data-shape='lamp'],
+.slot[data-shape='jack'] {
+  width: 20px;
+  height: 20px;
+}
+
+.slot[data-shape='switch'] {
+  width: 34px;
+  height: 18px;
+}
+
+.slot[data-shape='wheel'] {
+  width: 18px;
+  height: 70px;
+  border-radius: 9px;
+}
+
+.scale {
+  opacity: 0.7;
+}
+
+.id {
+  font-size: 0.65rem;
+  opacity: 0.55;
+}
+
+.unbuilt {
+  opacity: 0.7;
+}

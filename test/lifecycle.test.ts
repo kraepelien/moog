@@ -72,13 +72,22 @@ describe('patch lifecycle', () => {
     expect((await otherStore.get(resaved.id))!.values.retiredKnob).toBe('still here')
   })
 
-  /* The state the app actually ships in today: no controls defined, so every
-     stored value is unknown, preserved, and rendered by nothing. */
-  test('the shipped empty panel resolves any patch to no values, losing nothing', () => {
-    const patch = createPatch({ values: { anything: 1 } }, fixedIdentity())
+  /* The state the app actually ships in today: the full panel is present but every
+     control is an unspecified placeholder, so a patch keeps whatever it arrived
+     with and gains nothing invented. */
+  test('the shipped placeholder panel loses nothing and invents nothing', () => {
+    const patch = createPatch(
+      { values: { cutoffFrequency: 3, neverHeardOfIt: 1 } },
+      fixedIdentity(),
+    )
     const { values, report } = resolvePatch(panelRegistry, patch)
-    expect(values).toEqual({})
-    expect(report.unknown).toEqual(['anything'])
-    expect(mergeValues(patch, values)).toEqual({ anything: 1 })
+
+    expect(values.cutoffFrequency).toBe(3)
+    expect(report.unknown).toEqual(['neverHeardOfIt'])
+    expect(report.invalid).toEqual([])
+
+    const merged = mergeValues(patch, values)
+    expect(merged.cutoffFrequency).toBe(3)
+    expect(merged.neverHeardOfIt).toBe(1)
   })
 })

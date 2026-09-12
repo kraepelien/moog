@@ -7,6 +7,16 @@ export interface SectionDef {
   readonly label: string
 }
 
+/* A named box inside a section, for the groupings the patch sheet prints inside
+   one heading — Loudness Contour sitting under Modifiers, or one oscillator's row
+   of Range/Frequency/Waveform. Consecutive controls sharing a group render
+   together; a group with no label groups without drawing a box. */
+export interface GroupDef {
+  readonly id: string
+  readonly label: string
+  readonly section: string
+}
+
 /* Fields every control has regardless of type. A control type extends this with
    its own configuration: range or positions, display formatting, input response. */
 export interface ControlDefBase {
@@ -14,6 +24,7 @@ export interface ControlDefBase {
   readonly type: string
   readonly label: string
   readonly section: string
+  readonly group?: string
 }
 
 export type ControlDef = ControlDefBase

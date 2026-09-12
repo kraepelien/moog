@@ -4,10 +4,61 @@ import { panelRegistry } from '../src/controls/panel.ts'
 import { rangeDef, testEnumType, testNumberType, testRegistry, volumeDef } from './fixtures.ts'
 
 describe('registry', () => {
-  test('the shipped panel has no controls defined yet', () => {
-    expect(panelRegistry.controls).toHaveLength(0)
-    expect(panelRegistry.sections).toHaveLength(0)
-    expect(defaultValues(panelRegistry)).toEqual({})
+  test('every control on the shipped panel is still an unspecified placeholder', () => {
+    expect(panelRegistry.controls.length).toBeGreaterThan(0)
+    expect(panelRegistry.controls.every((def) => def.type === 'placeholder')).toBe(true)
+    /* A placeholder must not invent a value, or reviewing the layout would start
+       writing made-up settings into saved patches. */
+    expect(Object.values(defaultValues(panelRegistry)).every((v) => v === null)).toBe(true)
+  })
+
+  test('panel control ids are unique and safe as JSON keys', () => {
+    const ids = panelRegistry.controlIds
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(ids.every((id) => /^[A-Za-z0-9_-]+$/.test(id))).toBe(true)
+  })
+
+  test('every group belongs to the section its controls are in', () => {
+    for (const group of panelRegistry.groups) {
+      const section = panelRegistry.sections.find((s) => s.id === group.section)
+      expect(section).toBeDefined()
+    }
+  })
+
+  test('groups chunk consecutive controls without reordering them', () => {
+    const runs = panelRegistry.runsInSection('modifiers')
+    expect(runs.map((run) => run.group?.id ?? null)).toEqual([
+      'filterRouting',
+      'filter',
+      'filterContour',
+      'loudnessContour',
+    ])
+    const flattened = runs.flatMap((run) => run.controls)
+    expect(flattened).toEqual(panelRegistry.controlsInSection('modifiers'))
+  })
+
+  test('rejects a control whose group belongs to another section', () => {
+    expect(() =>
+      createRegistry({
+        types: [testNumberType] as never,
+        sections: [
+          { id: 'testSection', label: 'Test' },
+          { id: 'other', label: 'Other' },
+        ],
+        groups: [{ id: 'elsewhere', label: 'Elsewhere', section: 'other' }],
+        controls: [{ ...volumeDef, group: 'elsewhere' }],
+      }),
+    ).toThrow(/belongs to/)
+  })
+
+  test('rejects a control in a group that does not exist', () => {
+    expect(() =>
+      createRegistry({
+        types: [testNumberType] as never,
+        sections: [{ id: 'testSection', label: 'Test' }],
+        controls: [{ ...volumeDef, group: 'nope' }],
+      }),
+    ).toThrow(/unknown group/)
   })
 
   test('looks controls up by id and by section', () => {
