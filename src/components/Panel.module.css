@@ -108,3 +108,19 @@
 .unbuilt {
   opacity: 0.7;
 }
+
+.note {
+  font-size: 0.6rem;
+  opacity: 0.5;
+  font-style: italic;
+}
+
+/* Drawn, but nothing a patch records. Dimmed so the panel still reads as complete
+   while making clear which items carry no value. */
+.control[data-decoration] {
+  opacity: 0.5;
+}
+
+.control[data-decoration] .slot {
+  border-style: dashed;
+}

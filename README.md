@@ -19,16 +19,25 @@ start, but not every Vite plugin is happy there, so it stays opt-in per command.
 
 ## State of play
 
-**No controls are defined yet.** `src/controls/panel.ts` ships an empty registry, empty section
-list and no control types, on purpose: each control is specified before any code exists for it.
-Everything else — schema, versioning, storage, presets, import/export — is built and tested
-against that empty panel.
+**No control is specified yet.** The whole panel is laid out in `src/controls/panel.ts`, but every
+control is a `placeholder`: no range, no positions, no default. Controls are specified one at a
+time, and replacing a placeholder is a change to `type` and that type's fields on a single entry.
+
+The placeholder codec passes stored values straight through and never reports a value invalid.
+Returning its own `null` instead would let `mergeValues` write that null back over a real value
+saved by a build where the control was properly defined — so reviewing the layout would quietly
+damage patches.
+
+Reported hardware values that have not been turned into specifications yet live in
+`reference/control-values.md`. The recurring trap there: **the printed scale is not the range** on
+at least four controls.
 
 ## Layout
 
 ```
 src/
-  controls/   registry.ts (generic machinery) · types.ts (contracts) · panel.ts (the empty panel)
+  controls/   registry.ts (generic machinery) · types.ts (contracts) · placeholder.ts · panel.ts (the panel)
+  components/ Panel.tsx renders whatever the registry holds
   patch/      schema.ts (Patch + structural parse) · migrate.ts (version chain) · resolve.ts (load policy)
   storage/    types.ts (the adapter interface) · webStorage.ts (localStorage + in-memory backends)
   presets/    factory.ts (placeholder presets)
@@ -53,6 +62,26 @@ know what a knob is.
 
 **Control ids are permanent.** They are written into saved patches and exported files, so renaming
 one breaks people's data. Treat them as a public interface.
+
+### Not everything on the panel is a control
+
+The registry holds one ordered list of **panel items**: controls, which hold a value, and
+**decorations**, which do not. A decoration is drawn in its place on the panel and never appears in
+a patch — the Overload indicator, the phones socket, the pilot lamp, and the whole of Output and
+Power, whose settings say nothing about how a sound is made.
+
+They are kept out of `registry.controls` rather than flagged inside it, so `resolvePatch`,
+`defaultValues` and the patch schema need no awareness of them at all. One list rather than two,
+because their order relative to controls within a section is part of the layout. Controls and
+decorations share one id space, so turning one into the other later cannot collide with a name
+already in use.
+
+### Sections and groups
+
+A control belongs to a section and optionally to a **group** — the boxes the patch sheet prints
+inside one heading. Modifiers forces the issue: it contains two Attack/Decay/Sustain groups with
+identical labels, which the section alone cannot tell apart. Groups chunk *consecutive* items
+rather than collecting by id, so registry order stays authoritative.
 
 ## Patches
 

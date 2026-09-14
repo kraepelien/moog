@@ -29,6 +29,28 @@ export interface ControlDefBase {
 
 export type ControlDef = ControlDefBase
 
+/* Drawn on the panel but holding nothing: an indicator lamp, a socket, or a
+   control that exists on the instrument and says nothing about how a sound is
+   made — master volume, power. A patch is the set of control values, so these
+   must never reach one. Keeping them out of `controls` rather than flagging them
+   inside it means resolvePatch, defaultValues and the patch schema need no
+   awareness of them at all. */
+export interface DecorationDef {
+  readonly kind: 'decoration'
+  readonly id: string
+  readonly label: string
+  readonly section: string
+  readonly group?: string
+  readonly shape: string
+  readonly note?: string
+}
+
+export type PanelItem = ControlDef | DecorationDef
+
+export function isDecoration(item: PanelItem): item is DecorationDef {
+  return 'kind' in item && item.kind === 'decoration'
+}
+
 export type DecodeResult<V> =
   | { readonly status: 'ok'; readonly value: V }
   | { readonly status: 'coerced'; readonly value: V; readonly reason: string }

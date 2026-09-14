@@ -77,7 +77,7 @@ export function testRegistry(): Registry {
   return createRegistry({
     types: [testNumberType, testEnumType] as unknown as readonly ControlType<never, never>[],
     sections: [{ id: 'testSection', label: 'Test Section' }],
-    controls: [volumeDef, rangeDef],
+    items: [volumeDef, rangeDef],
   })
 }
 

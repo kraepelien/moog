@@ -1,6 +1,6 @@
 import { placeholderType, type PlaceholderDef } from './placeholder.ts'
 import { createRegistry } from './registry.ts'
-import type { ControlType, GroupDef, SectionDef } from './types.ts'
+import type { ControlType, DecorationDef, GroupDef, PanelItem, SectionDef } from './types.ts'
 
 /* Every control on the patch sheet, all of them placeholders. Nothing here says
    what a control's range, steps, positions or default are — those are specified
@@ -54,7 +54,20 @@ function placeholder(
   return { id, type: 'placeholder', label, section, shape, ...extra }
 }
 
-export const controls: readonly PlaceholderDef[] = [
+function decoration(
+  id: string,
+  label: string,
+  section: string,
+  shape: string,
+  extra: { group?: string; note?: string } = {},
+): DecorationDef {
+  return { kind: 'decoration', id, label, section, shape, ...extra }
+}
+
+/* A real control on the instrument, but nothing a patch recalls. */
+const NOT_A_SOUND = 'not part of a patch'
+
+export const items: readonly PanelItem[] = [
   // Controllers
   placeholder('tune', 'Tune', 'controllers', 'knob', { sheetScale: '−2 … 0 … 2' }),
   placeholder('glide', 'Glide', 'controllers', 'knob', { sheetScale: '0 … 10' }),
@@ -73,6 +86,8 @@ export const controls: readonly PlaceholderDef[] = [
     sheetScale: 'on',
   }),
   placeholder('osc3Control', 'Osc.3 Control', 'oscillatorBank', 'switch'),
+  /* Oscillator-1 has no frequency knob — confirmed against the instrument. The
+     gap in the middle column is the hardware, not an omission. */
   placeholder('osc1Range', 'Range', 'oscillatorBank', 'selector', {
     group: 'osc1',
     sheetScale: "lo · 32' · 16' · 8' · 4' · 2'",
@@ -130,9 +145,10 @@ export const controls: readonly PlaceholderDef[] = [
     group: 'mixExternal',
     sheetScale: 'on',
   }),
-  /* The Overload indicator is graphics, not a control — it reflects the external
-     input level and there is nothing to set. It belongs to whatever draws the
-     panel, not to the registry. */
+  decoration('overloadLamp', 'Overload', 'mixer', 'lamp', {
+    group: 'mixExternal',
+    note: 'reflects the external input level; nothing to set',
+  }),
   placeholder('noiseVolume', 'Noise Volume', 'mixer', 'knob', {
     group: 'mixNoise',
     sheetScale: '0 … 10',
@@ -193,16 +209,17 @@ export const controls: readonly PlaceholderDef[] = [
     sheetScale: '0 … 10',
   }),
 
-  // Output
-  placeholder('mainVolume', 'Volume', 'output', 'knob', { sheetScale: '0 … 10' }),
-  placeholder('mainOutput', 'Main Output', 'output', 'switch', { sheetScale: 'on' }),
-  placeholder('a440', 'A-440', 'output', 'switch', { sheetScale: 'on' }),
-  placeholder('phonesVolume', 'Phones Volume', 'output', 'knob', { sheetScale: '0 … 10' }),
-  placeholder('phonesJack', 'Phones', 'output', 'jack'),
+  /* Output and Power are drawn but hold nothing. Level, headphone level, main
+     output, A-440 and mains power are all real controls on the instrument that a
+     patch has no business recalling. */
+  decoration('mainVolume', 'Volume', 'output', 'knob', { note: NOT_A_SOUND }),
+  decoration('mainOutput', 'Main Output', 'output', 'switch', { note: NOT_A_SOUND }),
+  decoration('a440', 'A-440', 'output', 'switch', { note: 'tuning reference' }),
+  decoration('phonesVolume', 'Phones Volume', 'output', 'knob', { note: NOT_A_SOUND }),
+  decoration('phonesJack', 'Phones', 'output', 'jack', { note: 'a socket' }),
 
-  // Power
-  placeholder('powerLamp', 'Pilot Lamp', 'power', 'lamp'),
-  placeholder('power', 'Power', 'power', 'switch', { sheetScale: 'on' }),
+  decoration('powerLamp', 'Pilot Lamp', 'power', 'lamp', { note: 'indicator' }),
+  decoration('power', 'Power', 'power', 'switch', { note: NOT_A_SOUND }),
 
   // Performance (the bottom-left strip)
   placeholder('lfoRate', 'LFO Rate', 'performance', 'knob', { sheetScale: '0 … 10' }),
@@ -212,4 +229,4 @@ export const controls: readonly PlaceholderDef[] = [
   placeholder('modWheel', 'Mod.', 'performance', 'wheel', { group: 'wheels' }),
 ]
 
-export const panelRegistry = createRegistry({ types: controlTypes, sections, groups, controls })
+export const panelRegistry = createRegistry({ types: controlTypes, sections, groups, items })

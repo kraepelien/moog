@@ -23,7 +23,7 @@ describe('reviewing the layout cannot damage a patch', () => {
      looked at, and saves again. The value must come back out unchanged. */
   test('a real value survives a load and save through a placeholder', () => {
     const fromLaterBuild = createPatch(
-      { name: 'Real', values: { cutoffFrequency: -1.5, osc1Range: '8', power: true } },
+      { name: 'Real', values: { cutoffFrequency: -1.5, osc1Range: '8', lfoRate: 4 } },
       fixedIdentity(),
     )
 
@@ -31,7 +31,7 @@ describe('reviewing the layout cannot damage a patch', () => {
 
     expect(values.cutoffFrequency).toBe(-1.5)
     expect(values.osc1Range).toBe('8')
-    expect(values.power).toBe(true)
+    expect(values.lfoRate).toBe(4)
     expect(report.invalid).toEqual([])
     expect(report.coerced).toEqual([])
 

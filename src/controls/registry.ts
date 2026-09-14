@@ -1,4 +1,13 @@
-import type { ControlDef, ControlType, ControlValue, GroupDef, SectionDef } from './types.ts'
+import {
+  isDecoration,
+  type ControlDef,
+  type ControlType,
+  type ControlValue,
+  type DecorationDef,
+  type GroupDef,
+  type PanelItem,
+  type SectionDef,
+} from './types.ts'
 
 /* Control ids travel in saved patches and exported files, so they are a public
    interface: permissive enough not to dictate a naming convention, strict enough
@@ -9,26 +18,33 @@ export interface RegistryInput {
   readonly types: readonly ControlType<never, never>[]
   readonly sections: readonly SectionDef[]
   readonly groups?: readonly GroupDef[]
-  readonly controls: readonly ControlDef[]
+  /* Everything on the panel, in the order it is drawn: controls and decorations
+     interleaved. One list rather than two, because their relative order within a
+     section is part of the layout and two lists cannot express it. */
+  readonly items: readonly PanelItem[]
 }
 
-/* One run of consecutive controls that share a group, in registry order. Chunking
-   on the run rather than collecting by group id keeps source order authoritative:
-   a section reads top to bottom exactly as it is written. */
-export interface ControlRun {
+/* One run of consecutive items that share a group, in registry order. Chunking on
+   the run rather than collecting by group id keeps source order authoritative: a
+   section reads top to bottom exactly as it is written. */
+export interface ItemRun {
   readonly group: GroupDef | null
-  readonly controls: readonly ControlDef[]
+  readonly items: readonly PanelItem[]
 }
 
 export interface Registry {
   readonly sections: readonly SectionDef[]
   readonly groups: readonly GroupDef[]
+  /* Everything drawn. */
+  readonly items: readonly PanelItem[]
+  /* Only what holds a value, and so only what a patch ever contains. */
   readonly controls: readonly ControlDef[]
+  readonly decorations: readonly DecorationDef[]
   readonly controlIds: readonly string[]
   control(id: string): ControlDef | undefined
   controlType(def: ControlDef): ControlType
-  controlsInSection(sectionId: string): readonly ControlDef[]
-  runsInSection(sectionId: string): readonly ControlRun[]
+  itemsInSection(sectionId: string): readonly PanelItem[]
+  runsInSection(sectionId: string): readonly ItemRun[]
 }
 
 /* Throws rather than returning a Result: a malformed registry is a programming
@@ -59,55 +75,72 @@ export function createRegistry(input: RegistryInput): Registry {
     groups.set(group.id, group)
   }
 
-  const controls = new Map<string, ControlDef>()
-  const bySection = new Map<string, ControlDef[]>()
+  const seen = new Map<string, PanelItem>()
+  const controls: ControlDef[] = []
+  const decorations: DecorationDef[] = []
+  const bySection = new Map<string, PanelItem[]>()
   for (const section of input.sections) bySection.set(section.id, [])
 
-  for (const def of input.controls) {
-    if (!ID_PATTERN.test(def.id)) throw new Error(`Invalid control id "${def.id}"`)
-    if (controls.has(def.id)) throw new Error(`Duplicate control id "${def.id}"`)
-    if (!types.has(def.type)) throw new Error(`Control "${def.id}" has unregistered type "${def.type}"`)
-    const section = bySection.get(def.section)
-    if (!section) throw new Error(`Control "${def.id}" is in unknown section "${def.section}"`)
-    if (def.group !== undefined) {
-      const group = groups.get(def.group)
-      if (!group) throw new Error(`Control "${def.id}" is in unknown group "${def.group}"`)
-      if (group.section !== def.section) {
+  for (const item of input.items) {
+    if (!ID_PATTERN.test(item.id)) throw new Error(`Invalid panel item id "${item.id}"`)
+    /* Ids are shared across controls and decorations so that turning one into the
+       other can never collide with something already using the name. */
+    if (seen.has(item.id)) throw new Error(`Duplicate panel item id "${item.id}"`)
+    const section = bySection.get(item.section)
+    if (!section) throw new Error(`Panel item "${item.id}" is in unknown section "${item.section}"`)
+    if (item.group !== undefined) {
+      const group = groups.get(item.group)
+      if (!group) throw new Error(`Panel item "${item.id}" is in unknown group "${item.group}"`)
+      if (group.section !== item.section) {
         throw new Error(
-          `Control "${def.id}" is in section "${def.section}" but group "${def.group}" belongs to "${group.section}"`,
+          `Panel item "${item.id}" is in section "${item.section}" but group "${item.group}" belongs to "${group.section}"`,
         )
       }
     }
-    controls.set(def.id, def)
-    section.push(def)
+
+    if (isDecoration(item)) {
+      decorations.push(item)
+    } else {
+      if (!types.has(item.type)) {
+        throw new Error(`Control "${item.id}" has unregistered type "${item.type}"`)
+      }
+      controls.push(item)
+    }
+
+    seen.set(item.id, item)
+    section.push(item)
   }
 
-  const runsBySection = new Map<string, ControlRun[]>()
-  for (const [sectionId, defs] of bySection) {
-    const runs: ControlRun[] = []
-    for (const def of defs) {
+  const runsBySection = new Map<string, ItemRun[]>()
+  for (const [sectionId, items] of bySection) {
+    const runs: ItemRun[] = []
+    for (const item of items) {
       const last = runs.at(-1)
-      if (last && (last.group?.id ?? undefined) === def.group) {
-        ;(last.controls as ControlDef[]).push(def)
+      if (last && (last.group?.id ?? undefined) === item.group) {
+        ;(last.items as PanelItem[]).push(item)
       } else {
-        runs.push({ group: def.group ? groups.get(def.group)! : null, controls: [def] })
+        runs.push({ group: item.group ? groups.get(item.group)! : null, items: [item] })
       }
     }
     runsBySection.set(sectionId, runs)
   }
 
+  const controlsById = new Map(controls.map((def) => [def.id, def]))
+
   return {
     sections: input.sections,
     groups: groupList,
-    controls: input.controls,
-    controlIds: input.controls.map((d) => d.id),
-    control: (id) => controls.get(id),
+    items: input.items,
+    controls,
+    decorations,
+    controlIds: controls.map((d) => d.id),
+    control: (id) => controlsById.get(id),
     controlType: (def) => {
       const type = types.get(def.type)
       if (!type) throw new Error(`Control "${def.id}" has unregistered type "${def.type}"`)
       return type
     },
-    controlsInSection: (sectionId) => bySection.get(sectionId) ?? [],
+    itemsInSection: (sectionId) => bySection.get(sectionId) ?? [],
     runsInSection: (sectionId) => runsBySection.get(sectionId) ?? [],
   }
 }
