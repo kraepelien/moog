@@ -57,9 +57,6 @@ function placeholder(
 export const controls: readonly PlaceholderDef[] = [
   // Controllers
   placeholder('tune', 'Tune', 'controllers', 'knob', { sheetScale: '−2 … 0 … 2' }),
-  placeholder('oscillatorModulation', 'Oscillator Modulation', 'controllers', 'switch', {
-    sheetScale: 'on',
-  }),
   placeholder('glide', 'Glide', 'controllers', 'knob', { sheetScale: '0 … 10' }),
   placeholder('modulationMix', 'Modulation Mix', 'controllers', 'knob', { sheetScale: '0 … 10' }),
   placeholder('modulationSourceA', 'Osc.3 / Filter EG', 'controllers', 'switch', {
@@ -72,6 +69,9 @@ export const controls: readonly PlaceholderDef[] = [
   }),
 
   // Oscillator Bank
+  placeholder('oscillatorModulation', 'Oscillator Modulation', 'oscillatorBank', 'switch', {
+    sheetScale: 'on',
+  }),
   placeholder('osc3Control', 'Osc.3 Control', 'oscillatorBank', 'switch'),
   placeholder('osc1Range', 'Range', 'oscillatorBank', 'selector', {
     group: 'osc1',
@@ -130,7 +130,9 @@ export const controls: readonly PlaceholderDef[] = [
     group: 'mixExternal',
     sheetScale: 'on',
   }),
-  placeholder('overloadLamp', 'Overload', 'mixer', 'lamp', { group: 'mixExternal' }),
+  /* The Overload indicator is graphics, not a control — it reflects the external
+     input level and there is nothing to set. It belongs to whatever draws the
+     panel, not to the registry. */
   placeholder('noiseVolume', 'Noise Volume', 'mixer', 'knob', {
     group: 'mixNoise',
     sheetScale: '0 … 10',
