@@ -21,8 +21,38 @@ export interface PatchIdentity {
   readonly now: () => string
 }
 
+/* crypto.randomUUID exists only in a secure context, so it is present on
+   https:// and on localhost but missing over plain http to a LAN address — which
+   is exactly how the dev server is reached from another device. getRandomValues
+   carries no such restriction, so a v4 uuid is assembled from it instead; the
+   Math.random path is a last resort for an environment offering neither.
+
+   Patch ids must stay unique because they are what storage and export key on. */
+function newUuid(): string {
+  const source = globalThis.crypto
+  if (typeof source?.randomUUID === 'function') return source.randomUUID()
+
+  const bytes = new Uint8Array(16)
+  if (typeof source?.getRandomValues === 'function') {
+    source.getRandomValues(bytes)
+  } else {
+    for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256)
+  }
+  bytes[6] = (bytes[6]! & 0x0f) | 0x40
+  bytes[8] = (bytes[8]! & 0x3f) | 0x80
+
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0'))
+  return [
+    hex.slice(0, 4).join(''),
+    hex.slice(4, 6).join(''),
+    hex.slice(6, 8).join(''),
+    hex.slice(8, 10).join(''),
+    hex.slice(10, 16).join(''),
+  ].join('-')
+}
+
 export const systemIdentity: PatchIdentity = {
-  newId: () => crypto.randomUUID(),
+  newId: newUuid,
   now: () => new Date().toISOString(),
 }
 

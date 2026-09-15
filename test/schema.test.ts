@@ -3,6 +3,42 @@ import { migrateToCurrent, migrations } from '../src/patch/migrate.ts'
 import { PATCH_SCHEMA_VERSION, createPatch, parsePatch } from '../src/patch/schema.ts'
 import { fixedIdentity } from './fixtures.ts'
 
+/* The bug this pins: crypto.randomUUID exists only in a secure context, so it is
+   present on localhost and missing over plain http to a LAN address. Creating a
+   patch threw on any device reaching the dev server by IP. */
+describe('id generation without a secure context', () => {
+  const realCrypto = globalThis.crypto
+  const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+
+  function withCrypto(replacement: unknown, body: () => void) {
+    Object.defineProperty(globalThis, 'crypto', { value: replacement, configurable: true })
+    try {
+      body()
+    } finally {
+      Object.defineProperty(globalThis, 'crypto', { value: realCrypto, configurable: true })
+    }
+  }
+
+  test('falls back to getRandomValues when randomUUID is missing', () => {
+    withCrypto({ getRandomValues: realCrypto.getRandomValues.bind(realCrypto) }, () => {
+      expect(createPatch({}).id).toMatch(UUID_V4)
+    })
+  })
+
+  test('still produces an id when crypto is absent entirely', () => {
+    withCrypto(undefined, () => {
+      expect(createPatch({}).id).toMatch(UUID_V4)
+    })
+  })
+
+  test('ids stay unique across many calls on the fallback path', () => {
+    withCrypto({ getRandomValues: realCrypto.getRandomValues.bind(realCrypto) }, () => {
+      const ids = new Set(Array.from({ length: 2000 }, () => createPatch({}).id))
+      expect(ids.size).toBe(2000)
+    })
+  })
+})
+
 describe('createPatch', () => {
   test('stamps the current schema version and matching timestamps', () => {
     const patch = createPatch({ name: 'Bass' }, fixedIdentity())

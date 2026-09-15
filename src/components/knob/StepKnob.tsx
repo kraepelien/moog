@@ -74,6 +74,29 @@ const Body = memo(function Body({ angle }: { angle: number }) {
   )
 })
 
+/* The same mark that labels the detent, drawn again in the cap so the knob reads
+   its own position the way the octave knob does. Scaled and centred from the
+   glyph's own bounds rather than a per-glyph offset, so the six sit consistently
+   however different their shapes are. Outside the rotating group: the mark must
+   stay upright while the body turns. */
+const CAP_GLYPH_WIDTH = 24
+
+function CapGlyph({ glyph }: { glyph: WaveformId }) {
+  const { path, box } = waveformGlyphs[glyph]
+  const scale = CAP_GLYPH_WIDTH / box.width
+  const cx = box.x + box.width / 2
+  const cy = box.y + box.height / 2
+  return (
+    <g
+      transform={`translate(${CAP.cx} ${CAP.cy}) scale(${scale}) translate(${-cx} ${-cy})`}
+      className={styles.capGlyph}
+      style={{ strokeWidth: 1.5 / scale }}
+    >
+      <path d={path} />
+    </g>
+  )
+}
+
 export interface StepKnobProps {
   def: StepKnobDef
   value: string
@@ -151,16 +174,20 @@ export function StepKnob({ def, value, onChange }: StepKnobProps) {
         <path d={TICKS} className={styles.ticks} />
         <Labels def={def} />
         <Body angle={angle} />
-        {current?.cap && (
-          <text
-            x={CAP.cx}
-            y={CAP.cy}
-            className={styles.capText}
-            textAnchor="middle"
-            dominantBaseline="central"
-          >
-            {current.cap}
-          </text>
+        {current?.glyph && current.glyph in waveformGlyphs ? (
+          <CapGlyph glyph={current.glyph as WaveformId} />
+        ) : (
+          current?.cap && (
+            <text
+              x={CAP.cx}
+              y={CAP.cy}
+              className={styles.capText}
+              textAnchor="middle"
+              dominantBaseline="central"
+            >
+              {current.cap}
+            </text>
+          )
         )}
       </svg>
     </div>
