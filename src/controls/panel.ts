@@ -1,6 +1,7 @@
 import { placeholderType, type PlaceholderDef } from './placeholder.ts'
 import { createRegistry } from './registry.ts'
 import { stepKnobType, type StepKnobDef, type StepPosition } from './stepKnob.ts'
+import { toggleSwitchType, type ToggleSwitchDef } from './toggleSwitch.ts'
 import type { ControlType, DecorationDef, GroupDef, PanelItem, SectionDef } from './types.ts'
 
 /* Every control on the patch sheet, all of them placeholders. Nothing here says
@@ -17,6 +18,7 @@ import type { ControlType, DecorationDef, GroupDef, PanelItem, SectionDef } from
 export const controlTypes: readonly ControlType<never, never>[] = [
   placeholderType as unknown as ControlType<never, never>,
   stepKnobType as unknown as ControlType<never, never>,
+  toggleSwitchType as unknown as ControlType<never, never>,
 ]
 
 /* The six rotary-selector positions, counter-clockwise end first, matching the
@@ -94,6 +96,56 @@ function stepKnob(
   return { id, type: 'stepKnob', label, section, positions, default: defaultPosition, ...extra }
 }
 
+/* An on/off rocker prints its legend on one side only, which is why the off
+   position carries an empty label rather than the word OFF. */
+function onOff(
+  id: string,
+  label: string,
+  section: string,
+  extra: { group?: string; headline?: string; default?: 'on' | 'off' } = {},
+): ToggleSwitchDef {
+  return {
+    id,
+    type: 'toggleSwitch',
+    label,
+    section,
+    positions: [
+      { id: 'off', label: '' },
+      { id: 'on', label: 'ON' },
+    ],
+    default: extra.default ?? 'off',
+    ...(extra.group ? { group: extra.group } : {}),
+    ...(extra.headline ? { headline: extra.headline } : {}),
+  }
+}
+
+/* A rocker choosing between two named things rather than turning one on. */
+function chooser(
+  id: string,
+  label: string,
+  section: string,
+  a: { id: string; label: string },
+  b: { id: string; label: string },
+  extra: {
+    group?: string
+    headline?: string
+    default?: string
+    orientation?: 'horizontal' | 'vertical'
+  } = {},
+): ToggleSwitchDef {
+  return {
+    id,
+    type: 'toggleSwitch',
+    label,
+    section,
+    positions: [a, b],
+    default: extra.default ?? a.id,
+    ...(extra.group ? { group: extra.group } : {}),
+    ...(extra.headline ? { headline: extra.headline } : {}),
+    ...(extra.orientation ? { orientation: extra.orientation } : {}),
+  }
+}
+
 function decoration(
   id: string,
   label: string,
@@ -112,49 +164,56 @@ export const items: readonly PanelItem[] = [
   placeholder('tune', 'Tune', 'controllers', 'knob', { sheetScale: '−2 … 0 … 2' }),
   placeholder('glide', 'Glide', 'controllers', 'knob', { sheetScale: '0 … 10' }),
   placeholder('modulationMix', 'Modulation Mix', 'controllers', 'knob', { sheetScale: '0 … 10' }),
-  placeholder('modulationSourceA', 'Osc.3 / Filter EG', 'controllers', 'switch', {
-    group: 'modSources',
-    sheetScale: 'osc. 3 | filter eg',
-  }),
-  placeholder('modulationSourceB', 'Noise / LFO', 'controllers', 'switch', {
-    group: 'modSources',
-    sheetScale: 'noise | lfo',
-  }),
+  chooser(
+    'modulationSourceA',
+    'Osc.3 / Filter EG',
+    'controllers',
+    { id: 'osc3', label: 'Osc. 3' },
+    { id: 'filterEg', label: 'Filter EG' },
+    { group: 'modSources' },
+  ),
+  chooser(
+    'modulationSourceB',
+    'Noise / LFO',
+    'controllers',
+    { id: 'noise', label: 'Noise' },
+    { id: 'lfo', label: 'LFO' },
+    { group: 'modSources' },
+  ),
 
   // Oscillator Bank
-  placeholder('oscillatorModulation', 'Oscillator Modulation', 'oscillatorBank', 'switch', {
-    sheetScale: 'on',
+  onOff('oscillatorModulation', 'Oscillator Modulation', 'oscillatorBank', {
+    headline: 'Oscillator Modulation',
   }),
-  placeholder('osc3Control', 'Osc.3 Control', 'oscillatorBank', 'switch'),
+  chooser(
+    'osc3Control',
+    'Osc.3 Control',
+    'oscillatorBank',
+    { id: 'osc3', label: 'Osc. 3' },
+    { id: 'lo', label: 'LO' },
+    { headline: 'Osc. 3 Control' },
+  ),
   /* Oscillator-1 has no frequency knob — confirmed against the instrument. The
      gap in the middle column is the hardware, not an omission. */
   stepKnob('osc1Range', 'Range', 'oscillatorBank', RANGE_POSITIONS, 'ft8', { group: 'osc1' }),
   stepKnob('osc1Waveform', 'Waveform', 'oscillatorBank', WAVEFORM_POSITIONS, 'triangle', {
     group: 'osc1',
   }),
-  placeholder('osc2Range', 'Range', 'oscillatorBank', 'selector', {
-    group: 'osc2',
-    sheetScale: "lo · 32' · 16' · 8' · 4' · 2'",
-  }),
+  stepKnob('osc2Range', 'Range', 'oscillatorBank', RANGE_POSITIONS, 'ft8', { group: 'osc2' }),
   placeholder('osc2Frequency', 'Frequency', 'oscillatorBank', 'knob', {
     group: 'osc2',
     sheetScale: '−7 … 0 … 7',
   }),
-  placeholder('osc2Waveform', 'Waveform', 'oscillatorBank', 'selector', {
+  stepKnob('osc2Waveform', 'Waveform', 'oscillatorBank', WAVEFORM_POSITIONS, 'triangle', {
     group: 'osc2',
-    sheetScale: 'six waveforms',
   }),
-  placeholder('osc3Range', 'Range', 'oscillatorBank', 'selector', {
-    group: 'osc3',
-    sheetScale: "lo · 32' · 16' · 8' · 4' · 2'",
-  }),
+  stepKnob('osc3Range', 'Range', 'oscillatorBank', RANGE_POSITIONS, 'ft8', { group: 'osc3' }),
   placeholder('osc3Frequency', 'Frequency', 'oscillatorBank', 'knob', {
     group: 'osc3',
     sheetScale: '−7 … 0 … 7',
   }),
-  placeholder('osc3Waveform', 'Waveform', 'oscillatorBank', 'selector', {
+  stepKnob('osc3Waveform', 'Waveform', 'oscillatorBank', WAVEFORM_POSITIONS, 'triangle', {
     group: 'osc3',
-    sheetScale: 'six waveforms',
   }),
 
   // Mixer
@@ -162,25 +221,22 @@ export const items: readonly PanelItem[] = [
     group: 'mixOsc1',
     sheetScale: '0 … 10',
   }),
-  placeholder('osc1Enable', 'Osc.1', 'mixer', 'switch', { group: 'mixOsc1', sheetScale: 'on' }),
+  onOff('osc1Enable', 'Osc.1', 'mixer', { group: 'mixOsc1', default: 'on' }),
   placeholder('osc2Volume', 'Osc.2 Volume', 'mixer', 'knob', {
     group: 'mixOsc2',
     sheetScale: '0 … 10',
   }),
-  placeholder('osc2Enable', 'Osc.2', 'mixer', 'switch', { group: 'mixOsc2', sheetScale: 'on' }),
+  onOff('osc2Enable', 'Osc.2', 'mixer', { group: 'mixOsc2' }),
   placeholder('osc3Volume', 'Osc.3 Volume', 'mixer', 'knob', {
     group: 'mixOsc3',
     sheetScale: '0 … 10',
   }),
-  placeholder('osc3Enable', 'Osc.3', 'mixer', 'switch', { group: 'mixOsc3', sheetScale: 'on' }),
+  onOff('osc3Enable', 'Osc.3', 'mixer', { group: 'mixOsc3' }),
   placeholder('externalInputVolume', 'External Input Volume', 'mixer', 'knob', {
     group: 'mixExternal',
     sheetScale: '0 … 10',
   }),
-  placeholder('externalInputEnable', 'External Input', 'mixer', 'switch', {
-    group: 'mixExternal',
-    sheetScale: 'on',
-  }),
+  onOff('externalInputEnable', 'External Input', 'mixer', { group: 'mixExternal' }),
   decoration('overloadLamp', 'Overload', 'mixer', 'lamp', {
     group: 'mixExternal',
     note: 'reflects the external input level; nothing to set',
@@ -189,24 +245,28 @@ export const items: readonly PanelItem[] = [
     group: 'mixNoise',
     sheetScale: '0 … 10',
   }),
-  placeholder('noiseEnable', 'Noise', 'mixer', 'switch', { group: 'mixNoise', sheetScale: 'on' }),
-  placeholder('noiseColour', 'Noise Colour', 'mixer', 'switch', {
-    group: 'mixNoise',
-    sheetScale: 'white | pink',
-  }),
+  onOff('noiseEnable', 'Noise', 'mixer', { group: 'mixNoise' }),
+  chooser(
+    'noiseColour',
+    'Noise Colour',
+    'mixer',
+    { id: 'white', label: 'White' },
+    { id: 'pink', label: 'Pink' },
+    { group: 'mixNoise', orientation: 'vertical' },
+  ),
 
   // Modifiers
-  placeholder('filterModulation', 'Filter Modulation', 'modifiers', 'switch', {
+  onOff('filterModulation', 'Filter Modulation', 'modifiers', {
     group: 'filterRouting',
-    sheetScale: 'on',
+    headline: 'Filter Modulation',
   }),
-  placeholder('keyboardControl1', 'Keyboard Control 1', 'modifiers', 'switch', {
+  onOff('keyboardControl1', 'Keyboard Control 1', 'modifiers', {
     group: 'filterRouting',
-    sheetScale: 'on',
+    headline: 'Keyboard Control 1',
   }),
-  placeholder('keyboardControl2', 'Keyboard Control 2', 'modifiers', 'switch', {
+  onOff('keyboardControl2', 'Keyboard Control 2', 'modifiers', {
     group: 'filterRouting',
-    sheetScale: 'on',
+    headline: 'Keyboard Control 2',
   }),
   placeholder('cutoffFrequency', 'Cutoff Frequency', 'modifiers', 'knob', {
     group: 'filter',
@@ -259,8 +319,8 @@ export const items: readonly PanelItem[] = [
 
   // Performance (the bottom-left strip)
   placeholder('lfoRate', 'LFO Rate', 'performance', 'knob', { sheetScale: '0 … 10' }),
-  placeholder('glideEnable', 'Glide', 'performance', 'switch', { sheetScale: 'on' }),
-  placeholder('decayEnable', 'Decay', 'performance', 'switch', { sheetScale: 'on' }),
+  onOff('glideEnable', 'Glide', 'performance', { headline: 'Glide' }),
+  onOff('decayEnable', 'Decay', 'performance', { headline: 'Decay' }),
   placeholder('pitchWheel', 'Pitch', 'performance', 'wheel', { group: 'wheels' }),
   placeholder('modWheel', 'Mod.', 'performance', 'wheel', { group: 'wheels' }),
 ]

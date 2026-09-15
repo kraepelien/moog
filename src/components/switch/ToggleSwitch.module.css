@@ -1,0 +1,71 @@
+/* The artwork is white-on-black line art, so the switch carries its own ink
+   rather than inheriting the page's. The rest is structure and hit area. */
+
+.switch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.headline {
+  font-size: 0.65rem;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  max-width: 96px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.switch[data-orientation='vertical'] .row {
+  flex-direction: column;
+}
+
+.endLabel {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  /* An ON switch prints a legend on one side only, so the empty side still
+     reserves nothing and the switch does not shift as the value changes. */
+  white-space: nowrap;
+}
+
+.graphic {
+  width: 82px;
+  height: 28px;
+  cursor: pointer;
+  background: #000;
+  flex: none;
+}
+
+.switch[data-orientation='vertical'] .graphic {
+  width: 28px;
+  height: 82px;
+}
+
+.graphic:focus-visible {
+  outline: 2px solid;
+  outline-offset: 2px;
+}
+
+.body {
+  fill: #000;
+  stroke: #fff;
+}
+
+.tab {
+  fill: #000;
+  stroke: #fff;
+}
+
+.rocker {
+  fill: #fff;
+  stroke: #000;
+}

@@ -101,6 +101,27 @@ the printed artwork in `reference/measurements.md`.
 `waveforms.ts` holds the six waveform marks split out individually, each with its path and bounds,
 so one can be drawn on its own — beside a knob, in a cap, or in a legend.
 
+### Two-position switches
+
+**A switch is not a boolean.** Several choose between two named things rather than turning one on —
+Osc.3 against Filter EG, White against Pink, Osc.3 against LO. A boolean would force a label map at
+every call site and a type change the day one gains a third position. So a switch is a discrete
+control with exactly two positions, storing a position id like everything else.
+
+An on/off switch is the same shape: positions `off` and `on`, where `off` carries an **empty
+label** because the panel prints its legend on one side only.
+
+Because a switch validates exactly like a step knob, that codec lives once in `discrete.ts` and
+each type supplies only its name, its extra fields and its component.
+
+A switch may carry a `headline` (printed above, centred) and each position's label prints at its
+own end. The vertical variant is the horizontal one turned a quarter turn, which maps its left end
+to the top — so the first position reads top and the second bottom.
+
+The geometry is read off `BUTTON.svg`, which draws the rocker at the right-hand end; the other
+export is the same switch mirrored, so the left-hand state is those shapes reflected rather than a
+second copy. One set of coordinates to be wrong about, not two.
+
 ### Sections and groups
 
 A control belongs to a section and optionally to a **group** — the boxes the patch sheet prints

@@ -1,8 +1,10 @@
 import { isPlaceholder } from '../controls/placeholder.ts'
 import type { Registry } from '../controls/registry.ts'
 import { isStepKnob } from '../controls/stepKnob.ts'
+import { isToggleSwitch } from '../controls/toggleSwitch.ts'
 import { isDecoration, type ControlValue, type PanelItem } from '../controls/types.ts'
 import { StepKnob } from './knob/StepKnob.tsx'
+import { ToggleSwitch } from './switch/ToggleSwitch.tsx'
 import styles from './Panel.module.css'
 
 /* Two views of the same registry. `Panel` draws the controls that have real
@@ -23,14 +25,14 @@ function Control({
   value: ControlValue
   onChange: (value: ControlValue) => void
 }) {
-  if (isStepKnob(item as never) && !isDecoration(item)) {
-    return (
-      <StepKnob
-        def={item as never}
-        value={typeof value === 'string' ? value : ''}
-        onChange={onChange}
-      />
-    )
+  if (isDecoration(item)) return null
+  const stored = typeof value === 'string' ? value : ''
+
+  if (isStepKnob(item)) {
+    return <StepKnob def={item} value={stored} onChange={onChange} />
+  }
+  if (isToggleSwitch(item)) {
+    return <ToggleSwitch def={item} value={stored} onChange={onChange} />
   }
   return <span className={styles.unbuilt}>no component for “{item.id}”</span>
 }
