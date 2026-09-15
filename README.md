@@ -76,6 +76,31 @@ because their order relative to controls within a section is part of the layout.
 decorations share one id space, so turning one into the other later cannot collide with a name
 already in use.
 
+### Step knobs
+
+A rotary selector that rests only on named positions. **What is stored is the position's id** —
+never its printed label, never its index. A label can be re-typeset (`8'` → `8″`) and an index
+shifts the moment a position is inserted; either would silently change what every saved patch
+means. The octave ids carry an `ft` prefix (`ft8`, not `8`) because JavaScript hoists and reorders
+integer-like object keys, which would scramble anything later keyed by position id.
+
+A control type may implement `validateDef`, checked once when the registry is built, so a
+definition that contradicts itself — a default that is not one of its own positions, a duplicate
+position id — fails at startup instead of surfacing as a puzzling value at runtime.
+
+The artwork in `src/components/knob/` is lifted **verbatim** from the hand-drawn export; only the
+grouping and colour references are ours. The export is drawn turned to −15°, so rendering a
+position rotates the body group by `angle − BAKED_ANGLE` and nothing is re-pathed. Ticks and
+labels sit outside that group so they stay upright while the body turns, and the body is memoized
+on a single number so dragging one knob does not repaint the others.
+
+The six detent angles were read back out of the export's own spoke endpoints (−75, −45, −15, 15,
+45, 75 at radius 45.5) rather than assumed, and independently match the geometry recovered from
+the printed artwork in `reference/measurements.md`.
+
+`waveforms.ts` holds the six waveform marks split out individually, each with its path and bounds,
+so one can be drawn on its own — beside a knob, in a cap, or in a legend.
+
 ### Sections and groups
 
 A control belongs to a section and optionally to a **group** — the boxes the patch sheet prints

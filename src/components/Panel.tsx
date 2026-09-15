@@ -1,13 +1,91 @@
 import { isPlaceholder } from '../controls/placeholder.ts'
 import type { Registry } from '../controls/registry.ts'
-import { isDecoration, type PanelItem } from '../controls/types.ts'
+import { isStepKnob } from '../controls/stepKnob.ts'
+import { isDecoration, type ControlValue, type PanelItem } from '../controls/types.ts'
+import { StepKnob } from './knob/StepKnob.tsx'
 import styles from './Panel.module.css'
 
-/* Renders whatever is in the registry. Adding a control to an existing section is
-   a registry entry and nothing here changes; a new control type gets a branch in
-   Item and nothing else moves. */
+/* Two views of the same registry. `Panel` draws the controls that have real
+   components; `PanelChecklist` draws every item on the instrument, built or not,
+   so nothing can quietly go missing while controls are added one at a time.
+   Neither knows the panel's contents — both read the registry. */
 
-function Item({ item }: { item: PanelItem }) {
+function isBuilt(item: PanelItem): boolean {
+  return !isDecoration(item) && !isPlaceholder(item)
+}
+
+function Control({
+  item,
+  value,
+  onChange,
+}: {
+  item: PanelItem
+  value: ControlValue
+  onChange: (value: ControlValue) => void
+}) {
+  if (isStepKnob(item as never) && !isDecoration(item)) {
+    return (
+      <StepKnob
+        def={item as never}
+        value={typeof value === 'string' ? value : ''}
+        onChange={onChange}
+      />
+    )
+  }
+  return <span className={styles.unbuilt}>no component for “{item.id}”</span>
+}
+
+export function Panel({
+  registry,
+  values,
+  onChange,
+}: {
+  registry: Registry
+  values: Readonly<Record<string, ControlValue>>
+  onChange: (id: string, value: ControlValue) => void
+}) {
+  const sections = registry.sections.filter((section) =>
+    registry.itemsInSection(section.id).some(isBuilt),
+  )
+
+  if (sections.length === 0) return <p>Nothing built yet.</p>
+
+  return (
+    <div className={styles.panel}>
+      {sections.map((section) => (
+        <section key={section.id} className={styles.section}>
+          <div className={styles.sectionBody}>
+            {registry.runsInSection(section.id).map((run, index) => {
+              const built = run.items.filter(isBuilt)
+              if (built.length === 0) return null
+              return (
+                <div
+                  key={run.group?.id ?? `ungrouped-${index}`}
+                  className={run.group ? styles.group : styles.run}
+                >
+                  {run.group?.label && <h3 className={styles.groupHeader}>{run.group.label}</h3>}
+                  <div className={styles.groupRow}>
+                    {built.map((item) => (
+                      <Control
+                        key={item.id}
+                        item={item}
+                        value={values[item.id]}
+                        onChange={(next) => onChange(item.id, next)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          <h2 className={styles.sectionLabel}>{section.label}</h2>
+        </section>
+      ))}
+    </div>
+  )
+}
+
+function ChecklistItem({ item }: { item: PanelItem }) {
   if (isDecoration(item)) {
     return (
       <div className={styles.control} data-decoration="">
@@ -21,9 +99,11 @@ function Item({ item }: { item: PanelItem }) {
 
   if (!isPlaceholder(item)) {
     return (
-      <div className={styles.control}>
+      <div className={styles.control} data-built="">
+        <div className={styles.slot} data-shape="knob" aria-hidden="true" />
         <span className={styles.label}>{item.label}</span>
-        <span className={styles.unbuilt}>no component for type “{item.type}”</span>
+        <span className={styles.scale}>built · {item.type}</span>
+        <code className={styles.id}>{item.id}</code>
       </div>
     )
   }
@@ -38,7 +118,7 @@ function Item({ item }: { item: PanelItem }) {
   )
 }
 
-export function Panel({ registry }: { registry: Registry }) {
+export function PanelChecklist({ registry }: { registry: Registry }) {
   return (
     <div className={styles.panel}>
       {registry.sections.map((section) => (
@@ -49,10 +129,12 @@ export function Panel({ registry }: { registry: Registry }) {
                 key={run.group?.id ?? `ungrouped-${index}`}
                 className={run.group ? styles.group : styles.run}
               >
-                {run.group?.label && <h3 className={styles.groupLabel}>{run.group.label}</h3>}
-                {run.items.map((item) => (
-                  <Item key={item.id} item={item} />
-                ))}
+                {run.group?.label && <h3 className={styles.groupHeader}>{run.group.label}</h3>}
+                <div className={styles.groupRow}>
+                  {run.items.map((item) => (
+                    <ChecklistItem key={item.id} item={item} />
+                  ))}
+                </div>
               </div>
             ))}
           </div>

@@ -1,0 +1,78 @@
+/* The artwork is white-on-black line art, so the knob carries its own ink colours
+   rather than inheriting the page's. Everything else here is structure and hit
+   area, not styling — sizing, focus visibility and the drag cursor. */
+
+.knob {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.header {
+  font-size: 0.7rem;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dial {
+  width: 150px;
+  height: 118px;
+  touch-action: none;
+  cursor: ns-resize;
+  background: #000;
+}
+
+.dial:focus-visible {
+  outline: 2px solid;
+  outline-offset: 2px;
+}
+
+.ticks,
+.glyph {
+  fill: none;
+  stroke: #fff;
+}
+
+.ticks {
+  stroke-width: 2;
+}
+
+.glyph {
+  stroke-width: 1.5;
+}
+
+.labelText {
+  fill: #fff;
+  font-size: 9px;
+}
+
+.outerRing {
+  fill: #000;
+}
+
+.innerRing {
+  fill: #000;
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+.pointer {
+  fill: #fff;
+  stroke: #000;
+  stroke-width: 4;
+}
+
+.cap {
+  fill: #000;
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+.capText {
+  fill: #fff;
+  font-size: 22px;
+  font-weight: 700;
+  pointer-events: none;
+}

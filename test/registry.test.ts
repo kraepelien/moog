@@ -5,12 +5,18 @@ import { isDecoration } from '../src/controls/types.ts'
 import { rangeDef, testEnumType, testNumberType, testRegistry, volumeDef } from './fixtures.ts'
 
 describe('registry', () => {
-  test('every control on the shipped panel is still an unspecified placeholder', () => {
+  test('a control is either built or an unspecified placeholder, nothing in between', () => {
     expect(panelRegistry.controls.length).toBeGreaterThan(0)
-    expect(panelRegistry.controls.every((def) => def.type === 'placeholder')).toBe(true)
-    /* A placeholder must not invent a value, or reviewing the layout would start
-       writing made-up settings into saved patches. */
-    expect(Object.values(defaultValues(panelRegistry)).every((v) => v === null)).toBe(true)
+    expect(panelRegistry.controls.every((def) => ['placeholder', 'stepKnob'].includes(def.type)))
+      .toBe(true)
+  })
+
+  test('placeholders still contribute no invented value', () => {
+    const defaults = defaultValues(panelRegistry)
+    for (const def of panelRegistry.controls) {
+      if (def.type === 'placeholder') expect(defaults[def.id]).toBeNull()
+      else expect(defaults[def.id]).not.toBeNull()
+    }
   })
 
   test('panel item ids are unique and safe as JSON keys', () => {

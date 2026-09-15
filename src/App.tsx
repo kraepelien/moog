@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Panel } from './components/Panel.tsx'
+import { Panel, PanelChecklist } from './components/Panel.tsx'
 import { panelRegistry } from './controls/panel.ts'
-import { resolvePatch, reportHasWarnings, type ResolveReport } from './patch/resolve.ts'
+import { isPlaceholder } from './controls/placeholder.ts'
+import { mergeValues, resolvePatch, reportHasWarnings, type ResolveReport } from './patch/resolve.ts'
 import { createPatch, type Patch } from './patch/schema.ts'
 import { draftFromPreset, factoryPresets } from './presets/factory.ts'
 import { createWebStorageStore, resolveBrowserStorage } from './storage/webStorage.ts'
@@ -75,6 +76,9 @@ export function App() {
 
   if (!draft) return <p>Loading…</p>
 
+  const resolved = resolvePatch(panelRegistry, draft)
+  const built = panelRegistry.controls.filter((def) => !isPlaceholder(def)).length
+
   return (
     <main>
       <h1>Minimoog Model D — Patch Editor</h1>
@@ -88,11 +92,24 @@ export function App() {
 
       <section>
         <h2>Panel</h2>
+        <Panel
+          registry={panelRegistry}
+          values={resolved.values}
+          onChange={(id, next) =>
+            setDraft({ ...draft, values: mergeValues(draft, { ...resolved.values, [id]: next }) })
+          }
+        />
+      </section>
+
+      <section>
+        <h2>Every control on the instrument</h2>
         <p>
-          {panelRegistry.controls.length} controls in {panelRegistry.sections.length} sections — all
-          placeholders, laid out for review. None of them has a range, positions or a default yet.
+          {built} of {panelRegistry.controls.length} controls built, plus{' '}
+          {panelRegistry.decorations.length} decorations that hold no value. A control with a bold
+          caption has a real component; the rest are still placeholders with no range, positions or
+          default.
         </p>
-        <Panel registry={panelRegistry} />
+        <PanelChecklist registry={panelRegistry} />
       </section>
 
       <section>

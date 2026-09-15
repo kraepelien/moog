@@ -101,9 +101,12 @@ export function createRegistry(input: RegistryInput): Registry {
     if (isDecoration(item)) {
       decorations.push(item)
     } else {
-      if (!types.has(item.type)) {
+      const type = types.get(item.type)
+      if (!type) {
         throw new Error(`Control "${item.id}" has unregistered type "${item.type}"`)
       }
+      const problem = type.validateDef?.(item as never)
+      if (problem) throw new Error(`Control "${item.id}" is invalid: ${problem}`)
       controls.push(item)
     }
 

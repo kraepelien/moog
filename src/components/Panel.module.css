@@ -32,12 +32,13 @@
   text-align: center;
 }
 
+/* A group is a column so its header can sit above the row and centre over it,
+   the way the sheet prints OSCILLATOR-1 over its three knobs. */
 .run,
 .group {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .group {
@@ -45,11 +46,21 @@
   padding: 6px;
 }
 
-.groupLabel {
-  flex-basis: 100%;
+.groupRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.groupHeader {
   margin: 0;
   font-size: 0.75rem;
   font-weight: normal;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .control {
@@ -123,4 +134,15 @@
 
 .control[data-decoration] .slot {
   border-style: dashed;
+}
+
+/* Marks the checklist entries that now have a real component, so what is left to
+   build is readable at a glance. */
+.control[data-built] .slot {
+  border-width: 3px;
+}
+
+.control[data-built] .scale {
+  opacity: 1;
+  font-weight: 700;
 }

@@ -66,4 +66,9 @@ export interface ControlType<D extends ControlDef = ControlDef, V = ControlValue
   decode(raw: unknown, def: D): DecodeResult<V>
   defaultValue(def: D): V
   format(value: V, def: D): string
+  /* Checked once when the registry is built, so a definition that contradicts
+     itself — a default that is not one of the control's own positions — fails at
+     startup rather than as a puzzling value at runtime. Return a reason to reject.
+     Optional: a type with nothing beyond the base fields to check omits it. */
+  validateDef?(def: D): string | null
 }

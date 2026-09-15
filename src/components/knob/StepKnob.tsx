@@ -1,0 +1,168 @@
+import { memo, useCallback, useId, useRef } from 'react'
+import { positionIndex, stepBy, type StepKnobDef } from '../../controls/stepKnob.ts'
+import {
+  BAKED_ANGLE,
+  CAP,
+  CENTRE,
+  DETENT_ANGLES,
+  INNER_RING,
+  LABEL_RADIUS,
+  OUTER_RING,
+  POINTER,
+  TICKS,
+  VIEWBOX,
+} from './artwork.ts'
+import { waveformGlyphs, type WaveformId } from './waveforms.ts'
+import styles from './StepKnob.module.css'
+
+function pointAt(angleDeg: number, radius: number) {
+  const radians = ((angleDeg - 90) * Math.PI) / 180
+  return {
+    x: CENTRE.x + Math.cos(radians) * radius,
+    y: CENTRE.y + Math.sin(radians) * radius,
+  }
+}
+
+/* Drawn separately from the knob so the marks stay upright while the body turns.
+   A glyph keeps the coordinates it was exported with, which is already its place
+   on the dial, so it needs no transform at all. */
+const Labels = memo(function Labels({ def }: { def: StepKnobDef }) {
+  return (
+    <g className={styles.labels}>
+      {def.positions.map((position, index) => {
+        const angle = DETENT_ANGLES[index]
+        if (angle === undefined) return null
+
+        if (position.glyph && position.glyph in waveformGlyphs) {
+          return (
+            <path
+              key={position.id}
+              d={waveformGlyphs[position.glyph as WaveformId].path}
+              className={styles.glyph}
+            />
+          )
+        }
+
+        const at = pointAt(angle, LABEL_RADIUS)
+        return (
+          <text
+            key={position.id}
+            x={at.x}
+            y={at.y}
+            className={styles.labelText}
+            textAnchor="middle"
+            dominantBaseline="middle"
+          >
+            {position.label}
+          </text>
+        )
+      })}
+    </g>
+  )
+})
+
+/* Roughly forty nodes, and its props are two numbers, so it re-renders only when
+   the knob actually turns. Dragging one knob must not repaint the rest of them. */
+const Body = memo(function Body({ angle }: { angle: number }) {
+  return (
+    <g transform={`rotate(${angle - BAKED_ANGLE} ${CENTRE.x} ${CENTRE.y})`}>
+      <path d={OUTER_RING} fillRule="evenodd" clipRule="evenodd" className={styles.outerRing} />
+      <path d={INNER_RING} className={styles.innerRing} />
+      <path d={POINTER} className={styles.pointer} />
+      <circle cx={CAP.cx} cy={CAP.cy} r={CAP.r} className={styles.cap} />
+    </g>
+  )
+})
+
+export interface StepKnobProps {
+  def: StepKnobDef
+  value: string
+  onChange: (value: string) => void
+}
+
+export function StepKnob({ def, value, onChange }: StepKnobProps) {
+  const labelId = useId()
+  const index = positionIndex(def, value)
+  const current = def.positions[index]
+  const angle = DETENT_ANGLES[index] ?? DETENT_ANGLES[0]
+  const dragOrigin = useRef<{ y: number; index: number } | null>(null)
+
+  const onKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      const by = (delta: number) => {
+        event.preventDefault()
+        onChange(stepBy(def, value, delta))
+      }
+      if (event.key === 'ArrowUp' || event.key === 'ArrowRight') by(1)
+      else if (event.key === 'ArrowDown' || event.key === 'ArrowLeft') by(-1)
+      else if (event.key === 'Home') by(-def.positions.length)
+      else if (event.key === 'End') by(def.positions.length)
+    },
+    [def, value, onChange],
+  )
+
+  /* Vertical drag, a detent every 18px. Pointer capture rather than window
+     listeners so a drag that leaves the element still tracks and still ends. */
+  const onPointerDown = useCallback(
+    (event: React.PointerEvent<SVGSVGElement>) => {
+      if (event.button !== 0) return
+      event.currentTarget.setPointerCapture(event.pointerId)
+      dragOrigin.current = { y: event.clientY, index: positionIndex(def, value) }
+    },
+    [def, value],
+  )
+
+  const onPointerMove = useCallback(
+    (event: React.PointerEvent) => {
+      const origin = dragOrigin.current
+      if (!origin) return
+      const steps = Math.round((origin.y - event.clientY) / 18)
+      const next = def.positions[Math.min(def.positions.length - 1, Math.max(0, origin.index + steps))]
+      if (next && next.id !== value) onChange(next.id)
+    },
+    [def, value, onChange],
+  )
+
+  const endDrag = useCallback(() => {
+    dragOrigin.current = null
+  }, [])
+
+  return (
+    <div className={styles.knob}>
+      <span className={styles.header} id={labelId}>
+        {def.label}
+      </span>
+      <svg
+        viewBox={`${VIEWBOX.x} ${VIEWBOX.y} ${VIEWBOX.width} ${VIEWBOX.height}`}
+        className={styles.dial}
+        role="slider"
+        tabIndex={0}
+        aria-labelledby={labelId}
+        aria-valuemin={1}
+        aria-valuemax={def.positions.length}
+        aria-valuenow={index + 1}
+        aria-valuetext={current?.label ?? value}
+        onKeyDown={onKeyDown}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+      >
+        <path d={TICKS} className={styles.ticks} />
+        <Labels def={def} />
+        <Body angle={angle} />
+        {current?.cap && (
+          <text
+            x={CAP.cx}
+            y={CAP.cy}
+            className={styles.capText}
+            textAnchor="middle"
+            dominantBaseline="central"
+          >
+            {current.cap}
+          </text>
+        )}
+      </svg>
+    </div>
+  )
+}

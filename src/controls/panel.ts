@@ -1,5 +1,6 @@
 import { placeholderType, type PlaceholderDef } from './placeholder.ts'
 import { createRegistry } from './registry.ts'
+import { stepKnobType, type StepKnobDef, type StepPosition } from './stepKnob.ts'
 import type { ControlType, DecorationDef, GroupDef, PanelItem, SectionDef } from './types.ts'
 
 /* Every control on the patch sheet, all of them placeholders. Nothing here says
@@ -15,7 +16,35 @@ import type { ControlType, DecorationDef, GroupDef, PanelItem, SectionDef } from
 
 export const controlTypes: readonly ControlType<never, never>[] = [
   placeholderType as unknown as ControlType<never, never>,
+  stepKnobType as unknown as ControlType<never, never>,
 ]
+
+/* The six rotary-selector positions, counter-clockwise end first, matching the
+   order of the detents on the artwork.
+
+   Position ids are as permanent as control ids — they are what a patch stores —
+   so they are deliberately not the printed labels (re-typesetting 8' would break
+   every saved patch) and not indices (inserting a position would shift them). The
+   octave ids carry an "ft" prefix rather than being bare numbers because a
+   JavaScript object hoists and reorders integer-like keys, which would quietly
+   scramble the order of anything later keyed by position id. */
+const RANGE_POSITIONS = [
+  { id: 'lo', label: 'LO', cap: 'LO' },
+  { id: 'ft32', label: "32'", cap: '32' },
+  { id: 'ft16', label: "16'", cap: '16' },
+  { id: 'ft8', label: "8'", cap: '8' },
+  { id: 'ft4', label: "4'", cap: '4' },
+  { id: 'ft2', label: "2'", cap: '2' },
+] as const
+
+const WAVEFORM_POSITIONS = [
+  { id: 'triangle', label: 'Triangle', glyph: 'triangle' },
+  { id: 'triangleSaw', label: 'Triangle-saw', glyph: 'triangleSaw' },
+  { id: 'sawtooth', label: 'Sawtooth', glyph: 'sawtooth' },
+  { id: 'square', label: 'Square', glyph: 'square' },
+  { id: 'widePulse', label: 'Wide pulse', glyph: 'widePulse' },
+  { id: 'narrowPulse', label: 'Narrow pulse', glyph: 'narrowPulse' },
+] as const
 
 export const sections: readonly SectionDef[] = [
   { id: 'controllers', label: 'Controllers' },
@@ -54,6 +83,17 @@ function placeholder(
   return { id, type: 'placeholder', label, section, shape, ...extra }
 }
 
+function stepKnob(
+  id: string,
+  label: string,
+  section: string,
+  positions: readonly StepPosition[],
+  defaultPosition: string,
+  extra: { group?: string } = {},
+): StepKnobDef {
+  return { id, type: 'stepKnob', label, section, positions, default: defaultPosition, ...extra }
+}
+
 function decoration(
   id: string,
   label: string,
@@ -88,13 +128,9 @@ export const items: readonly PanelItem[] = [
   placeholder('osc3Control', 'Osc.3 Control', 'oscillatorBank', 'switch'),
   /* Oscillator-1 has no frequency knob — confirmed against the instrument. The
      gap in the middle column is the hardware, not an omission. */
-  placeholder('osc1Range', 'Range', 'oscillatorBank', 'selector', {
+  stepKnob('osc1Range', 'Range', 'oscillatorBank', RANGE_POSITIONS, 'ft8', { group: 'osc1' }),
+  stepKnob('osc1Waveform', 'Waveform', 'oscillatorBank', WAVEFORM_POSITIONS, 'triangle', {
     group: 'osc1',
-    sheetScale: "lo · 32' · 16' · 8' · 4' · 2'",
-  }),
-  placeholder('osc1Waveform', 'Waveform', 'oscillatorBank', 'selector', {
-    group: 'osc1',
-    sheetScale: 'six waveforms',
   }),
   placeholder('osc2Range', 'Range', 'oscillatorBank', 'selector', {
     group: 'osc2',
