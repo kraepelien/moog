@@ -28,12 +28,21 @@
   flex-direction: column;
 }
 
+/* Beneath the body and pinned to its two ends, matching the export. space-between
+   keeps a lone legend — an ON switch prints one side only — at its own end
+   instead of drifting to the middle. */
+.endLabels {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  width: 82px;
+}
+
 .endLabel {
   font-size: 0.6rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  /* An ON switch prints a legend on one side only, so the empty side still
-     reserves nothing and the switch does not shift as the value changes. */
   white-space: nowrap;
 }
 

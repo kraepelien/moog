@@ -69,7 +69,6 @@ export function ToggleSwitch({ def, value, onChange }: ToggleSwitchProps) {
       {vertical && <span className={styles.endLabel}>{first?.label}</span>}
 
       <div className={styles.row}>
-        {!vertical && <span className={styles.endLabel}>{first?.label}</span>}
         <svg
           viewBox={
             vertical ? `0 0 ${BOX.height} ${BOX.width}` : `0 0 ${BOX.width} ${BOX.height}`
@@ -92,8 +91,17 @@ export function ToggleSwitch({ def, value, onChange }: ToggleSwitchProps) {
             </g>
           </g>
         </svg>
-        {!vertical && <span className={styles.endLabel}>{second?.label}</span>}
       </div>
+
+      {/* Underneath, pinned to the two ends, the way the export sets them below
+          the body. Both are rendered even when empty so a switch with only one
+          legend still pins it to its own end rather than centring it. */}
+      {!vertical && (first?.label || second?.label) && (
+        <div className={styles.endLabels}>
+          <span className={styles.endLabel}>{first?.label}</span>
+          <span className={styles.endLabel}>{second?.label}</span>
+        </div>
+      )}
 
       {vertical && <span className={styles.endLabel}>{second?.label}</span>}
     </div>
