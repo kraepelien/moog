@@ -1,9 +1,13 @@
 import { useEffect, useRef } from 'react'
 import { KEY_COUNT, noteName } from '../../audio/notes.ts'
 import { OCTAVE_DOWN, OCTAVE_UP, keyForTypedKey } from '../../audio/typing.ts'
+import { acrossRange, unitOfBend } from '../../audio/midi.ts'
+import { useMidi } from '../../audio/useMidi.ts'
 import type { Synth } from '../../audio/engine.ts'
 import { synth } from '../../audio/synth.ts'
 import { useSynthSettings, useSynthState } from '../../audio/useSynth.ts'
+import { panelRegistry } from '../../controls/panel.ts'
+import { isWheel } from '../../controls/wheel.ts'
 import type { ControlValue } from '../../controls/types.ts'
 import { VIEWBOX, keyboardKeys } from './keyboardArtwork.ts'
 import styles from './Keyboard.module.css'
@@ -19,18 +23,45 @@ import styles from './Keyboard.module.css'
  * held by the instrument, which has to decide note priority anyway, and pushing
  * it up would redraw sixty controls on every key.
  */
+/* How far each wheel travels, read from the panel rather than written down
+   again here: a controller's bend is a fraction of a wheel, and which wheel it
+   is has a range already. */
+const wheelRange = (id: string) => {
+  const def = panelRegistry.control(id)
+  return def && isWheel(def) ? { min: def.min, max: def.max } : null
+}
+
 export function Keyboard({
   values = {},
   instrument = synth,
+  onPanelChange,
 }: {
   values?: Readonly<Record<string, ControlValue>>
   instrument?: Synth
+  /* The two wheels are panel values, not notes, so a controller moving them has
+     to reach the panel the same way a hand on the screen does. */
+  onPanelChange?: (id: string, value: ControlValue) => void
 }) {
   useSynthSettings(instrument, values)
   const { held } = useSynthState(instrument)
   /* What this pointer is holding down, so dragging across the keyboard can let
      one key go as it takes the next. */
   const under = useRef<number | null>(null)
+
+  const askForMidi = useMidi((message) => {
+    if (message.kind === 'noteOn') instrument.noteOn(message.key)
+    else if (message.kind === 'noteOff') instrument.noteOff(message.key)
+    else if (message.kind === 'allOff') instrument.allOff()
+    else if (message.kind === 'bend') {
+      const range = wheelRange('pitchWheel')
+      if (range) {
+        onPanelChange?.('pitchWheel', acrossRange(unitOfBend(message.fraction), range.min, range.max))
+      }
+    } else if (message.kind === 'mod') {
+      const range = wheelRange('modWheel')
+      if (range) onPanelChange?.('modWheel', acrossRange(message.fraction, range.min, range.max))
+    }
+  })
 
   useEffect(() => {
     const release = () => {
@@ -73,6 +104,7 @@ export function Keyboard({
       const key = keyForTypedKey(event.key, octaves.current, KEY_COUNT)
       if (key === null || typed.current.has(event.key)) return
       event.preventDefault()
+      askForMidi()
       typed.current.set(event.key, key)
       instrument.noteOn(key)
     }
@@ -88,9 +120,12 @@ export function Keyboard({
       window.removeEventListener('keydown', down)
       window.removeEventListener('keyup', up)
     }
-  }, [instrument])
+  }, [instrument, askForMidi])
 
   const press = (key: number) => {
+    /* The gesture that opens the audio context is also the one a browser wants
+       behind a request for MIDI, so both happen on the first key. */
+    askForMidi()
     if (under.current === key) return
     if (under.current !== null) instrument.noteOff(under.current)
     under.current = key

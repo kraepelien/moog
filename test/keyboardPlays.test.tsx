@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { Keyboard } from '../src/components/keyboard/Keyboard.tsx'
 import { createSynth, type Synth } from '../src/audio/engine.ts'
 import { KEY_COUNT, noteName } from '../src/audio/notes.ts'
@@ -10,7 +10,40 @@ import { fakeContext } from './fakeAudio.ts'
 /* Driven the way a person drives it, because a keyboard that draws correctly
    and sounds nothing is invisible to a test that only calls the engine. */
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  delete (navigator as { requestMIDIAccess?: unknown }).requestMIDIAccess
+})
+
+/* A MIDI device that is not there. happy-dom has no Web MIDI, and a real one
+   would need a permission and a socket; what the component actually has to get
+   right is that it asks at the right moment and routes what arrives. */
+const fakeMidi = () => {
+  const ports: { onmidimessage: ((event: { data: number[] }) => void) | null }[] = [
+    { onmidimessage: null },
+  ]
+  const access = {
+    inputs: { forEach: (fn: (port: (typeof ports)[number]) => void) => ports.forEach(fn) },
+    onstatechange: null as (() => void) | null,
+  }
+  let asked = 0
+  Object.defineProperty(navigator, 'requestMIDIAccess', {
+    configurable: true,
+    value: () => {
+      asked += 1
+      return Promise.resolve(access)
+    },
+  })
+  return {
+    ports,
+    asked: () => asked,
+    /* A message from a device is not a React event, so nothing else wraps the
+       render it causes. */
+    send: (data: number[]) => act(() => ports[0]!.onmidimessage?.({ data })),
+  }
+}
+
+const settled = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 const playable = (): Synth => createSynth(() => fakeContext())
 
@@ -112,6 +145,57 @@ describe('the drawn keyboard', () => {
     draw(instrument)
     fireEvent.keyDown(document.body, { key: 'z', metaKey: true })
     expect(instrument.snapshot().held).toEqual([])
+  })
+
+  /* A permission prompt that greets somebody before they have touched anything
+     is one they have no reason to grant, so it waits for the first key. */
+  test('asks for MIDI on the first key played, and only once', async () => {
+    const midi = fakeMidi()
+    const instrument = playable()
+    draw(instrument)
+    expect(midi.asked()).toBe(0)
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'A4' }))
+    await settled()
+    expect(midi.asked()).toBe(1)
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'C5' }))
+    expect(midi.asked()).toBe(1)
+  })
+
+  test('plays notes arriving from a MIDI keyboard', async () => {
+    const midi = fakeMidi()
+    const instrument = playable()
+    draw(instrument)
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'A4' }))
+    fireEvent.pointerUp(window)
+    await settled()
+
+    midi.send([0x90, 60, 100])
+    expect(noteName(instrument.snapshot().sounding!)).toBe('C4')
+    midi.send([0x90, 60, 0])
+    expect(instrument.snapshot().held).toEqual([])
+  })
+
+  test('moves the wheels on the panel rather than the keyboard', async () => {
+    const midi = fakeMidi()
+    const instrument = playable()
+    const moved: [string, unknown][] = []
+    render(
+      <Keyboard
+        values={defaultValues(panelRegistry)}
+        instrument={instrument}
+        onPanelChange={(id, value) => moved.push([id, value])}
+      />,
+    )
+    fireEvent.pointerDown(screen.getAllByRole('button', { name: 'A4' })[0]!)
+    fireEvent.pointerUp(window)
+    await settled()
+
+    midi.send([0xe0, 0x00, 0x40])
+    midi.send([0xb0, 1, 127])
+    expect(moved).toEqual([
+      ['pitchWheel', 0],
+      ['modWheel', 10],
+    ])
   })
 
   /* Nothing may open an audio context before somebody asks for a sound. */

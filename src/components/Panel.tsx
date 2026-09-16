@@ -50,16 +50,20 @@ function spoken(label: string | readonly string[]): string {
 
 /* Drawn as its shape until it has artwork. Two are exceptions: the overload
    lamp records nothing but is not inert — it reads the panel — and the keyboard
-   is a drawing of forty-four keys rather than a slot. */
+   is a drawing of forty-four keys rather than a slot. The keyboard is also the
+   one item that writes to the panel as well as reading it, because a MIDI
+   controller's wheels are the panel's wheels. */
 function Decoration({
   item,
   values,
+  setControl,
 }: {
   item: DecorationDef
   values: Readonly<Record<string, ControlValue>>
+  setControl: (id: string, value: ControlValue) => void
 }) {
   if (item.id === 'overloadLamp') return <OverloadLamp values={values} />
-  if (item.id === 'keyboard') return <Keyboard values={values} />
+  if (item.id === 'keyboard') return <Keyboard values={values} onPanelChange={setControl} />
   return (
     <div
       className={styles.slot}
@@ -75,6 +79,7 @@ function Control({
   value,
   values,
   onChange,
+  setControl,
   hideHeader,
 }: {
   item: PanelItem
@@ -82,9 +87,13 @@ function Control({
   /* The whole panel, for the one item that is a reading of it. */
   values: Readonly<Record<string, ControlValue>>
   onChange: (value: ControlValue) => void
+  /* Any control by id, for the one item that moves another. */
+  setControl: (id: string, value: ControlValue) => void
   hideHeader?: boolean
 }) {
-  if (isDecoration(item)) return <Decoration item={item} values={values} />
+  if (isDecoration(item)) {
+    return <Decoration item={item} values={values} setControl={setControl} />
+  }
   const stored = typeof value === 'string' ? value : ''
 
   if (isWheel(item)) {
@@ -156,6 +165,7 @@ function PanelSection({ registry, section, values, onChange }: SectionProps) {
         value={values[item.id]}
         values={values}
         onChange={(next) => onChange(item.id, next)}
+        setControl={onChange}
         hideHeader={captionDrawn || override === ''}
       />
     )
