@@ -44,17 +44,23 @@ describe('typing a waveform', () => {
   test('an unambiguous prefix works', () => {
     expect(matchPosition(waveform, 'saw')).toBe('sawtooth')
     expect(matchPosition(waveform, 'sq')).toBe('square')
+    expect(matchPosition(waveform, 'rev')).toBe('reverseSawtooth')
   })
 
   test('an ambiguous prefix stays ambiguous rather than guessing', () => {
-    /* Triangle and Triangle-saw both start with "tri"; picking one would be a
-       coin toss the typist never sees. */
-    expect(matchPosition(waveform, 'tri')).toBeNull()
+    /* Sawtooth and Square both start with "s"; picking one would be a coin toss
+       the typist never sees. */
+    expect(matchPosition(waveform, 's')).toBeNull()
   })
 
   test('an exact label still wins over the ambiguity', () => {
-    expect(matchPosition(waveform, 'Triangle')).toBe('triangle')
-    expect(matchPosition(waveform, 'Triangle-saw')).toBe('triangleSaw')
+    expect(matchPosition(waveform, 'Sawtooth')).toBe('sawtooth')
+    expect(matchPosition(waveform, 'Square')).toBe('square')
+  })
+
+  test('the second detent is a reverse sawtooth, not a triangle hybrid', () => {
+    expect(matchPosition(waveform, 'Reverse sawtooth')).toBe('reverseSawtooth')
+    expect(matchPosition(waveform, 'triangleSaw')).toBeNull()
   })
 })
 

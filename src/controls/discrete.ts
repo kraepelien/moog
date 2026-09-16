@@ -58,8 +58,8 @@ function normalise(text: string): string {
 /* Resolves typed text to a position id, or null if it is not clearly one thing.
    Tried in order of confidence: an exact id, an exact label, either of those
    ignoring case and punctuation, and finally a label prefix — but only when it
-   picks out exactly one position, so "tri" against Triangle and Triangle-saw
-   stays ambiguous rather than guessing. */
+   picks out exactly one position, so "s" against Sawtooth and Square stays
+   ambiguous rather than guessing. */
 export function matchPosition(def: DiscreteDef, text: string): string | null {
   const raw = text.trim()
   if (raw === '') return null

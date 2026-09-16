@@ -37,6 +37,12 @@ Six detents, evenly spaced 30° apart:
 Range reads `LO, 32', 16', 8', 4', 2'` across those positions. Waveform reads
 triangle, triangle-saw, sawtooth, square, wide pulse, narrow pulse.
 
+> **Correction.** The second waveform is a **reverse sawtooth**, not a
+> triangle-sawtooth hybrid. It was read as a hybrid both here and in the first
+> Oscillator-1 SVG export; the later `OSC. 3.svg` draws it correctly, as the
+> mirror of the rising ramp at the next detent, and the build uses that path.
+> The angles above are unaffected.
+
 In `panel-osc2-knobs.png` the Range knob is drawn pointing at `8'` (+15°) and
 Waveform at the triangle (−75°).
 

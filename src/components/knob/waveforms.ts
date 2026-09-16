@@ -15,9 +15,13 @@ export const waveformGlyphs = {
     path: 'M0.651184 49.0276L4.65118 42.0276L8.65118 49.0276',
     box: { x: 0.15, y: 41.5, width: 9, height: 8 },
   },
-  triangleSaw: {
-    path: 'M15.6512 23.0274L19.6512 16.0274L19.6512 20.5274L23.6512 23.0274',
-    box: { x: 15.15, y: 15.5, width: 9, height: 8 },
+  /* Lifted from "OSC. 3.svg", which draws this detent correctly. The earlier
+     Oscillator-1 export had a triangle-sawtooth hybrid here and the printed
+     artwork in reference/measurements.md was read the same way; the instrument
+     has a reverse sawtooth — the mirror of the rising ramp at the next detent. */
+  reverseSawtooth: {
+    path: 'M22.6666 23.1725L16.6666 16.1725L16.6666 23.1725',
+    box: { x: 16.17, y: 15.67, width: 7, height: 8 },
   },
   sawtooth: {
     path: 'M38.6512 9.02747L44.6512 2.02747L44.6512 9.02747',
@@ -42,7 +46,7 @@ export type WaveformId = keyof typeof waveformGlyphs
 /* In the order they sit on the knob, counter-clockwise end first. */
 export const waveformOrder: readonly WaveformId[] = [
   'triangle',
-  'triangleSaw',
+  'reverseSawtooth',
   'sawtooth',
   'square',
   'widePulse',

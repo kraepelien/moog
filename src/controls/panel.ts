@@ -43,7 +43,7 @@ const RANGE_POSITIONS = [
 
 const WAVEFORM_POSITIONS = [
   { id: 'triangle', label: 'Triangle', glyph: 'triangle' },
-  { id: 'triangleSaw', label: 'Triangle-saw', glyph: 'triangleSaw' },
+  { id: 'reverseSawtooth', label: 'Reverse sawtooth', glyph: 'reverseSawtooth' },
   { id: 'sawtooth', label: 'Sawtooth', glyph: 'sawtooth' },
   { id: 'square', label: 'Square', glyph: 'square' },
   { id: 'widePulse', label: 'Wide pulse', glyph: 'widePulse' },
