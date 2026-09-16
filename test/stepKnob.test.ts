@@ -4,7 +4,11 @@ import { createRegistry } from '../src/controls/registry.ts'
 import { isStepKnob, stepBy, stepKnobType, positionIndex } from '../src/controls/stepKnob.ts'
 import type { StepKnobDef } from '../src/controls/stepKnob.ts'
 import { DETENT_ANGLES } from '../src/components/knob/artwork.ts'
-import { waveformGlyphs, waveformOrder } from '../src/components/knob/waveforms.ts'
+import {
+  osc1WaveformOrder,
+  osc23WaveformOrder,
+  waveformGlyphs,
+} from '../src/components/knob/waveforms.ts'
 
 const def: StepKnobDef = {
   id: 'testRange',
@@ -113,21 +117,44 @@ describe('the two Oscillator-1 knobs', () => {
 
   test('every waveform position names a glyph that exists', () => {
     const positions = (waveform as StepKnobDef).positions
-    expect(positions.map((p) => p.glyph)).toEqual([...waveformOrder])
+    expect(positions.map((p) => p.glyph)).toEqual([...osc1WaveformOrder])
     for (const position of positions) {
       expect(waveformGlyphs[position.glyph as keyof typeof waveformGlyphs]).toBeDefined()
     }
   })
 })
 
+describe('the oscillators do not all share one waveform knob', () => {
+  const positions = (id: string) =>
+    (panelRegistry.control(id) as StepKnobDef).positions.map((p) => p.id)
+
+  test('Oscillator-1 has a reverse sawtooth at the second detent', () => {
+    expect(positions('osc1Waveform')[1]).toBe('reverseSawtooth')
+  })
+
+  test('Oscillator-2 and 3 keep the triangle-sawtooth hybrid there', () => {
+    expect(positions('osc2Waveform')[1]).toBe('triangleSaw')
+    expect(positions('osc3Waveform')[1]).toBe('triangleSaw')
+  })
+
+  test('they are identical at every other detent', () => {
+    const one = positions('osc1Waveform')
+    const two = positions('osc2Waveform')
+    expect(one.filter((_, i) => i !== 1)).toEqual(two.filter((_, i) => i !== 1))
+    expect(positions('osc2Waveform')).toEqual(positions('osc3Waveform'))
+  })
+})
+
 describe('waveform artwork', () => {
   test('there is one glyph per detent, in dial order', () => {
-    expect(waveformOrder).toHaveLength(DETENT_ANGLES.length)
-    expect(new Set(waveformOrder).size).toBe(waveformOrder.length)
+    for (const order of [osc1WaveformOrder, osc23WaveformOrder]) {
+      expect(order).toHaveLength(DETENT_ANGLES.length)
+      expect(new Set(order).size).toBe(order.length)
+    }
   })
 
   test('every glyph carries a path and bounds so it can be drawn alone', () => {
-    for (const id of waveformOrder) {
+    for (const id of new Set([...osc1WaveformOrder, ...osc23WaveformOrder])) {
       const glyph = waveformGlyphs[id]
       expect(glyph.path.startsWith('M')).toBe(true)
       expect(glyph.box.width).toBeGreaterThan(0)

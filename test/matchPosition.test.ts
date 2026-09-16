@@ -58,9 +58,15 @@ describe('typing a waveform', () => {
     expect(matchPosition(waveform, 'Square')).toBe('square')
   })
 
-  test('the second detent is a reverse sawtooth, not a triangle hybrid', () => {
+  test('Oscillator-1 names its second detent a reverse sawtooth', () => {
     expect(matchPosition(waveform, 'Reverse sawtooth')).toBe('reverseSawtooth')
     expect(matchPosition(waveform, 'triangleSaw')).toBeNull()
+  })
+
+  test('Oscillator-2 still names its second detent a triangle-saw', () => {
+    const osc2 = panelRegistry.control('osc2Waveform') as StepKnobDef
+    expect(matchPosition(osc2, 'Triangle-saw')).toBe('triangleSaw')
+    expect(matchPosition(osc2, 'reverseSawtooth')).toBeNull()
   })
 })
 
