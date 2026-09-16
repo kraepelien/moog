@@ -24,7 +24,11 @@
   display: grid;
   gap: 8px;
   justify-items: center;
-  align-items: start;
+  /* Centred rather than top-aligned: a switch is a third the height of the knob
+     it sits beside, and starting both at the same top edge leaves it floating
+     above the dial it belongs to. Column headings override this to sit on the
+     row beneath them. */
+  align-items: center;
   flex: 1;
 }
 
