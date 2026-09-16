@@ -1,4 +1,4 @@
-/* Paths lifted verbatim from the hand-drawn export "OSC. 1 (1).svg". Only the
+/* Paths lifted verbatim from reference/artwork/OSC. 1 (1).svg. Only the
    grouping and the colour references are ours — do not redraw them.
 
    The export is drawn with the knob turned to −15°, the fourth detent. Rendering

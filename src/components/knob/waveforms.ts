@@ -1,4 +1,5 @@
-/* The six waveform marks, lifted verbatim from "OSC. 1 (1).svg" and split out so
+/* The six waveform marks, lifted verbatim from reference/artwork/OSC. 1 (1).svg
+   and split out so
    each can be drawn on its own — beside the knob, in the cap, or in a legend.
 
    Each keeps the coordinates it was exported with, which is also where it belongs

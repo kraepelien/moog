@@ -2,7 +2,7 @@ import { useCallback, useId } from 'react'
 import { positionIndex, type ToggleSwitchDef } from '../../controls/toggleSwitch.ts'
 import styles from './ToggleSwitch.module.css'
 
-/* Geometry read off the hand-drawn export "BUTTON.svg", which draws the rocker at
+/* Geometry read off reference/artwork/BUTTON.svg, which draws the rocker at
    the right-hand end. The other export is the same switch mirrored, so rather
    than carrying two copies the left-hand state is the same shapes reflected —
    there is one set of coordinates to be wrong about, not two.

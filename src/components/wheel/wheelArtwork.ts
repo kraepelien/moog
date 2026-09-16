@@ -1,4 +1,4 @@
-/* Geometry lifted verbatim from the hand-drawn export "WHEEL.svg". Only the
+/* Geometry lifted verbatim from reference/artwork/WHEEL.svg. Only the
    grouping and the colour references are ours.
 
    The ribs are the wheel's surface and do not move; the circle is the marker,

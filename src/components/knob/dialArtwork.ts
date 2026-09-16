@@ -1,5 +1,6 @@
-/* Paths lifted verbatim from the hand-drawn exports "TUNE.svg" (small) and
-   "MODULATION MIX.svg" (large). Only the grouping and the colour references are
+/* Paths lifted verbatim from reference/artwork/TUNE.svg (small) and
+   reference/artwork/MODULATION MIX.svg (large). Only the grouping and the
+   colour references are
    ours — do not redraw them.
 
    Both exports share one tick geometry: centre (53, 65), spokes to radius 39 at
