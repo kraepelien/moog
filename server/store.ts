@@ -1,118 +1,167 @@
-import { mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import type { Database } from 'bun:sqlite'
+import { DEFAULT_INSTRUMENT } from '../src/instruments/instruments.ts'
+import { PATCH_SCHEMA_VERSION, type Patch } from '../src/patch/schema.ts'
 
-/* Patches and presets as files in a folder. One record per file, named by its id
-   or slug, so the folder is readable, hand-editable and diffable in git — which
-   is a better undo history than anything the app could keep. */
+/* Patches and factory presets are rows in one table, told apart by whether they
+   came from the repo — a factory row is the one with a slug. Everything the
+   library will ask — whose is this, who may see it, what is it rated — is a
+   column or a join, which a folder of JSON files could not answer without
+   reading all of them.
 
-/* An id becomes a filename, so it is checked before it ever reaches the
-   filesystem. Without this, an id of "../../etc/passwd" would escape the folder:
-   the pattern, not the path join, is what prevents that. */
+   `owner_id` stays null until there are accounts to own anything. */
+
+/* An id still reaches the API from a URL, so it is still pattern-checked. It no
+   longer becomes a filename, but a parameter that cannot be a word is one fewer
+   thing to reason about. */
 const SAFE_NAME = /^[A-Za-z0-9_-]+$/
 
 export function isSafeName(name: string): boolean {
   return SAFE_NAME.test(name) && name.length <= 128
 }
 
-export interface FileStoreLayout {
-  readonly patches: string
-  readonly presets: string
+interface PatchRow {
+  uid: string
+  slug: string | null
+  name: string
+  notes: string
+  tags: string
+  visibility: string
+  approximate: number
+  derived_from: string | null
+  schema_version: number
+  values_json: string
+  instrument: string
+  created_at: string
+  updated_at: string
 }
 
-export function layoutFor(root: string): FileStoreLayout {
+const SELECT = `
+  select p.uid, p.slug, p.name, p.notes, p.tags, p.visibility, p.approximate,
+         p.derived_from, p.schema_version, p.values_json, i.slug as instrument,
+         p.created_at, p.updated_at
+    from patches p
+    join instruments i on i.id = p.instrument_id
+   where p.deleted_at is null`
+
+function toPatch(row: PatchRow): Patch {
   return {
-    patches: join(root, 'patches'),
-    presets: join(root, 'presets'),
+    schemaVersion: row.schema_version,
+    id: row.slug ?? row.uid,
+    name: row.name,
+    notes: row.notes,
+    values: JSON.parse(row.values_json),
+    tags: JSON.parse(row.tags),
+    instrument: row.instrument,
+    visibility: row.visibility as Patch['visibility'],
+    approximate: row.approximate === 1,
+    derivedFrom: row.derived_from === null ? null : JSON.parse(row.derived_from),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   }
 }
 
-async function readJson(path: string): Promise<unknown | null> {
-  try {
-    return JSON.parse(await readFile(path, 'utf8'))
-  } catch {
-    /* Missing or unreadable are the same to a caller: there is nothing here. A
-       corrupt file is skipped rather than failing the whole listing, so one bad
-       record cannot hide every other patch. */
-    return null
-  }
-}
+export function createStore(db: Database) {
+  const instrumentId = db.prepare<{ id: number }, [string]>(
+    `select id from instruments where slug = ?`,
+  )
 
-/* Written to a neighbouring temp file and renamed into place. writeFile truncates
-   before it writes, so a crash or a full disk partway through would leave a
-   half-written preset that parses as nothing; rename on the same filesystem is
-   atomic, so a reader sees either the old file or the new one and never a
-   fragment. The temp name carries a random suffix so two writes to the same
-   record cannot collide on it. */
-async function writeJson(path: string, value: unknown): Promise<void> {
-  const dir = join(path, '..')
-  await mkdir(dir, { recursive: true })
-  const temp = `${path}.${Math.random().toString(36).slice(2)}.tmp`
-  try {
-    await writeFile(temp, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
-    await rename(temp, path)
-  } catch (error) {
-    await rm(temp, { force: true })
-    throw error
+  /* Named after the id in the patch, not a guess: a patch for an instrument
+     this build has never heard of is refused rather than filed under the
+     default, where it would draw with the wrong registry. */
+  const requireInstrument = (slug: string): number => {
+    const row = instrumentId.get(slug)
+    if (!row) throw new Error(`Unknown instrument: ${slug}`)
+    return row.id
   }
-}
 
-async function listJson(dir: string): Promise<{ name: string; value: unknown }[]> {
-  let names: string[]
-  try {
-    names = await readdir(dir)
-  } catch {
-    return []
-  }
-  const out: { name: string; value: unknown }[] = []
-  for (const file of names.sort()) {
-    /* Dotfiles are bookkeeping, not records: .seeded.json ends in .json and
-       would otherwise be listed as a preset. */
-    if (file.startsWith('.') || !file.endsWith('.json')) continue
-    const value = await readJson(join(dir, file))
-    if (value !== null) out.push({ name: file.slice(0, -'.json'.length), value })
-  }
-  return out
-}
+  const upsert = db.prepare(`
+    insert into patches (uid, slug, owner_id, instrument_id, name, notes, tags, visibility,
+                         approximate, derived_from, schema_version, values_json,
+                         created_at, updated_at)
+    values ($uid, $slug, $owner, $instrument, $name, $notes, $tags, $visibility,
+            $approximate, $derivedFrom, $schemaVersion, $values, $createdAt, $updatedAt)
+    on conflict(uid) do update set
+      name = excluded.name, notes = excluded.notes, tags = excluded.tags,
+      visibility = excluded.visibility, approximate = excluded.approximate,
+      derived_from = excluded.derived_from, schema_version = excluded.schema_version,
+      values_json = excluded.values_json, instrument_id = excluded.instrument_id,
+      updated_at = excluded.updated_at, deleted_at = null`)
 
-export function createFileStore(root: string) {
-  const at = layoutFor(root)
+  const write = (patch: Patch, options: { slug?: string | null } = {}) => {
+    upsert.run({
+      $uid: patch.id,
+      $slug: options.slug ?? null,
+      $owner: null,
+      $instrument: requireInstrument(patch.instrument || DEFAULT_INSTRUMENT.id),
+      $name: patch.name,
+      $notes: patch.notes,
+      $tags: JSON.stringify(patch.tags),
+      $visibility: patch.visibility,
+      $approximate: patch.approximate ? 1 : 0,
+      $derivedFrom: patch.derivedFrom === null ? null : JSON.stringify(patch.derivedFrom),
+      $schemaVersion: patch.schemaVersion || PATCH_SCHEMA_VERSION,
+      $values: JSON.stringify(patch.values),
+      $createdAt: patch.createdAt,
+      $updatedAt: patch.updatedAt,
+    })
+  }
 
   return {
-    layout: at,
+    db,
 
-    async listPatches(): Promise<unknown[]> {
-      return (await listJson(at.patches)).map((entry) => entry.value)
+    listPatches(): Patch[] {
+      return db
+        .query<PatchRow, []>(`${SELECT} and p.slug is null order by p.updated_at desc`)
+        .all()
+        .map(toPatch)
     },
 
-    async getPatch(id: string): Promise<unknown | null> {
+    getPatch(id: string): Patch | null {
       if (!isSafeName(id)) return null
-      return readJson(join(at.patches, `${id}.json`))
+      const row = db.query<PatchRow, [string]>(`${SELECT} and p.uid = ?`).get(id)
+      return row ? toPatch(row) : null
     },
 
-    async putPatch(id: string, patch: unknown): Promise<void> {
+    putPatch(id: string, patch: Patch): void {
       if (!isSafeName(id)) throw new Error(`Unsafe patch id: ${id}`)
-      await writeJson(join(at.patches, `${id}.json`), patch)
+      write({ ...patch, id })
     },
 
-    async deletePatch(id: string): Promise<void> {
+    deletePatch(id: string): void {
       if (!isSafeName(id)) throw new Error(`Unsafe patch id: ${id}`)
-      await rm(join(at.patches, `${id}.json`), { force: true })
+      db.run(`update patches set deleted_at = ? where uid = ?`, [new Date().toISOString(), id])
     },
 
-    async listPresets(): Promise<unknown[]> {
-      return (await listJson(at.presets)).map((entry) => entry.value)
+    /* Addressed by the slug they are filed under in the repo rather than by a
+       uid, which would differ between installs of the same bank. */
+    listPresets(): Patch[] {
+      return db
+        .query<PatchRow, []>(`${SELECT} and p.slug is not null order by p.name`)
+        .all()
+        .map(toPatch)
     },
 
-    async putPreset(slug: string, preset: unknown): Promise<void> {
+    putPreset(slug: string, patch: Patch): void {
       if (!isSafeName(slug)) throw new Error(`Unsafe preset slug: ${slug}`)
-      await writeJson(join(at.presets, `${slug}.json`), preset)
+      const existing = db
+        .query<{ uid: string }, [string]>(`select uid from patches where slug = ?`)
+        .get(slug)
+      write({ ...patch, id: existing?.uid ?? patch.id }, { slug })
     },
 
-    async deletePreset(slug: string): Promise<void> {
+    deletePreset(slug: string): void {
       if (!isSafeName(slug)) throw new Error(`Unsafe preset slug: ${slug}`)
-      await rm(join(at.presets, `${slug}.json`), { force: true })
+      db.run(`update patches set deleted_at = ? where slug = ?`, [
+        new Date().toISOString(),
+        slug,
+      ])
+    },
+
+    /* The healthcheck asks a real question, so an unmounted volume fails it. */
+    countPatches(): number {
+      return db.query<{ n: number }, []>(`select count(*) as n from patches`).get()?.n ?? 0
     },
   }
 }
 
-export type FileStore = ReturnType<typeof createFileStore>
+export type Store = ReturnType<typeof createStore>

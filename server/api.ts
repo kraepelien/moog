@@ -1,7 +1,12 @@
-import { createFileStore, isSafeName, type FileStore } from './store.ts'
+import type { Database } from 'bun:sqlite'
+import { migrateToCurrent } from '../src/patch/migrate.ts'
+import { createStore, isSafeName, type Store } from './store.ts'
 
 /* One request handler, shared by the Vite dev plugin and the standalone server,
-   so development and production cannot drift into answering differently. */
+   so development and production cannot drift into answering differently.
+
+   A write is validated here rather than at the store: the columns are typed
+   now, so anything that is not a patch has to be refused before it is one. */
 
 const JSON_HEADERS = { 'content-type': 'application/json' }
 
@@ -22,12 +27,11 @@ async function body(request: Request): Promise<unknown> {
 }
 
 export interface ApiOptions {
-  /* Everything the app writes lives under here. */
-  readonly root: string
+  readonly db: Database
 }
 
-export function createApi({ root }: ApiOptions): (request: Request) => Promise<Response | null> {
-  const store: FileStore = createFileStore(root)
+export function createApi({ db }: ApiOptions): (request: Request) => Promise<Response | null> {
+  const store: Store = createStore(db)
 
   /* Returns null for anything that is not ours, so the caller can fall through
      to serving the app rather than 404ing every page load. */
@@ -40,24 +44,30 @@ export function createApi({ root }: ApiOptions): (request: Request) => Promise<R
     const method = request.method.toUpperCase()
 
     try {
+      /* Unauthenticated on purpose: the container's healthcheck calls it, and
+         it asks the database a real question so an unmounted volume fails. */
+      if (resource === 'health') {
+        return json({ ok: true, patches: store.countPatches() })
+      }
+
       if (resource === 'patches') {
         if (!name) {
-          if (method === 'GET') return json(await store.listPatches())
+          if (method === 'GET') return json(store.listPatches())
           return json({ error: 'method not allowed' }, 405)
         }
         if (!isSafeName(name)) return json({ error: 'invalid id' }, 400)
         if (method === 'GET') {
-          const patch = await store.getPatch(name)
+          const patch = store.getPatch(name)
           return patch === null ? notFound() : json(patch)
         }
         if (method === 'PUT') {
-          const payload = await body(request)
-          if (payload === null) return json({ error: 'invalid body' }, 400)
-          await store.putPatch(name, payload)
-          return json(payload)
+          const parsed = migrateToCurrent(await body(request))
+          if (!parsed.ok) return json({ error: parsed.error }, 400)
+          store.putPatch(name, parsed.value)
+          return json(parsed.value)
         }
         if (method === 'DELETE') {
-          await store.deletePatch(name)
+          store.deletePatch(name)
           return json({ deleted: name })
         }
         return json({ error: 'method not allowed' }, 405)
@@ -65,18 +75,18 @@ export function createApi({ root }: ApiOptions): (request: Request) => Promise<R
 
       if (resource === 'presets') {
         if (!name) {
-          if (method === 'GET') return json(await store.listPresets())
+          if (method === 'GET') return json(store.listPresets())
           return json({ error: 'method not allowed' }, 405)
         }
         if (!isSafeName(name)) return json({ error: 'invalid slug' }, 400)
         if (method === 'PUT') {
-          const payload = await body(request)
-          if (payload === null) return json({ error: 'invalid body' }, 400)
-          await store.putPreset(name, payload)
-          return json(payload)
+          const parsed = migrateToCurrent(await body(request))
+          if (!parsed.ok) return json({ error: parsed.error }, 400)
+          store.putPreset(name, parsed.value)
+          return json(parsed.value)
         }
         if (method === 'DELETE') {
-          await store.deletePreset(name)
+          store.deletePreset(name)
           return json({ deleted: name })
         }
         return json({ error: 'method not allowed' }, 405)
