@@ -49,39 +49,6 @@ export function makeDiscreteType<D extends DiscreteDef>(typeName: string): Contr
   }
 }
 
-/* Ids and labels compared with punctuation and case thrown away, so "8" finds
-   the position printed 8' and stored ft8. */
-function normalise(text: string): string {
-  return text.toLowerCase().replace(/[^a-z0-9]/g, '')
-}
-
-/* Resolves typed text to a position id, or null if it is not clearly one thing.
-   Tried in order of confidence: an exact id, an exact label, either of those
-   ignoring case and punctuation, and finally a label prefix — but only when it
-   picks out exactly one position, so "s" against Sawtooth and Square stays
-   ambiguous rather than guessing. */
-export function matchPosition(def: DiscreteDef, text: string): string | null {
-  const raw = text.trim()
-  if (raw === '') return null
-  const lower = raw.toLowerCase()
-  const key = normalise(raw)
-  if (key === '') return null
-
-  const byId = def.positions.find((p) => p.id.toLowerCase() === lower)
-  if (byId) return byId.id
-
-  const byLabel = def.positions.find((p) => p.label.toLowerCase() === lower)
-  if (byLabel) return byLabel.id
-
-  const loose = def.positions.filter(
-    (p) => normalise(p.id) === key || normalise(p.label) === key,
-  )
-  if (loose.length === 1) return loose[0]!.id
-
-  const prefixed = def.positions.filter((p) => normalise(p.label).startsWith(key))
-  return prefixed.length === 1 ? prefixed[0]!.id : null
-}
-
 export function positionIndex(def: DiscreteDef, value: string): number {
   const index = def.positions.findIndex((position) => position.id === value)
   return index === -1 ? def.positions.findIndex((p) => p.id === def.default) : index

@@ -1,7 +1,7 @@
 import { makeDiscreteType, type DiscreteDef, type DiscretePosition } from './discrete.ts'
 import type { ControlDef } from './types.ts'
 
-export { matchPosition, positionIndex, stepBy } from './discrete.ts'
+export { positionIndex, stepBy } from './discrete.ts'
 
 /* A knob that rests only on named positions. Six of them, one per detent on the
    artwork. */

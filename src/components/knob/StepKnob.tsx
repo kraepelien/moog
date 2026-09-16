@@ -1,10 +1,5 @@
 import { memo, useCallback, useId, useRef, useState } from 'react'
-import {
-  matchPosition,
-  positionIndex,
-  stepBy,
-  type StepKnobDef,
-} from '../../controls/stepKnob.ts'
+import { positionIndex, stepBy, type StepKnobDef } from '../../controls/stepKnob.ts'
 import {
   BAKED_ANGLE,
   CAP,
@@ -18,7 +13,7 @@ import {
   VIEWBOX,
 } from './artwork.ts'
 import { waveformGlyphs, type WaveformId } from './waveforms.ts'
-import { ValueEntry } from './ValueEntry.tsx'
+import { PositionPicker } from './PositionPicker.tsx'
 import styles from './StepKnob.module.css'
 
 function pointAt(angleDeg: number, radius: number) {
@@ -211,9 +206,9 @@ export function StepKnob({ def, value, onChange }: StepKnobProps) {
         )}
       </svg>
       {editing && (
-        <ValueEntry
-          initial={current?.label ?? ''}
-          parse={(text) => matchPosition(def, text)}
+        <PositionPicker
+          positions={def.positions}
+          value={current?.id ?? def.default}
           onCommit={onChange}
           onClose={() => setEditing(false)}
         />

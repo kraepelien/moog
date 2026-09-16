@@ -124,11 +124,26 @@ whole units — the controls with set values are the rotary selectors and the sw
 discrete types rather than knobs with a step of 1. Values are re-rounded on every change, because
 adding 0.01 a hundred times does not give 1 in binary floating point.
 
-**Double click any knob or wheel to type a value.** That leaves single click and drag free to turn
-it. Enter and blur commit, Escape abandons, and text that does not parse abandons too — quietly
-substituting a default would look like the control ignored you. On a time knob a bare number is
-milliseconds, the unit it stores; seconds have to be said (`1.5s`), so `1.5` cannot silently mean a
-second and a half when the rest of the scale is in milliseconds.
+**Double click a control to set it directly**, which leaves single click and drag free to turn it.
+What appears depends on the kind of control:
+
+- A control with a **range** gets a box to type in. Enter and blur commit, Escape abandons, and text
+  that does not parse abandons too — quietly substituting a default would look like the control
+  ignored you. On a time knob a bare number is milliseconds, the unit it stores; seconds have to be
+  said (`1.5s`), so `1.5` cannot silently mean a second and a half.
+- A control with **named positions** gets a list to pick from. There is nothing to type that
+  choosing does not say better, and typing made the parser guess what `tri` meant. A native
+  `<select>`, so a phone gives its own picker and keyboard and screen-reader behaviour come free.
+
+## Typeface
+
+Roboto Condensed, self-hosted through `@fontsource-variable/roboto-condensed` rather than fetched
+from a CDN: nothing external at runtime, so it works offline and never renders in a fallback face
+while a third party responds. One file carries the whole 100–900 weight axis. Only the upright
+faces are imported; the package's `index.css` also pulls italic, which nothing here uses.
+
+SVG text does not inherit `font-family` from `:root` the way HTML does, so `svg { font-family:
+inherit }` carries it into the dials and switch legends.
 
 ### Wheels
 

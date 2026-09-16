@@ -1,12 +1,14 @@
 /* Sits over the middle of the control it belongs to. The wrapper supplies the
    positioning context. */
 
+/* Shared by the typed box and the position list, so the two read as the same
+   thing appearing in the same place. */
 .entry {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 62px;
+  width: 76px;
   padding: 2px 4px;
   text-align: center;
   font: inherit;
