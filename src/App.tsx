@@ -259,10 +259,10 @@ export function App() {
                 /* Only a draft that has been saved is in the store to delete. */
                 disabled: !saved.some((summary) => summary.id === draft.id),
                 onSelect: () =>
-                  void run(`Deleted \u201c${draft.name}\u201d`, async () => {
+                  void run(`Deleted “${draft.name}”`, async () => {
                     if (
                       !(await ask({
-                        title: `Delete \u201c${draft.name || '(unnamed)'}\u201d?`,
+                        title: `Delete “${draft.name || '(unnamed)'}”?`,
                         confirm: 'Delete',
                         destructive: true,
                       }))
@@ -277,10 +277,14 @@ export function App() {
                 label: 'Export',
                 tone: 'blue',
                 onSelect: () =>
-                  void run(`Exported \u201c${draft.name}\u201d`, async () => {
+                  void run(`Exported “${draft.name}”`, async () => {
+                    /* The draft as it stands, not the panel's resolved values: a
+                       control the patch does not carry falls through to the
+                       registry default, and writing that default into the file
+                       turns an honest omission into a stored setting. */
                     downloadJson(
                       `${slugify(draft.name) || 'patch'}.moogpatch.json`,
-                      serializeBundle(createBundle([{ ...draft, values: currentValues }])),
+                      serializeBundle(createBundle([draft])),
                     )
                   }),
               },
@@ -325,21 +329,6 @@ export function App() {
             />
             <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
               <Button
-                variant="contained"
-                disabled={!dirty}
-                onClick={() =>
-                  void run('Saved', async () => {
-                    const stamped = { ...draft, updatedAt: new Date().toISOString() }
-                    await store.save(stamped)
-                    setDraft(stamped)
-                    setClean(signature(stamped))
-                    await refresh()
-                  })
-                }
-              >
-                Save
-              </Button>
-              <Button
                 variant="outlined"
                 onClick={() =>
                   void run('', async () => {
@@ -359,17 +348,6 @@ export function App() {
                 }
               >
                 New
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={() =>
-                  downloadJson(
-                    `${slugify(draft.name) || 'patch'}.moogpatch.json`,
-                    serializeBundle(createBundle([draft])),
-                  )
-                }
-              >
-                Export this patch
               </Button>
               <Button
                 variant="outlined"
