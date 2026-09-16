@@ -250,6 +250,24 @@ Opening a row loads the patch and switches to the editor in one go. A factory
 preset opens as a **copy**, so saving afterwards cannot write back over it; a
 patch of your own opens as itself, so saving updates the one you picked.
 
+Saving is a form, not a button. **Save** opens `SavePatchDialog`, which collects
+the name, the categories, the synth, whether it is public, and the notes, then
+hands them back as `PatchFields` — deliberately not a `Patch`, because what
+saving *means* (created, or written over) belongs to whoever owns the store, not
+to a form.
+
+The form refills itself as it renders rather than in an effect, comparing the
+patch it was last filled from against the one it is open on. An effect would
+paint the previous edit for a frame first, and the comparison is also what makes
+a second opening of the *same* patch forget what an abandoned first one typed.
+
+Two rows in it are narrower than the sheet draws them. **There is no factory
+chip**: which bank a patch belongs to is the server's to decide and the write
+routes for it do not exist, so the row shows the one that applies and offers only
+Public. **There is nowhere to invent a tag**: the categories offered are the ones
+something in the library already wears, so a bank with no tags cannot be given
+its first one from here.
+
 MUI is wrapped in `StyledEngineProvider injectFirst` in `main.tsx`. Without it
 MUI's own single-class rules for things like `display` and `border-radius` are
 injected after ours and win on order alone, which makes a component's
