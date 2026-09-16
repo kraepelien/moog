@@ -1,11 +1,15 @@
 # Deployed the way the other containers on the NAS are: an image pulled from
-# GHCR by tag, routed by Traefik, with the data on a share.
+# GHCR by tag, with the data on a share.
 #
 #   docker compose pull && docker compose up -d
 #
-# No red/green. The editor is a single-user tool holding no session, so a few
-# seconds between containers costs nothing and a second copy writing to the same
-# folder is the one thing worth avoiding.
+# Traefik is not configured from here. It reads the file provider, so the route
+# lives in traefik/dynamic/moog.yml and points at this published port — there are
+# no labels, and no shared network to join.
+#
+# No red/green. The editor holds no session, so a few seconds between containers
+# costs nothing, and a second copy writing the same data folder is the one thing
+# worth avoiding.
 
 services:
   moog:
@@ -21,25 +25,14 @@ services:
     environment:
       PORT: 8080
 
+    # Published so Traefik can reach it by host and port, the way its dynamic
+    # configuration expects. Change it here and in traefik/dynamic/moog.yml
+    # together, or the route points at nothing.
+    ports:
+      - "${MOOG_PORT:-10072}:8080"
+
     volumes:
       # Everything the editor writes: the active presets and the saved patches.
       # The bank shipped in the image is copied in here the first time, and from
       # then on this folder is the truth.
       - ${MOOG_DATA_DIR:-/volume1/docker/moog/data}:/data
-
-    # No ports published: Traefik reaches it on the shared network, so the only
-    # way in is through the proxy.
-    networks:
-      - traefik
-
-    labels:
-      traefik.enable: "true"
-      traefik.docker.network: "traefik"
-      traefik.http.routers.moog.rule: "Host(`${MOOG_HOST:-moog.pomello.se}`)"
-      traefik.http.routers.moog.entrypoints: "websecure"
-      traefik.http.routers.moog.tls.certresolver: "letsencrypt"
-      traefik.http.services.moog.loadbalancer.server.port: "8080"
-
-networks:
-  traefik:
-    external: true

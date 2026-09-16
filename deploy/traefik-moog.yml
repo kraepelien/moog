@@ -1,0 +1,19 @@
+# Copied to the NAS as traefik/dynamic/moog.yml — Traefik's file provider picks
+# it up without a restart.
+#
+# The port here and MOOG_PORT in the deploy folder's .env are the same number in
+# two places. Change one without the other and the route points at nothing.
+
+http:
+  routers:
+    moog:
+      rule: "Host(`moog.pomello.se`)"
+      entryPoints:
+        - websecure
+      service: moog
+
+  services:
+    moog:
+      loadBalancer:
+        servers:
+          - url: "http://nas-local:10072"

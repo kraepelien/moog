@@ -12,17 +12,28 @@ Create `/volume1/docker/moog/` and put three things in it:
 - `deploy.sh` — copied from `deploy/`
 - `.env` — the settings for this machine, see below
 
-Then create the data folder and give it to whoever will own it:
+Then the data folder, owned by the account the container runs as:
 
 ```sh
 mkdir -p /volume1/docker/moog/data
+chown -R 1027:65536 /volume1/docker/moog/data
 ```
+
+And the route, copied from `deploy/traefik-moog.yml`:
+
+- `traefik/dynamic/moog.yml`
+
+Traefik reads its file provider here rather than from container labels, so the
+route is a file next to `pomello.yml` and this container joins no shared network.
+It reaches the editor at `nas-local:10072`, which is the port compose publishes.
+Those two numbers are the same value written twice; change one without the other
+and the route points at nothing.
 
 ## `.env`
 
 ```sh
 MOOG_IMAGE=ghcr.io/kraepelien/moog:latest   # rewritten by deploy.sh each deploy
-MOOG_HOST=moog.pomello.se                   # what Traefik routes
+MOOG_PORT=10072                             # must match traefik/dynamic/moog.yml
 MOOG_DATA_DIR=/volume1/docker/moog/data
 MOOG_UID=1027                               # the `docker` account
 MOOG_GID=65536                              # the `docker` group
@@ -51,6 +62,17 @@ Secrets, which the `oc-pomello` workflow already uses:
 No variables are needed: the id defaults to 1027:65536 everywhere. Set
 `MOOG_UID` and `MOOG_GID` as repository variables only when deploying somewhere
 else.
+
+## Ports
+
+`10072` is a guess at a free port; pomello holds `10071`. Check with:
+
+```sh
+netstat -tlnp 2>/dev/null | grep 1007
+```
+
+If it is taken, change `MOOG_PORT` in `.env` and the url in
+`traefik/dynamic/moog.yml` together.
 
 ## First deploy
 
