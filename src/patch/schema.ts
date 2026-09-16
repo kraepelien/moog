@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { ControlValue } from '../controls/types.ts'
+import { DEFAULT_INSTRUMENT } from '../instruments/instruments.ts'
 import { err, ok, type Result } from '../result.ts'
 
 /* 2 added the three fields the library sorts and filters on. Bump this with a
@@ -17,22 +18,44 @@ export interface Patch {
      not know are kept here verbatim so a round-trip through an older build does
      not destroy a newer build's data. */
   readonly values: Readonly<Record<string, ControlValue>>
-  /* What the library groups by. Several per patch and free-form: a sound is a
-     synth bass and a disco bass at once, and no fixed list survives contact
-     with what people actually call things. */
-  readonly categories: readonly string[]
-  /* Which instrument the patch is for. One today, and it is written down
-     rather than assumed so the library can filter on it the day there are
-     two. */
-  readonly synth: string
-  /* Stars, 0 to 5, where 0 means nobody has said. */
-  readonly rating: number
+  /* What the library groups by. Several per patch: a sound is a synth bass and
+     a disco bass at once. Stored as plain strings and pointing at nothing, so
+     retiring a tag from the list an admin keeps leaves every patch already
+     wearing it exactly as it was — and an exported patch still means something
+     somewhere that has never heard of it. */
+  readonly tags: readonly string[]
+  /* Which instrument this is for, by id. It decides which registry reads
+     `values`, so it is part of the patch rather than of where it is kept. */
+  readonly instrument: string
+  /* Whether anyone but the owner can see it. Factory content is public by
+     definition; a patch you make is yours until you say otherwise. */
+  readonly visibility: Visibility
+  /* Set when the values are a reconstruction rather than settings read off an
+     instrument, so the UI can say so rather than letting a guess pass for a
+     measurement. Was a preset-only field; a preset is a patch now. */
+  readonly approximate: boolean
+  /* What this was copied from, if anything. */
+  readonly derivedFrom: Provenance | null
   readonly createdAt: string
   readonly updatedAt: string
 }
 
-export const MINIMOOG = 'Minimoog Model D'
-export const MAX_RATING = 5
+export const VISIBILITIES = ['private', 'public'] as const
+export type Visibility = (typeof VISIBILITIES)[number]
+
+/* Where a copy came from, recorded as a snapshot rather than a reference. The
+   source can be renamed, hidden or deleted, and a pointer the UI has to resolve
+   is worse than a fact: keeping the name means the credit survives the original
+   going away. One link, to the immediate parent — walk it while the ancestors
+   exist and you have the chain; store the chain in every copy and it rots. */
+export interface Provenance {
+  readonly id: string
+  readonly name: string
+  readonly kind: 'factory' | 'user'
+  readonly ownerId: string | null
+  readonly ownerName: string | null
+  readonly at: string
+}
 
 export interface PatchIdentity {
   readonly newId: () => string
@@ -79,9 +102,11 @@ export function createPatch(
     name?: string
     notes?: string
     values?: Readonly<Record<string, ControlValue>>
-    categories?: readonly string[]
-    synth?: string
-    rating?: number
+    tags?: readonly string[]
+    instrument?: string
+    visibility?: Visibility
+    approximate?: boolean
+    derivedFrom?: Provenance | null
   },
   identity: PatchIdentity = systemIdentity,
 ): Patch {
@@ -92,9 +117,13 @@ export function createPatch(
     name: fields.name ?? '',
     notes: fields.notes ?? '',
     values: { ...(fields.values ?? {}) },
-    categories: [...(fields.categories ?? [])],
-    synth: fields.synth ?? MINIMOOG,
-    rating: fields.rating ?? 0,
+    tags: [...(fields.tags ?? [])],
+    instrument: fields.instrument ?? DEFAULT_INSTRUMENT.id,
+    /* Private unless said otherwise: publishing is an act, and a default that
+       publishes would be one nobody chose. */
+    visibility: fields.visibility ?? 'private',
+    approximate: fields.approximate ?? false,
+    derivedFrom: fields.derivedFrom ?? null,
     createdAt: timestamp,
     updatedAt: timestamp,
   }
@@ -112,15 +141,26 @@ export function touchPatch(patch: Patch, identity: PatchIdentity = systemIdentit
    `values` is deliberately a passthrough of unknown: a value belongs to its
    control's codec, and a schema that judged them here would reject the ids this
    build does not know yet — the very ones the format promises to preserve. */
+const provenanceSchema = z.object({
+  id: z.string().min(1),
+  name: z.string(),
+  kind: z.enum(['factory', 'user']),
+  ownerId: z.string().nullable(),
+  ownerName: z.string().nullable(),
+  at: z.string(),
+})
+
 export const patchSchema = z.object({
   schemaVersion: z.int(),
   id: z.string().min(1),
   name: z.string(),
   notes: z.string(),
   values: z.record(z.string(), z.unknown()),
-  categories: z.array(z.string()),
-  synth: z.string(),
-  rating: z.int().min(0).max(MAX_RATING),
+  tags: z.array(z.string()),
+  instrument: z.string().min(1),
+  visibility: z.enum(VISIBILITIES),
+  approximate: z.boolean(),
+  derivedFrom: provenanceSchema.nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })

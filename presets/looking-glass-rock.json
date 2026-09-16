@@ -1,11 +1,8 @@
 {
-  "slug": "looking-glass-rock",
+  "schemaVersion": 2,
+  "id": "looking-glass-rock",
   "name": "Looking Glass Rock",
   "notes": "",
-  "approximate": true,
-  "categories": [],
-  "synth": "Minimoog Model D",
-  "rating": 0,
   "values": {
     "osc1Range": "ft16",
     "osc2Range": "ft16",
@@ -23,5 +20,12 @@
     "filterSustainLevel": 8,
     "loudnessSustainLevel": 9,
     "modulationMix": 5
-  }
+  },
+  "tags": [],
+  "instrument": "minimoog-model-d",
+  "visibility": "public",
+  "approximate": true,
+  "derivedFrom": null,
+  "createdAt": "2026-09-16T00:00:00.000Z",
+  "updatedAt": "2026-09-16T00:00:00.000Z"
 }

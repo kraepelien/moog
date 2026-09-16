@@ -21,8 +21,20 @@ export interface SectionLayout {
   /* What a control prints above itself, when the panel does not use the name the
      registry gives it. An empty string prints nothing, which is what a column
      already headed needs — the instrument labels the column, not each knob in
-     it. The registry's label is still what a screen reader hears. */
-  readonly labels?: Readonly<Record<string, string>>
+     it. The registry's label is still what a screen reader hears.
+
+     An array is set on that many lines. A name is as wide as its longest line
+     and a name sets the width of its column, so where a name breaks is where a
+     section's width is decided — which is why the ones longer than the knob
+     they name are broken here rather than left to the browser. The panel does
+     the same, and these follow it. */
+  readonly labels?: Readonly<Record<string, string | readonly string[]>>
+  /* Set where the section's rows alternate between columns, so that the cell
+     beside a knob's neighbour is empty and the knob can stand taller than the
+     row it is in. The switches then set the pitch, which is how the panel
+     stacks the mixer: sized by the knobs instead, the column runs a knob and a
+     caption taller per row than the instrument does. */
+  readonly knobsOverlapRows?: boolean
   /* Draws the section to whatever width the rest of the row leaves it, instead
      of to its contents. The keyboard runs to the edge of the case, so its width
      is the row's to give rather than the artwork's to claim. */
@@ -78,6 +90,8 @@ const SECTIONS: Readonly<Record<string, SectionLayout>> = {
       osc3Waveform: '',
       osc2Frequency: 'Oscillator-2',
       osc3Frequency: 'Oscillator-3',
+      oscillatorModulation: ['Oscillator', 'Modulation'],
+      osc3Control: ['Osc. 3', 'Control'],
     },
   },
 
@@ -87,6 +101,7 @@ const SECTIONS: Readonly<Record<string, SectionLayout>> = {
      and then the other. Every knob has its switch beside it; the column is
      shared, not the pairing. */
   mixer: {
+    knobsOverlapRows: true,
     rows: [
       'osc1Volume osc1Enable          .                   .',
       '.          externalInputEnable externalInputVolume overloadLamp',
@@ -100,6 +115,7 @@ const SECTIONS: Readonly<Record<string, SectionLayout>> = {
       osc1Volume: 'Volume',
       osc2Volume: '',
       osc3Volume: '',
+      externalInputVolume: ['External', 'Input Volume'],
     },
   },
 
@@ -117,6 +133,12 @@ const SECTIONS: Readonly<Record<string, SectionLayout>> = {
     headings: {
       hdrFilter: ['Filter'],
       hdrLoudness: ['Loudness Contour'],
+    },
+    labels: {
+      filterModulation: ['Filter', 'Modulation'],
+      keyboardControl1: ['Keyboard', 'Control 1'],
+      keyboardControl2: ['Keyboard', 'Control 2'],
+      amountOfContour: ['Amount of', 'Contour'],
     },
   },
 
@@ -182,9 +204,12 @@ export function withCaptionRows(rows: readonly string[]): string[] {
   return out
 }
 
-/* Columns are even rather than sized to their contents, so a switch centres
-   under the knob it belongs to instead of drifting with the width of the
-   longest legend in its column. */
+/* Each column takes the width of its own widest control. Even columns would put
+   a switch's column — five knobs wide on the sheet, a third of one here — on the
+   same footing as the frequency knobs beside it, and the panel is scaled to the
+   window, so every idle column is taken off the size of every knob on it. What
+   an even column was for is captions, and those no longer set a column's width;
+   see .caption. */
 export function columnCount(rows: readonly string[]): number {
   return Math.max(...rows.map((row) => row.trim().split(/\s+/).length))
 }

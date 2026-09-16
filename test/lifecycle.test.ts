@@ -3,7 +3,7 @@ import { panelRegistry } from '../src/controls/panel.ts'
 import { defaultValues } from '../src/controls/registry.ts'
 import { mergeValues, resolvePatch } from '../src/patch/resolve.ts'
 import { createPatch, type Patch } from '../src/patch/schema.ts'
-import { draftFromPreset } from '../src/presets/preset.ts'
+import { copyOf } from '../src/presets/preset.ts'
 import { testApi } from './apiFixture.ts'
 import { createBundle, parseBundle, serializeBundle } from '../src/transfer/bundle.ts'
 import { fixedIdentity, testRegistry } from './fixtures.ts'
@@ -23,8 +23,11 @@ describe('patch lifecycle', () => {
        the storage lifecycle against a two-control test registry, and pulling a
        real preset would make it depend on which sound happens to be first and
        on every value that sound carries. */
-    const preset = { slug: 'test-preset', name: 'Test Preset', notes: '', values: {} }
-    let draft = draftFromPreset(preset, fixedIdentity('draft'))
+    const preset = createPatch(
+      { name: 'Test Preset', visibility: 'public' },
+      fixedIdentity('preset'),
+    )
+    let draft = copyOf(preset, { owner: null }, fixedIdentity('draft'))
     expect(await store.list()).toEqual([])
 
     // Edit the panel. Values start from registry defaults.

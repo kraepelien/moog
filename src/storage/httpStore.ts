@@ -1,6 +1,5 @@
 import { migrateToCurrent } from '../patch/migrate.ts'
 import type { Patch } from '../patch/schema.ts'
-import { presetSchema, type StoredPreset } from '../presets/preset.ts'
 import { StoreError, type PatchStore, type PatchSummary, type PresetStore } from './types.ts'
 
 /* Talks to the folder on disk through the server that owns it. The same
@@ -15,12 +14,28 @@ const BASE = '/api'
    rather than a stand-in for it. */
 export type Fetch = (path: string, init?: RequestInit) => Promise<Response>
 
-async function requestWith(doFetch: Fetch, path: string, init?: RequestInit): Promise<unknown> {
+/* Exported for its own test rather than only through the store's methods: none
+   of them passes a header today, so the merge below would otherwise be checked
+   by nothing until something depends on it. */
+export async function requestWith(
+  doFetch: Fetch,
+  path: string,
+  init?: RequestInit,
+): Promise<unknown> {
   let response: Response
   try {
     response = await doFetch(BASE + path, {
       ...init,
-      headers: init?.body ? { 'content-type': 'application/json' } : undefined,
+      /* Merged rather than replaced, and after the default rather than before:
+         written the other way round, a header a caller passed was dropped on
+         the floor without saying so. */
+      headers: {
+        ...(init?.body ? { 'content-type': 'application/json' } : {}),
+        ...init?.headers,
+      },
+      /* The default for a same-origin request already, but the session depends
+         on it, and a default is a poor thing to depend on silently. */
+      credentials: 'same-origin',
     })
   } catch (cause) {
     /* The server owning the files is not answering. Distinct from a rejected
@@ -29,11 +44,27 @@ async function requestWith(doFetch: Fetch, path: string, init?: RequestInit): Pr
   }
 
   if (response.status === 404) return null
+  if (response.status === 401) {
+    throw new StoreError('unauthenticated', 'Sign in to do that.')
+  }
+  if (response.status === 403) {
+    throw new StoreError('forbidden', 'That belongs to somebody else.')
+  }
   if (!response.ok) {
     const detail = await response.text().catch(() => '')
     throw new StoreError('io', `Storage request failed (${response.status}). ${detail}`.trim())
   }
-  return response.json()
+
+  /* A 200 that is not JSON means something answered that was not the API — the
+     dev server's page fallback, a proxy's error page — and letting JSON.parse
+     throw would surface that as a SyntaxError from somewhere unrelated. */
+  try {
+    return await response.json()
+  } catch (cause) {
+    throw new StoreError('io', 'The patch server answered with something that is not JSON.', {
+      cause,
+    })
+  }
 }
 
 /* A file somebody edited by hand may not parse, and one written by a newer build
@@ -76,16 +107,13 @@ export function createHttpStore(
       await request(`/patches/${encodeURIComponent(id)}`, { method: 'DELETE' })
     },
 
-    async listPresets(): Promise<readonly StoredPreset[]> {
+    async listPresets(): Promise<readonly Patch[]> {
       const raw = (await request('/presets')) as unknown[]
-      return raw
-        .map((entry) => presetSchema.safeParse(entry))
-        .filter((parsed) => parsed.success)
-        .map((parsed) => parsed.data as StoredPreset)
+      return raw.map(toPatch).filter((patch): patch is Patch => patch !== null)
     },
 
-    async savePreset(preset: StoredPreset): Promise<void> {
-      await request(`/presets/${encodeURIComponent(preset.slug)}`, {
+    async savePreset(preset: Patch): Promise<void> {
+      await request(`/presets/${encodeURIComponent(preset.id)}`, {
         method: 'PUT',
         body: JSON.stringify(preset),
       })

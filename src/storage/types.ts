@@ -1,5 +1,4 @@
 import type { Patch } from '../patch/schema.ts'
-import type { StoredPreset } from '../presets/preset.ts'
 
 export interface PatchSummary {
   readonly id: string
@@ -8,7 +7,17 @@ export interface PatchSummary {
   readonly updatedAt: string
 }
 
-export type StoreErrorKind = 'unavailable' | 'quota' | 'corrupt' | 'io'
+/* `unauthenticated` and `forbidden` are separate from `io` because they are the
+   only failures a person can do something about: sign in, or ask whoever owns
+   the thing. Collapsed into `io`, both would reach the screen as "storage
+   failed", which is both wrong and unhelpful. */
+export type StoreErrorKind =
+  | 'unavailable'
+  | 'unauthenticated'
+  | 'forbidden'
+  | 'quota'
+  | 'corrupt'
+  | 'io'
 
 /* Backend failures are translated into this before they leave an adapter, so no
    call site ever sees a DOMException or has to know what threw. */
@@ -35,11 +44,14 @@ export interface PatchStore {
   delete(id: string): Promise<void>
 }
 
-/* Separate again, because a preset is not a patch: it is keyed by a slug rather
-   than a generated id, it carries no timestamps, and the bank is small enough
-   that listing it whole is the only access anyone needs. */
+/* Still its own interface, but no longer its own type: a factory preset is a
+   patch kept in the repo rather than saved by anyone. What is different is
+   where it lives and that nobody may write over it, and both of those are the
+   store's business rather than the record's.
+
+   Listed whole because the bank is small and the library shows all of it. */
 export interface PresetStore {
-  listPresets(): Promise<readonly StoredPreset[]>
-  savePreset(preset: StoredPreset): Promise<void>
+  listPresets(): Promise<readonly Patch[]>
+  savePreset(preset: Patch): Promise<void>
   deletePreset(slug: string): Promise<void>
 }

@@ -11,7 +11,7 @@
 }
 
 .header {
-  font-size: 0.7rem;
+  font-size: 0.86rem;
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -54,14 +54,14 @@
 
 .scaleText {
   fill: #fff;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 /* A mark that names a source rather than numbering a level. Smaller than a
    numeral because it is words, and set on more than one line. */
 .namedText {
   fill: #fff;
-  font-size: 7px;
+  font-size: 8px;
   letter-spacing: 0.02em;
 }
 
@@ -94,6 +94,6 @@
 
 .unitText {
   fill: #fff;
-  font-size: 7px;
+  font-size: 8px;
   letter-spacing: 0.04em;
 }

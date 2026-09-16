@@ -1,11 +1,8 @@
 {
-  "slug": "bubble-bass",
+  "schemaVersion": 2,
+  "id": "bubble-bass",
   "name": "Bubble Bass",
   "notes": "",
-  "approximate": true,
-  "categories": [],
-  "synth": "Minimoog Model D",
-  "rating": 0,
   "values": {
     "osc1Range": "ft16",
     "osc1Waveform": "sawtooth",
@@ -20,5 +17,12 @@
     "filterSustainLevel": 3,
     "loudnessSustainLevel": 7,
     "modulationMix": 5
-  }
+  },
+  "tags": [],
+  "instrument": "minimoog-model-d",
+  "visibility": "public",
+  "approximate": true,
+  "derivedFrom": null,
+  "createdAt": "2026-09-16T00:00:00.000Z",
+  "updatedAt": "2026-09-16T00:00:00.000Z"
 }
