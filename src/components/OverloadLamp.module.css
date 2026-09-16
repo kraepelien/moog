@@ -7,16 +7,16 @@
   height: 20px;
   border-radius: 50%;
   border: 1px solid #fff;
-  background: #3a1a0e;
+  background: var(--lamp-amber-dark);
   transition-property: opacity, background-color, box-shadow;
   transition-timing-function: ease-out;
 }
 
 .lamp[data-lit] {
-  background: #ff7a30;
+  background: var(--lamp-amber);
   /* Two shadows: the glass itself, and the light it throws on the black panel
      around it. */
   box-shadow:
-    0 0 6px 1px rgb(255 122 48 / 90%),
-    0 0 18px 6px rgb(255 122 48 / 45%);
+    0 0 6px 1px color-mix(in srgb, var(--lamp-amber) 90%, transparent),
+    0 0 18px 6px color-mix(in srgb, var(--lamp-amber) 45%, transparent);
 }

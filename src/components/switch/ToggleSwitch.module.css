@@ -1,30 +1,30 @@
-/* The instrument colour-codes its rockers, and the panel is otherwise black and
-   white, so these are the only colours on it.
-
-   Orange and black are sampled from reference/panel-controllers-oscbank.png.
-   Blue is not in that crop and is a guess until there is a photo of one to
-   sample — drop one in reference/ and it can be read off properly.
-
+/* Which cap this switch wears, from the shared palette in panelPalette.css.
    The photo shows no outline around a switch, so the shapes are filled rather
    than drawn: the hairlines the export carries were how a black-and-white
    rendering said the same thing. */
 
 .switch[data-cap='orange'] {
-  --switch-body: #f37c3e;
-  --switch-rocker: #cbcdce;
-  --switch-edge: #b75c30;
+  --switch-body: var(--cap-orange);
+  --switch-rocker: var(--cap-rocker);
+  --switch-edge: var(--cap-orange-edge);
 }
 
 .switch[data-cap='blue'] {
-  --switch-body: #3f6ea8;
-  --switch-rocker: #cbcdce;
-  --switch-edge: #2f5580;
+  --switch-body: var(--cap-blue);
+  --switch-rocker: var(--cap-rocker);
+  --switch-edge: var(--cap-blue-edge);
 }
 
 .switch[data-cap='black'] {
-  --switch-body: #626366;
-  --switch-rocker: #39383a;
-  --switch-edge: #4b4c4f;
+  --switch-body: var(--cap-black);
+  --switch-rocker: var(--cap-rocker-dark);
+  --switch-edge: var(--cap-black-edge);
+}
+
+.switch[data-cap='white'] {
+  --switch-body: var(--cap-white);
+  --switch-rocker: var(--cap-rocker);
+  --switch-edge: var(--cap-white-edge);
 }
 
 .switch {

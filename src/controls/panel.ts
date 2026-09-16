@@ -3,7 +3,7 @@ import { createRegistry } from './registry.ts'
 import { continuousKnobType, type ContinuousKnobDef } from './continuousKnob.ts'
 import { stepKnobType, type StepKnobDef, type StepPosition } from './stepKnob.ts'
 import { timeKnobType, type TimeKnobDef } from './timeKnob.ts'
-import { toggleSwitchType, type ToggleSwitchDef } from './toggleSwitch.ts'
+import { toggleSwitchType, type CapColour, type ToggleSwitchDef } from './toggleSwitch.ts'
 import { wheelType, type WheelDef } from './wheel.ts'
 import type { ControlType, DecorationDef, GroupDef, PanelItem, SectionDef } from './types.ts'
 
@@ -121,7 +121,7 @@ function onOff(
     group?: string
     headline?: string
     default?: 'on' | 'off'
-    cap?: 'orange' | 'blue' | 'black'
+    cap?: CapColour
   } = {},
 ): ToggleSwitchDef {
   return {
@@ -152,7 +152,7 @@ function chooser(
     headline?: string
     default?: string
     orientation?: 'horizontal' | 'vertical'
-    cap?: 'orange' | 'blue' | 'black'
+    cap?: CapColour
   } = {},
 ): ToggleSwitchDef {
   return {
@@ -280,7 +280,7 @@ function decoration(
   label: string,
   section: string,
   shape: string,
-  extra: { group?: string; note?: string } = {},
+  extra: { group?: string; note?: string; cap?: string } = {},
 ): DecorationDef {
   return { kind: 'decoration', id, label, section, shape, ...extra }
 }
@@ -380,7 +380,7 @@ export const items: readonly PanelItem[] = [
     'mixer',
     { id: 'white', label: 'White' },
     { id: 'pink', label: 'Pink' },
-    { group: 'mixNoise', orientation: 'vertical' },
+    { group: 'mixNoise', orientation: 'vertical', cap: 'blue' },
   ),
 
   // Modifiers
@@ -413,18 +413,21 @@ export const items: readonly PanelItem[] = [
      output, A-440 and mains power are all real controls on the instrument that a
      patch has no business recalling. */
   decoration('mainVolume', 'Volume', 'output', 'knob', { note: NOT_A_SOUND }),
-  decoration('mainOutput', 'Main Output', 'output', 'switch', { note: NOT_A_SOUND }),
-  decoration('a440', 'A-440', 'output', 'switch', { note: 'tuning reference' }),
+  decoration('mainOutput', 'Main Output', 'output', 'switch', {
+    note: NOT_A_SOUND,
+    cap: 'blue',
+  }),
+  decoration('a440', 'A-440', 'output', 'switch', { note: 'tuning reference', cap: 'blue' }),
   decoration('phonesVolume', 'Phones Volume', 'output', 'knob', { note: NOT_A_SOUND }),
   decoration('phonesJack', 'Phones', 'output', 'jack', { note: 'a socket' }),
 
-  decoration('powerLamp', 'Pilot Lamp', 'power', 'lamp', { note: 'indicator' }),
-  decoration('power', 'Power', 'power', 'switch', { note: NOT_A_SOUND }),
+  decoration('powerLamp', 'Pilot Lamp', 'power', 'lamp', { note: 'indicator', cap: 'red' }),
+  decoration('power', 'Power', 'power', 'switch', { note: NOT_A_SOUND, cap: 'black' }),
 
   // Performance (the bottom-left strip)
   knob0to10('lfoRate', 'LFO Rate', 'performance', 0),
-  onOff('glideEnable', 'Glide', 'performance', { headline: 'Glide' }),
-  onOff('decayEnable', 'Decay', 'performance', { headline: 'Decay' }),
+  onOff('glideEnable', 'Glide', 'performance', { headline: 'Glide', cap: 'white' }),
+  onOff('decayEnable', 'Decay', 'performance', { headline: 'Decay', cap: 'white' }),
   wheel('pitchWheel', 'Pitch', 'performance', { min: -5, max: 5, default: 0, springsTo: 0 }, {
     group: 'wheels',
   }),

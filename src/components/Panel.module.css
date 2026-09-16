@@ -199,6 +199,24 @@
   font-style: italic;
 }
 
+/* The output switches wear the mixer's blue cap and the pilot lamp is red, so
+   the ones the instrument paints are painted here too — the rest are outlines
+   until they have artwork. */
+.panel .slot[data-cap='blue'] {
+  background: var(--cap-blue);
+  border-color: var(--cap-blue-edge);
+}
+
+.panel .slot[data-cap='black'] {
+  background: var(--cap-black);
+  border-color: var(--cap-black-edge);
+}
+
+.panel .slot[data-cap='red'] {
+  background: var(--lamp-red);
+  border-color: var(--lamp-red-dark);
+}
+
 /* In the checklist, a decoration is dimmed to mark what carries no value. On
    the panel it is a piece of the instrument like any other, so it is drawn
    plainly — it just has no artwork of its own yet. */

@@ -5,6 +5,7 @@ import { ThemeProvider } from '@mui/material/styles'
 import { App } from './App.tsx'
 import { theme } from './theme.ts'
 import './index.css'
+import './panelPalette.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -51,7 +51,14 @@ function Decoration({
   values: Readonly<Record<string, ControlValue>>
 }) {
   if (item.id === 'overloadLamp') return <OverloadLamp values={values} />
-  return <div className={styles.slot} data-shape={item.shape} aria-hidden="true" />
+  return (
+    <div
+      className={styles.slot}
+      data-shape={item.shape}
+      data-cap={item.cap}
+      aria-hidden="true"
+    />
+  )
 }
 
 function Control({

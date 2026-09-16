@@ -13,6 +13,8 @@ export { positionIndex, stepBy } from './discrete.ts'
    then bottom. A position may carry an empty label — an ON switch prints a legend
    on one side only. */
 
+export type CapColour = 'orange' | 'blue' | 'black' | 'white'
+
 export interface ToggleSwitchDef extends DiscreteDef {
   readonly type: 'toggleSwitch'
   readonly positions: readonly [DiscretePosition, DiscretePosition]
@@ -21,10 +23,10 @@ export interface ToggleSwitchDef extends DiscreteDef {
   readonly headline?: string
   readonly orientation?: 'horizontal' | 'vertical'
   /* Which cap the instrument fits. The Minimoog colour-codes its rockers:
-     orange for the modulation and filter routing switches, blue for the mixer
-     sources and the output switches, black for the two modulation source
-     selectors. Orange when unsaid. */
-  readonly cap?: 'orange' | 'blue' | 'black'
+     orange for the modulation and filter routing, blue for the mixer sources
+     and the output, black for the two modulation source selectors, white for
+     the two beside the wheels. Orange when unsaid. */
+  readonly cap?: CapColour
 }
 
 export const toggleSwitchType = makeDiscreteType<ToggleSwitchDef>('toggleSwitch')

@@ -42,6 +42,9 @@ export interface DecorationDef {
   readonly section: string
   readonly group?: string
   readonly shape: string
+  /* What colour the instrument paints it, where it has one: the output
+     switches are blue caps like the mixer's, the pilot lamp is red. */
+  readonly cap?: string
   readonly note?: string
 }
 
