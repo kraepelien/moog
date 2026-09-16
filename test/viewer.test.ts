@@ -1,0 +1,197 @@
+import { afterEach, describe, expect, test } from 'bun:test'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { createApi } from '../server/api.ts'
+import { openDatabase } from '../server/db.ts'
+import { syncInstruments } from '../server/factory.ts'
+import { authConfigFromEnv, sessionCookie } from '../server/identity.ts'
+import { createStore } from '../server/store.ts'
+import { ensureUser } from '../server/users.ts'
+import { createPatch, type Patch } from '../src/patch/schema.ts'
+import { fixedIdentity } from './fixtures.ts'
+
+/* Every write now goes through a viewer, while there is still only one of them
+   to be. What these pin is that the seam is real — a patch has an owner, a
+   rating belongs to whoever gave it — so that switching sign-in on later
+   changes who the viewer is and nothing else. */
+
+const roots: string[] = []
+const SECRET = 'test-secret'
+
+function server(mode: 'off' | 'oauth' = 'off') {
+  const root = mkdtempSync(join(tmpdir(), 'moog-viewer-'))
+  roots.push(root)
+  const db = openDatabase(join(root, 'moog.db'))
+  syncInstruments(db)
+
+  const config = { ...authConfigFromEnv({ MOOG_SESSION_SECRET: SECRET }), mode, secret: SECRET }
+  const handle = createApi({ db, config })
+
+  const call = (method: string, path: string, payload?: unknown, cookie?: string) =>
+    handle(
+      new Request(`http://test${path}`, {
+        method,
+        headers: cookie ? { cookie } : undefined,
+        ...(payload === undefined ? {} : { body: JSON.stringify(payload) }),
+      }),
+    )
+
+  return { db, config, call, store: createStore(db) }
+}
+
+afterEach(() => {
+  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
+})
+
+const aPatch = (name: string): Patch => createPatch({ name }, fixedIdentity(name.toLowerCase()))
+
+describe('the session route', () => {
+  test('says who the viewer is without ever refusing', async () => {
+    const { call } = server()
+    const response = (await call('GET', '/api/session'))!
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({ mode: 'off', signedIn: true })
+  })
+
+  test('says nobody is signed in once sign-in is switched on', async () => {
+    const { call } = server('oauth')
+    const response = (await call('GET', '/api/session'))!
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({ mode: 'oauth', signedIn: false, user: null })
+  })
+
+  test('names whoever the cookie carries', async () => {
+    const { db, config, call } = server('oauth')
+    ensureUser(db, {
+      uid: 'google-abc',
+      provider: 'google',
+      subject: 'abc',
+      email: 'p@example.com',
+      displayName: 'Peter',
+    })
+    const cookie = (await sessionCookie('google-abc', config, new Request('https://x/'), Date.now()))
+      .split(';')[0]!
+
+    const response = (await call('GET', '/api/session', undefined, cookie))!
+    expect(await response.json()).toMatchObject({
+      signedIn: true,
+      user: { uid: 'google-abc', name: 'Peter' },
+    })
+  })
+
+  test('a cookie naming nobody is nobody, not an error', async () => {
+    const { config, call } = server('oauth')
+    const cookie = (await sessionCookie('google-never', config, new Request('https://x/'), Date.now()))
+      .split(';')[0]!
+    expect(await (await call('GET', '/api/session', undefined, cookie))!.json()).toMatchObject({
+      signedIn: false,
+    })
+  })
+})
+
+describe('a saved patch has an owner', () => {
+  test('from the first write', async () => {
+    const { db, call } = server()
+    const patch = aPatch('Mine')
+    expect((await call('PUT', `/api/patches/${patch.id}`, patch))!.status).toBe(200)
+
+    const row = db
+      .query<{ owner: string | null }, [string]>(
+        `select u.uid as owner from patches p join users u on u.id = p.owner_id where p.uid = ?`,
+      )
+      .get(patch.id)
+    expect(row?.owner).toBe('local')
+  })
+
+  test('and cannot be saved by nobody', async () => {
+    const { call } = server('oauth')
+    const patch = aPatch('Theirs')
+    expect((await call('PUT', `/api/patches/${patch.id}`, patch))!.status).toBe(401)
+  })
+})
+
+describe('a rating belongs to whoever gave it', () => {
+  test('and is written without touching the patch', async () => {
+    const { db, call, store } = server()
+    const patch = aPatch('Rated')
+    await call('PUT', `/api/patches/${patch.id}`, patch)
+    const before = store.getPatch(patch.id)!
+
+    expect((await call('PUT', `/api/patches/${patch.id}/rating`, { stars: 4 }))!.status).toBe(200)
+
+    expect(store.getPatch(patch.id)).toEqual(before)
+    const stars = db
+      .query<{ stars: number }, []>(`select stars from ratings`)
+      .get()
+    expect(stars?.stars).toBe(4)
+  })
+
+  test('two people rating the same patch do not overwrite each other', () => {
+    const { db, store } = server()
+    const patch = aPatch('Shared')
+    const one = ensureUser(db, { uid: 'u1', provider: 'test', subject: '1' })
+    const two = ensureUser(db, { uid: 'u2', provider: 'test', subject: '2' })
+    store.putPatch(patch.id, patch, one.id)
+
+    store.setRating(one.id, patch.id, 5)
+    store.setRating(two.id, patch.id, 2)
+
+    expect(store.ratingsOf(one.id)).toEqual({ [patch.id]: 5 })
+    expect(store.ratingsOf(two.id)).toEqual({ [patch.id]: 2 })
+  })
+
+  test('zero stars means unrated, so the rating goes away', () => {
+    const { db, store } = server()
+    const patch = aPatch('Unrated')
+    const user = ensureUser(db, { uid: 'u1', provider: 'test', subject: '1' })
+    store.putPatch(patch.id, patch, user.id)
+
+    store.setRating(user.id, patch.id, 3)
+    store.setRating(user.id, patch.id, 0)
+    expect(store.ratingsOf(user.id)).toEqual({})
+  })
+
+  test('a factory preset is rated by its slug', () => {
+    const { db, store } = server()
+    const user = ensureUser(db, { uid: 'u1', provider: 'test', subject: '1' })
+    store.putPreset('sub-bass', { ...aPatch('Sub Bass'), visibility: 'public' })
+
+    store.setRating(user.id, 'sub-bass', 5)
+    expect(store.ratingsOf(user.id)).toEqual({ 'sub-bass': 5 })
+  })
+
+  test('anything but a whole number of stars is refused', async () => {
+    const { call } = server()
+    const patch = aPatch('Rated')
+    await call('PUT', `/api/patches/${patch.id}`, patch)
+
+    for (const stars of [-1, 6, 2.5, 'five', null]) {
+      expect((await call('PUT', `/api/patches/${patch.id}/rating`, { stars }))!.status).toBe(400)
+    }
+  })
+
+  test('rating something that is not there is a 404, not a failure', async () => {
+    const { call } = server()
+    expect((await call('PUT', '/api/patches/ghost/rating', { stars: 3 }))!.status).toBe(404)
+  })
+})
+
+describe('settings belong to the viewer', () => {
+  test('and round-trip', async () => {
+    const { call } = server()
+    expect(await (await call('GET', '/api/settings'))!.json()).toEqual({})
+
+    await call('PUT', '/api/settings', { lastPatch: 'abc', sort: 'name' })
+    expect(await (await call('GET', '/api/settings'))!.json()).toEqual({
+      lastPatch: 'abc',
+      sort: 'name',
+    })
+  })
+
+  test('are refused to nobody', async () => {
+    const { call } = server('oauth')
+    expect((await call('GET', '/api/settings'))!.status).toBe(401)
+    expect((await call('PUT', '/api/settings', {}))!.status).toBe(401)
+  })
+})

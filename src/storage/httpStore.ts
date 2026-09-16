@@ -2,21 +2,17 @@ import { migrateToCurrent } from '../patch/migrate.ts'
 import type { Patch } from '../patch/schema.ts'
 import { StoreError, type PatchStore, type PatchSummary, type PresetStore } from './types.ts'
 
-/* Talks to the folder on disk through the server that owns it. The same
-   interface the localStorage adapter implemented, so nothing that uses a store
-   had to change — which was the point of making it async from the first commit
-   even while it was backed by something synchronous. */
+/* The same interface the localStorage adapter implemented, which is why it was
+   async from the first commit while still backed by something synchronous. */
 
 const BASE = '/api'
 
-/* fetch is a parameter so a test can drive this adapter against the real request
-   handler without a socket, exercising the path the browser actually takes
-   rather than a stand-in for it. */
+/* A parameter so a test can drive this against the real handler with no
+   socket, exercising the path the browser takes rather than a stand-in. */
 export type Fetch = (path: string, init?: RequestInit) => Promise<Response>
 
-/* Exported for its own test rather than only through the store's methods: none
-   of them passes a header today, so the merge below would otherwise be checked
-   by nothing until something depends on it. */
+/* Exported for its own test: no store method passes a header yet, so the merge
+   below would otherwise be checked by nothing. */
 export async function requestWith(
   doFetch: Fetch,
   path: string,
@@ -26,15 +22,13 @@ export async function requestWith(
   try {
     response = await doFetch(BASE + path, {
       ...init,
-      /* Merged rather than replaced, and after the default rather than before:
-         written the other way round, a header a caller passed was dropped on
-         the floor without saying so. */
+      /* After the default, not before: the other way round dropped a caller's
+         header without saying so. */
       headers: {
         ...(init?.body ? { 'content-type': 'application/json' } : {}),
         ...init?.headers,
       },
-      /* The default for a same-origin request already, but the session depends
-         on it, and a default is a poor thing to depend on silently. */
+      /* Already the default here, but the session depends on it. */
       credentials: 'same-origin',
     })
   } catch (cause) {
@@ -55,9 +49,8 @@ export async function requestWith(
     throw new StoreError('io', `Storage request failed (${response.status}). ${detail}`.trim())
   }
 
-  /* A 200 that is not JSON means something answered that was not the API — the
-     dev server's page fallback, a proxy's error page — and letting JSON.parse
-     throw would surface that as a SyntaxError from somewhere unrelated. */
+  /* A page fallback or a proxy's error page answering instead of the API;
+     letting JSON.parse throw would surface it as an unrelated SyntaxError. */
   try {
     return await response.json()
   } catch (cause) {
@@ -86,7 +79,15 @@ export function createHttpStore(
       return raw
         .map(toPatch)
         .filter((patch): patch is Patch => patch !== null)
-        .map(({ id, name, createdAt, updatedAt }) => ({ id, name, createdAt, updatedAt }))
+        .map(({ id, name, tags, instrument, visibility, createdAt, updatedAt }) => ({
+          id,
+          name,
+          tags,
+          instrument,
+          visibility,
+          createdAt,
+          updatedAt,
+        }))
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     },
 

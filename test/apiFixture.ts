@@ -1,7 +1,10 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import type { Database } from 'bun:sqlite'
 import { createApi } from '../server/api.ts'
+import { openDatabase } from '../server/db.ts'
+import { syncInstruments } from '../server/factory.ts'
 import { createHttpStore } from '../src/storage/httpStore.ts'
 import type { PatchStore, PresetStore } from '../src/storage/types.ts'
 
@@ -12,17 +15,28 @@ import type { PatchStore, PresetStore } from '../src/storage/types.ts'
 export interface TestApi {
   readonly store: PatchStore & PresetStore
   readonly root: string
+  readonly db: Database
   cleanup(): void
 }
 
 export function testApi(): TestApi {
   const root = mkdtempSync(join(tmpdir(), 'moog-test-'))
-  const handle = createApi({ root })
+  const db = openDatabase(join(root, 'moog.db'))
+  syncInstruments(db)
+  const handle = createApi({ db })
 
   const store = createHttpStore(async (path, init) => {
     const response = await handle(new Request(`http://test${path}`, init))
     return response ?? new Response(JSON.stringify({ error: 'not found' }), { status: 404 })
   })
 
-  return { store, root, cleanup: () => rmSync(root, { recursive: true, force: true }) }
+  return {
+    store,
+    root,
+    db,
+    cleanup: () => {
+      db.close()
+      rmSync(root, { recursive: true, force: true })
+    },
+  }
 }

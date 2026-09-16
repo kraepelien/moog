@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { seedPresets } from '../server/seed.ts'
+import { loadFactory } from '../server/factory.ts'
+import { createStore } from '../server/store.ts'
 import { PATCH_SCHEMA_VERSION, createPatch, parsePatch, type Patch } from '../src/patch/schema.ts'
 import { copyOf } from '../src/presets/preset.ts'
 import { testApi, type TestApi } from './apiFixture.ts'
@@ -16,40 +17,41 @@ afterEach(() => {
 })
 
 const SEED = 'presets'
+const files = () => readdirSync(SEED).filter((file) => file.endsWith('.json'))
 
-/* A factory preset is a patch whose id is its slug and which came with the
-   app, so that is what one looks like here too. */
 function aPreset(slug: string, name = slug): Patch {
-  return {
-    ...createPatch({ name, values: { glide: 4 }, visibility: 'public' }, fixedIdentity()),
-    id: slug,
+  return { ...createPatch({ name, values: { glide: 4 }, visibility: 'public' }), id: slug }
+}
+
+function aBank(dir: string, presets: Record<string, Patch>): string {
+  mkdirSync(dir, { recursive: true })
+  for (const [slug, patch] of Object.entries(presets)) {
+    writeFileSync(join(dir, `${slug}.json`), JSON.stringify(patch), 'utf8')
   }
+  return dir
 }
 
 describe('the bank shipped in the repo', () => {
   test('is a folder of one file per preset', () => {
-    const files = readdirSync(SEED).filter((f) => f.endsWith('.json'))
-    expect(files.length).toBeGreaterThan(0)
+    expect(files().length).toBeGreaterThan(0)
   })
 
   test('every file is a valid patch, by the one schema there is', () => {
-    for (const file of readdirSync(SEED).filter((f) => f.endsWith('.json'))) {
+    for (const file of files()) {
       const parsed = parsePatch(JSON.parse(readFileSync(join(SEED, file), 'utf8')))
       expect([file, parsed.ok]).toEqual([file, true])
     }
   })
 
   test('each file is named after the id inside it', () => {
-    /* The filename is the key the API addresses it by, so the two drifting apart
-       would make a preset unreachable under its own name. */
-    for (const file of readdirSync(SEED).filter((f) => f.endsWith('.json'))) {
+    for (const file of files()) {
       const preset = JSON.parse(readFileSync(join(SEED, file), 'utf8'))
       expect([file, preset.id]).toEqual([file, file.slice(0, -'.json'.length)])
     }
   })
 
   test('the whole bank is public, and says its values are a reconstruction', () => {
-    for (const file of readdirSync(SEED).filter((f) => f.endsWith('.json'))) {
+    for (const file of files()) {
       const preset = JSON.parse(readFileSync(join(SEED, file), 'utf8'))
       expect([file, preset.visibility]).toEqual([file, 'public'])
       expect([file, preset.approximate]).toEqual([file, true])
@@ -57,73 +59,71 @@ describe('the bank shipped in the repo', () => {
   })
 })
 
-describe('seeding the active folder', () => {
-  test('copies the shipped bank in on first run', async () => {
-    const active = join(api.root, 'presets')
-    const result = await seedPresets(SEED, active)
-    const shipped = readdirSync(SEED).filter((f) => f.endsWith('.json')).length
-    expect(result.seeded).toHaveLength(shipped)
-    expect(await api.store.listPresets()).toHaveLength(shipped)
+describe('loading the bank into the database', () => {
+  test('brings in every file', async () => {
+    const result = loadFactory(api.db, SEED)
+    expect(result.loaded).toBe(files().length)
+    expect(await api.store.listPresets()).toHaveLength(files().length)
   })
 
-  test('copies nothing on later runs', async () => {
-    const active = join(api.root, 'presets')
-    await seedPresets(SEED, active)
-    const again = await seedPresets(SEED, active)
-    expect(again.seeded).toEqual([])
+  test('twice changes nothing', async () => {
+    loadFactory(api.db, SEED)
+    const again = loadFactory(api.db, SEED)
+    expect(again.loaded).toBe(files().length)
+    expect(await api.store.listPresets()).toHaveLength(files().length)
   })
 
-  test('the bookkeeping file is not offered as a preset', async () => {
-    /* It ends in .json and sits in the same folder, so nothing but an explicit
-       rule keeps it out of the bank. */
-    const active = join(api.root, 'presets')
-    await seedPresets(SEED, active)
-    expect(existsSync(join(active, '.seeded.json'))).toBe(true)
-    expect((await api.store.listPresets()).some((p) => p.id === '.seeded')).toBe(false)
+  test('a preset edited in the repo is refreshed on the next start', async () => {
+    /* The reason the manifest is gone: a row copied once could drift from the
+       image it came from, and only a reload can keep them together. */
+    const bank = aBank(join(api.root, 'bank'), { one: aPreset('one', 'First') })
+    loadFactory(api.db, bank)
+
+    aBank(bank, { one: { ...aPreset('one', 'Second'), values: { glide: 9 } } })
+    loadFactory(api.db, bank)
+
+    const presets = await api.store.listPresets()
+    expect(presets).toHaveLength(1)
+    expect(presets[0]!.name).toBe('Second')
+    expect(presets[0]!.values).toEqual({ glide: 9 })
   })
 
-  test('a preset added to the shipped bank later does arrive', async () => {
-    /* The reason the manifest lists slugs rather than setting a done flag: an
-       image that gains a preset must be able to deliver it to a folder that has
-       already been seeded once. */
-    const active = join(api.root, 'presets')
-    await seedPresets(SEED, active)
+  test('a preset the image no longer ships is retired', async () => {
+    const bank = aBank(join(api.root, 'bank'), {
+      keep: aPreset('keep'),
+      drop: aPreset('drop'),
+    })
+    loadFactory(api.db, bank)
 
-    const laterBank = join(api.root, 'later-bank')
-    mkdirSync(laterBank, { recursive: true })
-    writeFileSync(join(laterBank, 'brand-new.json'), JSON.stringify(aPreset('brand-new')), 'utf8')
+    aBank(join(api.root, 'bank2'), { keep: aPreset('keep') })
+    const result = loadFactory(api.db, join(api.root, 'bank2'))
 
-    const result = await seedPresets(laterBank, active)
-    expect(result.seeded).toEqual(['brand-new'])
-    expect((await api.store.listPresets()).some((p) => p.id === 'brand-new')).toBe(true)
+    expect(result.retired).toBe(1)
+    expect((await api.store.listPresets()).map((preset) => preset.id)).toEqual(['keep'])
   })
 
-  test('a preset deleted after seeding does not come back', async () => {
-    const active = join(api.root, 'presets')
-    await seedPresets(SEED, active)
-    const first = (await api.store.listPresets())[0]!
-    await api.store.deletePreset(first.id)
-
-    await seedPresets(SEED, active)
-    expect((await api.store.listPresets()).some((p) => p.id === first.id)).toBe(false)
+  test('a file that will not parse stops the start rather than half-loading', async () => {
+    /* A bad file in the bank is a mistake in the repo, and one nobody can fix
+       by reloading the page. */
+    const bank = aBank(join(api.root, 'bank'), { good: aPreset('good') })
+    writeFileSync(join(bank, 'broken.json'), '{"id": 123}', 'utf8')
+    expect(() => loadFactory(api.db, bank)).toThrow(/broken.json/)
   })
 
-  test('never overwrites a file already there', async () => {
-    const active = join(api.root, 'presets')
-    mkdirSync(active, { recursive: true })
-    const shipped = readdirSync(SEED).filter((f) => f.endsWith('.json'))[0]!
-    writeFileSync(join(active, shipped), JSON.stringify(aPreset(shipped.slice(0, -5), 'Mine')), 'utf8')
+  test('a bank that is not there loads nothing rather than failing', () => {
+    expect(loadFactory(api.db, join(api.root, 'no-such-bank'))).toEqual({ loaded: 0, retired: 0 })
+  })
 
-    await seedPresets(SEED, active)
-    const kept = (await api.store.listPresets()).find((p) => p.id === shipped.slice(0, -5))
-    expect(kept?.name).toBe('Mine')
+  test('presets are not patches and never appear in the patch list', async () => {
+    loadFactory(api.db, SEED)
+    expect(await api.store.list()).toEqual([])
   })
 })
 
-describe('presets are editable files', () => {
-  test('saving one writes a file named by its slug', async () => {
+describe('presets are rows an admin owns', () => {
+  test('saving one writes it under its slug', async () => {
     await api.store.savePreset(aPreset('my-sound', 'My Sound'))
-    expect(existsSync(join(api.root, 'presets', 'my-sound.json'))).toBe(true)
+    expect((await api.store.listPresets()).map((preset) => preset.id)).toEqual(['my-sound'])
   })
 
   test('overwriting replaces what is there', async () => {
@@ -135,24 +135,22 @@ describe('presets are editable files', () => {
     expect(all[0]!.values).toEqual({ glide: 9 })
   })
 
-  test('deleting removes the file', async () => {
+  test('deleting removes it from the listing', async () => {
     await api.store.savePreset(aPreset('my-sound'))
     await api.store.deletePreset('my-sound')
     expect(await api.store.listPresets()).toEqual([])
-    expect(existsSync(join(api.root, 'presets', 'my-sound.json'))).toBe(false)
   })
 
-  test('a preset that will not parse is skipped, not fatal', async () => {
-    await api.store.savePreset(aPreset('good'))
-    mkdirSync(join(api.root, 'presets'), { recursive: true })
-    writeFileSync(join(api.root, 'presets', 'broken.json'), '{ not json', 'utf8')
-    writeFileSync(join(api.root, 'presets', 'wrong.json'), '{"id":123}', 'utf8')
-    expect((await api.store.listPresets()).map((p) => p.id)).toEqual(['good'])
-  })
+  test('a slug keeps its row through a reload of the bank', async () => {
+    /* The uid is minted once; the slug is what the bank matches on, so a
+       preset keeps its identity across restarts and across installs. */
+    const bank = aBank(join(api.root, 'bank'), { one: aPreset('one', 'First') })
+    loadFactory(api.db, bank)
+    const first = createStore(api.db).listPresets()[0]!
 
-  test('presets are not patches and never appear in the patch list', async () => {
-    await api.store.savePreset(aPreset('my-sound'))
-    expect(await api.store.list()).toEqual([])
+    loadFactory(api.db, bank)
+    const again = createStore(api.db).listPresets()[0]!
+    expect(again.id).toBe(first.id)
   })
 })
 
@@ -171,7 +169,6 @@ describe('copying a preset, which is the only way to save one', () => {
   })
 
   test('the copy is private, whatever it was copied from', () => {
-    /* Copying something public does not publish the copy. */
     expect(copyOf(aPreset('my-sound'), { owner: null }, fixedIdentity()).visibility).toBe('private')
   })
 
@@ -183,7 +180,11 @@ describe('copying a preset, which is the only way to save one', () => {
   test('a copy of a copy names its immediate parent, not the original', () => {
     const identity = fixedIdentity()
     const first = copyOf(aPreset('sub-bass', 'Sub Bass'), { owner: null }, identity)
-    const second = copyOf({ ...first, name: 'Mine' }, { owner: { id: 'u1', name: 'Peter' } }, identity)
+    const second = copyOf(
+      { ...first, name: 'Mine' },
+      { owner: { id: 'u1', name: 'Peter' } },
+      identity,
+    )
     expect(second.derivedFrom?.id).toBe(first.id)
     expect(second.derivedFrom?.ownerName).toBe('Peter')
   })

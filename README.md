@@ -41,6 +41,7 @@ Hardware values reported to us live in `reference/control-values.md`. The recurr
 src/
   controls/   registry.ts (generic machinery) · types.ts (contracts) · placeholder.ts · panel.ts (the panel)
   components/ Panel.tsx renders whatever the registry holds
+  components/library/ the patch library: search, filter chips, rows, the patch header
   patch/      schema.ts (Patch + structural parse) · migrate.ts (version chain) · resolve.ts (load policy)
   storage/    types.ts (the adapter interface) · webStorage.ts (localStorage + in-memory backends)
   presets/    factory.ts (placeholder presets)
@@ -215,6 +216,44 @@ A control belongs to a section and optionally to a **group** — the boxes the p
 inside one heading. Modifiers forces the issue: it contains two Attack/Decay/Sustain groups with
 identical labels, which the section alone cannot tell apart. Groups chunk *consecutive* items
 rather than collecting by id, so registry order stays authoritative.
+
+## The library and the patch header
+
+Two views, switched in the top bar: the editor is the panel, the library is
+everything saved. `src/components/library/` holds both the library and the bar
+the editor prints above the panel, because they are drawn from the same fields.
+
+A `LibraryEntry` is what one line needs, and it is deliberately not a `Patch`.
+Presets arrive whole from `listPresets`; saved patches arrive as `PatchSummary`,
+which carries `tags`, `instrument` and `visibility` alongside the name and its
+timestamps so that both sources supply the same fields and every line draws the
+same chips.
+
+Those three are in the summary because they are **metadata, not values**. The
+warning further down about not fattening the summary is about `values`: pulling
+the control settings for every patch is what would make paginating expensive.
+Three short fields that let a list be drawn without fetching each patch are the
+opposite trade. `approximate` stays out, because it is a claim about values the
+list does not carry.
+
+**Chip colour is assigned, not meaningful.** Tags are plain strings an admin can
+add to and retire, so a hand-kept colour map would leave new tags grey and dead
+entries behind. `toneForTag` hashes the tag instead, which gives it one colour
+everywhere it appears without anyone choosing it. The colour is there to tell
+chips apart at a glance, nothing more.
+
+Within a filter row the chips are an OR and the rows are an AND, so "bass or
+lead, on a Model D" is sayable. An empty row filters nothing rather than matching
+nothing, or opening the library would show an empty list.
+
+Opening a row loads the patch and switches to the editor in one go. A factory
+preset opens as a **copy**, so saving afterwards cannot write back over it; a
+patch of your own opens as itself, so saving updates the one you picked.
+
+MUI is wrapped in `StyledEngineProvider injectFirst` in `main.tsx`. Without it
+MUI's own single-class rules for things like `display` and `border-radius` are
+injected after ours and win on order alone, which makes a component's
+`.module.css` a suggestion rather than a rule.
 
 ## Patches
 

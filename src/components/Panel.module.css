@@ -10,13 +10,13 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 16px;
-  color: #fff;
+  color: var(--moog-ink);
   width: max-content;
 }
 
 /* The checklist has no rows to carry the black, so it carries its own. */
 .checklist {
-  background: #000;
+  background: var(--moog-panel);
   padding: 12px 10px 10px;
 }
 
@@ -31,7 +31,7 @@
 .panelRow {
   display: flex;
   align-items: stretch;
-  background: #000;
+  background: var(--moog-panel);
   padding: 12px 10px 10px;
 }
 
@@ -109,16 +109,12 @@
   align-self: end;
   width: max-content;
   min-width: 100%;
-  /* Measured off the sheet, where a name stands about a ninth of the tick ring
-     it labels and a block's heading stands half again taller than that. A knob
-     is 78 units across its ticks, so a name is 11.8 of them and a heading 15.2.
-     Switches are named in the same size as knobs there, not a smaller one. */
-  font-size: 0.74rem;
-  font-weight: 700;
+  font-size: var(--legend-size);
+  font-weight: var(--legend-weight);
+  letter-spacing: var(--legend-tracking);
   line-height: 1.05;
   text-align: center;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
 }
 
 /* A word the panel prints over a column or a block, rather than on each control
@@ -128,12 +124,12 @@
   flex-direction: column;
   align-items: center;
   margin: 0;
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-size: var(--legend-heading-size);
+  font-weight: var(--legend-weight);
+  letter-spacing: var(--legend-tracking);
   line-height: 1.05;
   text-align: center;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
   align-self: end;
   width: min-content;
   min-width: 100%;
@@ -147,7 +143,7 @@
 
 /* One rule between neighbours, as printed — the panel has no boxes. */
 .panelRow .section + .section {
-  border-left: 1px solid #fff;
+  border-left: 1px solid var(--moog-ink);
 }
 
 .sectionBody {
@@ -304,7 +300,7 @@
 }
 
 .panel .slot {
-  border-color: #fff;
+  border-color: var(--moog-ink);
   border-style: solid;
 }
 

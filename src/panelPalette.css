@@ -1,17 +1,14 @@
-/* The instrument's own colours, in one place so the panel and the switches
-   cannot drift apart. Sampled from reference/panel-controllers-oscbank.png and
-   from a photograph of a whole Model D: the caps are colour-coded, and on an
-   otherwise black-and-white panel they are the only colour on it.
-
-   Globals rather than a CSS module, because two modules read them — the panel
-   draws the sockets and lamps, the switch component draws the rockers. */
+/* Sampled from reference/panel-controllers-oscbank.png and a photograph of a
+   Model D. Globals rather than a module because every control stylesheet reads
+   them: the panel's sockets and lamps, the switch's rockers, and the knob and
+   wheel line art, which is drawn in the ink the panel is printed in. */
 
 :root {
   --moog-panel: #000;
   --moog-ink: #fff;
 
-  /* Rocker caps. Orange routes modulation and the filter, blue feeds the mixer
-     and the output, black picks a modulation source, white plays. */
+  /* Orange routes modulation and the filter, blue feeds the mixer and the
+     output, black picks a modulation source, white plays. */
   --cap-orange: #f37c3e;
   --cap-orange-edge: #b75c30;
   --cap-blue: #96c4d4;
@@ -21,8 +18,7 @@
   --cap-white: #e8e7e3;
   --cap-white-edge: #c9c6c1;
 
-  /* The band beside the rocker: light on every cap but the black one, which is
-     dark against a lighter body. */
+  /* The band beside the rocker, dark only on the black cap. */
   --cap-rocker: #cbcdce;
   --cap-rocker-dark: #39383a;
 

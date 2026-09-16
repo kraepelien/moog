@@ -1,20 +1,20 @@
 /* White-on-black line art, so the knob carries its own ink rather than inheriting
-   the page's. The rest is sizing, hit area and focus. */
+   the page's. The rest is sizing and hit area. */
 
 .knob {
+  composes: noSelect from '../controlSurface.module.css';
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  user-select: none;
-  -webkit-user-select: none;
 }
 
 .header {
-  font-size: 0.86rem;
+  font-size: var(--legend-size);
+  font-weight: var(--legend-weight);
+  letter-spacing: var(--legend-tracking);
   text-align: center;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 /* The positioning context for the typed-value input, which sits over the dial
@@ -28,56 +28,43 @@
    its own viewBox, at one pixel per unit, so it gains margin rather than
    shrinking the dial. */
 .dial {
+  composes: dragSurface from '../controlSurface.module.css';
   width: 116px;
   height: 116px;
-  touch-action: none;
-  cursor: ns-resize;
-  background: #000;
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* See ToggleSwitch.module.css: the browser's own focus ring on every click. */
-.dial:focus {
-  outline: none;
-}
-
-.dial:focus-visible {
-  outline: 2px solid;
-  outline-offset: 2px;
 }
 
 .tick,
 .tickMajor {
-  stroke: #fff;
+  stroke: var(--moog-ink);
   stroke-width: 2;
 }
 
 .scaleText {
-  fill: #fff;
+  fill: var(--moog-ink);
   font-size: 11px;
 }
 
 /* A mark that names a source rather than numbering a level. Smaller than a
    numeral because it is words, and set on more than one line. */
 .namedText {
-  fill: #fff;
+  fill: var(--moog-ink);
   font-size: 8px;
   letter-spacing: 0.02em;
 }
 
 .body {
-  fill: #fff;
-  stroke: #000;
+  fill: var(--moog-ink);
+  stroke: var(--moog-panel);
   stroke-width: 4;
 }
 
 .cap,
 .indicator {
-  fill: #000;
+  fill: var(--moog-panel);
 }
 
 .capText {
-  fill: #fff;
+  fill: var(--moog-ink);
   font-size: 15px;
   font-weight: 700;
   pointer-events: none;
@@ -86,14 +73,14 @@
 /* "800 ms" and "7.5 s" are far longer than a bare number, so the time knob's cap
    reads smaller to stay inside the same circle. */
 .capTimeText {
-  fill: #fff;
+  fill: var(--moog-ink);
   font-size: 10px;
   font-weight: 700;
   pointer-events: none;
 }
 
 .unitText {
-  fill: #fff;
+  fill: var(--moog-ink);
   font-size: 8px;
   letter-spacing: 0.04em;
 }

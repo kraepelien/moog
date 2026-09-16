@@ -6,15 +6,13 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogContentText from '@mui/material/DialogContentText'
 import DialogTitle from '@mui/material/DialogTitle'
 
-/* Asking before something irreversible, without `window.confirm`: that one
-   blocks the whole page, cannot be styled or tested, and is silently dropped in
-   sandboxed frames — which would turn a declined delete into a delete. */
+/* Not `window.confirm`: it blocks the page, cannot be tested, and is dropped
+   outright in a sandboxed frame, which turns a declined delete into a delete. */
 
 export interface ConfirmRequest {
   title: string
   body?: string
-  /* The word on the button that goes through with it, so a dialog never asks a
-     question and answers OK. */
+  /* The word on the button, so a dialog never asks a question and answers OK. */
   confirm: string
   destructive?: boolean
 }
@@ -37,9 +35,8 @@ export function useConfirm(): {
     [],
   )
 
-  /* The caller is answered as the dialog starts closing rather than when it has
-     finished, so the action does not wait on an animation. The text is kept
-     until then so the dialog does not blank out while it fades. */
+  /* Answered as the dialog starts closing, so the action does not wait on an
+     animation; the text is kept until it has, so it does not blank out. */
   const settle = (agreed: boolean) => {
     setOpen(false)
     answer.current?.(agreed)

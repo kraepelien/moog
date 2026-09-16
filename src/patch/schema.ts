@@ -3,11 +3,9 @@ import type { ControlValue } from '../controls/types.ts'
 import { DEFAULT_INSTRUMENT } from '../instruments/instruments.ts'
 import { err, ok, type Result } from '../result.ts'
 
-/* 2 added the three fields the library sorts and filters on. Bump this with a
-   migration in migrate.ts, never on its own: a patch on disk keeps the version
-   it was written with, and the number is what tells the loader which upgrades
-   it still needs. */
-export const PATCH_SCHEMA_VERSION = 2
+/* Bump this with a migration in migrate.ts, never on its own: a patch on disk
+   keeps the version it was written with. */
+export const PATCH_SCHEMA_VERSION = 1
 
 export interface Patch {
   readonly schemaVersion: number
