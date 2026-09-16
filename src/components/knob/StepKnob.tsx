@@ -79,7 +79,9 @@ const Body = memo(function Body({ angle }: { angle: number }) {
    glyph's own bounds rather than a per-glyph offset, so the six sit consistently
    however different their shapes are. Outside the rotating group: the mark must
    stay upright while the body turns. */
-const CAP_GLYPH_WIDTH = 24
+/* Against a cap of radius 20, so the mark sits well inside the circle rather than
+   crowding its edge. */
+const CAP_GLYPH_WIDTH = 15
 
 function CapGlyph({ glyph }: { glyph: WaveformId }) {
   const { path, box } = waveformGlyphs[glyph]
