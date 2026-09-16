@@ -18,4 +18,13 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  server: {
+    watch: {
+      /* Worktrees live inside the project, so without this the dev server
+         watches every other one: a build in a second worktree reloads the page
+         in this one, naming a file that is not in this tree at all. Added to
+         Vite's own ignores rather than replacing them. */
+      ignored: ['**/.claude/worktrees/**'],
+    },
+  },
 })
