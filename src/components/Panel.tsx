@@ -1,3 +1,4 @@
+import { SILENT } from '../audio/settings.ts'
 import { isPlaceholder } from '../controls/placeholder.ts'
 import type { Registry } from '../controls/registry.ts'
 import { isContinuousKnob } from '../controls/continuousKnob.ts'
@@ -338,6 +339,10 @@ function ChecklistItem({ item }: { item: PanelItem }) {
         <span className={styles.label}>{item.label}</span>
         <span className={styles.scale}>built · {item.type}</span>
         <code className={styles.id}>{item.id}</code>
+        {/* A control that turns, reads out and is saved, and that the sound
+            here cannot answer. Said in the working view rather than left for
+            somebody to discover by listening. */}
+        {SILENT[item.id] && <span className={styles.note}>silent: {SILENT[item.id]}</span>}
       </div>
     )
   }
