@@ -10,11 +10,13 @@ import {
   FRAME,
   MARKER,
   MARKER_TRAVEL,
-  RIBS,
+  RIB_HEIGHT,
   RIB_WIDTH,
   RIB_X,
   VIEWBOX,
   markerY,
+  ribTops,
+  surfaceShift,
 } from './wheelArtwork.ts'
 import { ValueEntry } from '../knob/ValueEntry.tsx'
 import styles from './Wheel.module.css'
@@ -27,6 +29,10 @@ export interface WheelProps {
 
 export function Wheel({ def, value, onChange }: WheelProps) {
   const labelId = useId()
+  /* The surface is clipped to the face so ribs turning past either end are cut
+     off by the frame, which is also where the export's two short end bands come
+     from. One id per wheel, since two of them sit side by side. */
+  const clipId = useId()
   const current = quantiseWheel(def, value)
   const fraction = wheelFraction(def, current)
   const drag = useRef<{ y: number; value: number } | null>(null)
@@ -99,24 +105,31 @@ export function Wheel({ def, value, onChange }: WheelProps) {
         onPointerCancel={endDrag}
         onDoubleClick={(event) => setEditing(event.currentTarget)}
       >
+        <defs>
+          <clipPath id={clipId}>
+            <rect {...FACE} />
+          </clipPath>
+        </defs>
         <rect {...FRAME} className={styles.frame} />
         <rect {...FACE} className={styles.face} />
-        {RIBS.map((rib) => (
-          <rect
-            key={rib.y}
-            x={RIB_X}
-            y={rib.y}
-            width={RIB_WIDTH}
-            height={rib.height}
-            className={styles.rib}
+        <g clipPath={`url(#${clipId})`}>
+          {ribTops(surfaceShift(fraction)).map((y) => (
+            <rect
+              key={y}
+              x={RIB_X}
+              y={y}
+              width={RIB_WIDTH}
+              height={RIB_HEIGHT}
+              className={styles.rib}
+            />
+          ))}
+          <circle
+            cx={MARKER.cx}
+            cy={markerY(fraction)}
+            r={MARKER.radius}
+            className={styles.marker}
           />
-        ))}
-        <circle
-          cx={MARKER.cx}
-          cy={markerY(fraction)}
-          r={MARKER.radius}
-          className={styles.marker}
-        />
+        </g>
       </svg>
       {editing && (
         <ValueEntry

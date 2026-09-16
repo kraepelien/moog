@@ -11,9 +11,15 @@ import {
   type WheelDef,
 } from '../src/controls/wheel.ts'
 import {
+  FACE,
   MARKER_BOTTOM,
   MARKER_TOP,
+  RIB_BASE,
+  RIB_HEIGHT,
+  RIB_PITCH,
   markerY,
+  ribTops,
+  surfaceShift,
 } from '../src/components/wheel/wheelArtwork.ts'
 
 const pitch = panelRegistry.control('pitchWheel') as WheelDef
@@ -123,5 +129,50 @@ describe('the panel is complete', () => {
       'pitchWheel',
       'modWheel',
     ])
+  })
+})
+
+describe('the surface turns as a whole', () => {
+  const FRACTIONS = [0, 0.1, 0.25, 1 / 3, 0.5, 0.66, 0.75, 0.9, 1]
+
+  test('the ribs move exactly as far as the marker, because they are on it', () => {
+    for (const fraction of FRACTIONS) {
+      expect(surfaceShift(fraction)).toBeCloseTo(markerY(fraction) - markerY(0), 10)
+    }
+  })
+
+  test('the pattern runs past both ends of the face wherever it is turned to', () => {
+    /* The failure this guards is the surface running out: turn it far enough
+       and the top or bottom of the wheel goes blank. A gap landing on the edge
+       is fine — the gaps are part of the surface — so what has to hold is that
+       the next rib along would be past the edge, not that a rib covers it. */
+    for (const fraction of FRACTIONS) {
+      const tops = ribTops(surfaceShift(fraction))
+      expect(Math.min(...tops) + RIB_HEIGHT).toBeLessThanOrEqual(FACE.y + RIB_PITCH)
+      expect(Math.max(...tops) + RIB_PITCH).toBeGreaterThanOrEqual(FACE.y + FACE.height)
+    }
+  })
+
+  test('never draws much more than the face can show', () => {
+    const covered = FACE.height / RIB_PITCH
+    for (const fraction of FRACTIONS) {
+      expect(ribTops(surfaceShift(fraction)).length).toBeLessThanOrEqual(covered + 3)
+    }
+  })
+
+  test('a turn of one pitch looks the same as no turn at all', () => {
+    /* Which is what makes wrapping the shift safe: the surface repeats. */
+    expect(ribTops(RIB_PITCH)).toEqual(ribTops(0))
+    expect(ribTops(-RIB_PITCH)).toEqual(ribTops(0))
+  })
+
+  test('a turn of less than a pitch moves the whole pattern by exactly that much', () => {
+    /* Compared by phase rather than rib for rib: a turn brings one more rib into
+       view at one end as it takes one out at the other, so the two lists are not
+       always the same length. */
+    const phase = (y: number) => ((y % RIB_PITCH) + RIB_PITCH) % RIB_PITCH
+    for (const top of ribTops(2.5)) {
+      expect(phase(top - 2.5)).toBeCloseTo(phase(RIB_BASE), 10)
+    }
   })
 })
