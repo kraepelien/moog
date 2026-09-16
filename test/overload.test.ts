@@ -10,9 +10,7 @@ import {
 } from '../src/controls/overload.ts'
 import type { ControlValue } from '../src/controls/types.ts'
 
-/* The lamp is the one thing on the panel driven by what the instrument would be
-   doing rather than by a value of its own, so these pin the behaviour it is
-   meant to reproduce rather than the arithmetic that happens to produce it. */
+/* Pins the behaviour the lamp reproduces, not the arithmetic behind it. */
 
 const panel = (overrides: Record<string, ControlValue>): Record<string, ControlValue> => ({
   ...defaultValues(panelRegistry),
@@ -74,17 +72,12 @@ describe('with the instrument playing into its own input', () => {
   } as const
 
   test('a loud patch lights it far below 8', () => {
-    /* The part that is not "external input past 8": the external input is
-       normalled after the output stage, so what is being played goes round the
-       loop as well. */
     expect(overloadGlow(panel({ ...loud, externalInputVolume: 4 }))).toBeGreaterThan(0)
     expect(overloadGlow(panel({ ...quiet, externalInputEnable: 'on', externalInputVolume: 4 })))
       .toBe(0)
   })
 
   test('a patch that sustains at nothing is a quiet one', () => {
-    /* Held down, a contour with no sustain is silence, so only the loop is
-       left and 8 is the threshold again. */
     const held = panel({ ...loud, loudnessSustainLevel: 0, externalInputVolume: 4 })
     expect(programmeLevel(held)).toBe(0)
     expect(overloadGlow(held)).toBe(0)
@@ -106,8 +99,6 @@ describe('with the instrument playing into its own input', () => {
 
 describe('how long it takes to light', () => {
   test('is the loudness contour rising, and its decay falling', () => {
-    /* Which is the whole of the objection: a bass with a fast attack triggers
-       it at once, a pad with a slow one takes its time. The panel knows both. */
     const values = panel({ loudnessAttackTime: 10, loudnessDecayTime: 4000 })
     expect(overloadRiseMs(values, true)).toBe(10)
     expect(overloadRiseMs(values, false)).toBe(4000)
@@ -122,8 +113,6 @@ describe('the output stage is in the loop', () => {
   } as const
 
   test('turning the instrument down turns the lamp down with it', () => {
-    /* The external input is sourced after the Main Output knob, so the knob
-       that sets how loud the room is also sets how hard the preamp is driven. */
     expect(overloadGlow(panel({ ...lighting, mainVolume: 10 }))).toBeGreaterThan(
       overloadGlow(panel({ ...lighting, mainVolume: 7 })),
     )

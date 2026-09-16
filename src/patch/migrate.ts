@@ -1,40 +1,14 @@
 import { err, ok, type Result } from '../result.ts'
-import { instrumentIdFor } from '../instruments/instruments.ts'
 import { PATCH_SCHEMA_VERSION, parsePatch, type Patch } from './schema.ts'
 
-/* Keyed by the version it upgrades FROM, producing that version plus one. A v1
-   patch reaching a v3 build runs migrations[1] then migrations[2].
-
-   A migration only ever fills in what the new version needs. It does not
-   validate — parsePatch does that afterwards, on the result — and it does not
-   touch `values`, because a control the build does not recognise is data the
-   format promises to carry through untouched. */
+/* Keyed by the version it upgrades FROM. A v1 patch reaching a v3 build runs
+   migrations[1] then migrations[2]. A migration fills in what the new version
+   needs and nothing else: parsePatch validates the result, and `values` is
+   carried through untouched because it may hold controls this build does not
+   know. */
 export type Migration = (patch: Record<string, unknown>) => Record<string, unknown>
 
-export const migrations: Readonly<Record<number, Migration>> = {
-  /* v2 gave a patch what the library lists it by and what tells one instrument
-     from another. Everything written before it predates all of them: no tags
-     yet, the only instrument there has ever been, nobody's but its author's,
-     and copied from nothing.
-
-     Private rather than public, deliberately: anything else would publish
-     somebody's work as a side effect of an upgrade. */
-  1: (patch) => ({
-    ...patch,
-    tags: Array.isArray(patch.tags)
-      ? patch.tags
-      : Array.isArray(patch.categories)
-        ? patch.categories
-        : [],
-    instrument:
-      typeof patch.instrument === 'string' && patch.instrument !== ''
-        ? patch.instrument
-        : instrumentIdFor(patch.synth),
-    visibility: patch.visibility === 'public' ? 'public' : 'private',
-    approximate: patch.approximate === true,
-    derivedFrom: patch.derivedFrom ?? null,
-  }),
-}
+export const migrations: Readonly<Record<number, Migration>> = {}
 
 export function migrateToCurrent(raw: unknown): Result<Patch> {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
@@ -65,13 +39,10 @@ export function migrateToCurrent(raw: unknown): Result<Patch> {
   return ok(parsed.value)
 }
 
-/* The chain itself, taking its table rather than reading the one above, so the
-   machinery can be exercised before there is a real migration to exercise it
-   with. The first genuine one should not be the first run of this loop.
-
-   Each step is stamped with the version it produced rather than trusting the
-   migration to do it: a migration that forgets would otherwise loop, and one
-   that stamps the wrong number would be believed. */
+/* Takes its table rather than reading the one above, so the chain can be
+   tested before there is a real migration to test it with. Each step is
+   stamped with the version it produced: a migration that forgot would send the
+   loop round again, and one that stamped the wrong number would be believed. */
 export function runMigrations(
   source: Record<string, unknown>,
   from: number,
@@ -87,9 +58,8 @@ export function runMigrations(
     try {
       current = { ...migration(current), schemaVersion: version + 1 }
     } catch (error) {
-      /* A migration is ordinary code and can throw on data it did not expect.
-         Reported as a refusal so one bad patch in an import is skipped and
-         named, rather than taking the whole file down with it. */
+      /* Returned rather than thrown so one bad patch in an import is skipped
+         and named instead of taking the whole file down. */
       const reason = error instanceof Error ? error.message : String(error)
       return err(`Migration from patch schema version ${version} failed: ${reason}`)
     }

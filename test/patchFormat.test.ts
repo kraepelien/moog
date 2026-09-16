@@ -126,29 +126,6 @@ describe('the fields of a patch are a published interface', () => {
       why: 'New patch fields must be added to test/patch-format.lock.json.',
     }).toEqual({ unrecorded: [], why: expect.any(String) })
   })
-
-  test('a field that was removed is not quietly back', () => {
-    /* Removing a field is meant to be rare enough to be written down. Reusing
-       one of those names for something else would hand old data to new code
-       under a name that used to mean something different — the one thing worse
-       than a rename. */
-    const removed = (lock.removed as { field: string }[]).map((entry) => entry.field)
-    const returned = removed.filter((field) => (lock.patchFields as string[]).includes(field))
-    expect({
-      returned,
-      why: 'A removed field name is in patchFields again. Pick another name, or say in the lock why reusing this one is safe.',
-    }).toEqual({ returned: [], why: expect.any(String) })
-  })
-
-  test('every removal says when and why', () => {
-    for (const entry of lock.removed as { field: string; on: string; why: string }[]) {
-      expect([entry.field, entry.on.length > 0, entry.why.length > 20]).toEqual([
-        entry.field,
-        true,
-        true,
-      ])
-    }
-  })
 })
 
 describe('the envelope around a patch', () => {

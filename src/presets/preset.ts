@@ -1,24 +1,11 @@
 import type { ControlValue } from '../controls/types.ts'
 import { createPatch, type Patch, type PatchIdentity, systemIdentity } from '../patch/schema.ts'
 
-/* A factory preset is a patch that came with the app, and that is all it is:
-   the same fields, the same validator, the same migrations, kept in the repo
-   rather than saved by anyone. It used to be its own type with its own schema,
-   which is exactly why presets and patches could not be listed together.
+/* A factory preset is a patch kept in the repo rather than saved by anyone, so
+   copying is the only thing here: you can never save over one.
 
-   What is left here is copying, because that is the one thing about a preset
-   that is not true of a patch: you can never save over one. */
-
-/* Omitting a control id in a factory file means "whatever the registry defaults
-   to" — an omission is honest, a guessed value is not, which is why most of
-   the bank carries well under half the panel. */
-
-/* Save as. A copy is a new patch with a new id, owned by whoever made it and
-   private until they say otherwise, carrying a record of what it came from.
-
-   The record is a snapshot: the source can be renamed, hidden or deleted, and
-   a copy that says "from Sub Bass" is more use afterwards than a pointer that
-   resolves to nothing. */
+   `derivedFrom` is a snapshot, not a reference — the source can be renamed or
+   deleted, and "from Sub Bass" is more use afterwards than a dangling id. */
 export function copyOf(
   source: Patch,
   options: {
@@ -35,9 +22,8 @@ export function copyOf(
       values: options.values ?? source.values,
       tags: source.tags,
       instrument: source.instrument,
-      /* Not copied: a copy of a public patch is not itself published, and
-         inheriting `approximate` would claim someone else's caveat about
-         values the copier may have changed. */
+      /* Visibility and `approximate` are deliberately not copied: a copy is not
+         published, and its values may no longer be the reconstruction. */
       derivedFrom: {
         id: source.id,
         name: source.name,

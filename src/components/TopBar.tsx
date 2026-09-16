@@ -12,8 +12,7 @@ import Typography from '@mui/material/Typography'
 import type { View } from '../navigation.ts'
 import styles from './TopBar.module.css'
 
-/* Three lines. An icon font or a whole icon package for one glyph is a
-   dependency to keep up to date for the sake of a shape that is three lines. */
+/* Inline rather than an icon package, for a shape that is three lines. */
 function MenuGlyph() {
   return (
     <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
@@ -25,8 +24,7 @@ function MenuGlyph() {
 export interface TopBarAction {
   readonly label: string
   readonly onSelect: () => void
-  /* Drawn as a rule above this item, for the ones that are a different kind of
-     thing from the ones before. */
+  /* Draws a rule above this item. */
   readonly separated?: boolean
 }
 
@@ -39,7 +37,6 @@ export function TopBar({
   view: View
   onView: (view: View) => void
   actions: readonly TopBarAction[]
-  /* Anything the page wants beside the navigation — a count, a status. */
   children?: ReactNode
 }) {
   const [menuAt, setMenuAt] = useState<HTMLElement | null>(null)

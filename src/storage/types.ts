@@ -7,10 +7,8 @@ export interface PatchSummary {
   readonly updatedAt: string
 }
 
-/* `unauthenticated` and `forbidden` are separate from `io` because they are the
-   only failures a person can do something about: sign in, or ask whoever owns
-   the thing. Collapsed into `io`, both would reach the screen as "storage
-   failed", which is both wrong and unhelpful. */
+/* `unauthenticated` and `forbidden` are apart from `io` because they are the
+   only failures a person can act on. */
 export type StoreErrorKind =
   | 'unavailable'
   | 'unauthenticated'
@@ -31,10 +29,8 @@ export class StoreError extends Error {
   }
 }
 
-/* list() returns summaries, not patches: a real backend will paginate this, and a
-   UI that expects every value up front is the thing that would make that swap
-   expensive. If a screen ever needs values for many patches at once, that is the
-   leak — add a purpose-built method rather than fattening the summary. */
+/* Summaries rather than patches: a UI expecting every value up front is what
+   would make paginating this expensive later. */
 export interface PatchStore {
   list(): Promise<readonly PatchSummary[]>
   get(id: string): Promise<Patch | null>

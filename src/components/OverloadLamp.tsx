@@ -3,15 +3,13 @@ import { overloadGlow, overloadRiseMs } from '../controls/overload.ts'
 import type { ControlValue } from '../controls/types.ts'
 import styles from './OverloadLamp.module.css'
 
-/* The one thing on the panel that reads the whole panel. Everything else draws
-   its own value; this draws what the instrument would be doing. */
+/* The one control that draws what the instrument would be doing rather than a
+   value of its own. */
 export function OverloadLamp({ values }: { values: Readonly<Record<string, ControlValue>> }) {
   const glow = overloadGlow(values)
-  /* Which way it is going decides whose time it takes — the contour's attack
-     coming up, its decay going down — so the last brightness has to be kept.
-     Adjusted during render rather than in an effect, so the transition is set
-     in the same paint that changes the brightness; an effect would run after
-     the lamp had already started moving at the previous speed. */
+  /* Rising takes the contour's attack and falling its decay, so the previous
+     brightness is kept. Adjusted in render, not an effect: an effect would set
+     the duration after the lamp had started moving at the old one. */
   const [previous, setPrevious] = useState(glow)
   if (previous !== glow) setPrevious(glow)
   const ms = overloadRiseMs(values, glow > previous)

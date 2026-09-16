@@ -4,10 +4,7 @@ import { StoreError } from '../src/storage/types.ts'
 import { createPatch } from '../src/patch/schema.ts'
 import { fixedIdentity } from './fixtures.ts'
 
-/* What the browser makes of the server's answers. Everything here is about a
-   failure reaching the screen as the right sentence: the difference between
-   "sign in", "that is not yours" and "storage failed" is the difference between
-   a person knowing what to do and filing a bug. */
+/* What the browser makes of the server's answers. */
 
 interface Call {
   readonly path: string
@@ -59,8 +56,6 @@ describe('what the server says, and what the app hears', () => {
   })
 
   test('a 200 that is not JSON is reported as such, not as a parse error', async () => {
-    /* What a page fallback or a proxy error page looks like from here. Letting
-       response.json() throw would surface a SyntaxError from nowhere. */
     const { store } = storeAnswering(() => new Response('<!doctype html><html>', { status: 200 }))
     const failure = await store.list().catch((error: unknown) => error)
     expect(failure).toBeInstanceOf(StoreError)
@@ -70,8 +65,7 @@ describe('what the server says, and what the app hears', () => {
 
 describe('what the app sends', () => {
   test('a header a caller passes survives alongside the default', async () => {
-    /* It did not: `headers` was written after the spread, so anything a caller
-       put in `init` was replaced by the default and lost without a word. */
+    /* It did not: `headers` was written after the spread. */
     let sent: Headers | undefined
     await requestWith(
       (_path, init) => {
