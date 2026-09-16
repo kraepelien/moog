@@ -82,21 +82,6 @@ export function createApi({ root }: ApiOptions): (request: Request) => Promise<R
         return json({ error: 'method not allowed' }, 405)
       }
 
-      if (resource === 'draft' && !name) {
-        if (method === 'GET') return json(await store.readDraft())
-        if (method === 'PUT') {
-          const payload = await body(request)
-          if (payload === null) return json({ error: 'invalid body' }, 400)
-          await store.writeDraft(payload)
-          return json(payload)
-        }
-        if (method === 'DELETE') {
-          await store.clearDraft()
-          return json({ deleted: 'draft' })
-        }
-        return json({ error: 'method not allowed' }, 405)
-      }
-
       return notFound()
     } catch (error) {
       /* The browser adapter turns this into a StoreError, so a disk problem

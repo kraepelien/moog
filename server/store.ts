@@ -17,14 +17,12 @@ export function isSafeName(name: string): boolean {
 export interface FileStoreLayout {
   readonly patches: string
   readonly presets: string
-  readonly draft: string
 }
 
 export function layoutFor(root: string): FileStoreLayout {
   return {
     patches: join(root, 'patches'),
     presets: join(root, 'presets'),
-    draft: join(root, 'draft.json'),
   }
 }
 
@@ -113,18 +111,6 @@ export function createFileStore(root: string) {
     async deletePreset(slug: string): Promise<void> {
       if (!isSafeName(slug)) throw new Error(`Unsafe preset slug: ${slug}`)
       await rm(join(at.presets, `${slug}.json`), { force: true })
-    },
-
-    async readDraft(): Promise<unknown | null> {
-      return readJson(at.draft)
-    },
-
-    async writeDraft(patch: unknown): Promise<void> {
-      await writeJson(at.draft, patch)
-    },
-
-    async clearDraft(): Promise<void> {
-      await rm(at.draft, { force: true })
     },
   }
 }

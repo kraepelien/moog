@@ -84,26 +84,6 @@ describe('an id becomes a filename, so it is checked first', () => {
   })
 })
 
-describe('the working draft', () => {
-  test('survives a reload and is not listed as a saved patch', async () => {
-    const draft = make('In progress', '2026-01-01T00:00:00.000Z')
-    await api.store.writeDraft(draft)
-    expect(await api.store.readDraft()).toEqual(draft)
-    expect(await api.store.list()).toEqual([])
-  })
-
-  test('no draft reads as null', async () => {
-    expect(await api.store.readDraft()).toBeNull()
-  })
-
-  test('clearing it removes the file', async () => {
-    await api.store.writeDraft(make('X', '2026-01-01T00:00:00.000Z'))
-    await api.store.clearDraft()
-    expect(await api.store.readDraft()).toBeNull()
-    expect(existsSync(join(api.root, 'draft.json'))).toBe(false)
-  })
-})
-
 describe('when the server is not answering', () => {
   test('the failure says so rather than surfacing as a parse error', async () => {
     const { createHttpStore } = await import('../src/storage/httpStore.ts')

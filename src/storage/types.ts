@@ -43,12 +43,3 @@ export interface PresetStore {
   savePreset(preset: StoredPreset): Promise<void>
   deletePreset(slug: string): Promise<void>
 }
-
-/* Separate from PatchStore because the working draft has a different lifecycle:
-   exactly one, always overwritten, never listed, and plausibly still client-side
-   on the day saved patches move to a server. */
-export interface DraftStore {
-  readDraft(): Promise<Patch | null>
-  writeDraft(patch: Patch): Promise<void>
-  clearDraft(): Promise<void>
-}

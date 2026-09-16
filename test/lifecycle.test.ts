@@ -31,19 +31,13 @@ describe('patch lifecycle', () => {
     const edited = { ...defaultValues(registry), testVolume: 8 }
     draft = { ...draft, name: 'Round Trip', values: mergeValues(draft, edited) }
 
-    // The working draft persists without being a saved patch.
-    await store.writeDraft(draft)
-    expect(await store.readDraft()).toEqual(draft)
+    /* Nothing is stored until Save: editing the panel writes nothing. */
     expect(await store.list()).toEqual([])
 
-    // Reloading the app picks the draft back up off disk.
-    const reloaded = await store.readDraft()
-    expect(reloaded?.values.testVolume).toBe(8)
-
-    // Save it as a real patch.
     await store.save(draft)
     const list = await store.list()
     expect(list.map((s) => s.name)).toEqual(['Round Trip'])
+    expect((await store.get(draft.id))!.values.testVolume).toBe(8)
 
     // Export, then import into a different machine's empty store.
     const file = serializeBundle(createBundle([(await store.get(draft.id))!], fixedIdentity('exp')))

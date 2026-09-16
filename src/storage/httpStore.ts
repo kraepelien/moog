@@ -1,13 +1,7 @@
 import { migrateToCurrent } from '../patch/migrate.ts'
 import type { Patch } from '../patch/schema.ts'
 import { presetSchema, type StoredPreset } from '../presets/preset.ts'
-import {
-  StoreError,
-  type DraftStore,
-  type PatchStore,
-  type PatchSummary,
-  type PresetStore,
-} from './types.ts'
+import { StoreError, type PatchStore, type PatchSummary, type PresetStore } from './types.ts'
 
 /* Talks to the folder on disk through the server that owns it. The same
    interface the localStorage adapter implemented, so nothing that uses a store
@@ -52,7 +46,7 @@ function toPatch(raw: unknown): Patch | null {
 
 export function createHttpStore(
   doFetch: Fetch = (path, init) => fetch(path, init),
-): PatchStore & DraftStore & PresetStore {
+): PatchStore & PresetStore {
   const request = (path: string, init?: RequestInit) => requestWith(doFetch, path, init)
 
   return {
@@ -99,19 +93,6 @@ export function createHttpStore(
 
     async deletePreset(slug: string): Promise<void> {
       await request(`/presets/${encodeURIComponent(slug)}`, { method: 'DELETE' })
-    },
-
-    async readDraft(): Promise<Patch | null> {
-      const raw = await request('/draft')
-      return raw === null ? null : toPatch(raw)
-    },
-
-    async writeDraft(patch: Patch): Promise<void> {
-      await request('/draft', { method: 'PUT', body: JSON.stringify(patch) })
-    },
-
-    async clearDraft(): Promise<void> {
-      await request('/draft', { method: 'DELETE' })
     },
   }
 }

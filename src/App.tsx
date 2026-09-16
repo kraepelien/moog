@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Panel, PanelChecklist } from './components/Panel.tsx'
 import { panelRegistry } from './controls/panel.ts'
 import { mergeValues, resolvePatch, reportHasWarnings, type ResolveReport } from './patch/resolve.ts'
@@ -27,6 +27,12 @@ function slugify(name: string): string {
   return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
+/* Identity for "has this changed" — the parts a save would write, and nothing
+   else. Comparing whole patches would count a re-stamped updatedAt as an edit. */
+function signature(patch: Patch): string {
+  return JSON.stringify([patch.name, patch.notes, patch.values])
+}
+
 export function App() {
   const [draft, setDraft] = useState<Patch | null>(null)
   const [saved, setSaved] = useState<readonly PatchSummary[]>([])
@@ -34,7 +40,13 @@ export function App() {
   const [status, setStatus] = useState('')
   const [report, setReport] = useState<ResolveReport | null>(null)
   const [failed, setFailed] = useState(false)
-  const loadedOnce = useRef(false)
+  /* What the draft looked like when it was last saved or loaded. Comparing
+     against it is what tells the user there is something unsaved. */
+  const [clean, setClean] = useState('')
+
+  /* Computed before the hooks that read it, since the early return for a missing
+     draft comes after them. */
+  const dirty = draft !== null && signature(draft) !== clean
 
   const refresh = useCallback(async () => {
     const [patches, bank] = await Promise.all([store.list(), store.listPresets()])
@@ -44,29 +56,30 @@ export function App() {
 
   useEffect(() => {
     void (async () => {
+      const fresh = createPatch({ name: 'Untitled' })
+      setDraft(fresh)
+      setClean(signature(fresh))
       try {
-        const existing = await store.readDraft()
-        setDraft(existing ?? createPatch({ name: 'Untitled' }))
-        setStatus(existing ? 'Restored working draft' : 'Started a new draft')
         await refresh()
+        setStatus('Ready')
       } catch (error) {
         /* Nothing works without the folder, so this is the one failure that has
            to be stated plainly rather than tucked into a status line. */
         setFailed(true)
         setStatus(error instanceof StoreError ? error.message : String(error))
-        setDraft(createPatch({ name: 'Untitled' }))
       }
-      loadedOnce.current = true
     })()
   }, [refresh])
 
-  /* The draft is written back on every edit so closing the tab never loses work.
-     Skipped until the initial read has landed, or the empty starting draft would
-     overwrite the stored one before it arrives. */
+  /* Nothing is written until Save, so leaving with edits in hand loses them. The
+     browser decides the wording and will ignore this unless the page has been
+     interacted with, which is exactly when it matters. */
   useEffect(() => {
-    if (!loadedOnce.current || !draft || failed) return
-    void store.writeDraft(draft).catch(() => setStatus('Could not save the working draft'))
-  }, [draft, failed])
+    if (!dirty) return
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault()
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [dirty])
 
   const run = useCallback(async (message: string, action: () => Promise<void>) => {
     try {
@@ -80,6 +93,7 @@ export function App() {
 
   const adopt = useCallback((patch: Patch, message: string) => {
     setDraft(patch)
+    setClean(signature(patch))
     setReport(resolvePatch(panelRegistry, patch).report)
     setStatus(message)
   }, [])
@@ -112,7 +126,7 @@ export function App() {
       </section>
 
       <section>
-        <h2>Working draft</h2>
+        <h2>Working draft{dirty && ' — unsaved'}</h2>
         <p>
           <label>
             Name{' '}
@@ -136,7 +150,10 @@ export function App() {
           <button
             onClick={() =>
               void run('Saved', async () => {
-                await store.save({ ...draft, updatedAt: new Date().toISOString() })
+                const saved = { ...draft, updatedAt: new Date().toISOString() }
+                await store.save(saved)
+                setDraft(saved)
+                setClean(signature(saved))
                 await refresh()
               })
             }
