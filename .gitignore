@@ -25,5 +25,11 @@ dist-ssr
 
 # Working data written by the patch server. The shipped bank lives in presets/.
 data/
+
+# The OAuth client secret and the session key live in one of these on the
+# machine that runs the app, and nowhere else.
+.env
+.env.*
+!.env.example
 .claude/worktrees
 minimoog-patch-editor

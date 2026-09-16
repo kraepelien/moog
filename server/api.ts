@@ -2,6 +2,7 @@ import type { Database } from 'bun:sqlite'
 import { systemIdentity } from '../src/patch/schema.ts'
 import { authConfigFromEnv, isAdmin, whoAmI, type AuthConfig } from './identity.ts'
 import { buildLibrary } from './library.ts'
+import { handleAuth } from './routes/auth.ts'
 import { handlePatches } from './routes/patches.ts'
 import { createStore, type Store } from './store.ts'
 import { ensureLocalUser, findUser, type UserRow } from './users.ts'
@@ -49,11 +50,16 @@ async function body(request: Request): Promise<unknown> {
 export interface ApiOptions {
   readonly db: Database
   readonly config?: AuthConfig
+  /* Injected so the token exchange can be driven without a network. */
+  readonly doFetch?: typeof fetch
+  readonly now?: () => number
 }
 
 export function createApi({
   db,
   config = authConfigFromEnv(process.env),
+  doFetch,
+  now,
 }: ApiOptions): (request: Request) => Promise<Response | null> {
   const store: Store = createStore(db)
   if (config.mode === 'off') ensureLocalUser(db, config.localUser)
@@ -92,6 +98,23 @@ export function createApi({
          it asks the database a real question so an unmounted volume fails. */
       if (resource === 'health') {
         return json({ ok: true, patches: store.countPatches() })
+      }
+
+      /* Before the session is read, because signing in is what somebody
+         without one does. */
+      if (resource === 'auth') {
+        return handleAuth(
+          request,
+          {
+            db,
+            config,
+            clientId: config.clientId,
+            clientSecret: config.clientSecret,
+            doFetch,
+            now,
+          },
+          { provider: name, action: sub },
+        )
       }
 
       /* Always 200, never 401: it is how the app finds out whether it is

@@ -1,0 +1,33 @@
+/* The instrument's own black, since this is the first thing anybody sees. */
+
+.page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: var(--moog-panel);
+}
+
+.mark {
+  border-radius: 20px;
+  padding: 8px;
+  transition: transform 120ms ease-out;
+}
+
+.mark:hover {
+  transform: scale(1.04);
+}
+
+.logo {
+  border-radius: 18px;
+  display: block;
+}
+
+.hint {
+  color: rgb(255 255 255 / 55%);
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
