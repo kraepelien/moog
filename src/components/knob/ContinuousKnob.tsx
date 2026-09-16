@@ -157,10 +157,12 @@ export function ContinuousKnob({ def, value, onChange, hideHeader }: ContinuousK
   }, [])
 
   const size = def.size ?? 'small'
-  /* Words at the ends of the sweep run far wider than a numeral, so the box is
+  /* Words at the ends of the sweep run wider than a numeral, so the box is
      widened for them and the element sized from it at one pixel per unit — the
-     dial stays the same size on the panel, it just gains margin. */
-  const box = hasNamedMarks(def) ? { ...VIEWBOX, x: VIEWBOX.x - 26, width: VIEWBOX.width + 52 } : VIEWBOX
+     dial stays the same size on the panel, it just gains margin. Only as much as
+     the longest of them overhangs by: this margin is dead width in every column
+     the knob shares, and the panel sets those words tight under the dial. */
+  const box = hasNamedMarks(def) ? { ...VIEWBOX, x: VIEWBOX.x - 8, width: VIEWBOX.width + 16 } : VIEWBOX
   const scale = SIZE_SCALE[size]
   const reading = formatValue(def, current)
 

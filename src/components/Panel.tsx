@@ -199,7 +199,7 @@ function PanelSection({ registry, section, values, onChange }: SectionProps) {
         className={styles.grid}
         style={{
           gridTemplateAreas: templateAreas(withCaptionRows(layout.rows)),
-          gridTemplateColumns: `repeat(${columnCount(layout.rows)}, 1fr)`,
+          gridTemplateColumns: `repeat(${columnCount(layout.rows)}, auto)`,
         }}
       >
         {Object.entries(layout.headings ?? {}).map(([area, lines]) => (
@@ -318,7 +318,7 @@ function ChecklistItem({ item }: { item: PanelItem }) {
 
 export function PanelChecklist({ registry }: { registry: Registry }) {
   return (
-    <div className={styles.panel}>
+    <div className={`${styles.panel} ${styles.checklist}`}>
       {registry.sections.map((section) => (
         <section key={section.id} className={styles.section}>
           <div className={styles.sectionBody}>

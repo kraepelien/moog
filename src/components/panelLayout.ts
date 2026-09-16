@@ -169,9 +169,12 @@ export function withCaptionRows(rows: readonly string[]): string[] {
   return out
 }
 
-/* Columns are even rather than sized to their contents, so a switch centres
-   under the knob it belongs to instead of drifting with the width of the
-   longest legend in its column. */
+/* Each column takes the width of its own widest control. Even columns would put
+   a switch's column — five knobs wide on the sheet, a third of one here — on the
+   same footing as the frequency knobs beside it, and the panel is scaled to the
+   window, so every idle column is taken off the size of every knob on it. What
+   an even column was for is captions, and those no longer set a column's width;
+   see .caption. */
 export function columnCount(rows: readonly string[]): number {
   return Math.max(...rows.map((row) => row.trim().split(/\s+/).length))
 }
