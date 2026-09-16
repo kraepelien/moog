@@ -202,6 +202,25 @@ describe('what makes no sound here', () => {
   })
 })
 
+describe('the patch everybody meets first', () => {
+  /* A blank draft that cannot be heard reads as a broken instrument, not as an
+     empty one, so the defaults have to leave one path open and a contour that
+     holds. The switches already start on for the same reason. */
+  test('makes a sound when a key is pressed', () => {
+    const blank = settingsFrom(panel())
+    expect(blank.oscillators[0]!.level).toBeGreaterThan(0)
+    expect(blank.loudnessContour.sustain).toBeGreaterThan(0)
+    expect(blank.masterGain).toBeGreaterThan(0)
+  })
+
+  test('starts as one oscillator rather than three', () => {
+    const blank = settingsFrom(panel())
+    expect(blank.oscillators[1]!.level).toBe(0)
+    expect(blank.oscillators[2]!.level).toBe(0)
+    expect(blank.noise.level).toBe(0)
+  })
+})
+
 describe('a panel that has been damaged', () => {
   /* Values arrive as raw JSON, so the reading has to be total: a missing or
      nonsense value falls to silent or neutral rather than to NaN, which would

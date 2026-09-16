@@ -59,6 +59,16 @@
       async function main() {
         const out = {}
 
+        /* A patch as it arrives: every default, nothing touched. */
+        out.blankPatch = { rms: +rms(await render({}, 40)).toFixed(6) }
+        out.blankPlusVolume = { rms: +rms(await render({ osc1Volume: 10 }, 40)).toFixed(6) }
+        out.blankPlusSustain = {
+          rms: +rms(await render({ loudnessSustainLevel: 10 }, 40)).toFixed(6),
+        }
+        out.volumeAndSustain = {
+          rms: +rms(await render({ osc1Volume: 10, loudnessSustainLevel: 10 }, 40)).toFixed(6),
+        }
+
         const a4 = await render(loud, 40)
         out.a4 = { rms: +rms(a4).toFixed(4), hz: +hz(a4).toFixed(1) }
 
