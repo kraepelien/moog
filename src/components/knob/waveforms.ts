@@ -16,8 +16,8 @@ export const waveformGlyphs = {
     path: 'M0.651184 49.0276L4.65118 42.0276L8.65118 49.0276',
     box: { x: 0.15, y: 41.5, width: 9, height: 8 },
   },
-  /* Both of these sit at the second detent, but on different oscillators:
-     Oscillator-1 has the reverse sawtooth, Oscillator-2 and 3 the hybrid. */
+  /* Both sit at the second detent, but on different oscillators: Oscillator-3
+     has the reverse sawtooth, Oscillator-1 and 2 the hybrid. */
   triangleSaw: {
     path: 'M15.6512 23.0274L19.6512 16.0274L19.6512 20.5274L23.6512 23.0274',
     box: { x: 15.15, y: 15.5, width: 9, height: 8 },
@@ -47,19 +47,19 @@ export const waveformGlyphs = {
 export type WaveformId = keyof typeof waveformGlyphs
 
 /* In the order they sit on the knob, counter-clockwise end first. The two
-   oscillators' knobs differ at the second detent and nowhere else. */
-export const osc1WaveformOrder: readonly WaveformId[] = [
+   variants differ at the second detent and nowhere else. */
+export const osc12WaveformOrder: readonly WaveformId[] = [
   'triangle',
-  'reverseSawtooth',
+  'triangleSaw',
   'sawtooth',
   'square',
   'widePulse',
   'narrowPulse',
 ]
 
-export const osc23WaveformOrder: readonly WaveformId[] = [
+export const osc3WaveformOrder: readonly WaveformId[] = [
   'triangle',
-  'triangleSaw',
+  'reverseSawtooth',
   'sawtooth',
   'square',
   'widePulse',

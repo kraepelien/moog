@@ -41,21 +41,21 @@ const RANGE_POSITIONS = [
   { id: 'ft2', label: "2'", cap: "2'" },
 ] as const
 
-/* The oscillators differ at the second detent and nowhere else: Oscillator-1
-   has a reverse sawtooth there, Oscillator-2 and 3 a triangle-sawtooth hybrid.
+/* The oscillators differ at the second detent and nowhere else: Oscillator-3
+   has a reverse sawtooth there, Oscillator-1 and 2 a triangle-sawtooth hybrid.
    Two lists rather than one shared one, because that difference is real. */
-const OSC1_WAVEFORM_POSITIONS = [
+const OSC12_WAVEFORM_POSITIONS = [
   { id: 'triangle', label: 'Triangle', glyph: 'triangle' },
-  { id: 'reverseSawtooth', label: 'Reverse sawtooth', glyph: 'reverseSawtooth' },
+  { id: 'triangleSaw', label: 'Triangle-saw', glyph: 'triangleSaw' },
   { id: 'sawtooth', label: 'Sawtooth', glyph: 'sawtooth' },
   { id: 'square', label: 'Square', glyph: 'square' },
   { id: 'widePulse', label: 'Wide pulse', glyph: 'widePulse' },
   { id: 'narrowPulse', label: 'Narrow pulse', glyph: 'narrowPulse' },
 ] as const
 
-const OSC23_WAVEFORM_POSITIONS = [
+const OSC3_WAVEFORM_POSITIONS = [
   { id: 'triangle', label: 'Triangle', glyph: 'triangle' },
-  { id: 'triangleSaw', label: 'Triangle-saw', glyph: 'triangleSaw' },
+  { id: 'reverseSawtooth', label: 'Reverse sawtooth', glyph: 'reverseSawtooth' },
   { id: 'sawtooth', label: 'Sawtooth', glyph: 'sawtooth' },
   { id: 'square', label: 'Square', glyph: 'square' },
   { id: 'widePulse', label: 'Wide pulse', glyph: 'widePulse' },
@@ -329,7 +329,7 @@ export const items: readonly PanelItem[] = [
   /* Oscillator-1 has no frequency knob — confirmed against the instrument. The
      gap in the middle column is the hardware, not an omission. */
   stepKnob('osc1Range', 'Range', 'oscillatorBank', RANGE_POSITIONS, 'ft8', { group: 'osc1' }),
-  stepKnob('osc1Waveform', 'Waveform', 'oscillatorBank', OSC1_WAVEFORM_POSITIONS, 'triangle', {
+  stepKnob('osc1Waveform', 'Waveform', 'oscillatorBank', OSC12_WAVEFORM_POSITIONS, 'triangle', {
     group: 'osc1',
   }),
   stepKnob('osc2Range', 'Range', 'oscillatorBank', RANGE_POSITIONS, 'ft8', { group: 'osc2' }),
@@ -337,7 +337,7 @@ export const items: readonly PanelItem[] = [
     group: 'osc2',
     size: 'large',
   }),
-  stepKnob('osc2Waveform', 'Waveform', 'oscillatorBank', OSC23_WAVEFORM_POSITIONS, 'triangle', {
+  stepKnob('osc2Waveform', 'Waveform', 'oscillatorBank', OSC12_WAVEFORM_POSITIONS, 'triangle', {
     group: 'osc2',
   }),
   stepKnob('osc3Range', 'Range', 'oscillatorBank', RANGE_POSITIONS, 'ft8', { group: 'osc3' }),
@@ -345,7 +345,7 @@ export const items: readonly PanelItem[] = [
     group: 'osc3',
     size: 'large',
   }),
-  stepKnob('osc3Waveform', 'Waveform', 'oscillatorBank', OSC23_WAVEFORM_POSITIONS, 'triangle', {
+  stepKnob('osc3Waveform', 'Waveform', 'oscillatorBank', OSC3_WAVEFORM_POSITIONS, 'triangle', {
     group: 'osc3',
   }),
 

@@ -37,8 +37,8 @@ Six detents, evenly spaced 30° apart:
 Range reads `LO, 32', 16', 8', 4', 2'` across those positions. Waveform reads
 triangle, triangle-saw, sawtooth, square, wide pulse, narrow pulse.
 
-> **Correction.** The reading above holds for Oscillator-2 and Oscillator-3. On
-> **Oscillator-1** the second waveform is a **reverse sawtooth** — the mirror of
+> **Correction.** The reading above holds for Oscillator-1 and Oscillator-2. On
+> **Oscillator-3** the second waveform is a **reverse sawtooth** — the mirror of
 > the rising ramp at the next detent — not the hybrid. The scan this was measured
 > from does not distinguish the two oscillators, so the difference was missed.
 > The build carries both glyphs and the angles above are unaffected.
