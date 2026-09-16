@@ -368,6 +368,26 @@ why the panel's A-440 switch has something to be a reference *for*.
 - **The mixer does not overdrive.** The instrument's does, audibly; this divides by its own source
   count instead of clipping.
 
+### Playing it from a MIDI keyboard
+
+An anachronism, stated as one: the Model D predates MIDI by thirteen years and has no socket for it.
+What is faithful is the other end — a controller's three gestures are exactly the three the
+instrument has, so nothing had to be invented about where a message goes.
+
+| MIDI | Goes to |
+|---|---|
+| note on/off, any channel | the keys, for notes 29 to 72 (F1 to C5); anything outside is dropped rather than folded into range |
+| pitch bend, 14-bit | the Pitch wheel, which is sprung and never stored in a patch |
+| CC 1 | the Mod. wheel, which **is** part of a patch, so a controller moving it marks the draft unsaved exactly as dragging it on screen does |
+| CC 120 / 123 | everything released; a note left sounding after a panic is the worst failure a synthesiser has |
+| velocity | read only to tell a note on from a note off. The keyboard is not velocity sensitive, so how hard a key is struck is not information this instrument has anywhere to put |
+
+Access is asked for on the first key played, not on load: a browser wants a gesture behind the
+request, and a permission prompt that greets somebody before they have touched anything is one they
+have no reason to grant. A refusal is not an error — it means the screen and the typing keyboard are
+how it gets played. A keyboard plugged in after the page is open still works, because the access
+object says when its ports change.
+
 ### Hearing it
 
 `tools/audio-check.html` answers what no unit test can. Run `bun run dev`, open

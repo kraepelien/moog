@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+  <head><title>midi check</title></head>
+  <body>
+    <pre id="out">checking…</pre>
+    <!-- Whether this browser will hand over MIDI at all, and what it hands over.
+         Run `bun run dev` and open /tools/midi-check.html: it lists the inputs
+         it can see and prints every message as the instrument reads it, so a
+         controller that appears to do nothing can be told apart from one whose
+         messages are being misread. -->
+    <script type="module">
+      import { readMidi } from '/src/audio/midi.ts'
+
+      const out = document.getElementById('out')
+      const lines = []
+      const show = (line) => {
+        lines.unshift(line)
+        out.textContent = lines.slice(0, 40).join('\n')
+      }
+
+      if (typeof navigator.requestMIDIAccess !== 'function') {
+        show('This browser does not offer Web MIDI at all.')
+      } else {
+        try {
+          const access = await navigator.requestMIDIAccess()
+          const names = []
+          access.inputs.forEach((input) => names.push(`${input.name} (${input.manufacturer || '?'})`))
+          show(names.length ? `inputs: ${names.join(', ')}` : 'granted, but no input is connected')
+          const listen = () =>
+            access.inputs.forEach((input) => {
+              input.onmidimessage = (event) => {
+                const bytes = [...event.data].map((b) => b.toString(16).padStart(2, '0')).join(' ')
+                show(`${bytes}  ->  ${JSON.stringify(readMidi(event.data))}`)
+              }
+            })
+          listen()
+          access.onstatechange = () => {
+            show('ports changed')
+            listen()
+          }
+        } catch (error) {
+          show(`refused or unavailable: ${error}`)
+        }
+      }
+    </script>
+  </body>
+</html>
