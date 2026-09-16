@@ -38,6 +38,49 @@ describe('every continuous control stores finer than it shows', () => {
   })
 })
 
+describe('the editor round-trips without losing precision', () => {
+  const frequency = panelRegistry.control('osc2Frequency') as ContinuousKnobDef
+
+  /* The bug this pins: the input used to be pre-filled with the *displayed*
+     value, one decimal, so opening the editor on a stored 3.23 and closing it
+     committed 3.2 back. Opening and closing a control must change nothing. */
+  test('opening and committing unchanged keeps the hundredth', () => {
+    for (const stored of [3.23, -7.41, 0.05, 8, -8]) {
+      const value = quantise(frequency, stored)
+      const reopened = Number(String(value))
+      expect(quantise(frequency, reopened)).toBe(value)
+    }
+  })
+
+  test('the displayed value alone would have lost it', () => {
+    const value = quantise(frequency, 3.23)
+    expect(value.toFixed(decimalsFor(frequency))).toBe('3.2')
+    expect(Number(value.toFixed(decimalsFor(frequency)))).not.toBe(value)
+  })
+})
+
+describe('out-of-range input clamps to the end of travel', () => {
+  const frequency = panelRegistry.control('osc2Frequency') as ContinuousKnobDef
+
+  test('Frequency reaches 8, so 8.23 lands on 8 rather than being refused', () => {
+    expect(frequency.max).toBe(8)
+    expect(quantise(frequency, 8.23)).toBe(8)
+    expect(quantise(frequency, -8.23)).toBe(-8)
+  })
+
+  test('a comma decimal parses the same as a point', () => {
+    const asPoint = Number('8.23'.replace(',', '.'))
+    const asComma = Number('8,23'.replace(',', '.'))
+    expect(asComma).toBe(asPoint)
+    expect(quantise(frequency, asComma)).toBe(quantise(frequency, asPoint))
+  })
+
+  test('a value inside the range is kept exactly', () => {
+    expect(quantise(frequency, 3.23)).toBe(3.23)
+    expect(quantise(frequency, 7.99)).toBe(7.99)
+  })
+})
+
 describe('typing a time', () => {
   test('a bare number is milliseconds, the unit the control stores', () => {
     expect(parseTimeInput('800')).toBe(800)

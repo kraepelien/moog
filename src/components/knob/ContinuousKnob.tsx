@@ -158,7 +158,11 @@ export function ContinuousKnob({ def, value, onChange }: ContinuousKnobProps) {
       </svg>
       {editing && (
         <ValueEntry
-          initial={current.toFixed(decimalsFor(def))}
+          /* The stored value, not the displayed one. The dial prints a tenth
+             while the control stores a hundredth, so pre-filling what is on
+             screen would let opening and closing the editor quietly round 3.23
+             down to 3.2. */
+          initial={String(current)}
           parse={(text) => {
             const parsed = Number(text.trim().replace(',', '.'))
             return Number.isFinite(parsed) && text.trim() !== '' ? quantise(def, parsed) : null

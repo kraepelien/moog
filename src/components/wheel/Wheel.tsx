@@ -118,7 +118,8 @@ export function Wheel({ def, value, onChange }: WheelProps) {
       </svg>
       {editing && (
         <ValueEntry
-          initial={current.toFixed(wheelDecimals(def))}
+          /* The stored value, not the displayed one — see ContinuousKnob. */
+          initial={String(current)}
           parse={(text) => {
             const parsed = Number(text.trim().replace(',', '.'))
             return Number.isFinite(parsed) && text.trim() !== '' ? quantiseWheel(def, parsed) : null
