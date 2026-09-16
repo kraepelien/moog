@@ -28,7 +28,7 @@ function PersonGlyph() {
   )
 }
 
-const TAB_LABELS: Record<View, string> = {
+const TAB_LABELS: Record<(typeof VIEWS)[number], string> = {
   editor: 'Patch editor',
   library: 'Patch library',
 }
@@ -63,7 +63,9 @@ export function TopBar({
         </h1>
 
         <Tabs
-          value={view}
+          /* False on a page without a tab, which leaves the row unselected
+             rather than pointing at whichever tab sorts first. */
+          value={(VIEWS as readonly View[]).includes(view) ? view : false}
           onChange={(_event, next: View) => onView(next)}
           aria-label="Page"
           className={styles.tabs}

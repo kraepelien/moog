@@ -59,7 +59,12 @@ export function SavePatchDialog({
     if (open) setFields(read(patch))
   }
 
-  const categories: FilterChoice[] = tagChoices.map((tag) => ({
+  /* What the patch already wears is offered even when the list no longer does:
+     an admin retiring a tag leaves the patches wearing it, and a chip that is
+     not drawn is one nobody can take off. */
+  const worn = [...new Set([...tagChoices, ...patch.tags])].sort((a, b) => a.localeCompare(b))
+
+  const categories: FilterChoice[] = worn.map((tag) => ({
     value: tag,
     label: tag,
     tone: toneForTag(tag),
