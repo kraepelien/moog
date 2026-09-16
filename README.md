@@ -19,18 +19,17 @@ start, but not every Vite plugin is happy there, so it stays opt-in per command.
 
 ## State of play
 
-**No control is specified yet.** The whole panel is laid out in `src/controls/panel.ts`, but every
-control is a `placeholder`: no range, no positions, no default. Controls are specified one at a
-time, and replacing a placeholder is a change to `type` and that type's fields on a single entry.
+**All 43 controls are specified and built**, plus 8 decorations that are drawn but hold no value.
+Five control types cover the instrument: step knob, two-position switch, continuous knob, time knob
+and wheel.
 
-The placeholder codec passes stored values straight through and never reports a value invalid.
-Returning its own `null` instead would let `mergeValues` write that null back over a real value
-saved by a build where the control was properly defined — so reviewing the layout would quietly
-damage patches.
+The `placeholder` type stays registered even though nothing uses it. It is how every control here
+arrived: laid out on the panel so the layout could be checked, before anything was specified. Its
+codec passes stored values straight through and never reports one invalid, so a placeholder can
+neither invent a value nor destroy one a later build understands.
 
-Reported hardware values that have not been turned into specifications yet live in
-`reference/control-values.md`. The recurring trap there: **the printed scale is not the range** on
-at least four controls.
+Hardware values reported to us live in `reference/control-values.md`. The recurring trap there:
+**the printed scale is not the range** on four controls.
 
 ## Layout
 
@@ -114,9 +113,24 @@ Tune prints to 2 but reaches 2.5, the oscillator frequency knobs print to 7 but 
 prints to 4 but reaches 5. So `scale` (what is drawn) is given separately from `min`/`max` (what is
 storable), and `validateDef` rejects a scale that runs outside the range.
 
+Where the range runs past the printed scale, the end gets an **unlabelled tick** so the extra travel
+is visible. Without it a knob that reaches 8 while printing to 7 looks like it stops at 7, and the
+extra travel reads as a bug rather than as the instrument.
+
 `step` is separate again: it is what one nudge changes and what stored values round to. A knob can
 print a numeral every 2 and still be settable in tenths. Values are re-rounded on every change,
 because adding 0.1 thirty times does not give 3 in binary floating point.
+
+### Wheels
+
+Continuous like a knob but travelling up and down, and with no printed numerals — the panel shows
+only the ribbed wheel and its marker. The ribs are the wheel's surface and never move; the marker
+is the only thing a value changes.
+
+Pitch is **sprung**, recorded as `springsTo` rather than assumed: the real wheel is centre-returning
+and cannot hold a position once your hand leaves it, so releasing a drag returns it. That is guarded
+on a drag having actually started, so a stray pointer-up over the wheel cannot discard a value set
+from the keyboard.
 
 Both exports share one tick geometry — centre (53, 65), spokes to radius 39 every 30° from −150 to
 +150, a 300° sweep — and differ only in body size and indicator radius, so `size: 'small' | 'large'`

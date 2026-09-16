@@ -81,14 +81,21 @@ describe('decimalsFor', () => {
 })
 
 describe('the printed scale is not the range', () => {
-  test('ticks are generated from the scale, so they can stop short of the range', () => {
+  test('a tick marks the travel past the last numeral, without a label', () => {
+    /* Otherwise a knob that reaches 2.5 while printing to 2 looks like it stops
+       at 2, and the extra travel reads as a bug. */
     const tune = panelRegistry.control('tune') as ContinuousKnobDef
-    expect(tune.min).toBe(-2.5)
-    expect(tune.max).toBe(2.5)
+    expect([tune.min, tune.max]).toEqual([-2.5, 2.5])
     const marks = scaleMarks(tune)
-    expect(marks[0]!.value).toBe(-2)
-    expect(marks.at(-1)!.value).toBe(2)
+    expect(marks[0]).toEqual({ value: -2.5, labelled: false })
+    expect(marks.at(-1)).toEqual({ value: 2.5, labelled: false })
     expect(marks.filter((m) => m.labelled).map((m) => m.value)).toEqual([-2, -1, 0, 1, 2])
+  })
+
+  test('a knob whose scale covers its whole range gains no extra ticks', () => {
+    expect(scaleMarks(volume)[0]!.value).toBe(0)
+    expect(scaleMarks(volume).at(-1)!.value).toBe(10)
+    expect(scaleMarks(volume)).toHaveLength(11)
   })
 
   test('a 0-10 knob ticks every unit and prints every other', () => {
@@ -97,18 +104,22 @@ describe('the printed scale is not the range', () => {
     expect(marks.filter((m) => m.labelled).map((m) => m.value)).toEqual([0, 2, 4, 6, 8, 10])
   })
 
-  test('the oscillator frequency knobs reach 8 while printing to 7', () => {
+  test('the oscillator frequency knobs tick to 8 while the numerals stop at 7', () => {
     for (const id of ['osc2Frequency', 'osc3Frequency']) {
       const def = panelRegistry.control(id) as ContinuousKnobDef
+      const marks = scaleMarks(def)
       expect([def.min, def.max]).toEqual([-8, 8])
-      expect(scaleMarks(def).at(-1)!.value).toBe(7)
+      expect(marks.at(-1)).toEqual({ value: 8, labelled: false })
+      expect(marks.filter((m) => m.labelled).at(-1)!.value).toBe(7)
     }
   })
 
-  test('cutoff reaches 5 while printing to 4', () => {
+  test('cutoff ticks to 5 while the numerals stop at 4', () => {
     const def = panelRegistry.control('cutoffFrequency') as ContinuousKnobDef
+    const marks = scaleMarks(def)
     expect([def.min, def.max]).toEqual([-5, 5])
-    expect(scaleMarks(def).at(-1)!.value).toBe(4)
+    expect(marks.at(-1)).toEqual({ value: 5, labelled: false })
+    expect(marks.filter((m) => m.labelled).at(-1)!.value).toBe(4)
   })
 })
 

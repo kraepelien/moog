@@ -5,17 +5,18 @@ import { isDecoration } from '../src/controls/types.ts'
 import { rangeDef, testEnumType, testNumberType, testRegistry, volumeDef } from './fixtures.ts'
 
 describe('registry', () => {
-  test('a control is either built or an unspecified placeholder, nothing in between', () => {
+  test('every control has a component type the panel knows how to draw', () => {
     expect(panelRegistry.controls.length).toBeGreaterThan(0)
-    const known = ['placeholder', 'stepKnob', 'toggleSwitch', 'continuousKnob', 'timeKnob']
+    const known = ['placeholder', 'stepKnob', 'toggleSwitch', 'continuousKnob', 'timeKnob', 'wheel']
     expect(panelRegistry.controls.every((def) => known.includes(def.type))).toBe(true)
   })
 
-  test('placeholders still contribute no invented value', () => {
+  test('every control now supplies a real default', () => {
+    /* A placeholder would contribute null; none are left. */
     const defaults = defaultValues(panelRegistry)
     for (const def of panelRegistry.controls) {
-      if (def.type === 'placeholder') expect(defaults[def.id]).toBeNull()
-      else expect(defaults[def.id]).not.toBeNull()
+      expect(defaults[def.id]).not.toBeNull()
+      expect(defaults[def.id]).toBeDefined()
     }
   })
 

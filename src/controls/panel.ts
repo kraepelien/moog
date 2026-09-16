@@ -1,21 +1,18 @@
-import { placeholderType, type PlaceholderDef } from './placeholder.ts'
+import { placeholderType } from './placeholder.ts'
 import { createRegistry } from './registry.ts'
 import { continuousKnobType, type ContinuousKnobDef } from './continuousKnob.ts'
 import { stepKnobType, type StepKnobDef, type StepPosition } from './stepKnob.ts'
 import { timeKnobType, type TimeKnobDef } from './timeKnob.ts'
 import { toggleSwitchType, type ToggleSwitchDef } from './toggleSwitch.ts'
+import { wheelType, type WheelDef } from './wheel.ts'
 import type { ControlType, DecorationDef, GroupDef, PanelItem, SectionDef } from './types.ts'
 
-/* Every control on the patch sheet, all of them placeholders. Nothing here says
-   what a control's range, steps, positions or default are — those are specified
-   one at a time, and replacing a placeholder is a change to `type` plus the
-   type's own fields on this one entry.
+/* Every control on the patch sheet. All of them are now specified; the
+   placeholder type stays registered so the next control added to the instrument
+   can be laid out before it is specified, which is how each of these arrived.
 
-   `sheetScale` is the printed scale copied off the sheet as a caption for review.
-   It is not a range and nothing reads it as one.
-
-   Control ids are permanent once a real value is saved under them. Nothing saves
-   values through a placeholder, so every id here is still free to change. */
+   Control ids and position ids are permanent: they are what a saved patch
+   contains, so renaming one breaks existing data. */
 
 export const controlTypes: readonly ControlType<never, never>[] = [
   placeholderType as unknown as ControlType<never, never>,
@@ -23,6 +20,7 @@ export const controlTypes: readonly ControlType<never, never>[] = [
   toggleSwitchType as unknown as ControlType<never, never>,
   continuousKnobType as unknown as ControlType<never, never>,
   timeKnobType as unknown as ControlType<never, never>,
+  wheelType as unknown as ControlType<never, never>,
 ]
 
 /* The six rotary-selector positions, counter-clockwise end first, matching the
@@ -78,16 +76,6 @@ export const groups: readonly GroupDef[] = [
   { id: 'loudnessContour', label: 'Loudness Contour', section: 'modifiers' },
   { id: 'wheels', label: '', section: 'performance' },
 ]
-
-function placeholder(
-  id: string,
-  label: string,
-  section: string,
-  shape: PlaceholderDef['shape'],
-  extra: { group?: string; sheetScale?: string } = {},
-): PlaceholderDef {
-  return { id, type: 'placeholder', label, section, shape, ...extra }
-}
 
 function stepKnob(
   id: string,
@@ -230,6 +218,28 @@ function timeKnob(
   }
 }
 
+/* The two performance wheels. Neither carries printed numerals, so the ranges
+   here are a convention rather than something read off the panel: Mod runs 0 to
+   10 like every other level on the instrument, Pitch is symmetric about a centre
+   it springs back to. */
+function wheel(
+  id: string,
+  label: string,
+  section: string,
+  range: { min: number; max: number; default: number; springsTo?: number },
+  extra: { group?: string } = {},
+): WheelDef {
+  return {
+    id,
+    type: 'wheel',
+    label,
+    section,
+    step: 0.1,
+    ...range,
+    ...(extra.group ? { group: extra.group } : {}),
+  }
+}
+
 function decoration(
   id: string,
   label: string,
@@ -366,8 +376,10 @@ export const items: readonly PanelItem[] = [
   knob0to10('lfoRate', 'LFO Rate', 'performance', 0),
   onOff('glideEnable', 'Glide', 'performance', { headline: 'Glide' }),
   onOff('decayEnable', 'Decay', 'performance', { headline: 'Decay' }),
-  placeholder('pitchWheel', 'Pitch', 'performance', 'wheel', { group: 'wheels' }),
-  placeholder('modWheel', 'Mod.', 'performance', 'wheel', { group: 'wheels' }),
+  wheel('pitchWheel', 'Pitch', 'performance', { min: -5, max: 5, default: 0, springsTo: 0 }, {
+    group: 'wheels',
+  }),
+  wheel('modWheel', 'Mod.', 'performance', { min: 0, max: 10, default: 0 }, { group: 'wheels' }),
 ]
 
 export const panelRegistry = createRegistry({ types: controlTypes, sections, groups, items })

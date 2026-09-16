@@ -96,14 +96,19 @@ export interface ScaleMark {
   readonly labelled: boolean
 }
 
-/* Ticks are generated from the printed scale, not from the range, because the
-   silkscreen deliberately stops short on several controls. */
+/* Numerals come from the printed scale, which stops short of the range on several
+   controls. The travel past the last numeral still gets a tick, unlabelled, so a
+   knob that reaches 8 while printing to 7 does not look like it stops at 7 —
+   otherwise the extra travel is invisible and reads as a bug. */
 export function scaleMarks(def: ContinuousKnobDef): readonly ScaleMark[] {
   const scale = def.scale
   if (!scale) return []
   const from = scale.from ?? def.min
   const to = scale.to ?? def.max
   const marks: ScaleMark[] = []
+
+  if (def.min < from) marks.push({ value: def.min, labelled: false })
+
   const count = Math.round((to - from) / scale.tickStep)
   for (let i = 0; i <= count; i++) {
     const value = Number((from + i * scale.tickStep).toFixed(10))
@@ -112,5 +117,8 @@ export function scaleMarks(def: ContinuousKnobDef): readonly ScaleMark[] {
       Math.abs(from + stepsFromZero * scale.labelStep - value) < scale.tickStep / 1000
     marks.push({ value, labelled })
   }
+
+  if (def.max > to) marks.push({ value: def.max, labelled: false })
+
   return marks
 }

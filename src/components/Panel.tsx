@@ -3,12 +3,14 @@ import type { Registry } from '../controls/registry.ts'
 import { isContinuousKnob } from '../controls/continuousKnob.ts'
 import { isStepKnob } from '../controls/stepKnob.ts'
 import { isTimeKnob } from '../controls/timeKnob.ts'
+import { isWheel } from '../controls/wheel.ts'
 import { isToggleSwitch } from '../controls/toggleSwitch.ts'
 import { isDecoration, type ControlValue, type PanelItem } from '../controls/types.ts'
 import { ContinuousKnob } from './knob/ContinuousKnob.tsx'
 import { StepKnob } from './knob/StepKnob.tsx'
 import { TimeKnob } from './knob/TimeKnob.tsx'
 import { ToggleSwitch } from './switch/ToggleSwitch.tsx'
+import { Wheel } from './wheel/Wheel.tsx'
 import styles from './Panel.module.css'
 
 /* Two views of the same registry. `Panel` draws the controls that have real
@@ -32,6 +34,15 @@ function Control({
   if (isDecoration(item)) return null
   const stored = typeof value === 'string' ? value : ''
 
+  if (isWheel(item)) {
+    return (
+      <Wheel
+        def={item}
+        value={typeof value === 'number' ? value : item.default}
+        onChange={onChange}
+      />
+    )
+  }
   if (isTimeKnob(item)) {
     return (
       <TimeKnob

@@ -150,8 +150,7 @@ describe('the four shipped time knobs', () => {
     for (const knob of knobs) expect(knob.anchors).toHaveLength(13)
   })
 
-  test('the whole panel is now built', () => {
-    const unbuilt = panelRegistry.controls.filter((def) => def.type === 'placeholder')
-    expect(unbuilt.map((def) => def.id)).toEqual(['pitchWheel', 'modWheel'])
+  test('nothing on the panel is still a placeholder', () => {
+    expect(panelRegistry.controls.filter((def) => def.type === 'placeholder')).toEqual([])
   })
 })
