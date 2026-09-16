@@ -52,6 +52,13 @@ export interface PatchStore {
 
 /* Read-only: the bank comes from the image, so saving one is always a copy,
    which is an ordinary patch. Listed whole because it is small. */
+/* The categories an admin keeps, apart from PatchStore because they are not a
+   patch and outlive any one of them. A patch stores the name as a plain string,
+   so this list says what may be offered, never what a patch means. */
+export interface TagStore {
+  listTags(): Promise<readonly string[]>
+}
+
 export interface PresetStore {
   listPresets(): Promise<readonly Patch[]>
 }

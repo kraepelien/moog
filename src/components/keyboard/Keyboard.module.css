@@ -1,0 +1,40 @@
+/* Drawn across whatever width its section is given, keeping the proportions the
+   geometry is written in, so the keys stand to the knobs above them as they do
+   on the instrument. */
+
+.keyboard {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* The seam between two naturals is the panel showing through, which is why the
+   stroke is the panel's own black rather than a drawn line. */
+.natural {
+  fill: #fff;
+  stroke: #000;
+  stroke-width: 1.5;
+}
+
+.sharp {
+  fill: #000;
+}
+
+/* A key that is down. The instrument has no lamp on the keyboard, so this is
+   the screen saying what your hands would otherwise tell you: enough to read
+   against the white and the black, and not a colour the panel does not have. */
+.natural[data-held] {
+  fill: #9a9a9a;
+}
+
+.sharp[data-held] {
+  fill: #3a3a3a;
+  stroke: #9a9a9a;
+  stroke-width: 1.5;
+}
+
+.natural:focus-visible,
+.sharp:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -3px;
+}

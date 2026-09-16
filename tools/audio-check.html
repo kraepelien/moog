@@ -1,0 +1,154 @@
+<!doctype html>
+<html>
+  <head><title>audio check</title></head>
+  <body>
+    <pre id="out">rendering…</pre>
+    <!-- Whether the instrument sounds, and at what pitch, which no unit test
+         can answer: it renders the engine through an OfflineAudioContext and
+         measures what comes out. Run `bun run dev` and open
+         /tools/audio-check.html; the figures print on the page.
+
+         The one worth reading first is a4 against a440Switch. They are the same
+         pitch arrived at two ways, so if they disagree the keyboard is in the
+         wrong octave. -->
+    <script type="module">
+      import { createSynth } from '/src/audio/engine.ts'
+      import { settingsFrom } from '/src/audio/settings.ts'
+      import { defaultValues } from '/src/controls/registry.ts'
+      import { panelRegistry } from '/src/controls/panel.ts'
+
+      const RATE = 48000
+      const show = (text) => {
+        document.getElementById('out').textContent = text
+      }
+
+      async function render(overrides, key, seconds = 1) {
+        const context = new OfflineAudioContext(1, RATE * seconds, RATE)
+        const synth = createSynth(() => context)
+        synth.apply(settingsFrom({ ...defaultValues(panelRegistry), ...overrides }))
+        synth.noteOn(key)
+        const buffer = await context.startRendering()
+        return buffer.getChannelData(0)
+      }
+
+      function rms(data, from = 0) {
+        let sum = 0
+        for (let i = from; i < data.length; i += 1) sum += data[i] * data[i]
+        return Math.sqrt(sum / (data.length - from))
+      }
+
+      /* Zero crossings over the steady part: with one oscillator and the filter
+         well open that is a good enough pitch to check the calibration by. */
+      function hz(data, start = 0.25) {
+        const from = Math.floor(data.length * start)
+        let crossings = 0
+        for (let i = from + 1; i < data.length; i += 1) {
+          if (data[i - 1] <= 0 && data[i] > 0) crossings += 1
+        }
+        return (crossings * RATE) / (data.length - from)
+      }
+
+      const loud = {
+        osc1Volume: 10,
+        mainVolume: 10,
+        loudnessSustainLevel: 10,
+        cutoffFrequency: 5,
+        osc1Waveform: 'triangle',
+      }
+
+      async function main() {
+        const out = {}
+
+        /* A patch as it arrives: every default, nothing touched. */
+        out.blankPatch = { rms: +rms(await render({}, 40)).toFixed(6) }
+        out.blankPlusVolume = { rms: +rms(await render({ osc1Volume: 10 }, 40)).toFixed(6) }
+        out.blankPlusSustain = {
+          rms: +rms(await render({ loudnessSustainLevel: 10 }, 40)).toFixed(6),
+        }
+        out.volumeAndSustain = {
+          rms: +rms(await render({ osc1Volume: 10, loudnessSustainLevel: 10 }, 40)).toFixed(6),
+        }
+
+        const a4 = await render(loud, 40)
+        out.a4 = { rms: +rms(a4).toFixed(4), hz: +hz(a4).toFixed(1) }
+
+        const down = await render({ ...loud, osc1Range: 'ft16' }, 40)
+        out.a4At16ft = { hz: +hz(down).toFixed(1) }
+
+        const bottom = await render(loud, 0)
+        out.bottomKey = { hz: +hz(bottom).toFixed(1) }
+
+        const detuned = await render({ ...loud, osc1Volume: 0, osc2Volume: 10, osc2Frequency: 12 }, 40)
+        out.osc2Up12 = { hz: +hz(detuned).toFixed(1) }
+
+        out.mainOutputOff = { rms: +rms(await render({ ...loud, mainOutput: 'off' }, 40)).toFixed(6) }
+        out.oscSwitchedOut = { rms: +rms(await render({ ...loud, osc1Enable: 'off' }, 40)).toFixed(6) }
+        out.filterShut = { rms: +rms(await render({ ...loud, cutoffFrequency: -5 }, 40)).toFixed(6) }
+        out.noKeyHeld = { rms: +rms(await renderSilent()).toFixed(6) }
+
+        const tone = await render({ ...loud, osc1Volume: 0, a440: 'on' }, 40)
+        out.a440Switch = { rms: +rms(tone).toFixed(4), hz: +hz(tone).toFixed(1) }
+
+        /* Two oscillators set identically. Real ones are never quite in tune
+           with each other, and what that sounds like is beating: the sum rises
+           and falls as they drift in and out of phase. Identical oscillators
+           hold one level for ever, so the spread across these windows is the
+           whole measurement. */
+        const stacked = await render(
+          { ...loud, osc1Volume: 10, osc2Volume: 10, loudnessSustainLevel: 10 },
+          40,
+          3,
+        )
+        const windows = []
+        for (let at = 0.25; at < 2.75; at += 0.25) {
+          windows.push(+rms(stacked.slice(Math.floor(RATE * at), Math.floor(RATE * (at + 0.25)))).toFixed(4))
+        }
+        out.twoOscillators = {
+          windows,
+          spread: +(Math.max(...windows) - Math.min(...windows)).toFixed(4),
+        }
+
+        /* A slow deep vibrato: the pitch measured early in the cycle should not
+           be the pitch measured later, and with the wheel down it should not
+           move at all. */
+        const vibrato = {
+          ...loud,
+          modulationSourceB: 'lfo',
+          modulationMix: 10,
+          oscillatorModulation: 'on',
+          lfoRate: 3,
+        }
+        const wobbling = await render({ ...vibrato, modWheel: 10 }, 40, 2)
+        const still = await render({ ...vibrato, modWheel: 0 }, 40, 2)
+        const window = (data, from, to) =>
+          +hz(data.slice(Math.floor(RATE * from), Math.floor(RATE * to)), 0).toFixed(1)
+        out.vibrato = {
+          wheelUp: [window(wobbling, 0.3, 0.55), window(wobbling, 0.55, 0.8)],
+          wheelDown: [window(still, 0.3, 0.55), window(still, 0.55, 0.8)],
+        }
+
+        const slow = await render({ ...loud, loudnessAttackTime: 3000 }, 40)
+        out.slowAttack = {
+          early: +rms(slow.slice(0, RATE * 0.05)).toFixed(5),
+          late: +rms(slow.slice(RATE * 0.9)).toFixed(5),
+        }
+
+        show(JSON.stringify(out, null, 1))
+        document.title = 'done'
+      }
+
+      async function renderSilent() {
+        const context = new OfflineAudioContext(1, RATE, RATE)
+        const synth = createSynth(() => context)
+        synth.apply(settingsFrom({ ...defaultValues(panelRegistry), ...loud }))
+        /* Opened and then let alone: the instrument is on and nothing is held. */
+        synth.noteOn(40)
+        synth.noteOff(40)
+        const buffer = await context.startRendering()
+        return buffer.getChannelData(0)
+      }
+
+      main().catch((error) => show('THREW ' + (error?.stack || error)))
+    </script>
+  </body>
+</html>

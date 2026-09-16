@@ -4,6 +4,7 @@ import { backupTo, openDatabase } from './db.ts'
 import { loadFactory } from './factory.ts'
 import { limitsFromEnv } from './limits.ts'
 import { createStore } from './store.ts'
+import { seedTags } from './tags.ts'
 
 /* Serves the built app plus the same API the dev plugin serves, for running the
    editor without a toolchain. `bun run serve` after `bun run build`. */
@@ -21,6 +22,7 @@ const port = Number(process.env.PORT ?? 5174)
 
 const db = openDatabase(join(root, 'moog.db'))
 const factory = loadFactory(db, seed)
+seedTags(db)
 console.log(`Factory bank: ${factory.loaded} presets, ${factory.retired} retired`)
 
 /* Trash is a grace period, not a place things stay. */

@@ -1,0 +1,201 @@
+import { useState } from 'react'
+import Box from '@mui/material/Box'
+import Button from '@mui/material/Button'
+import Dialog from '@mui/material/Dialog'
+import IconButton from '@mui/material/IconButton'
+import InputAdornment from '@mui/material/InputAdornment'
+import TextField from '@mui/material/TextField'
+import Typography from '@mui/material/Typography'
+import { FilterRow, type FilterChoice } from './FilterRow.tsx'
+import { INSTRUMENTS } from '../../instruments/instruments.ts'
+import { SHELL, TONE_COLOURS, toneForTag } from '../../tones.ts'
+import type { Patch, Visibility } from '../../patch/schema.ts'
+import styles from './SavePatchDialog.module.css'
+
+function ClearGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+      <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+/* What the dialog hands back. Not a Patch: it is a form, and what saving a patch
+   means — created or written over — belongs to whoever owns the store. */
+export interface PatchFields {
+  readonly name: string
+  readonly notes: string
+  readonly tags: readonly string[]
+  readonly instrument: string
+  readonly visibility: Visibility
+}
+
+export function SavePatchDialog({
+  open,
+  patch,
+  tagChoices,
+  onCancel,
+  onSave,
+}: {
+  open: boolean
+  patch: Patch
+  /* The tags already in use, since there is nowhere here to invent one. */
+  tagChoices: readonly string[]
+  onCancel: () => void
+  onSave: (fields: PatchFields) => void
+}) {
+  const [fields, setFields] = useState<PatchFields>(() => read(patch))
+  /* What the fields were last filled from: the patch, while the form is open,
+     and nothing once it closes. Comparing against it as this renders is what
+     refills the form on every opening — including a second opening of the same
+     patch, which has to forget whatever an abandoned first one typed.
+
+     Adjusted here rather than in an effect, which would paint the last edit for
+     a frame before replacing it. */
+  const [filledFrom, setFilledFrom] = useState<string | null>(null)
+  const filling = open ? patch.id : null
+  if (filling !== filledFrom) {
+    setFilledFrom(filling)
+    if (open) setFields(read(patch))
+  }
+
+  const categories: FilterChoice[] = tagChoices.map((tag) => ({
+    value: tag,
+    label: tag,
+    tone: toneForTag(tag),
+  }))
+
+  const synths: FilterChoice[] = INSTRUMENTS.map((instrument) => ({
+    value: instrument.id,
+    label: instrument.name,
+    tone: 'green',
+  }))
+
+  /* The bank is the server's, so there is no factory chip to press: what is
+     settable here is whether anyone else may see it. */
+  const others: FilterChoice[] = [
+    { value: 'user', label: 'User', tone: 'violet', locked: true },
+    { value: 'public', label: 'Public', tone: 'blue' },
+  ]
+
+  return (
+    <Dialog open={open} onClose={onCancel} fullWidth maxWidth="md">
+      <Box className={styles.dialog}>
+        <Box className={styles.header}>
+          <Typography component="h2" className={styles.title}>
+            Save patch
+          </Typography>
+          <Box className={styles.actions}>
+            <Button
+              className={styles.action}
+              onClick={() => onSave(fields)}
+              sx={{
+                color: '#07110b',
+                backgroundColor: TONE_COLOURS.green.ink,
+                '&:hover': { backgroundColor: TONE_COLOURS.green.ink },
+              }}
+            >
+              Save
+            </Button>
+            <Button
+              className={styles.action}
+              onClick={onCancel}
+              sx={{
+                color: '#1b0509',
+                backgroundColor: TONE_COLOURS.pink.ink,
+                '&:hover': { backgroundColor: TONE_COLOURS.pink.ink },
+              }}
+            >
+              Cancel
+            </Button>
+          </Box>
+        </Box>
+
+        <TextField
+          fullWidth
+          size="small"
+          value={fields.name}
+          placeholder="Patch name"
+          onChange={(event) => setFields({ ...fields, name: event.target.value })}
+          className={styles.name}
+          sx={{ '& .MuiOutlinedInput-root': { backgroundColor: SHELL.field } }}
+          slotProps={{
+            htmlInput: { 'aria-label': 'Patch name' },
+            input: {
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    aria-label="Clear the name"
+                    disabled={fields.name === ''}
+                    onClick={() => setFields({ ...fields, name: '' })}
+                    sx={{ color: TONE_COLOURS.pink.ink }}
+                  >
+                    <ClearGlyph />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            },
+          }}
+        />
+
+        <Box className={styles.chips}>
+          <FilterRow
+            label="Category"
+            choices={categories}
+            selected={fields.tags}
+            onToggle={(tag) =>
+              setFields({
+                ...fields,
+                tags: fields.tags.includes(tag)
+                  ? fields.tags.filter((held) => held !== tag)
+                  : [...fields.tags, tag],
+              })
+            }
+          />
+          <FilterRow
+            label="Synth"
+            choices={synths}
+            selected={[fields.instrument]}
+            /* One instrument, not a set: pressing the one already on leaves it
+               on rather than leaving the patch belonging to nothing. */
+            onToggle={(id) => setFields({ ...fields, instrument: id })}
+          />
+          <FilterRow
+            label="Other"
+            choices={others}
+            selected={fields.visibility === 'public' ? ['public'] : []}
+            onToggle={() =>
+              setFields({
+                ...fields,
+                visibility: fields.visibility === 'public' ? 'private' : 'public',
+              })
+            }
+          />
+        </Box>
+
+        <TextField
+          fullWidth
+          multiline
+          minRows={6}
+          value={fields.notes}
+          placeholder="Patch notes"
+          onChange={(event) => setFields({ ...fields, notes: event.target.value })}
+          className={styles.notes}
+          sx={{ '& .MuiOutlinedInput-root': { backgroundColor: SHELL.field } }}
+          slotProps={{ htmlInput: { 'aria-label': 'Patch notes' } }}
+        />
+      </Box>
+    </Dialog>
+  )
+}
+
+function read(patch: Patch): PatchFields {
+  return {
+    name: patch.name,
+    notes: patch.notes,
+    tags: patch.tags,
+    instrument: patch.instrument,
+    visibility: patch.visibility,
+  }
+}

@@ -6,6 +6,7 @@ import { callerKey, createRateLimiter, limitsFromEnv, type Limits } from './limi
 import { handleAuth } from './routes/auth.ts'
 import { handlePatches } from './routes/patches.ts'
 import { createStore, type Store } from './store.ts'
+import { listTags } from './tags.ts'
 import { ensureLocalUser, findUser, type UserRow } from './users.ts'
 
 /* One request handler, shared by the Vite dev plugin and the standalone server,
@@ -141,12 +142,22 @@ export function createApi({
         })
       }
 
+      /* Ahead of every route that writes, so none of them can be reached
+         without passing it. */
       if (method !== 'GET' && method !== 'HEAD') {
         /* Counted per person once there is one, and per address before that,
            so one runaway client cannot spend everybody's allowance. */
         if (!writes.allow(callerKey(request, viewer?.uid ?? null))) {
           return json({ error: 'too many writes, wait a minute' }, 429)
         }
+      }
+
+      /* Readable by anyone, because the save form needs it before it knows
+         who is looking. Writing is the admin page's, which does not exist
+         yet. */
+      if (resource === 'tags') {
+        if (method === 'GET') return json(listTags(db))
+        return json({ error: 'method not allowed' }, 405)
       }
 
       if (resource === 'settings') {

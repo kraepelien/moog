@@ -1,0 +1,66 @@
+.dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px 22px;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Pushed to the far end, as the sheet prints them. */
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.action {
+  min-width: 0;
+  padding: 3px 18px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+/* The name and the notes are the same field at two heights, so they are drawn
+   the same and only the rows between them are boxed. */
+.name :global(.MuiOutlinedInput-root),
+.notes :global(.MuiOutlinedInput-root) {
+  border-radius: 6px;
+}
+
+.name :global(.MuiOutlinedInput-notchedOutline),
+.notes :global(.MuiOutlinedInput-notchedOutline) {
+  border-color: transparent;
+}
+
+.name :global(input) {
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chips {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid;
+  border-color: inherit;
+  border-radius: 6px;
+}

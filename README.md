@@ -23,6 +23,10 @@ start, but not every Vite plugin is happy there, so it stays opt-in per command.
 Five control types cover the instrument: step knob, two-position switch, continuous knob, time knob
 and wheel.
 
+**The keyboard plays.** Every control drives the sound: three oscillators, the mixer with noise,
+the filter with its contour, both envelopes, glide, the modulation bus and both wheels. See
+"Making a sound" below for what is modelled and what is not.
+
 The `placeholder` type stays registered even though nothing uses it. It is how every control here
 arrived: laid out on the panel so the layout could be checked, before anything was specified. Its
 codec passes stored values straight through and never reports one invalid, so a placeholder can
@@ -42,9 +46,11 @@ src/
   storage/    types.ts (the adapter interface) · webStorage.ts (localStorage + in-memory backends)
   presets/    factory.ts (placeholder presets)
   transfer/   bundle.ts (JSON import/export)
+  audio/      calibration.ts (every dial-to-physical number) · settings.ts (the panel read as
+              an instrument) · engine.ts (the Web Audio graph)
 test/         fixtures.ts defines fake control types; nothing here ships
 reference/    manual scans, recovered geometry, the hand-drawn knob SVG
-tools/        artwork measurement script
+tools/        artwork measurement script · audio-check.html (what the engine sounds like)
 ```
 
 `@/` is an alias for `src/` (set in both `vite.config.ts` and `tsconfig.app.json`).
@@ -244,6 +250,40 @@ Opening a row loads the patch and switches to the editor in one go. A factory
 preset opens as a **copy**, so saving afterwards cannot write back over it; a
 patch of your own opens as itself, so saving updates the one you picked.
 
+Saving is a form, not a button. **Save** opens `SavePatchDialog`, which collects
+the name, the categories, the synth, whether it is public, and the notes, then
+hands them back as `PatchFields` — deliberately not a `Patch`, because what
+saving *means* (created, or written over) belongs to whoever owns the store, not
+to a form.
+
+The form refills itself as it renders rather than in an effect, comparing the
+patch it was last filled from against the one it is open on. An effect would
+paint the previous edit for a frame first, and the comparison is also what makes
+a second opening of the *same* patch forget what an abandoned first one typed.
+
+**There is no factory chip**: which bank a patch belongs to is the server's to
+decide and the write routes for it do not exist, so the row shows the one that
+applies and offers only Public.
+
+### Categories are a list an admin keeps
+
+The `tags` table holds the vocabulary the save form offers, seeded with twelve
+in `server/tags.ts`. A patch still stores the name as a plain string pointing at
+nothing, so retiring a row leaves every patch already wearing it exactly as it
+was, and an exported patch still means something on a machine that has never
+heard of the table.
+
+**Seeded once, not synced** — the opposite of instruments. Instruments are code,
+so the image is the authority and re-asserting them on every start is right.
+Categories are editorial, and re-asserting them would undo a deletion at the next
+restart, which would make an admin page look broken. `seedTags` writes only into
+an empty table.
+
+The form offers this list rather than the tags patches happen to wear, or a bank
+nothing is tagged in yet could never be given its first one. The library's filter
+chips still come from what is actually in the library, so no filter is offered
+that can only return nothing.
+
 MUI is wrapped in `StyledEngineProvider injectFirst` in `main.tsx`. Without it
 MUI's own single-class rules for things like `display` and `border-radius` are
 injected after ours and win on order alone, which makes a component's
@@ -286,6 +326,74 @@ build cannot strip a newer build's controls.
 `migrations` in `patch/migrate.ts` is keyed by the version it upgrades *from*. It is empty while
 there is one version; the shape exists from the first commit so that v2 is one entry rather than a
 guess at what unversioned data meant.
+
+## Making a sound
+
+The panel stores what the silkscreen says: a knob at 7 stores 7. Sounding it needs hertz, seconds
+and gains, and `reference/` supplies almost none of them. It gives geometry, the ranges behind four
+printed scales, and one table of contour times. It states no cutoff frequency, no glide time, no LFO
+rate and no oscillator interval.
+
+So **every dial-to-physical number lives in `audio/calibration.ts`, with its source**: `printed`
+(the panel says so, which is true of exactly one number, A-440), `measured`, `reported`, or
+`derived` with the reasoning written out. A test enforces it — anything not marked `derived` must
+cite a path under `reference/`. That file is also the tuning bench: nothing else may write a number,
+so every adjustment made by ear is one edit in one place.
+
+`audio/settings.ts` reads the panel into physical quantities and is pure, total, and panel-only. It
+holds no note, because pitch is a function of the panel *and* a key, and a description that changed
+on every key press could not be diffed to find what a knob did.
+
+`audio/engine.ts` owns the graph. The rule that shapes it: cutoff and pitch are each wanted by
+several things at once, so the panel's static reading goes on `frequency` and everything summed or
+moving goes on `detune`, in cents. Keyboard tracking is then a plain gain on a voltage already in
+cents, and glide is one ramp on the one node every oscillator reads, which is what the instrument's
+single keyboard voltage is. Nothing is built per note: oscillators cannot be restarted, so they run
+for the life of the context and the contours gate them.
+
+Three oscillators that agreed exactly would be a wrong model rather than a quiet one: summed dead
+in phase they give one louder oscillator where three real ones give a thick one. So Oscillator-2 and
+Oscillator-3 sit a few cents off Oscillator-1, which has no frequency knob precisely because it is
+what they are tuned against, and all three wander slowly. Both numbers are `derived`, and both are
+why the panel's A-440 switch has something to be a reference *for*.
+
+### What is not modelled
+
+- **The filter is two cascaded biquads, not a ladder.** Four poles and resonance, but it will not
+  self-oscillate at Emphasis 10 and the resonance is thinner than the real thing's. The seam for an
+  AudioWorklet ladder is the filter section of `engine.ts` and nothing else.
+- **The external input** has no jack to plug into, and **Phones Volume** has no second bus. Both are
+  listed in `SILENT` with their reason, surfaced in the checklist, and a test moves each through its
+  whole travel to prove the sound does not change.
+- **The mixer does not overdrive.** The instrument's does, audibly; this divides by its own source
+  count instead of clipping.
+
+### Playing it from a MIDI keyboard
+
+An anachronism, stated as one: the Model D predates MIDI by thirteen years and has no socket for it.
+What is faithful is the other end — a controller's three gestures are exactly the three the
+instrument has, so nothing had to be invented about where a message goes.
+
+| MIDI | Goes to |
+|---|---|
+| note on/off, any channel | the keys, for notes 29 to 72 (F1 to C5); anything outside is dropped rather than folded into range |
+| pitch bend, 14-bit | the Pitch wheel, which is sprung and never stored in a patch |
+| CC 1 | the Mod. wheel, which **is** part of a patch, so a controller moving it marks the draft unsaved exactly as dragging it on screen does |
+| CC 120 / 123 | everything released; a note left sounding after a panic is the worst failure a synthesiser has |
+| velocity | read only to tell a note on from a note off. The keyboard is not velocity sensitive, so how hard a key is struck is not information this instrument has anywhere to put |
+
+Access is asked for on the first key played, not on load: a browser wants a gesture behind the
+request, and a permission prompt that greets somebody before they have touched anything is one they
+have no reason to grant. A refusal is not an error — it means the screen and the typing keyboard are
+how it gets played. A keyboard plugged in after the page is open still works, because the access
+object says when its ports change.
+
+### Hearing it
+
+`tools/audio-check.html` answers what no unit test can. Run `bun run dev`, open
+`/tools/audio-check.html`, and it renders the engine through an `OfflineAudioContext` and prints
+what came out. Read `a4` against `a440Switch` first: the same pitch reached two ways, so if they
+disagree the keyboard is in the wrong octave.
 
 ## Storage
 

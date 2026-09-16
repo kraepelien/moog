@@ -7,6 +7,7 @@ import {
   type PatchStore,
   type PatchSummary,
   type PresetStore,
+  type TagStore,
 } from './types.ts'
 
 /* The same interface the localStorage adapter implemented, which is why it was
@@ -77,7 +78,7 @@ function toPatch(raw: unknown): Patch | null {
 
 export function createHttpStore(
   doFetch: Fetch = (path, init) => fetch(path, init),
-): PatchStore & PresetStore & LibraryStore {
+): PatchStore & PresetStore & LibraryStore & TagStore {
   const request = (path: string, init?: RequestInit) => requestWith(doFetch, path, init)
 
   return {
@@ -135,6 +136,13 @@ export function createHttpStore(
         method: 'PUT',
         body: JSON.stringify({ stars }),
       })
+    },
+
+    /* Names only: the row's id belongs to the admin page that edits the list,
+       and a patch never refers to one. */
+    async listTags(): Promise<readonly string[]> {
+      const raw = (await request('/tags')) as { name?: unknown }[]
+      return raw.map((row) => row.name).filter((name): name is string => typeof name === 'string')
     },
 
     async listPresets(): Promise<readonly Patch[]> {
