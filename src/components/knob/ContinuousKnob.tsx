@@ -104,7 +104,9 @@ export function ContinuousKnob({ def, value, onChange, hideHeader }: ContinuousK
   const current = quantise(def, value)
   const angle = angleFor(def, current)
   const drag = useRef<{ y: number; value: number } | null>(null)
-  const [editing, setEditing] = useState(false)
+  /* The dial that was double-clicked, which is both the flag that an editor
+     is open and what it floats over. */
+  const [editing, setEditing] = useState<Element | null>(null)
 
   const nudge = useCallback(
     (steps: number) => onChange(quantise(def, current + steps * def.step)),
@@ -187,7 +189,7 @@ export function ContinuousKnob({ def, value, onChange, hideHeader }: ContinuousK
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
-        onDoubleClick={() => setEditing(true)}
+        onDoubleClick={(event) => setEditing(event.currentTarget)}
       >
         <Scale def={def} />
         <KnobBody angle={angle} size={size} />
@@ -204,6 +206,7 @@ export function ContinuousKnob({ def, value, onChange, hideHeader }: ContinuousK
       </svg>
       {editing && (
         <ValueEntry
+          anchorEl={editing}
           /* The stored value, not the displayed one. The dial prints a tenth
              while the control stores a hundredth, so pre-filling what is on
              screen would let opening and closing the editor quietly round 3.23
@@ -214,7 +217,7 @@ export function ContinuousKnob({ def, value, onChange, hideHeader }: ContinuousK
             return Number.isFinite(parsed) && text.trim() !== '' ? quantise(def, parsed) : null
           }}
           onCommit={onChange}
-          onClose={() => setEditing(false)}
+          onClose={() => setEditing(null)}
         />
       )}
       </div>

@@ -124,7 +124,9 @@ export function StepKnob({ def, value, onChange, hideHeader }: StepKnobProps) {
   const current = def.positions[index]
   const angle = DETENT_ANGLES[index] ?? DETENT_ANGLES[0]
   const dragOrigin = useRef<{ y: number; index: number } | null>(null)
-  const [editing, setEditing] = useState(false)
+  /* The dial that was double-clicked, which is both the flag that an editor
+     is open and what it floats over. */
+  const [editing, setEditing] = useState<Element | null>(null)
 
   const onKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
@@ -190,7 +192,7 @@ export function StepKnob({ def, value, onChange, hideHeader }: StepKnobProps) {
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
-        onDoubleClick={() => setEditing(true)}
+        onDoubleClick={(event) => setEditing(event.currentTarget)}
       >
         <path d={TICKS} className={styles.ticks} />
         <Labels def={def} />
@@ -214,10 +216,11 @@ export function StepKnob({ def, value, onChange, hideHeader }: StepKnobProps) {
       </svg>
       {editing && (
         <PositionPicker
+          anchorEl={editing}
           positions={def.positions}
           value={current?.id ?? def.default}
           onCommit={onChange}
-          onClose={() => setEditing(false)}
+          onClose={() => setEditing(null)}
         />
       )}
       </div>

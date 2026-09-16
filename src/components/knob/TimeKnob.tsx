@@ -83,7 +83,9 @@ export function TimeKnob({ def, value, onChange, hideHeader }: TimeKnobProps) {
   const current = quantiseMs(def, value)
   const fraction = fractionForMs(def, current)
   const drag = useRef<{ y: number; fraction: number } | null>(null)
-  const [editing, setEditing] = useState(false)
+  /* The dial that was double-clicked, which is both the flag that an editor
+     is open and what it floats over. */
+  const [editing, setEditing] = useState<Element | null>(null)
 
   /* Nudging moves by a fraction of travel, never by a fixed number of
      milliseconds, so a press feels the same at both ends of a scale whose value
@@ -159,7 +161,7 @@ export function TimeKnob({ def, value, onChange, hideHeader }: TimeKnobProps) {
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
-        onDoubleClick={() => setEditing(true)}
+        onDoubleClick={(event) => setEditing(event.currentTarget)}
       >
         <Scale def={def} />
         <KnobBody angle={angleForFraction(fraction)} size={def.size ?? 'small'} />
@@ -175,13 +177,14 @@ export function TimeKnob({ def, value, onChange, hideHeader }: TimeKnobProps) {
       </svg>
       {editing && (
         <ValueEntry
+          anchorEl={editing}
           initial={formatMs(current)}
           parse={(text) => {
             const ms = parseTimeInput(text)
             return ms === null ? null : quantiseMs(def, ms)
           }}
           onCommit={onChange}
-          onClose={() => setEditing(false)}
+          onClose={() => setEditing(null)}
         />
       )}
       </div>

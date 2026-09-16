@@ -30,7 +30,9 @@ export function Wheel({ def, value, onChange }: WheelProps) {
   const current = quantiseWheel(def, value)
   const fraction = wheelFraction(def, current)
   const drag = useRef<{ y: number; value: number } | null>(null)
-  const [editing, setEditing] = useState(false)
+  /* The strip that was double-clicked, which is both the flag that an editor
+     is open and what it floats over. */
+  const [editing, setEditing] = useState<Element | null>(null)
 
   /* Plain functions rather than useCallback: every handler here lands on a DOM
      element, never on a memoized child, so a stable identity buys nothing — and
@@ -95,7 +97,7 @@ export function Wheel({ def, value, onChange }: WheelProps) {
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
-        onDoubleClick={() => setEditing(true)}
+        onDoubleClick={(event) => setEditing(event.currentTarget)}
       >
         <rect {...FRAME} className={styles.frame} />
         <rect {...FACE} className={styles.face} />
@@ -118,6 +120,7 @@ export function Wheel({ def, value, onChange }: WheelProps) {
       </svg>
       {editing && (
         <ValueEntry
+          anchorEl={editing}
           /* The stored value, not the displayed one — see ContinuousKnob. */
           initial={String(current)}
           parse={(text) => {
@@ -125,7 +128,7 @@ export function Wheel({ def, value, onChange }: WheelProps) {
             return Number.isFinite(parsed) && text.trim() !== '' ? quantiseWheel(def, parsed) : null
           }}
           onCommit={onChange}
-          onClose={() => setEditing(false)}
+          onClose={() => setEditing(null)}
         />
       )}
       </div>

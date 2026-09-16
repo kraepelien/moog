@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { Panel } from '../src/components/Panel.tsx'
 import { panelRegistry } from '../src/controls/panel.ts'
 import { defaultValues } from '../src/controls/registry.ts'
@@ -189,17 +189,17 @@ describe('typing a value in', () => {
     const { changes } = renderPanel({ osc1Range: 'ft8' })
     fireEvent.doubleClick(screen.getAllByRole('slider', { name: 'Range' })[0]!)
 
-    const picker = screen.getByLabelText('Choose a position') as HTMLSelectElement
-    expect([...picker.options].map((option) => option.value)).toEqual([
-      'lo',
-      'ft32',
-      'ft16',
-      'ft8',
-      'ft4',
-      'ft2',
+    const picker = screen.getByLabelText('Choose a position')
+    expect(within(picker).getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
+      'LO',
+      "32'",
+      "16'",
+      "8'",
+      "4'",
+      "2'",
     ])
 
-    fireEvent.change(picker, { target: { value: 'ft32' } })
+    fireEvent.click(within(picker).getByRole('menuitem', { name: "32'" }))
     expect(changes.at(-1)!).toEqual({ id: 'osc1Range', value: 'ft32' })
   })
 })

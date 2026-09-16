@@ -1,15 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
-import styles from './ValueEntry.module.css'
+import Popover from '@mui/material/Popover'
+import TextField from '@mui/material/TextField'
 
-/* An input laid over the knob's cap for typing a value straight in, rather than
-   hunting for it by dragging. Opened by double click, which leaves single click
-   and drag free to turn the knob.
+/* A box for typing a value straight in, rather than hunting for it by dragging.
+   Opened by double click, which leaves single click and drag free to turn the
+   knob, and floated over the middle of the dial so the eye stays where the
+   gesture was.
 
-   Commits on Enter and on blur, abandons on Escape. Text that does not parse is
-   abandoned too — the alternative, quietly substituting a default, would look
-   like the knob ignored you. */
+   Commits on Enter and on dismissal, abandons on Escape. Text that does not
+   parse is abandoned too — the alternative, quietly substituting a default,
+   would look like the knob ignored you. */
 
 export interface ValueEntryProps<T> {
+  /* What the editor floats over: the dial itself, so it lands on the knob that
+     was double-clicked rather than in a corner of the screen. */
+  anchorEl: Element | null
   initial: string
   /* Returns null when the text makes no sense, which cancels the edit. */
   parse: (text: string) => T | null
@@ -19,15 +24,20 @@ export interface ValueEntryProps<T> {
 
 /* Generic in the value, so a step knob can type a position id here just as a
    continuous knob types a number. */
-export function ValueEntry<T,>({ initial, parse, onCommit, onClose }: ValueEntryProps<T>) {
+export function ValueEntry<T,>({
+  anchorEl,
+  initial,
+  parse,
+  onCommit,
+  onClose,
+}: ValueEntryProps<T>) {
   const [text, setText] = useState(initial)
   const input = useRef<HTMLInputElement>(null)
-  /* Blur fires as the element unmounts after Enter or Escape; without this the
-     commit would run twice, or a cancel would be followed by a commit. */
+  /* Dismissal fires as the element unmounts after Enter or Escape; without this
+     the commit would run twice, or a cancel would be followed by a commit. */
   const settled = useRef(false)
 
   useEffect(() => {
-    input.current?.focus()
     input.current?.select()
   }, [])
 
@@ -42,25 +52,36 @@ export function ValueEntry<T,>({ initial, parse, onCommit, onClose }: ValueEntry
   }
 
   return (
-    <input
-      ref={input}
-      className={styles.entry}
-      value={text}
-      inputMode="decimal"
-      aria-label="Type a value"
-      onChange={(event) => setText(event.target.value)}
-      onBlur={() => settle(true)}
-      onKeyDown={(event) => {
-        /* Stopped from reaching the knob, which reads arrows and Home/End as
-           nudges and would move the value out from under the text being typed. */
-        event.stopPropagation()
-        if (event.key === 'Enter') settle(true)
-        else if (event.key === 'Escape') settle(false)
-      }}
-      /* The knob starts a drag on pointer down; a press inside the input is not
-         one. */
-      onPointerDown={(event) => event.stopPropagation()}
-      onDoubleClick={(event) => event.stopPropagation()}
-    />
+    <Popover
+      open={anchorEl !== null}
+      anchorEl={anchorEl}
+      onClose={() => settle(true)}
+      anchorOrigin={{ vertical: 'center', horizontal: 'center' }}
+      transformOrigin={{ vertical: 'center', horizontal: 'center' }}
+      slotProps={{ paper: { sx: { p: 1 } } }}
+    >
+      <TextField
+        inputRef={input}
+        autoFocus
+        size="small"
+        value={text}
+        onChange={(event) => setText(event.target.value)}
+        onKeyDown={(event) => {
+          /* Stopped from reaching the knob, which reads arrows and Home/End as
+             nudges and would move the value out from under the text being
+             typed. */
+          event.stopPropagation()
+          if (event.key === 'Enter') settle(true)
+          else if (event.key === 'Escape') settle(false)
+        }}
+        slotProps={{
+          htmlInput: {
+            'aria-label': 'Type a value',
+            inputMode: 'decimal',
+            style: { textAlign: 'center', width: '6ch' },
+          },
+        }}
+      />
+    </Popover>
   )
 }

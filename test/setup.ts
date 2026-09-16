@@ -16,8 +16,3 @@ if (!Element.prototype.setPointerCapture) {
     return false
   }
 }
-
-/* A select cannot open its own list here, and the component asks it to. */
-if (!HTMLSelectElement.prototype.showPicker) {
-  HTMLSelectElement.prototype.showPicker = function showPicker() {}
-}
