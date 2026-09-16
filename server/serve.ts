@@ -2,6 +2,8 @@ import { join } from 'node:path'
 import { createApi } from './api.ts'
 import { backupTo, openDatabase } from './db.ts'
 import { loadFactory } from './factory.ts'
+import { limitsFromEnv } from './limits.ts'
+import { createStore } from './store.ts'
 
 /* Serves the built app plus the same API the dev plugin serves, for running the
    editor without a toolchain. `bun run serve` after `bun run build`. */
@@ -21,13 +23,35 @@ const db = openDatabase(join(root, 'moog.db'))
 const factory = loadFactory(db, seed)
 console.log(`Factory bank: ${factory.loaded} presets, ${factory.retired} retired`)
 
+/* Trash is a grace period, not a place things stay. */
+const limits = limitsFromEnv(process.env)
+const store = createStore(db)
+const purge = () => {
+  const before = new Date(Date.now() - limits.trashDays * 24 * 60 * 60 * 1000).toISOString()
+  const gone = store.purgeTrash(before)
+  if (gone > 0) console.log(`Purged ${gone} from the trash, deleted over ${limits.trashDays} days ago`)
+}
+purge()
+
 /* A dated copy every day, because a plain file copy of a database in WAL mode
    can catch it mid-write and the backup on the NAS is a file copy. */
-const backup = () => backupTo(db, join(root, 'backups', `moog-${new Date().toISOString().slice(0, 10)}.db`))
+const backup = () => {
+  /* A backup that cannot be written is worth a line in the log and nothing
+     more: the editor still works, and a container that exits here would be
+     restarted into the same failure. */
+  try {
+    backupTo(db, join(root, 'backups', `moog-${new Date().toISOString().slice(0, 10)}.db`))
+  } catch (error) {
+    console.error('Backup failed:', error)
+  }
+}
 backup()
-setInterval(backup, 24 * 60 * 60 * 1000)
+setInterval(() => {
+  purge()
+  backup()
+}, 24 * 60 * 60 * 1000)
 
-const handle = createApi({ db })
+const handle = createApi({ db, limits })
 
 Bun.serve({
   port,

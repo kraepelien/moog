@@ -2,6 +2,7 @@ import type { Database } from 'bun:sqlite'
 import { systemIdentity } from '../src/patch/schema.ts'
 import { authConfigFromEnv, isAdmin, whoAmI, type AuthConfig } from './identity.ts'
 import { buildLibrary } from './library.ts'
+import { callerKey, createRateLimiter, limitsFromEnv, type Limits } from './limits.ts'
 import { handleAuth } from './routes/auth.ts'
 import { handlePatches } from './routes/patches.ts'
 import { createStore, type Store } from './store.ts'
@@ -50,6 +51,7 @@ async function body(request: Request): Promise<unknown> {
 export interface ApiOptions {
   readonly db: Database
   readonly config?: AuthConfig
+  readonly limits?: Limits
   /* Injected so the token exchange can be driven without a network. */
   readonly doFetch?: typeof fetch
   readonly now?: () => number
@@ -58,14 +60,19 @@ export interface ApiOptions {
 export function createApi({
   db,
   config = authConfigFromEnv(process.env),
+  limits = limitsFromEnv(process.env),
   doFetch,
   now,
 }: ApiOptions): (request: Request) => Promise<Response | null> {
   const store: Store = createStore(db)
   if (config.mode === 'off') ensureLocalUser(db, config.localUser)
 
+  const writes = createRateLimiter(limits.writesPerMinute, now)
+  const signIns = createRateLimiter(limits.signInsPerMinute, now)
+
   const routeContext = (viewer: UserRow | null) => ({
     store,
+    limits,
     viewer,
     admin: viewer !== null && isAdmin(viewer.email, config),
     json,
@@ -103,6 +110,9 @@ export function createApi({
       /* Before the session is read, because signing in is what somebody
          without one does. */
       if (resource === 'auth') {
+        if (sub === 'start' && !signIns.allow(callerKey(request, null))) {
+          return json({ error: 'too many sign-in attempts, wait a minute' }, 429)
+        }
         return handleAuth(
           request,
           {
@@ -129,6 +139,14 @@ export function createApi({
               ? null
               : { uid: viewer.uid, name: viewer.display_name, avatar: viewer.avatar_url },
         })
+      }
+
+      if (method !== 'GET' && method !== 'HEAD') {
+        /* Counted per person once there is one, and per address before that,
+           so one runaway client cannot spend everybody's allowance. */
+        if (!writes.allow(callerKey(request, viewer?.uid ?? null))) {
+          return json({ error: 'too many writes, wait a minute' }, 429)
+        }
       }
 
       if (resource === 'settings') {

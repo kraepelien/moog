@@ -47,6 +47,14 @@ MOOG_PUBLIC_ORIGIN=https://moog.pomello.se
 MOOG_ADMINS=you@example.com                 # comma-separated
 ```
 
+Anyone with a Google account can sign in and save, so the server keeps five
+caps with defaults nobody honest meets: `MOOG_MAX_PATCHES` (2000 each),
+`MOOG_MAX_PATCH_BYTES` (65536, against a real patch of about 200),
+`MOOG_TRASH_DAYS` (30 before a deleted patch is purged on the daily timer),
+`MOOG_WRITES_PER_MINUTE` (120 per person) and `MOOG_SIGN_INS_PER_MINUTE` (10 per
+address). Set one in the `.env` only if somebody meets it; over a cap the API
+answers 413, and over a rate 429.
+
 `deploy.sh` only rewrites the `MOOG_IMAGE` line, so everything added here by
 hand survives a deploy. None of it is in the repo, the image or CI.
 
