@@ -1,0 +1,27 @@
+/* Structure only — the bar's colours come from the theme, so there is one place
+   to change them. */
+
+.bar {
+  gap: 12px;
+}
+
+.logo {
+  border-radius: 6px;
+  display: block;
+}
+
+.title {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Takes the slack, so the navigation sits at the right whatever the page puts
+   in the middle. */
+.spacer {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}

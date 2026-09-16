@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Accordion from '@mui/material/Accordion'
 import AccordionDetails from '@mui/material/AccordionDetails'
 import AccordionSummary from '@mui/material/AccordionSummary'
@@ -7,7 +7,6 @@ import AlertTitle from '@mui/material/AlertTitle'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
-import Divider from '@mui/material/Divider'
 import List from '@mui/material/List'
 import ListItem from '@mui/material/ListItem'
 import ListItemText from '@mui/material/ListItemText'
@@ -17,6 +16,7 @@ import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { FitToWidth } from './components/FitToWidth.tsx'
+import { TopBar, type TopBarAction } from './components/TopBar.tsx'
 import { Panel, PanelChecklist } from './components/Panel.tsx'
 import { useConfirm } from './components/useConfirm.tsx'
 import { panelRegistry } from './controls/panel.ts'
@@ -28,6 +28,7 @@ import { draftFromPreset, presetFromDraft, type StoredPreset } from './presets/p
 import { createHttpStore } from './storage/httpStore.ts'
 import { StoreError, type PatchSummary } from './storage/types.ts'
 import { createBundle, parseBundle, serializeBundle } from './transfer/bundle.ts'
+import { useView } from './navigation.ts'
 
 const store = createHttpStore()
 
@@ -80,6 +81,9 @@ export function App() {
      file records, so turning it must not mark the draft unsaved either. */
   const [played, setPlayed] = useState<Record<string, ControlValue>>({})
   const { ask, dialog } = useConfirm()
+  const [view, goToView] = useView()
+  /* The menu cannot hold a file input, so it holds a button that clicks one. */
+  const importing = useRef<HTMLInputElement>(null)
 
   /* Computed before the hooks that read it, since the early return for a missing
      draft comes after them. */
@@ -128,6 +132,27 @@ export function App() {
     }
   }, [])
 
+  const importFile = useCallback(
+    (file: File) =>
+      run('', async () => {
+        const parsed = parseBundle(await file.text())
+        if (!parsed.ok) {
+          setStatus(`Import failed — ${parsed.error}`)
+          return
+        }
+        for (const patch of parsed.value.patches) await store.save(patch)
+        await refresh()
+        const { patches, rejected } = parsed.value
+        setStatus(
+          `Imported ${patches.length} patch(es)` +
+            (rejected.length
+              ? `; skipped ${rejected.length}: ${rejected.map((r) => `#${r.index} ${r.reason}`).join('; ')}`
+              : ''),
+        )
+      }),
+    [refresh, run],
+  )
+
   const adopt = useCallback((patch: Patch, message: string) => {
     setDraft(patch)
     setClean(signature(patch))
@@ -140,13 +165,24 @@ export function App() {
   const resolved = resolvePatch(panelRegistry, draft)
   const currentValues = mergeValues(panelRegistry, draft, resolved.values)
 
-  return (
-    <Box component="main" sx={{ p: 2 }}>
-      <Stack spacing={2}>
-        <Typography variant="h5" component="h1">
-          Minimoog Model D — Patch Editor
-        </Typography>
+  const menu: TopBarAction[] = [
+    { label: 'Import a file…', onSelect: () => importing.current?.click() },
+    {
+      label: 'Export every patch',
+      onSelect: () =>
+        void run('Exported every patch', async () => {
+          const all = await Promise.all(saved.map((summary) => store.get(summary.id)))
+          const present = all.filter((patch): patch is Patch => patch !== null)
+          downloadJson('all-patches.moogpatch.json', serializeBundle(createBundle(present)))
+        }),
+    },
+  ]
 
+  return (
+    <>
+      <TopBar view={view} onView={goToView} actions={menu} />
+      <Box component="main" sx={{ p: 2 }}>
+        <Stack spacing={2}>
         {failed && (
           <Alert severity="error">
             <AlertTitle>The patch server is not answering</AlertTitle>
@@ -154,6 +190,8 @@ export function App() {
           </Alert>
         )}
 
+        {view === 'editor' && (
+          <>
         {/* No card and no heading: the panel is the instrument's own face, and
             it names its own sections along the bottom the way the panel does. */}
         <FitToWidth>
@@ -269,6 +307,11 @@ export function App() {
           </Stack>
         </Section>
 
+          </>
+        )}
+
+        {view === 'library' && (
+          <>
         <Section title={`Presets (${presets.length})`}>
           <List dense disablePadding>
             {presets.map((preset) => (
@@ -394,54 +437,11 @@ export function App() {
               </ListItem>
             ))}
           </List>
-          <Divider sx={{ my: 1 }} />
-          <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
-            <Button
-              variant="outlined"
-              disabled={saved.length === 0}
-              onClick={() =>
-                void run('Exported every patch', async () => {
-                  const all = await Promise.all(saved.map((summary) => store.get(summary.id)))
-                  const present = all.filter((patch): patch is Patch => patch !== null)
-                  downloadJson('all-patches.moogpatch.json', serializeBundle(createBundle(present)))
-                })
-              }
-            >
-              Export all
-            </Button>
-            <Button variant="outlined" component="label">
-              Import a file
-              <input
-                type="file"
-                accept=".json,application/json"
-                hidden
-                onChange={(event) => {
-                  const file = event.target.files?.[0]
-                  if (!file) return
-                  event.target.value = ''
-                  void run('', async () => {
-                    const parsed = parseBundle(await file.text())
-                    if (!parsed.ok) {
-                      setStatus(`Import failed — ${parsed.error}`)
-                      return
-                    }
-                    for (const patch of parsed.value.patches) await store.save(patch)
-                    await refresh()
-                    const { patches, rejected } = parsed.value
-                    setStatus(
-                      `Imported ${patches.length} patch(es)` +
-                        (rejected.length
-                          ? `; skipped ${rejected.length}: ${rejected.map((r) => `#${r.index} ${r.reason}`).join('; ')}`
-                          : ''),
-                    )
-                  })
-                }}
-              />
-            </Button>
-          </Stack>
         </Section>
+          </>
+        )}
 
-        {report && reportHasWarnings(report) && (
+        {view === 'editor' && report && reportHasWarnings(report) && (
           <Alert severity="warning">
             <AlertTitle>The patch that was loaded did not fit the panel exactly</AlertTitle>
             <ul style={{ margin: 0, paddingInlineStart: '1.2em' }}>
@@ -462,6 +462,7 @@ export function App() {
           </Alert>
         )}
 
+        {view === 'editor' && (
         <Accordion variant="outlined" disableGutters>
           <AccordionSummary>
             <Typography variant="h6" component="h2">
@@ -472,7 +473,22 @@ export function App() {
             <PanelChecklist registry={panelRegistry} />
           </AccordionDetails>
         </Accordion>
-      </Stack>
+        )}
+        </Stack>
+      </Box>
+
+      {/* Out of the flow: the menu's Import clicks this. */}
+      <input
+        type="file"
+        accept=".json,application/json"
+        hidden
+        ref={importing}
+        onChange={(event) => {
+          const file = event.target.files?.[0]
+          event.target.value = ''
+          if (file) void importFile(file)
+        }}
+      />
 
       <Snackbar
         open={status !== ''}
@@ -482,6 +498,6 @@ export function App() {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
       />
       {dialog}
-    </Box>
+    </>
   )
 }
