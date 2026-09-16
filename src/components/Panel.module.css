@@ -58,6 +58,13 @@
   justify-content: center;
 }
 
+/* A row holding such a section runs the width of the panel rather than of its
+   own contents, since what fills it reaches the end of the case. Every other row
+   is its own box, which is what keeps the strip below the panel small. */
+.panelRow[data-fill] {
+  align-self: stretch;
+}
+
 /* A section given the width the row leaves it. Its controls are drawn across
    that width rather than centred at their own size, which is what lets the
    keyboard reach the end of the row however wide the panel above it is. */

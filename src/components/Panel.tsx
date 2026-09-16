@@ -307,7 +307,14 @@ export function Panel({
   return (
     <div className={styles.panel}>
       <div className={styles.panelRow}>{[...row, ...rest].map(render)}</div>
-      {below.length > 0 && <div className={styles.panelRow}>{below.map(render)}</div>}
+      {below.length > 0 && (
+        <div
+          className={styles.panelRow}
+          data-fill={below.some((id) => layoutFor(id)?.fillsRow) ? '' : undefined}
+        >
+          {below.map(render)}
+        </div>
+      )}
     </div>
   )
 }
