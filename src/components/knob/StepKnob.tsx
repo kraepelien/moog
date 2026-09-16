@@ -1,5 +1,10 @@
-import { memo, useCallback, useId, useRef } from 'react'
-import { positionIndex, stepBy, type StepKnobDef } from '../../controls/stepKnob.ts'
+import { memo, useCallback, useId, useRef, useState } from 'react'
+import {
+  matchPosition,
+  positionIndex,
+  stepBy,
+  type StepKnobDef,
+} from '../../controls/stepKnob.ts'
 import {
   BAKED_ANGLE,
   CAP,
@@ -13,6 +18,7 @@ import {
   VIEWBOX,
 } from './artwork.ts'
 import { waveformGlyphs, type WaveformId } from './waveforms.ts'
+import { ValueEntry } from './ValueEntry.tsx'
 import styles from './StepKnob.module.css'
 
 function pointAt(angleDeg: number, radius: number) {
@@ -78,9 +84,9 @@ const Body = memo(function Body({ angle }: { angle: number }) {
    its own position the way the octave knob does. Scaled and centred from the
    glyph's own bounds rather than a per-glyph offset, so the six sit consistently
    however different their shapes are. Outside the rotating group: the mark must
-   stay upright while the body turns. */
-/* Against a cap of radius 20, so the mark sits well inside the circle rather than
-   crowding its edge. */
+   stay upright while the body turns.
+
+   Sized against a cap of radius 20, leaving clear margin at the circle's edge. */
 const CAP_GLYPH_WIDTH = 15
 
 function CapGlyph({ glyph }: { glyph: WaveformId }) {
@@ -111,6 +117,7 @@ export function StepKnob({ def, value, onChange }: StepKnobProps) {
   const current = def.positions[index]
   const angle = DETENT_ANGLES[index] ?? DETENT_ANGLES[0]
   const dragOrigin = useRef<{ y: number; index: number } | null>(null)
+  const [editing, setEditing] = useState(false)
 
   const onKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
@@ -157,6 +164,7 @@ export function StepKnob({ def, value, onChange }: StepKnobProps) {
       <span className={styles.header} id={labelId}>
         {def.label}
       </span>
+      <div className={styles.dialWrap}>
       <svg
         viewBox={`${VIEWBOX.x} ${VIEWBOX.y} ${VIEWBOX.width} ${VIEWBOX.height}`}
         className={styles.dial}
@@ -172,6 +180,7 @@ export function StepKnob({ def, value, onChange }: StepKnobProps) {
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
+        onDoubleClick={() => setEditing(true)}
       >
         <path d={TICKS} className={styles.ticks} />
         <Labels def={def} />
@@ -192,6 +201,15 @@ export function StepKnob({ def, value, onChange }: StepKnobProps) {
           )
         )}
       </svg>
+      {editing && (
+        <ValueEntry
+          initial={current?.label ?? ''}
+          parse={(text) => matchPosition(def, text)}
+          onCommit={onChange}
+          onClose={() => setEditing(false)}
+        />
+      )}
+      </div>
     </div>
   )
 }

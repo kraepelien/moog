@@ -9,15 +9,17 @@ import styles from './ValueEntry.module.css'
    abandoned too — the alternative, quietly substituting a default, would look
    like the knob ignored you. */
 
-export interface ValueEntryProps {
+export interface ValueEntryProps<T> {
   initial: string
   /* Returns null when the text makes no sense, which cancels the edit. */
-  parse: (text: string) => number | null
-  onCommit: (value: number) => void
+  parse: (text: string) => T | null
+  onCommit: (value: T) => void
   onClose: () => void
 }
 
-export function ValueEntry({ initial, parse, onCommit, onClose }: ValueEntryProps) {
+/* Generic in the value, so a step knob can type a position id here just as a
+   continuous knob types a number. */
+export function ValueEntry<T,>({ initial, parse, onCommit, onClose }: ValueEntryProps<T>) {
   const [text, setText] = useState(initial)
   const input = useRef<HTMLInputElement>(null)
   /* Blur fires as the element unmounts after Enter or Escape; without this the

@@ -20,6 +20,13 @@
   letter-spacing: 0.04em;
 }
 
+/* The positioning context for the typed-value input, which sits over the dial
+   rather than over the whole control including its header. */
+.dialWrap {
+  position: relative;
+  display: flex;
+}
+
 .dial {
   width: 150px;
   height: 118px;
