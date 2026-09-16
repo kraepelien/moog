@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import type { ControlValue } from '../controls/types.ts'
 import { err, ok, type Result } from '../result.ts'
 
@@ -76,34 +77,35 @@ export function touchPatch(patch: Patch, identity: PatchIdentity = systemIdentit
   return { ...patch, updatedAt: identity.now() }
 }
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
 /* Structural validation only: are the fields present and of the right primitive
    shape. Whether an individual control value makes sense is resolvePatch's job,
    kept separate because a patch carrying an out-of-range knob value is still a
-   structurally valid patch and should load. */
+   structurally valid patch and should load.
+
+   `values` is deliberately a passthrough of unknown: a value belongs to its
+   control's codec, and a schema that judged them here would reject the ids this
+   build does not know yet — the very ones the format promises to preserve. */
+export const patchSchema = z.object({
+  schemaVersion: z.int(),
+  id: z.string().min(1),
+  name: z.string(),
+  notes: z.string(),
+  values: z.record(z.string(), z.unknown()),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+})
+
+/* Zod reports every problem at once and names the field; the first line is
+   enough for a person looking at a file that will not open. */
+export function describeZodError(error: z.ZodError): string {
+  const first = error.issues[0]
+  if (!first) return 'is not valid'
+  const path = first.path.join('.')
+  return path ? `${path}: ${first.message}` : first.message
+}
+
 export function parsePatch(raw: unknown): Result<Patch> {
-  if (!isPlainObject(raw)) return err('Patch is not an object')
-
-  if (typeof raw.schemaVersion !== 'number' || !Number.isInteger(raw.schemaVersion)) {
-    return err('Patch is missing an integer schemaVersion')
-  }
-  if (typeof raw.id !== 'string' || raw.id === '') return err('Patch is missing an id')
-  if (typeof raw.name !== 'string') return err('Patch name must be a string')
-  if (typeof raw.notes !== 'string') return err('Patch notes must be a string')
-  if (!isPlainObject(raw.values)) return err('Patch values must be an object')
-  if (typeof raw.createdAt !== 'string') return err('Patch createdAt must be a string')
-  if (typeof raw.updatedAt !== 'string') return err('Patch updatedAt must be a string')
-
-  return ok({
-    schemaVersion: raw.schemaVersion,
-    id: raw.id,
-    name: raw.name,
-    notes: raw.notes,
-    values: raw.values as Record<string, ControlValue>,
-    createdAt: raw.createdAt,
-    updatedAt: raw.updatedAt,
-  })
+  const parsed = patchSchema.safeParse(raw)
+  if (!parsed.success) return err(`Patch ${describeZodError(parsed.error)}`)
+  return ok(parsed.data as Patch)
 }

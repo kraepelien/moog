@@ -1,0 +1,245 @@
+{
+  "note": "Generated once, then edited by hand only to ADD. See test/patchFormat.test.ts.",
+  "patchSchemaVersion": 1,
+  "bundleFormat": "minimoog-patch-bundle",
+  "bundleFormatVersion": 1,
+  "controls": {
+    "amountOfContour": {
+      "type": "continuousKnob"
+    },
+    "cutoffFrequency": {
+      "type": "continuousKnob"
+    },
+    "decayEnable": {
+      "type": "toggleSwitch",
+      "positions": [
+        "off",
+        "on"
+      ]
+    },
+    "externalInputEnable": {
+      "type": "toggleSwitch",
+      "positions": [
+        "off",
+        "on"
+      ]
+    },
+    "externalInputVolume": {
+      "type": "continuousKnob"
+    },
+    "filterAttackTime": {
+      "type": "timeKnob"
+    },
+    "filterDecayTime": {
+      "type": "timeKnob"
+    },
+    "filterEmphasis": {
+      "type": "continuousKnob"
+    },
+    "filterModulation": {
+      "type": "toggleSwitch",
+      "positions": [
+        "off",
+        "on"
+      ]
+    },
+    "filterSustainLevel": {
+      "type": "continuousKnob"
+    },
+    "glide": {
+      "type": "continuousKnob"
+    },
+    "glideEnable": {
+      "type": "toggleSwitch",
+      "positions": [
+        "off",
+        "on"
+      ]
+    },
+    "keyboardControl1": {
+      "type": "toggleSwitch",
+      "positions": [
+        "off",
+        "on"
+      ]
+    },
+    "keyboardControl2": {
+      "type": "toggleSwitch",
+      "positions": [
+        "off",
+        "on"
+      ]
+    },
+    "lfoRate": {
+      "type": "continuousKnob"
+    },
+    "loudnessAttackTime": {
+      "type": "timeKnob"
+    },
+    "loudnessDecayTime": {
+      "type": "timeKnob"
+    },
+    "loudnessSustainLevel": {
+      "type": "continuousKnob"
+    },
+    "modulationMix": {
+      "type": "continuousKnob"
+    },
+    "modulationSourceA": {
+      "type": "toggleSwitch",
+      "positions": [
+        "osc3",
+        "filterEg"
+      ]
+    },
+    "modulationSourceB": {
+      "type": "toggleSwitch",
+      "positions": [
+        "noise",
+        "lfo"
+      ]
+    },
+    "modWheel": {
+      "type": "wheel"
+    },
+    "noiseColour": {
+      "type": "toggleSwitch",
+      "positions": [
+        "white",
+        "pink"
+      ]
+    },
+    "noiseEnable": {
+      "type": "toggleSwitch",
+      "positions": [
+        "off",
+        "on"
+      ]
+    },
+    "noiseVolume": {
+      "type": "continuousKnob"
+    },
+    "osc1Enable": {
+      "type": "toggleSwitch",
+      "positions": [
+        "off",
+        "on"
+      ]
+    },
+    "osc1Range": {
+      "type": "stepKnob",
+      "positions": [
+        "lo",
+        "ft32",
+        "ft16",
+        "ft8",
+        "ft4",
+        "ft2"
+      ]
+    },
+    "osc1Volume": {
+      "type": "continuousKnob"
+    },
+    "osc1Waveform": {
+      "type": "stepKnob",
+      "positions": [
+        "triangle",
+        "reverseSawtooth",
+        "sawtooth",
+        "square",
+        "widePulse",
+        "narrowPulse"
+      ]
+    },
+    "osc2Enable": {
+      "type": "toggleSwitch",
+      "positions": [
+        "off",
+        "on"
+      ]
+    },
+    "osc2Frequency": {
+      "type": "continuousKnob"
+    },
+    "osc2Range": {
+      "type": "stepKnob",
+      "positions": [
+        "lo",
+        "ft32",
+        "ft16",
+        "ft8",
+        "ft4",
+        "ft2"
+      ]
+    },
+    "osc2Volume": {
+      "type": "continuousKnob"
+    },
+    "osc2Waveform": {
+      "type": "stepKnob",
+      "positions": [
+        "triangle",
+        "triangleSaw",
+        "sawtooth",
+        "square",
+        "widePulse",
+        "narrowPulse"
+      ]
+    },
+    "osc3Control": {
+      "type": "toggleSwitch",
+      "positions": [
+        "osc3",
+        "lo"
+      ]
+    },
+    "osc3Enable": {
+      "type": "toggleSwitch",
+      "positions": [
+        "off",
+        "on"
+      ]
+    },
+    "osc3Frequency": {
+      "type": "continuousKnob"
+    },
+    "osc3Range": {
+      "type": "stepKnob",
+      "positions": [
+        "lo",
+        "ft32",
+        "ft16",
+        "ft8",
+        "ft4",
+        "ft2"
+      ]
+    },
+    "osc3Volume": {
+      "type": "continuousKnob"
+    },
+    "osc3Waveform": {
+      "type": "stepKnob",
+      "positions": [
+        "triangle",
+        "triangleSaw",
+        "sawtooth",
+        "square",
+        "widePulse",
+        "narrowPulse"
+      ]
+    },
+    "oscillatorModulation": {
+      "type": "toggleSwitch",
+      "positions": [
+        "off",
+        "on"
+      ]
+    },
+    "pitchWheel": {
+      "type": "wheel"
+    },
+    "tune": {
+      "type": "continuousKnob"
+    }
+  }
+}

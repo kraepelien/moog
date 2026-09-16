@@ -1,14 +1,15 @@
-/* Roboto Condensed, self-hosted through Fontsource rather than fetched from a
+/* Google Sans Flex, self-hosted through Fontsource rather than fetched from a
    CDN: nothing external at runtime, so it works offline and cannot start
    rendering in a fallback face while a third party responds.
 
-   The upright axis only. The package's index.css also pulls the italic file,
-   which nothing here uses. One file covers 100 to 900, so any weight in between
-   is available rather than just the two the panel would otherwise get. */
-@import '@fontsource-variable/roboto-condensed/wght.css';
+   The width axis is included as well as weight — 119 KB against 51 KB for
+   weight alone — because the panel legends may want condensing, and that is a
+   font-stretch away rather than a different font. The full bundle carries grade,
+   optical size, slant and roundness too, at 1.4 MB, which nothing here needs. */
+@import '@fontsource-variable/google-sans-flex/wdth.css';
 
 :root {
-  font-family: 'Roboto Condensed Variable', system-ui, sans-serif;
+  font-family: 'Google Sans Flex Variable', system-ui, sans-serif;
 }
 
 /* SVG text does not inherit from :root the way HTML does, so the dials and

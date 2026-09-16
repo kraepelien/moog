@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import { migrateToCurrent } from '../patch/migrate.ts'
 import { type Patch, type PatchIdentity, systemIdentity } from '../patch/schema.ts'
 import { err, ok, type Result } from '../result.ts'
@@ -34,6 +35,15 @@ export function serializeBundle(bundle: PatchBundle): string {
   return `${JSON.stringify(bundle, null, 2)}\n`
 }
 
+/* `format` is checked by literal, so a file that is not ours is refused by name
+   rather than by whatever happens to be missing from it. Patches stay unknown
+   here: they are migrated and validated one at a time below. */
+const envelopeSchema = z.object({
+  format: z.literal(BUNDLE_FORMAT, `is not a Minimoog patch bundle`),
+  formatVersion: z.int(),
+  patches: z.array(z.unknown()),
+})
+
 export interface RejectedPatch {
   readonly index: number
   readonly name: string | null
@@ -64,25 +74,21 @@ export function parseBundle(text: string, identity: PatchIdentity = systemIdenti
     return err(`File is not valid JSON: ${error instanceof Error ? error.message : 'parse failed'}`)
   }
 
-  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
-    return err('File is not a patch bundle object')
+  /* The envelope only. Each patch inside is checked separately, so one bad
+     record is reported and skipped rather than failing the whole file. */
+  const parsed = envelopeSchema.safeParse(raw)
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0]
+    const path = issue?.path.join('.')
+    return err(path ? `Bundle ${path}: ${issue?.message}` : `Bundle ${issue?.message ?? 'is not valid'}`)
   }
 
-  const bundle = raw as Record<string, unknown>
+  const bundle = parsed.data
 
-  if (bundle.format !== BUNDLE_FORMAT) {
-    return err(`Not a Minimoog patch bundle (format is ${JSON.stringify(bundle.format ?? null)})`)
-  }
-  if (typeof bundle.formatVersion !== 'number' || !Number.isInteger(bundle.formatVersion)) {
-    return err('Bundle is missing an integer formatVersion')
-  }
   if (bundle.formatVersion > BUNDLE_FORMAT_VERSION) {
     return err(
       `Bundle uses format version ${bundle.formatVersion}, but this build understands up to ${BUNDLE_FORMAT_VERSION}. Update the app to open it.`,
     )
-  }
-  if (!Array.isArray(bundle.patches)) {
-    return err('Bundle is missing a patches array')
   }
 
   const patches: Patch[] = []

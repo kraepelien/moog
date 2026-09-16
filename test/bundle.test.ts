@@ -49,7 +49,7 @@ describe('import', () => {
 
   test('rejects a JSON file that is not a patch bundle', () => {
     const result = roundTrip(JSON.stringify({ hello: 'world' }))
-    expect(!result.ok && result.error).toMatch(/Not a Minimoog patch bundle/)
+    expect(!result.ok && result.error).toMatch(/is not a Minimoog patch bundle/)
   })
 
   test('rejects a bundle format version from the future rather than guessing', () => {
