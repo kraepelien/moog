@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>midi sender</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --line: #333;
+      }
+      body {
+        margin: 0;
+        padding: 20px;
+        background: #111;
+        color: #eee;
+        font: 14px/1.5 system-ui, sans-serif;
+      }
+      h1 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0 0 4px;
+      }
+      p.lede {
+        margin: 0 0 20px;
+        color: #999;
+        max-width: 64ch;
+      }
+      section {
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 14px 16px;
+        margin-bottom: 14px;
+        max-width: 900px;
+      }
+      h2 {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #888;
+        margin: 0 0 10px;
+      }
+      button,
+      select {
+        font: inherit;
+        color: inherit;
+        background: #222;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 6px 12px;
+        cursor: pointer;
+      }
+      button:hover:not(:disabled) {
+        background: #2c2c2c;
+      }
+      button:disabled {
+        opacity: 0.4;
+        cursor: default;
+      }
+      .keys {
+        display: flex;
+        gap: 3px;
+        flex-wrap: wrap;
+      }
+      .keys button {
+        min-width: 46px;
+      }
+      .keys button[data-sharp] {
+        background: #000;
+      }
+      label.slider {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 8px 0;
+      }
+      label.slider span:first-child {
+        width: 5.5em;
+        color: #999;
+      }
+      input[type='range'] {
+        flex: 1;
+        max-width: 420px;
+      }
+      #drop {
+        border: 1px dashed #555;
+        border-radius: 6px;
+        padding: 22px;
+        text-align: center;
+        color: #999;
+      }
+      #drop.over {
+        border-color: #7aa2f7;
+        color: #7aa2f7;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      pre {
+        background: #0b0b0b;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 10px;
+        max-height: 180px;
+        overflow: auto;
+        margin: 10px 0 0;
+        font-size: 12px;
+        color: #9c9;
+      }
+      .warn {
+        color: #e7a;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>MIDI sender</h1>
+    <p class="lede">
+      Sends MIDI out, so the instrument in the other tab can be played without any hardware. It
+      needs a virtual port to send to: on macOS that is the IAC Driver. See tools/MIDI.md.
+    </p>
+
+    <section>
+      <h2>Port</h2>
+      <div class="row">
+        <select id="ports"><option>asking…</option></select>
+        <button id="panic" disabled>All notes off</button>
+        <span id="status" class="warn"></span>
+      </div>
+    </section>
+
+    <section>
+      <h2>Keys</h2>
+      <div class="keys" id="keys"></div>
+    </section>
+
+    <section>
+      <h2>Wheels</h2>
+      <label class="slider">
+        <span>Pitch</span>
+        <input type="range" id="bend" min="0" max="16383" value="8192" />
+        <span id="bendValue">centre</span>
+      </label>
+      <label class="slider">
+        <span>Mod.</span>
+        <input type="range" id="mod" min="0" max="127" value="0" />
+        <span id="modValue">0</span>
+      </label>
+      <div class="row">
+        <button id="bendReset">Let the pitch wheel go</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>A file, so your hands are free for the knobs</h2>
+      <div id="drop">Drop a .mid file here, or <input type="file" id="file" accept=".mid,.midi" /></div>
+      <div class="row" style="margin-top: 12px">
+        <button id="play" disabled>Play</button>
+        <button id="stop" disabled>Stop</button>
+        <label><input type="checkbox" id="loop" checked /> loop</label>
+        <span id="fileInfo"></span>
+      </div>
+    </section>
+
+    <section>
+      <h2>Sent</h2>
+      <pre id="log">nothing yet</pre>
+    </section>
+
+    <script type="module">
+      import { readMidiFile } from '/src/audio/midiFile.ts'
+      import { readMidi } from '/src/audio/midi.ts'
+
+      const $ = (id) => document.getElementById(id)
+      const lines = []
+      const log = (line) => {
+        lines.unshift(line)
+        $('log').textContent = lines.slice(0, 60).join('\n')
+      }
+
+      let out = null
+      const send = (data) => {
+        if (!out) return
+        out.send(data)
+        const read = readMidi(data)
+        log(
+          `${[...data].map((b) => b.toString(16).padStart(2, '0')).join(' ')}  ->  ` +
+            (read ? JSON.stringify(read) : 'the instrument ignores this'),
+        )
+      }
+
+      /* Note on/off on channel 1. Velocity is sent because the format has a
+         place for it; the instrument does not read it. */
+      const noteOn = (note) => send([0x90, note, 100])
+      const noteOff = (note) => send([0x80, note, 0])
+
+      const NAMES = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B']
+      /* Two octaves from C3, which is where the instrument's own typing keyboard
+         starts, so the two agree. */
+      for (let note = 48; note <= 72; note += 1) {
+        const button = document.createElement('button')
+        const name = NAMES[note % 12]
+        button.textContent = `${name}${Math.floor(note / 12) - 1}`
+        if (name.includes('♯')) button.dataset.sharp = ''
+        button.addEventListener('pointerdown', () => noteOn(note))
+        button.addEventListener('pointerup', () => noteOff(note))
+        button.addEventListener('pointerleave', () => noteOff(note))
+        $('keys').append(button)
+      }
+
+      $('bend').addEventListener('input', (event) => {
+        const raw = Number(event.target.value)
+        send([0xe0, raw & 0x7f, raw >> 7])
+        $('bendValue').textContent = raw === 8192 ? 'centre' : raw > 8192 ? 'up' : 'down'
+      })
+      /* The real wheel is sprung, and a slider is not, so this is the spring. */
+      $('bendReset').addEventListener('click', () => {
+        $('bend').value = 8192
+        send([0xe0, 0x00, 0x40])
+        $('bendValue').textContent = 'centre'
+      })
+      $('mod').addEventListener('input', (event) => {
+        send([0xb0, 1, Number(event.target.value)])
+        $('modValue').textContent = event.target.value
+      })
+      $('panic').addEventListener('click', () => send([0xb0, 123, 0]))
+
+      let piece = null
+      let timer = null
+      let startedAt = 0
+      let next = 0
+
+      const stop = () => {
+        clearInterval(timer)
+        timer = null
+        send([0xb0, 123, 0])
+        $('play').disabled = !piece
+        $('stop').disabled = true
+      }
+
+      /* A tick loop rather than a timer per message: a file of ten thousand
+         notes would otherwise be ten thousand timers, and stopping it would
+         have to cancel every one. */
+      const tick = () => {
+        const now = (performance.now() - startedAt) / 1000
+        while (next < piece.messages.length && piece.messages[next].at <= now) {
+          send(piece.messages[next].data)
+          next += 1
+        }
+        if (next >= piece.messages.length) {
+          if ($('loop').checked) {
+            startedAt = performance.now()
+            next = 0
+            send([0xb0, 123, 0])
+          } else {
+            stop()
+          }
+        }
+      }
+
+      $('play').addEventListener('click', () => {
+        if (!piece || timer) return
+        startedAt = performance.now()
+        next = 0
+        timer = setInterval(tick, 10)
+        $('play').disabled = true
+        $('stop').disabled = false
+      })
+      $('stop').addEventListener('click', stop)
+
+      const load = async (fileHandle) => {
+        try {
+          piece = readMidiFile(new Uint8Array(await fileHandle.arrayBuffer()))
+          $('fileInfo').textContent =
+            `${fileHandle.name}: ${piece.messages.length} messages, ${piece.seconds.toFixed(1)}s`
+          $('play').disabled = !out
+          log(`loaded ${fileHandle.name}`)
+        } catch (error) {
+          piece = null
+          $('fileInfo').textContent = String(error.message ?? error)
+          $('play').disabled = true
+        }
+      }
+
+      $('file').addEventListener('change', (event) => {
+        const chosen = event.target.files?.[0]
+        if (chosen) void load(chosen)
+      })
+      const drop = $('drop')
+      drop.addEventListener('dragover', (event) => {
+        event.preventDefault()
+        drop.classList.add('over')
+      })
+      drop.addEventListener('dragleave', () => drop.classList.remove('over'))
+      drop.addEventListener('drop', (event) => {
+        event.preventDefault()
+        drop.classList.remove('over')
+        const dropped = event.dataTransfer?.files?.[0]
+        if (dropped) void load(dropped)
+      })
+
+      if (typeof navigator.requestMIDIAccess !== 'function') {
+        $('status').textContent = 'This browser does not offer Web MIDI. Use Chrome, Edge or Arc.'
+        $('ports').innerHTML = '<option>unavailable</option>'
+      } else {
+        try {
+          const access = await navigator.requestMIDIAccess()
+          const fill = () => {
+            const outputs = []
+            access.outputs.forEach((port) => outputs.push(port))
+            $('ports').innerHTML = outputs.length
+              ? outputs.map((port, i) => `<option value="${i}">${port.name}</option>`).join('')
+              : '<option>no output port</option>'
+            out = outputs[Number($('ports').value) || 0] ?? null
+            $('status').textContent = outputs.length
+              ? ''
+              : 'No output to send to. Enable the IAC Driver in Audio MIDI Setup.'
+            $('panic').disabled = !out
+            $('play').disabled = !out || !piece
+            window.__outputs = outputs
+          }
+          fill()
+          $('ports').addEventListener('change', () => {
+            out = window.__outputs[Number($('ports').value)] ?? null
+          })
+          access.onstatechange = fill
+        } catch (error) {
+          $('status').textContent = `MIDI refused: ${error}`
+          $('ports').innerHTML = '<option>unavailable</option>'
+        }
+      }
+    </script>
+  </body>
+</html>

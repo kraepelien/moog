@@ -50,7 +50,8 @@ src/
               an instrument) · engine.ts (the Web Audio graph)
 test/         fixtures.ts defines fake control types; nothing here ships
 reference/    manual scans, recovered geometry, the hand-drawn knob SVG
-tools/        artwork measurement script · audio-check.html (what the engine sounds like)
+tools/        artwork measurement script · audio-check.html (what the engine sounds like) ·
+              midi-check.html and midi-send.html (see MIDI.md)
 ```
 
 `@/` is an alias for `src/` (set in both `vite.config.ts` and `tsconfig.app.json`).
@@ -381,6 +382,10 @@ instrument has, so nothing had to be invented about where a message goes.
 | CC 1 | the Mod. wheel, which **is** part of a patch, so a controller moving it marks the draft unsaved exactly as dragging it on screen does |
 | CC 120 / 123 | everything released; a note left sounding after a panic is the worst failure a synthesiser has |
 | velocity | read only to tell a note on from a note off. The keyboard is not velocity sensitive, so how hard a key is struck is not information this instrument has anywhere to put |
+
+**[tools/MIDI.md](tools/MIDI.md) is the guide**: plugging a controller in, faking one with the IAC
+Driver and the sender page, and playing a MIDI file so both hands are free for the panel. Start
+there rather than here.
 
 Access is asked for on the first key played, not on load: a browser wants a gesture behind the
 request, and a permission prompt that greets somebody before they have touched anything is one they
