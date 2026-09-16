@@ -7,9 +7,9 @@
 # lives in traefik/dynamic/moog.yml and points at this published port — there are
 # no labels, and no shared network to join.
 #
-# No red/green. The editor holds no session, so a few seconds between containers
-# costs nothing, and a second copy writing the same data folder is the one thing
-# worth avoiding.
+# No red/green: two containers writing one database is the thing worth avoiding.
+# A session survives a restart — it is a signed cookie, not server state — so
+# the seconds between containers cost nobody their sign-in.
 
 services:
   moog:
@@ -22,8 +22,17 @@ services:
     # both the container and a person can work on the same files.
     user: "${MOOG_UID:-1027}:${MOOG_GID:-65536}"
 
+    # Everything but PORT comes from the .env beside this file, which
+    # deploy.sh appends to rather than rewrites, so a secret added by hand
+    # survives every deploy. With MOOG_OAUTH_CLIENT_ID empty the app runs as a
+    # single local user and gates nothing.
     environment:
       PORT: 8080
+      MOOG_OAUTH_CLIENT_ID: ${MOOG_OAUTH_CLIENT_ID:-}
+      MOOG_OAUTH_CLIENT_SECRET: ${MOOG_OAUTH_CLIENT_SECRET:-}
+      MOOG_SESSION_SECRET: ${MOOG_SESSION_SECRET:-}
+      MOOG_PUBLIC_ORIGIN: ${MOOG_PUBLIC_ORIGIN:-}
+      MOOG_ADMINS: ${MOOG_ADMINS:-}
 
     # Published so Traefik can reach it by host and port, the way its dynamic
     # configuration expects. Change it here and in traefik/dynamic/moog.yml

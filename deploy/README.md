@@ -37,7 +37,42 @@ MOOG_PORT=10072                             # must match traefik/dynamic/moog.ym
 MOOG_DATA_DIR=/volume1/docker/moog/data
 MOOG_UID=1027                               # the `docker` account
 MOOG_GID=65536                              # the `docker` group
+
+# Sign-in. Leave MOOG_OAUTH_CLIENT_ID empty and the app runs as one local user
+# with nothing gated, which is how it ran before there were accounts.
+MOOG_OAUTH_CLIENT_ID=
+MOOG_OAUTH_CLIENT_SECRET=
+MOOG_SESSION_SECRET=                        # any long random string
+MOOG_PUBLIC_ORIGIN=https://moog.pomello.se
+MOOG_ADMINS=you@example.com                 # comma-separated
 ```
+
+`deploy.sh` only rewrites the `MOOG_IMAGE` line, so everything added here by
+hand survives a deploy. None of it is in the repo, the image or CI.
+
+## Sign-in, once
+
+In Google Cloud Console: APIs & Services → Credentials → **OAuth client ID** →
+Web application, with two redirect URIs:
+
+```
+https://moog.pomello.se/api/auth/google/callback
+http://localhost:5173/api/auth/google/callback
+```
+
+Publish the consent screen rather than leaving it in testing, or only the
+accounts listed in the console can sign in — an allowlist by accident.
+
+`MOOG_SESSION_SECRET` can be anything long and random:
+
+```sh
+openssl rand -hex 32
+```
+
+Changing it signs everybody out, which is the one way to end every session at
+once if that is ever wanted. The LAN address cannot sign in: Google will not
+register a plain-http redirect for it and a browser will not send a `Secure`
+cookie there, so reach the app by hostname.
 
 `MOOG_UID` and `MOOG_GID` matter more than they look. The container writes every
 preset and patch as that id; if it does not match the account owning the share,

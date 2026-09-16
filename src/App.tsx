@@ -18,6 +18,8 @@ import { PatchHeader } from './components/library/PatchHeader.tsx'
 import type { LibraryEntry } from './components/library/entry.ts'
 import { Panel, PanelChecklist } from './components/Panel.tsx'
 import { useConfirm } from './components/useConfirm.tsx'
+import { SignIn } from './session/SignIn.tsx'
+import { signOut, useSession } from './session/session.ts'
 import { panelRegistry } from './controls/panel.ts'
 import { isRecalled } from './controls/recall.ts'
 import type { ControlValue } from './controls/types.ts'
@@ -86,6 +88,7 @@ export function App() {
      file records, so turning it must not mark the draft unsaved either. */
   const [played, setPlayed] = useState<Record<string, ControlValue>>({})
   const { ask, dialog } = useConfirm()
+  const { session, refresh: refreshSession } = useSession()
   const [view, goToView] = useView()
   /* The menu cannot hold a file input, so it holds a button that clicks one. */
   const importing = useRef<HTMLInputElement>(null)
@@ -206,6 +209,12 @@ export function App() {
     [adopt, fetchEntry, goToView, run],
   )
 
+  /* Nothing is drawn until the session is known, so a signed-out visitor never
+     sees an editor they cannot save from, and a signed-in one never sees the
+     door. */
+  if (!session) return <Typography sx={{ p: 2 }}>Loading…</Typography>
+  if (!session.signedIn) return <SignIn returnTo={`/#/${view}`} />
+
   if (!draft) return <Typography sx={{ p: 2 }}>Loading…</Typography>
 
   const resolved = resolvePatch(panelRegistry, draft)
@@ -221,6 +230,19 @@ export function App() {
           downloadJson('all-patches.moogpatch.json', serializeBundle(createBundle(present)))
         }),
     },
+    ...(session?.mode === 'oauth'
+      ? [
+          {
+            label: `Sign out${session.user?.name ? ` (${session.user.name})` : ''}`,
+            separated: true,
+            onSelect: () =>
+              void signOut().then(() => {
+                refreshSession()
+                window.location.reload()
+              }),
+          },
+        ]
+      : []),
   ]
 
   return (

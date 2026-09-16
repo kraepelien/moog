@@ -17,6 +17,8 @@ export interface AuthConfig {
   readonly admins: readonly string[]
   readonly publicOrigin: string | null
   readonly localUser: string
+  readonly clientId: string
+  readonly clientSecret: string
 }
 
 export function authConfigFromEnv(env: Record<string, string | undefined>): AuthConfig {
@@ -35,6 +37,8 @@ export function authConfigFromEnv(env: Record<string, string | undefined>): Auth
       .filter(Boolean),
     publicOrigin: env.MOOG_PUBLIC_ORIGIN ?? null,
     localUser: LOCAL_USER,
+    clientId: env.MOOG_OAUTH_CLIENT_ID ?? '',
+    clientSecret: env.MOOG_OAUTH_CLIENT_SECRET ?? '',
   }
 }
 
