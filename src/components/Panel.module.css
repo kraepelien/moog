@@ -1,22 +1,26 @@
-/* Structural only: enough box and gap to check that controls sit in the right
-   section, group and order against the patch sheet. No colour, type or texture
-   decisions — those are the project owner's, and nothing here should survive
-   contact with a real design. */
+/* The panel as the instrument prints it, from reference/panel-controllers-oscbank.png:
+   one black field, white ink, sections divided by a hairline rule rather than
+   boxed, and each section named along the bottom in large thin capitals.
+
+   The checklist below the panel is deliberately left alone — it is a working
+   view, not part of the instrument, and it sits on the page's own background. */
 
 .panel {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 24px;
+  background: #000;
+  color: #fff;
+  padding: 20px 16px 16px;
+  width: max-content;
 }
 
-/* The sheet prints the sections across the page, so this does not wrap. When the
-   window is narrower than the panel the row scrolls rather than reflowing into
-   an order the instrument does not have. */
+/* The sheet prints the sections across the page, so this does not wrap: the
+   whole panel is scaled to the window instead, which keeps the order the
+   instrument has. */
 .panelRow {
   display: flex;
   align-items: stretch;
-  gap: 4px;
-  overflow-x: auto;
 }
 
 /* Positions come from the layout map as grid areas named after control ids. */
@@ -43,9 +47,10 @@
 .caption {
   align-self: end;
   font-size: 0.7rem;
+  font-weight: 700;
   text-align: center;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
 }
 
 .caption[data-for='switch'] {
@@ -60,18 +65,22 @@
   align-items: center;
   margin: 0;
   font-size: 0.75rem;
-  font-weight: normal;
+  font-weight: 700;
   text-align: center;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   align-self: end;
 }
 
 .section {
   display: flex;
   flex-direction: column;
-  border: 1px solid;
-  padding: 8px;
+  padding: 0 22px;
+}
+
+/* One rule between neighbours, as printed — the panel has no boxes. */
+.panelRow .section + .section {
+  border-left: 1px solid #fff;
 }
 
 .sectionBody {
@@ -82,11 +91,18 @@
   flex: 1;
 }
 
+/* Pushed to the bottom of the section, which the row stretches to a common
+   height, so every name in the row sits on one line as the panel prints them. */
 .sectionLabel {
-  margin: 8px 0 0;
-  font-size: 1rem;
-  font-weight: normal;
+  margin: 0;
+  padding-top: 24px;
+  margin-top: auto;
+  font-size: 1.6rem;
+  font-weight: 300;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   text-align: center;
+  white-space: nowrap;
 }
 
 /* A group is a column so its header can sit above the row and centre over it,
@@ -183,14 +199,20 @@
   font-style: italic;
 }
 
-/* Drawn, but nothing a patch records. Dimmed so the panel still reads as complete
-   while making clear which items carry no value. */
+/* In the checklist, a decoration is dimmed to mark what carries no value. On
+   the panel it is a piece of the instrument like any other, so it is drawn
+   plainly — it just has no artwork of its own yet. */
 .control[data-decoration] {
   opacity: 0.5;
 }
 
 .control[data-decoration] .slot {
   border-style: dashed;
+}
+
+.panel .slot {
+  border-color: #fff;
+  border-style: solid;
 }
 
 /* Marks the checklist entries that now have a real component, so what is left to

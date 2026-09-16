@@ -154,25 +154,25 @@ export function App() {
           </Alert>
         )}
 
-        <Section title="Panel">
-          <FitToWidth>
-            <Panel
-              registry={panelRegistry}
-              values={{ ...resolved.values, ...played }}
-              onChange={(id, next) => {
-                const def = panelRegistry.control(id)
-                if (def && !isRecalled(def)) {
-                  setPlayed((previous) => ({ ...previous, [id]: next }))
-                  return
-                }
-                setDraft({
-                  ...draft,
-                  values: mergeValues(panelRegistry, draft, { ...resolved.values, [id]: next }),
-                })
-              }}
-            />
-          </FitToWidth>
-        </Section>
+        {/* No card and no heading: the panel is the instrument's own face, and
+            it names its own sections along the bottom the way the panel does. */}
+        <FitToWidth>
+          <Panel
+            registry={panelRegistry}
+            values={{ ...resolved.values, ...played }}
+            onChange={(id, next) => {
+              const def = panelRegistry.control(id)
+              if (def && !isRecalled(def)) {
+                setPlayed((previous) => ({ ...previous, [id]: next }))
+                return
+              }
+              setDraft({
+                ...draft,
+                values: mergeValues(panelRegistry, draft, { ...resolved.values, [id]: next }),
+              })
+            }}
+          />
+        </FitToWidth>
 
         <Section title={dirty ? 'Working draft — unsaved' : 'Working draft'}>
           <Stack spacing={2}>

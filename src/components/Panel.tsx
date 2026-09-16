@@ -5,7 +5,12 @@ import { isStepKnob } from '../controls/stepKnob.ts'
 import { isTimeKnob } from '../controls/timeKnob.ts'
 import { isWheel } from '../controls/wheel.ts'
 import { isToggleSwitch } from '../controls/toggleSwitch.ts'
-import { isDecoration, type ControlValue, type PanelItem } from '../controls/types.ts'
+import {
+  isDecoration,
+  type ControlValue,
+  type DecorationDef,
+  type PanelItem,
+} from '../controls/types.ts'
 import { ContinuousKnob } from './knob/ContinuousKnob.tsx'
 import { StepKnob } from './knob/StepKnob.tsx'
 import { TimeKnob } from './knob/TimeKnob.tsx'
@@ -31,6 +36,13 @@ function isBuilt(item: PanelItem): boolean {
   return !isDecoration(item) && !isPlaceholder(item)
 }
 
+/* A control on the instrument that a patch does not record and nothing reads:
+   a socket, an indicator, the mains switch. Drawn as its shape, since that is
+   all that is known about it until its artwork exists. */
+function Decoration({ item }: { item: DecorationDef }) {
+  return <div className={styles.slot} data-shape={item.shape} aria-hidden="true" />
+}
+
 function Control({
   item,
   value,
@@ -42,7 +54,7 @@ function Control({
   onChange: (value: ControlValue) => void
   hideHeader?: boolean
 }) {
-  if (isDecoration(item)) return null
+  if (isDecoration(item)) return <Decoration item={item} />
   const stored = typeof value === 'string' ? value : ''
 
   if (isWheel(item)) {
@@ -96,7 +108,12 @@ interface SectionProps {
    keeps "add a knob, touch no layout" true. */
 function PanelSection({ registry, section, values, onChange }: SectionProps) {
   const layout = layoutFor(section.id)
-  const built = registry.itemsInSection(section.id).filter(isBuilt)
+  /* Decorations are drawn too: the jacks, lamps and the power switch are on the
+     instrument, so they are on the panel. They hold no value, and none of them
+     has its own artwork yet, so they come out as the shape they are. */
+  const built = registry
+    .itemsInSection(section.id)
+    .filter((item) => isBuilt(item) || isDecoration(item))
 
   const draw = (item: PanelItem, captionDrawn = false) => {
     /* A printed label the panel chooses over the registry's, which stays what a
@@ -121,7 +138,8 @@ function PanelSection({ registry, section, values, onChange }: SectionProps) {
      is told not to — except a wheel, which carries its name underneath. */
   const captionFor = (item: PanelItem): string | undefined => {
     const override = layout?.labels?.[item.id]
-    if (override === '' || isDecoration(item) || isWheel(item)) return undefined
+    if (override === '' || isWheel(item)) return undefined
+    if (isDecoration(item)) return item.label
     if (isToggleSwitch(item)) return item.headline
     return override ?? item.label
   }
@@ -208,7 +226,8 @@ export function Panel({
   values: Readonly<Record<string, ControlValue>>
   onChange: (id: string, value: ControlValue) => void
 }) {
-  const has = (id: string) => registry.itemsInSection(id).some(isBuilt)
+  const has = (id: string) =>
+    registry.itemsInSection(id).some((item) => isBuilt(item) || isDecoration(item))
   const byId = new Map(registry.sections.map((section) => [section.id, section]))
 
   const row = PANEL_ROW.filter(has)
