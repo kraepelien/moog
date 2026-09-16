@@ -3,6 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { Database } from 'bun:sqlite'
 import { createApi } from '../server/api.ts'
+import { authConfigFromEnv } from '../server/identity.ts'
+import { limitsFromEnv } from '../server/limits.ts'
 import { openDatabase } from '../server/db.ts'
 import { syncInstruments } from '../server/factory.ts'
 import { createHttpStore } from '../src/storage/httpStore.ts'
@@ -23,7 +25,10 @@ export function testApi(): TestApi {
   const root = mkdtempSync(join(tmpdir(), 'moog-test-'))
   const db = openDatabase(join(root, 'moog.db'))
   syncInstruments(db)
-  const handle = createApi({ db })
+  /* Config and limits from an empty environment, never from process.env: Bun
+     loads .env before the suite runs, so a developer with real OAuth credentials
+     on the machine would otherwise run every test signed out. */
+  const handle = createApi({ db, config: authConfigFromEnv({}), limits: limitsFromEnv({}) })
 
   const store = createHttpStore(async (path, init) => {
     const response = await handle(new Request(`http://test${path}`, init))
