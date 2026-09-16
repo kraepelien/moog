@@ -26,6 +26,12 @@
   touch-action: none;
   cursor: ns-resize;
   background: #000;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* See ToggleSwitch.module.css: the browser's own focus ring on every click. */
+.dial:focus {
+  outline: none;
 }
 
 .dial:focus-visible {

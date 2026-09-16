@@ -52,11 +52,21 @@
   cursor: pointer;
   background: #000;
   flex: none;
+  /* The mobile counterpart of the focus ring: without this a tap flashes the
+     browser's own highlight over the switch. */
+  -webkit-tap-highlight-color: transparent;
 }
 
 .switch[data-orientation='vertical'] .graphic {
   width: 28px;
   height: 82px;
+}
+
+/* Clicking an element with tabIndex focuses it, so without suppressing :focus the
+   browser paints its own ring — blue in Chrome — on every click. The ring is
+   wanted for keyboard focus only, which is what :focus-visible gives. */
+.graphic:focus {
+  outline: none;
 }
 
 .graphic:focus-visible {
