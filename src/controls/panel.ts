@@ -295,14 +295,12 @@ const NOT_A_SOUND = 'not part of a patch'
 
 export const items: readonly PanelItem[] = [
   // Controllers
-  knobSymmetric('tune', 'Tune', 'controllers', 2.5, 2, { tickStep: 0.5, labelStep: 1 }, {
-    size: 'large',
-  }),
-  knob0to10('glide', 'Glide', 'controllers', 0, { size: 'large' }),
+  knobSymmetric('tune', 'Tune', 'controllers', 2.5, 2, { tickStep: 0.5, labelStep: 1 }),
+  knob0to10('glide', 'Glide', 'controllers', 0),
   /* A level like any other, but its ends name what it mixes between rather than
      counting, so 0 and 10 are printed as sources instead of as numbers. */
   {
-    ...knob0to10('modulationMix', 'Modulation Mix', 'controllers', 0, { size: 'large' }),
+    ...knob0to10('modulationMix', 'Modulation Mix', 'controllers', 0),
     scale: {
       tickStep: 1,
       labelStep: 2,
@@ -407,7 +405,6 @@ export const items: readonly PanelItem[] = [
   }),
   knobSymmetric('cutoffFrequency', 'Cutoff Frequency', 'modifiers', 5, 4, { tickStep: 1, labelStep: 2 }, {
     group: 'filter',
-    size: 'large',
   }),
   knob0to10('filterEmphasis', 'Filter Emphasis', 'modifiers', 0, { group: 'filter' }),
   knob0to10('amountOfContour', 'Amount of Contour', 'modifiers', 0, { group: 'filter' }),
