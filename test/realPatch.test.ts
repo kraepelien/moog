@@ -78,10 +78,16 @@ describe('a patch of every real control survives export and import', () => {
     expect(report.missing).toEqual([])
   })
 
-  test('resolving and saving again changes nothing', () => {
+  test('resolving and saving again changes nothing, bar the wheel that is played', () => {
     const { values, patch } = realPatch()
     const resolved = resolvePatch(panelRegistry, patch)
-    expect(mergeValues(patch, resolved.values)).toEqual(values)
+
+    /* The pitch wheel springs back to centre, so the file does not hold it: a
+       value written by an older build is ignored on load and gone on the next
+       save. Every other control comes through untouched. */
+    expect(resolved.values.pitchWheel).toBe(0)
+    const { pitchWheel: _played, ...kept } = values
+    expect(mergeValues(panelRegistry, patch, resolved.values)).toEqual(kept)
   })
 })
 

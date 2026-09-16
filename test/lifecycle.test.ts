@@ -29,7 +29,7 @@ describe('patch lifecycle', () => {
 
     // Edit the panel. Values start from registry defaults.
     const edited = { ...defaultValues(registry), testVolume: 8 }
-    draft = { ...draft, name: 'Round Trip', values: mergeValues(draft, edited) }
+    draft = { ...draft, name: 'Round Trip', values: mergeValues(panelRegistry, draft, edited) }
 
     /* Nothing is stored until Save: editing the panel writes nothing. */
     expect(await store.list()).toEqual([])
@@ -67,7 +67,7 @@ describe('patch lifecycle', () => {
     expect(values).not.toHaveProperty('retiredKnob')
 
     // Saving after that must not drop the value the registry did not recognise.
-    const resaved = { ...withStaleValue, values: mergeValues(withStaleValue, values) }
+    const resaved = { ...withStaleValue, values: mergeValues(panelRegistry, withStaleValue, values) }
     await otherStore.save(resaved)
     expect((await otherStore.get(resaved.id))!.values.retiredKnob).toBe('still here')
 
@@ -88,7 +88,7 @@ describe('patch lifecycle', () => {
     expect(report.unknown).toEqual(['neverHeardOfIt'])
     expect(report.invalid).toEqual([])
 
-    const merged = mergeValues(patch, values)
+    const merged = mergeValues(panelRegistry, patch, values)
     expect(merged.cutoffFrequency).toBe(3)
     expect(merged.neverHeardOfIt).toBe(1)
   })

@@ -20,6 +20,8 @@ import { FitToWidth } from './components/FitToWidth.tsx'
 import { Panel, PanelChecklist } from './components/Panel.tsx'
 import { useConfirm } from './components/useConfirm.tsx'
 import { panelRegistry } from './controls/panel.ts'
+import { isRecalled } from './controls/recall.ts'
+import type { ControlValue } from './controls/types.ts'
 import { mergeValues, resolvePatch, reportHasWarnings, type ResolveReport } from './patch/resolve.ts'
 import { createPatch, type Patch } from './patch/schema.ts'
 import { draftFromPreset, presetFromDraft, type StoredPreset } from './presets/preset.ts'
@@ -73,6 +75,10 @@ export function App() {
   /* What the draft looked like when it was last saved or loaded. Comparing
      against it is what tells the user there is something unsaved. */
   const [clean, setClean] = useState('')
+  /* Where a control the patch does not carry keeps the position it was left in.
+     The pitch wheel still moves and still reads out; it just moves nothing the
+     file records, so turning it must not mark the draft unsaved either. */
+  const [played, setPlayed] = useState<Record<string, ControlValue>>({})
   const { ask, dialog } = useConfirm()
 
   /* Computed before the hooks that read it, since the early return for a missing
@@ -132,7 +138,7 @@ export function App() {
   if (!draft) return <Typography sx={{ p: 2 }}>Loading…</Typography>
 
   const resolved = resolvePatch(panelRegistry, draft)
-  const currentValues = mergeValues(draft, resolved.values)
+  const currentValues = mergeValues(panelRegistry, draft, resolved.values)
 
   return (
     <Box component="main" sx={{ p: 2 }}>
@@ -152,13 +158,18 @@ export function App() {
           <FitToWidth>
             <Panel
               registry={panelRegistry}
-              values={resolved.values}
-              onChange={(id, next) =>
+              values={{ ...resolved.values, ...played }}
+              onChange={(id, next) => {
+                const def = panelRegistry.control(id)
+                if (def && !isRecalled(def)) {
+                  setPlayed((previous) => ({ ...previous, [id]: next }))
+                  return
+                }
                 setDraft({
                   ...draft,
-                  values: mergeValues(draft, { ...resolved.values, [id]: next }),
+                  values: mergeValues(panelRegistry, draft, { ...resolved.values, [id]: next }),
                 })
-              }
+              }}
             />
           </FitToWidth>
         </Section>

@@ -47,14 +47,14 @@ describe('resolvePatch', () => {
 describe('mergeValues', () => {
   test('editing a known control leaves an unknown one intact', () => {
     const patch = patchWith({ testVolume: 3, fromTheFuture: { keep: true } })
-    const merged = mergeValues(patch, { testVolume: 7 })
+    const merged = mergeValues(registry, patch, { testVolume: 7 })
     expect(merged).toEqual({ testVolume: 7, fromTheFuture: { keep: true } })
   })
 
   test('a patch round-trips through a build that does not know one of its controls', () => {
     const original = patchWith({ testVolume: 3, laterKnob: 'preserved' })
     const { values } = resolvePatch(registry, original)
-    const saved = { ...original, values: mergeValues(original, values) }
+    const saved = { ...original, values: mergeValues(registry, original, values) }
     expect(saved.values.laterKnob).toBe('preserved')
   })
 })

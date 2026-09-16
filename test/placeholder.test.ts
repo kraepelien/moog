@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { panelRegistry } from '../src/controls/panel.ts'
+import { isRecalled } from '../src/controls/recall.ts'
 import { placeholderType } from '../src/controls/placeholder.ts'
 import { mergeValues, resolvePatch } from '../src/patch/resolve.ts'
 import { createPatch } from '../src/patch/schema.ts'
@@ -35,7 +36,7 @@ describe('reviewing the layout cannot damage a patch', () => {
     expect(report.invalid).toEqual([])
     expect(report.coerced).toEqual([])
 
-    const resaved = { ...fromLaterBuild, values: mergeValues(fromLaterBuild, values) }
+    const resaved = { ...fromLaterBuild, values: mergeValues(panelRegistry, fromLaterBuild, values) }
     expect(resaved.values.cutoffFrequency).toBe(-1.5)
     expect(resaved.values.noiseVolume).toBe(7)
   })
@@ -57,7 +58,11 @@ describe('reviewing the layout cannot damage a patch', () => {
     const empty = createPatch({ name: 'Empty' }, fixedIdentity())
     const { values, report } = resolvePatch(panelRegistry, empty)
 
-    expect(report.missing).toEqual(panelRegistry.controlIds)
+    /* Every control the format carries. A sprung one is never expected in a
+       patch, so its absence is not something missing. */
+    expect(report.missing).toEqual(
+      panelRegistry.controls.filter(isRecalled).map((def) => def.id),
+    )
     for (const def of panelRegistry.controls) {
       if (def.type === 'placeholder') expect(values[def.id]).toBeNull()
     }
