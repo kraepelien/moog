@@ -3,7 +3,7 @@ import { panelRegistry } from '../src/controls/panel.ts'
 import { defaultValues } from '../src/controls/registry.ts'
 import { mergeValues, resolvePatch } from '../src/patch/resolve.ts'
 import { createPatch, type Patch } from '../src/patch/schema.ts'
-import { draftFromPreset, factoryPresets } from '../src/presets/factory.ts'
+import { draftFromPreset } from '../src/presets/factory.ts'
 import { createMemoryStorage, createWebStorageStore } from '../src/storage/webStorage.ts'
 import { createBundle, parseBundle, serializeBundle } from '../src/transfer/bundle.ts'
 import { fixedIdentity, testRegistry } from './fixtures.ts'
@@ -17,8 +17,13 @@ describe('patch lifecycle', () => {
     const store = createWebStorageStore(storage)
     const registry = testRegistry()
 
-    // Start from a factory preset. It must not be saved by loading it.
-    const preset = factoryPresets[0]!
+    /* Start from a preset. It must not be saved by loading it.
+
+       Declared here rather than taken from the shipped bank: this is a test of
+       the storage lifecycle against a two-control test registry, and pulling a
+       real preset would make it depend on which sound happens to be first and
+       on every value that sound carries. */
+    const preset = { slug: 'test-preset', name: 'Test Preset', notes: '', values: {} }
     let draft = draftFromPreset(preset, fixedIdentity('draft'))
     expect(await store.list()).toEqual([])
 
@@ -72,10 +77,9 @@ describe('patch lifecycle', () => {
     expect((await otherStore.get(resaved.id))!.values.retiredKnob).toBe('still here')
   })
 
-  /* The state the app actually ships in today: the full panel is present but every
-     control is an unspecified placeholder, so a patch keeps whatever it arrived
-     with and gains nothing invented. */
-  test('the shipped placeholder panel loses nothing and invents nothing', () => {
+  /* The shipped panel, rather than the test registry: a value it knows is read,
+     one it does not is carried through untouched. */
+  test('the shipped panel loses nothing and invents nothing', () => {
     const patch = createPatch(
       { values: { cutoffFrequency: 3, neverHeardOfIt: 1 } },
       fixedIdentity(),

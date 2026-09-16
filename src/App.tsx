@@ -166,7 +166,8 @@ export function App() {
         <ul>
           {factoryPresets.map((preset) => (
             <li key={preset.slug}>
-              {preset.name}{' '}
+              {preset.name}
+              {preset.approximate && <small> · approximate</small>}{' '}
               <button onClick={() => adopt(draftFromPreset(preset), `Loaded preset "${preset.name}"`)}>
                 Load
               </button>
@@ -174,7 +175,11 @@ export function App() {
           ))}
         </ul>
         <p>
-          <small>Loading a preset starts a new unsaved patch. Presets are never overwritten.</small>
+          <small>
+            Presets are read only. Loading one starts a new unsaved patch, so saving keeps a copy
+            and never writes back over the preset. Values marked approximate are a reconstruction,
+            not settings read off the instrument.
+          </small>
         </p>
       </section>
 
