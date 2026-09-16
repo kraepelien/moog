@@ -164,7 +164,7 @@ export function TimeKnob({ def, value, onChange, hideHeader }: TimeKnobProps) {
         onDoubleClick={(event) => setEditing(event.currentTarget)}
       >
         <Scale def={def} />
-        <KnobBody angle={angleForFraction(fraction)} size={def.size ?? 'small'} />
+        <KnobBody angle={angleForFraction(fraction)} />
         <text
           x={CENTRE.x}
           y={CENTRE.y}

@@ -52,13 +52,20 @@
   letter-spacing: 0.02em;
 }
 
+/* The export's own strokes and fills, in the panel's ink. They are given in its
+   units and scaled by the fit transform with the shapes they outline. */
 .body {
   fill: var(--moog-ink);
-  stroke: var(--moog-panel);
+  stroke: var(--moog-ink);
+  stroke-width: 2;
+}
+
+.cap {
+  fill: var(--moog-panel);
+  stroke: var(--moog-ink);
   stroke-width: 4;
 }
 
-.cap,
 .indicator {
   fill: var(--moog-panel);
 }
