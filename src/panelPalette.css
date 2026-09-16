@@ -1,6 +1,7 @@
 /* Sampled from reference/panel-controllers-oscbank.png and a photograph of a
-   Model D. Globals rather than a module because two modules read them: the
-   panel draws the sockets and lamps, the switch draws the rockers. */
+   Model D. Globals rather than a module because every control stylesheet reads
+   them: the panel's sockets and lamps, the switch's rockers, and the knob and
+   wheel line art, which is drawn in the ink the panel is printed in. */
 
 :root {
   --moog-panel: #000;

@@ -1,0 +1,38 @@
+/* What every control on the panel behaves like, rather than looks like. Each of
+   these was written out in all four control stylesheets, three of them carrying
+   a comment pointing at a fourth file for the reason; the reason lives here now. */
+
+/* A control is dragged, and a drag across a label would otherwise start selecting
+   the header and the scale markings instead of turning the control. */
+.noSelect {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Clicking an element with tabIndex focuses it, so without suppressing :focus the
+   browser paints its own ring — blue in Chrome — on every click. The ring is
+   wanted for keyboard focus only, which is what :focus-visible gives. */
+.focusRing:focus {
+  outline: none;
+}
+
+.focusRing:focus-visible {
+  outline: 2px solid;
+  outline-offset: 2px;
+}
+
+/* The mobile counterpart: without this a tap flashes the browser's own highlight
+   over the artwork. */
+.touchTarget {
+  composes: focusRing;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Turned by dragging up and down, so the browser must not claim the gesture for
+   scrolling first. */
+.dragSurface {
+  composes: touchTarget;
+  touch-action: none;
+  cursor: ns-resize;
+  background: var(--moog-panel);
+}
