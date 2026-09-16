@@ -218,12 +218,17 @@ everything saved. `src/components/library/` holds both the library and the bar
 the editor prints above the panel, because they are drawn from the same fields.
 
 A `LibraryEntry` is what one line needs, and it is deliberately not a `Patch`.
-Presets arrive whole from `listPresets`, so every field is known. Saved patches
-arrive as `PatchSummary`, which carries a name and its timestamps and nothing
-else — so their tags, instrument and visibility are `null` rather than empty.
-The difference matters: `null` means nobody asked the server, and an empty list
-would claim the patch has no tags. A row draws no chip for a `null` field rather
-than drawing a wrong one.
+Presets arrive whole from `listPresets`; saved patches arrive as `PatchSummary`,
+which carries `tags`, `instrument` and `visibility` alongside the name and its
+timestamps so that both sources supply the same fields and every line draws the
+same chips.
+
+Those three are in the summary because they are **metadata, not values**. The
+warning further down about not fattening the summary is about `values`: pulling
+the control settings for every patch is what would make paginating expensive.
+Three short fields that let a list be drawn without fetching each patch are the
+opposite trade. `approximate` stays out, because it is a claim about values the
+list does not carry.
 
 **Chip colour is assigned, not meaningful.** Tags are plain strings an admin can
 add to and retire, so a hand-kept colour map would leave new tags grey and dead

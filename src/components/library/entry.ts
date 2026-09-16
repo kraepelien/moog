@@ -1,19 +1,17 @@
 import type { Patch, Visibility } from '../../patch/schema.ts'
 import type { PatchSummary } from '../../storage/types.ts'
 
-/* What one line of the library needs, which is not what either store returns.
-   Presets arrive whole, so every field is known. Saved patches arrive as
-   summaries carrying only a name and its timestamps, so their tags, instrument
-   and visibility are `null` rather than empty — the difference between "no tags"
-   and "nobody asked the server for them" is what decides whether a chip is
-   missing or absent, and guessing either way would draw a line that lies. */
+/* What one line of the library needs. Both stores supply the same fields — a
+   preset arrives whole and a saved patch arrives as a summary carrying the
+   metadata the library filters on — so a row never has to tell "no tags" from
+   "not fetched", and every line draws the same set of chips. */
 export interface LibraryEntry {
   readonly id: string
   readonly name: string
   readonly origin: Origin
-  readonly tags: readonly string[] | null
-  readonly instrument: string | null
-  readonly visibility: Visibility | null
+  readonly tags: readonly string[]
+  readonly instrument: string
+  readonly visibility: Visibility
   readonly approximate: boolean
   /* No field in the patch schema carries this yet. */
   readonly rating: number | null
@@ -44,9 +42,11 @@ export function entryFromSummary(summary: PatchSummary): LibraryEntry {
     id: summary.id,
     name: summary.name,
     origin: 'user',
-    tags: null,
-    instrument: null,
-    visibility: null,
+    tags: summary.tags,
+    instrument: summary.instrument,
+    visibility: summary.visibility,
+    /* Not in the summary: it says whether the values are a reconstruction, which
+       is a claim about values the list does not carry. */
     approximate: false,
     rating: null,
     updatedAt: summary.updatedAt,
@@ -78,14 +78,14 @@ export function matchesFilters(entry: LibraryEntry, filters: LibraryFilters): bo
   if (text !== '' && !entry.name.toLowerCase().includes(text)) {
     /* A tag is worth searching by name too: typing "bass" should find what the
        BASS chip finds, without making you notice the chip. */
-    if (!(entry.tags ?? []).some((tag) => tag.toLowerCase().includes(text))) return false
+    if (!entry.tags.some((tag) => tag.toLowerCase().includes(text))) return false
   }
 
-  if (filters.tags.length > 0 && !filters.tags.some((tag) => (entry.tags ?? []).includes(tag))) {
+  if (filters.tags.length > 0 && !filters.tags.some((tag) => entry.tags.includes(tag))) {
     return false
   }
 
-  if (filters.instruments.length > 0 && !filters.instruments.includes(entry.instrument ?? '')) {
+  if (filters.instruments.length > 0 && !filters.instruments.includes(entry.instrument)) {
     return false
   }
 

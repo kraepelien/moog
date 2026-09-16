@@ -33,8 +33,8 @@ function choicesFrom(entries: readonly LibraryEntry[]): {
   const tags = new Set<string>()
   const instruments = new Set<string>()
   for (const entry of entries) {
-    for (const tag of entry.tags ?? []) tags.add(tag)
-    if (entry.instrument !== null) instruments.add(entry.instrument)
+    for (const tag of entry.tags) tags.add(tag)
+    instruments.add(entry.instrument)
   }
   return {
     tags: [...tags].sort().map((tag) => ({ value: tag, label: tag, tone: toneForTag(tag) })),

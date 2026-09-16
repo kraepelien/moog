@@ -79,7 +79,15 @@ export function createHttpStore(
       return raw
         .map(toPatch)
         .filter((patch): patch is Patch => patch !== null)
-        .map(({ id, name, createdAt, updatedAt }) => ({ id, name, createdAt, updatedAt }))
+        .map(({ id, name, tags, instrument, visibility, createdAt, updatedAt }) => ({
+          id,
+          name,
+          tags,
+          instrument,
+          visibility,
+          createdAt,
+          updatedAt,
+        }))
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     },
 

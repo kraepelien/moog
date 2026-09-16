@@ -38,15 +38,13 @@ export function PatchRow({
       </Typography>
 
       <Box className={styles.tags}>
-        {(entry.tags ?? []).map((tag) => (
+        {entry.tags.map((tag) => (
           <ToneChip key={tag} label={tag} tone={toneForTag(tag)} />
         ))}
       </Box>
 
       <Box className={styles.instrument}>
-        {entry.instrument !== null && (
-          <ToneChip label={instrumentName(entry.instrument)} tone="green" />
-        )}
+        <ToneChip label={instrumentName(entry.instrument)} tone="green" />
       </Box>
 
       <Box className={styles.origin}>

@@ -1,8 +1,14 @@
-import type { Patch } from '../patch/schema.ts'
+import type { Patch, Visibility } from '../patch/schema.ts'
 
 export interface PatchSummary {
   readonly id: string
   readonly name: string
+  /* What the library groups and filters by. Metadata rather than values: three
+     short fields that let a list of patches be drawn without fetching each one,
+     where pulling `values` in would be what makes paginating expensive. */
+  readonly tags: readonly string[]
+  readonly instrument: string
+  readonly visibility: Visibility
   readonly createdAt: string
   readonly updatedAt: string
 }

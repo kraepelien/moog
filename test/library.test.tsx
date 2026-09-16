@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { PatchLibrary, PER_PAGE } from '../src/components/library/PatchLibrary.tsx'
-import { matchesFilters, NO_FILTERS, type LibraryEntry } from '../src/components/library/entry.ts'
+import type { LibraryEntry } from '../src/components/library/entry.ts'
 
 /* The library is driven here rather than called: what it has to get right is
    that a chip narrows the list, that a row opens the patch it is drawn from, and
@@ -27,7 +27,7 @@ function entry(overrides: Partial<LibraryEntry> & { id: string }): LibraryEntry 
 const BANK: readonly LibraryEntry[] = [
   entry({ id: 'sub-bass', name: 'Sub Bass', tags: ['bass'] }),
   entry({ id: 'fuzz-lead', name: 'Fuzz Lead', tags: ['lead'] }),
-  entry({ id: 'my-patch', name: 'My Patch', origin: 'user', tags: null, visibility: null }),
+  entry({ id: 'my-patch', name: 'My Patch', origin: 'user', tags: ['bass'], visibility: 'private' }),
 ]
 
 function renderLibrary(entries: readonly LibraryEntry[] = BANK) {
@@ -48,7 +48,7 @@ describe('finding a patch', () => {
   test('typing narrows the list to matching names', () => {
     renderLibrary()
     fireEvent.change(screen.getByLabelText('Search for names, categories, synths or stars'), {
-      target: { value: 'bass' },
+      target: { value: 'sub' },
     })
     expect(rowNames()).toEqual(['Sub Bass'])
   })
@@ -67,6 +67,14 @@ describe('finding a patch', () => {
     renderLibrary()
     fireEvent.click(screen.getByRole('button', { name: 'lead' }))
     expect(rowNames()).toEqual(['Fuzz Lead'])
+  })
+
+  /* A saved patch carries its own tags now that the summary does, so a chip has
+     to reach it as readily as it reaches a preset. */
+  test('a category chip reaches a saved patch as well as a preset', () => {
+    renderLibrary()
+    fireEvent.click(screen.getByRole('button', { name: 'bass' }))
+    expect(rowNames()).toEqual(['Sub Bass', 'My Patch'])
   })
 
   test('switching the same chip off puts everything back', () => {
@@ -125,16 +133,5 @@ describe('paging', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'bass' }))
     expect(rowNames()).toEqual(['Odd One'])
-  })
-})
-
-describe('what a summary does not carry', () => {
-  /* A saved patch arrives without tags, and `null` has to stay distinct from an
-     empty list: it is why its row draws no category chip rather than drawing it
-     as untagged. */
-  test('a patch with unknown tags is not excluded by a tag filter', () => {
-    const unknown = entry({ id: 'u', name: 'Unknown', tags: null })
-    expect(matchesFilters(unknown, { ...NO_FILTERS, tags: ['bass'] })).toBe(false)
-    expect(matchesFilters(unknown, NO_FILTERS)).toBe(true)
   })
 })
