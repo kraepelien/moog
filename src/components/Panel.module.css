@@ -41,6 +41,17 @@
   justify-content: center;
 }
 
+/* A section given the width the row leaves it. Its controls are drawn across
+   that width rather than centred at their own size, which is what lets the
+   keyboard reach the end of the row however wide the panel above it is. */
+.section[data-fill] {
+  flex: 1;
+}
+
+.section[data-fill] .grid {
+  justify-items: stretch;
+}
+
 /* The name over a control, printed by the section in a row of its own so that
    the control's box holds nothing but the control. Sits on the bottom of that
    row, right above what it names. */
@@ -177,6 +188,14 @@
   width: 18px;
   height: 70px;
   border-radius: 9px;
+}
+
+/* Only the checklist draws this as a slot; on the panel the keyboard has its
+   own artwork. Wide and shallow so the row reads as the keyboard rather than as
+   another square. */
+.slot[data-shape='keyboard'] {
+  width: 88px;
+  height: 22px;
 }
 
 .scale {

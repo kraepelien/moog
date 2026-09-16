@@ -23,6 +23,10 @@ export interface SectionLayout {
      already headed needs — the instrument labels the column, not each knob in
      it. The registry's label is still what a screen reader hears. */
   readonly labels?: Readonly<Record<string, string>>
+  /* Draws the section to whatever width the rest of the row leaves it, instead
+     of to its contents. The keyboard runs to the edge of the case, so its width
+     is the row's to give rather than the artwork's to claim. */
+  readonly fillsRow?: boolean
 }
 
 /* The sheet prints these across the page in this order. */
@@ -35,8 +39,9 @@ export const PANEL_ROW: readonly string[] = [
   'power',
 ]
 
-/* And these underneath, beside the notes. */
-export const BELOW_PANEL: readonly string[] = ['performance']
+/* And these underneath, in this order: the performance strip stands at the left
+   end of the keyboard, which is the whole of the instrument below the panel. */
+export const BELOW_PANEL: readonly string[] = ['performance', 'keyboard']
 
 const SECTIONS: Readonly<Record<string, SectionLayout>> = {
   controllers: {
@@ -124,6 +129,14 @@ const SECTIONS: Readonly<Record<string, SectionLayout>> = {
   /* LFO Rate spans both switch rows, which is how the strip is printed. */
   performance: {
     rows: ['lfoRate glideEnable', 'lfoRate decayEnable', 'pitchWheel modWheel'],
+  },
+
+  /* The keys carry their own legend by being keys, so nothing is printed over
+     them. */
+  keyboard: {
+    rows: ['keyboard'],
+    labels: { keyboard: '' },
+    fillsRow: true,
   },
 }
 

@@ -77,6 +77,9 @@ export const sections: readonly SectionDef[] = [
   { id: 'output', label: 'Output' },
   { id: 'power', label: 'Power' },
   { id: 'performance', label: 'Performance' },
+  /* Unnamed: the instrument prints a section name under every part of the panel
+     except this one. */
+  { id: 'keyboard', label: '' },
 ]
 
 export const groups: readonly GroupDef[] = [
@@ -444,6 +447,10 @@ export const items: readonly PanelItem[] = [
     group: 'wheels',
   }),
   wheel('modWheel', 'Mod.', 'performance', { min: 0, max: 10, default: 0 }, { group: 'wheels' }),
+
+  /* One item rather than forty-four: nothing sounds a note and a patch holds
+     nothing a key would set, so the keyboard is on the panel as a shape. */
+  decoration('keyboard', 'Keyboard', 'keyboard', 'keyboard', { note: '44 keys, F to C' }),
 ]
 
 export const panelRegistry = createRegistry({ types: controlTypes, sections, groups, items })
