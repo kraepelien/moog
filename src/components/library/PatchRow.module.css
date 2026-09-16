@@ -57,3 +57,9 @@
   display: flex;
   justify-content: flex-end;
 }
+
+/* What everyone else made of it, beside my own stars. */
+.average {
+  font-size: 0.75rem;
+  white-space: nowrap;
+}

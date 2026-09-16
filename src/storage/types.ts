@@ -1,3 +1,4 @@
+import type { LibraryEntry } from '../components/library/entry.ts'
 import type { Patch, Visibility } from '../patch/schema.ts'
 
 export interface PatchSummary {
@@ -53,4 +54,11 @@ export interface PatchStore {
    which is an ordinary patch. Listed whole because it is small. */
 export interface PresetStore {
   listPresets(): Promise<readonly Patch[]>
+}
+
+/* The library in one call: the rows a viewer may see, with their own rating and
+   everyone's average already on them. */
+export interface LibraryStore {
+  library(instrument?: string): Promise<readonly LibraryEntry[]>
+  rate(id: string, stars: number): Promise<void>
 }

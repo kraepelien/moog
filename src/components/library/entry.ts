@@ -1,20 +1,24 @@
-import type { Patch, Visibility } from '../../patch/schema.ts'
-import type { PatchSummary } from '../../storage/types.ts'
+import type { Visibility } from '../../patch/schema.ts'
 
-/* What one line of the library needs. Both stores supply the same fields — a
-   preset arrives whole and a saved patch arrives as a summary carrying the
-   metadata the library filters on — so a row never has to tell "no tags" from
-   "not fetched", and every line draws the same set of chips. */
+/* What one line of the library needs, and all the server sends for it: values
+   are not here, because browsing never loads panel data. Assembled server-side
+   because the ratings are — mine is mine, and only the server can see everyone
+   else's to average them. */
 export interface LibraryEntry {
   readonly id: string
   readonly name: string
   readonly origin: Origin
+  /* Someone else's public patch is a user patch that is not mine. */
+  readonly mine: boolean
+  readonly ownerName: string | null
   readonly tags: readonly string[]
   readonly instrument: string
   readonly visibility: Visibility
   readonly approximate: boolean
-  /* No field in the patch schema carries this yet. */
+  /* Mine, and null when I have not rated it. */
   readonly rating: number | null
+  readonly averageRating: number | null
+  readonly ratingCount: number
   readonly updatedAt: string
 }
 
@@ -22,36 +26,6 @@ export interface LibraryEntry {
    preset is that it lives in the repo and nobody may write over it. */
 export const ORIGINS = ['factory', 'user'] as const
 export type Origin = (typeof ORIGINS)[number]
-
-export function entryFromPreset(preset: Patch): LibraryEntry {
-  return {
-    id: preset.id,
-    name: preset.name,
-    origin: 'factory',
-    tags: preset.tags,
-    instrument: preset.instrument,
-    visibility: preset.visibility,
-    approximate: preset.approximate,
-    rating: null,
-    updatedAt: preset.updatedAt,
-  }
-}
-
-export function entryFromSummary(summary: PatchSummary): LibraryEntry {
-  return {
-    id: summary.id,
-    name: summary.name,
-    origin: 'user',
-    tags: summary.tags,
-    instrument: summary.instrument,
-    visibility: summary.visibility,
-    /* Not in the summary: it says whether the values are a reconstruction, which
-       is a claim about values the list does not carry. */
-    approximate: false,
-    rating: null,
-    updatedAt: summary.updatedAt,
-  }
-}
 
 export interface LibraryFilters {
   readonly text: string

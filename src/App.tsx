@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Accordion from '@mui/material/Accordion'
 import AccordionDetails from '@mui/material/AccordionDetails'
 import AccordionSummary from '@mui/material/AccordionSummary'
@@ -15,11 +15,7 @@ import { FitToWidth } from './components/FitToWidth.tsx'
 import { TopBar, type TopBarAction } from './components/TopBar.tsx'
 import { PatchLibrary } from './components/library/PatchLibrary.tsx'
 import { PatchHeader } from './components/library/PatchHeader.tsx'
-import {
-  entryFromPreset,
-  entryFromSummary,
-  type LibraryEntry,
-} from './components/library/entry.ts'
+import type { LibraryEntry } from './components/library/entry.ts'
 import { Panel, PanelChecklist } from './components/Panel.tsx'
 import { useConfirm } from './components/useConfirm.tsx'
 import { panelRegistry } from './controls/panel.ts'
@@ -73,6 +69,7 @@ export function App() {
   const [draft, setDraft] = useState<Patch | null>(null)
   const [saved, setSaved] = useState<readonly PatchSummary[]>([])
   const [presets, setPresets] = useState<readonly Patch[]>([])
+  const [library, setLibrary] = useState<readonly LibraryEntry[]>([])
   const [status, setStatus] = useState('')
   const [report, setReport] = useState<ResolveReport | null>(null)
   const [failed, setFailed] = useState(false)
@@ -98,9 +95,14 @@ export function App() {
   const dirty = draft !== null && signature(draft) !== clean
 
   const refresh = useCallback(async () => {
-    const [patches, bank] = await Promise.all([store.list(), store.listPresets()])
+    const [patches, bank, shelf] = await Promise.all([
+      store.list(),
+      store.listPresets(),
+      store.library(),
+    ])
     setSaved(patches)
     setPresets(bank)
+    setLibrary(shelf)
   }, [])
 
   useEffect(() => {
@@ -173,13 +175,6 @@ export function App() {
     [],
   )
 
-  /* Presets arrive whole and saved patches arrive as summaries, so the two are
-     flattened into one list here rather than in the view: what the library shows
-     is one shelf, and which store a line came from is a chip on it. */
-  const libraryEntries: readonly LibraryEntry[] = useMemo(
-    () => [...presets.map(entryFromPreset), ...saved.map(entryFromSummary)],
-    [presets, saved],
-  )
 
   /* A preset is already in hand; a saved patch has to be fetched, because its
      summary carries no values. */
@@ -391,7 +386,16 @@ export function App() {
         )}
 
         {view === 'library' && (
-          <PatchLibrary entries={libraryEntries} onOpen={openEntry} />
+          <PatchLibrary
+            entries={library}
+            onOpen={openEntry}
+            onRate={(entry, stars) =>
+              void run('', async () => {
+                await store.rate(entry.id, stars)
+                await refresh()
+              })
+            }
+          />
         )}
 
         {view === 'editor' && report && reportHasWarnings(report) && (

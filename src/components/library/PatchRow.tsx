@@ -16,11 +16,13 @@ export function PatchRow({
   entry,
   index,
   onOpen,
+  onRate,
 }: {
   entry: LibraryEntry
   /* The library's own numbering, not anything stored: ids are uuids. */
   index: number
   onOpen: () => void
+  onRate?: (stars: number) => void
 }) {
   return (
     <ButtonBase
@@ -56,7 +58,16 @@ export function PatchRow({
       </Box>
 
       <Box className={styles.rating}>
-        <StarRating value={entry.rating} label={`Rating for ${entry.name || 'this patch'}`} />
+        <StarRating
+          value={entry.rating}
+          label={`Rating for ${entry.name || 'this patch'}`}
+          onRate={onRate}
+        />
+        {entry.ratingCount > 0 && (
+          <Typography component="span" color="text.secondary" className={styles.average}>
+            {entry.averageRating?.toFixed(1)} ({entry.ratingCount})
+          </Typography>
+        )}
       </Box>
     </ButtonBase>
   )
