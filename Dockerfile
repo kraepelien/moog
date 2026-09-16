@@ -19,10 +19,13 @@ WORKDIR /app
 #
 # The id is used numerically and no account is created for it. Docker does not
 # need a passwd entry to run as a uid, and creating one here would fail anyway:
-# the bun base image already occupies 1000:1000. Compose overrides this with
-# `user:` when the share is owned by something else.
-ARG UID=1000
-ARG GID=1000
+# the bun base image already occupies 1000:1000.
+#
+# Defaults to the Synology share this is deployed to — 1026 with the `users`
+# group at 100 — rather than the usual 1000, which would be wrong everywhere it
+# actually runs. Override both for a different host.
+ARG UID=1026
+ARG GID=100
 
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/server ./server

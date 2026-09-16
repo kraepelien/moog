@@ -59,11 +59,12 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           # The id the container runs as has to match whoever owns the share, or
-          # every file it writes comes back unreadable from the NAS. Set these as
-          # repository variables once the share's owner is known.
+          # every file it writes comes back unreadable from the NAS. The defaults
+          # are the Synology account this deploys to; the variables only need
+          # setting for a different host.
           build-args: |
-            UID=${{ vars.MOOG_UID || '1000' }}
-            GID=${{ vars.MOOG_GID || '1000' }}
+            UID=${{ vars.MOOG_UID || '1026' }}
+            GID=${{ vars.MOOG_GID || '100' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

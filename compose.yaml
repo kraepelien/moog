@@ -13,15 +13,15 @@ services:
     container_name: moog
     restart: unless-stopped
 
-    # Must match whoever owns the share, or the files land root-owned and cannot
-    # be edited from the NAS.
-    user: "${MOOG_UID:-1000}:${MOOG_GID:-1000}"
+    # Must match whoever owns the share, or the files land unreadable from the
+    # NAS. 1026:100 is the Synology account and its `users` group.
+    user: "${MOOG_UID:-1026}:${MOOG_GID:-100}"
 
     environment:
       PORT: 8080
 
     volumes:
-      # Everything the editor writes: presets, saved patches, the working draft.
+      # Everything the editor writes: the active presets and the saved patches.
       # The bank shipped in the image is copied in here the first time, and from
       # then on this folder is the truth.
       - ${MOOG_DATA_DIR:-/volume1/docker/moog/data}:/data
