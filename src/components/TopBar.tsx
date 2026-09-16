@@ -5,20 +5,32 @@ import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
-import ToggleButton from '@mui/material/ToggleButton'
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
+import Tab from '@mui/material/Tab'
+import Tabs from '@mui/material/Tabs'
 import Toolbar from '@mui/material/Toolbar'
-import Typography from '@mui/material/Typography'
-import type { View } from '../navigation.ts'
+import { VIEWS, type View } from '../navigation.ts'
 import styles from './TopBar.module.css'
 
-/* Inline rather than an icon package, for a shape that is three lines. */
-function MenuGlyph() {
+/* Inline rather than an icon package, for a shape that is a head and a pair of
+   shoulders. */
+function PersonGlyph() {
   return (
     <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
-      <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" fill="none" />
+      <circle cx="12" cy="8" r="3.4" stroke="currentColor" strokeWidth="1.6" fill="none" />
+      <path
+        d="M5 19.5c0-3.3 3.1-5.5 7-5.5s7 2.2 7 5.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        fill="none"
+        strokeLinecap="round"
+      />
     </svg>
   )
+}
+
+const TAB_LABELS: Record<View, string> = {
+  editor: 'Patch editor',
+  library: 'Patch library',
 }
 
 export interface TopBarAction {
@@ -44,31 +56,32 @@ export function TopBar({
   return (
     <AppBar position="sticky">
       <Toolbar variant="dense" className={styles.bar}>
-        <img src="/logo.png" alt="" width="28" height="28" className={styles.logo} />
-        <Typography variant="subtitle1" component="h1" className={styles.title}>
-          Minimoog Model D
-        </Typography>
+        {/* The page's heading is the instrument, and the mark says it without
+            spending the bar's width on words the nav already carries. */}
+        <h1 className={styles.mark}>
+          <img src="/logo.png" alt="Minimoog Model D" width="28" height="28" className={styles.logo} />
+        </h1>
+
+        <Tabs
+          value={view}
+          onChange={(_event, next: View) => onView(next)}
+          aria-label="Page"
+          className={styles.tabs}
+        >
+          {VIEWS.map((name) => (
+            <Tab key={name} value={name} label={TAB_LABELS[name]} className={styles.tab} />
+          ))}
+        </Tabs>
 
         <Box className={styles.spacer}>{children}</Box>
-
-        <ToggleButtonGroup
-          exclusive
-          size="small"
-          value={view}
-          onChange={(_event, next: View | null) => next && onView(next)}
-          aria-label="Page"
-        >
-          <ToggleButton value="editor">Editor</ToggleButton>
-          <ToggleButton value="library">Library</ToggleButton>
-        </ToggleButtonGroup>
 
         <IconButton
           edge="end"
           color="inherit"
-          aria-label="Menu"
+          aria-label="Account and file actions"
           onClick={(event) => setMenuAt(event.currentTarget)}
         >
-          <MenuGlyph />
+          <PersonGlyph />
         </IconButton>
 
         <Menu anchorEl={menuAt} open={menuAt !== null} onClose={() => setMenuAt(null)}>

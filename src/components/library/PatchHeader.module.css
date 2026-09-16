@@ -1,0 +1,38 @@
+/* One row until the actions no longer fit beside the name, which is where the
+   title would otherwise be squeezed to a word and a half. */
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  min-height: 34px;
+  padding: 14px 20px;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chips,
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Pushed to the far end, as the sheet prints them. */
+.actions {
+  margin-left: auto;
+}
+
+.action {
+  min-width: 0;
+  padding: 2px 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}

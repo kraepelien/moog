@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Accordion from '@mui/material/Accordion'
 import AccordionDetails from '@mui/material/AccordionDetails'
 import AccordionSummary from '@mui/material/AccordionSummary'
@@ -6,10 +6,6 @@ import Alert from '@mui/material/Alert'
 import AlertTitle from '@mui/material/AlertTitle'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import Chip from '@mui/material/Chip'
-import List from '@mui/material/List'
-import ListItem from '@mui/material/ListItem'
-import ListItemText from '@mui/material/ListItemText'
 import Paper from '@mui/material/Paper'
 import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
@@ -17,6 +13,13 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { FitToWidth } from './components/FitToWidth.tsx'
 import { TopBar, type TopBarAction } from './components/TopBar.tsx'
+import { PatchLibrary } from './components/library/PatchLibrary.tsx'
+import { PatchHeader } from './components/library/PatchHeader.tsx'
+import {
+  entryFromPreset,
+  entryFromSummary,
+  type LibraryEntry,
+} from './components/library/entry.ts'
 import { Panel, PanelChecklist } from './components/Panel.tsx'
 import { useConfirm } from './components/useConfirm.tsx'
 import { panelRegistry } from './controls/panel.ts'
@@ -160,6 +163,40 @@ export function App() {
     setStatus(message)
   }, [])
 
+  /* Presets arrive whole and saved patches arrive as summaries, so the two are
+     flattened into one list here rather than in the view: what the library shows
+     is one shelf, and which store a line came from is a chip on it. */
+  const libraryEntries: readonly LibraryEntry[] = useMemo(
+    () => [...presets.map(entryFromPreset), ...saved.map(entryFromSummary)],
+    [presets, saved],
+  )
+
+  /* A preset is already in hand; a saved patch has to be fetched, because its
+     summary carries no values. */
+  const fetchEntry = useCallback(
+    async (entry: LibraryEntry): Promise<Patch | null> =>
+      entry.origin === 'factory'
+        ? (presets.find((preset) => preset.id === entry.id) ?? null)
+        : await store.get(entry.id),
+    [presets],
+  )
+
+  /* Opening is the row's whole job, so it loads and moves to the editor in one
+     go rather than loading in place and leaving you on the list. A preset opens
+     as a copy, because saving afterwards must not write back over it; a patch of
+     your own opens as itself, so saving updates the one you picked. */
+  const openEntry = useCallback(
+    (entry: LibraryEntry) =>
+      void run('', async () => {
+        const patch = await fetchEntry(entry)
+        if (!patch) return
+        const opened = entry.origin === 'factory' ? copyOf(patch, { owner: null }) : patch
+        adopt(opened, `Opened “${patch.name}”`)
+        goToView('editor')
+      }),
+    [adopt, fetchEntry, goToView, run],
+  )
+
   if (!draft) return <Typography sx={{ p: 2 }}>Loading…</Typography>
 
   const resolved = resolvePatch(panelRegistry, draft)
@@ -192,8 +229,65 @@ export function App() {
 
         {view === 'editor' && (
           <>
-        {/* No card and no heading: the panel is the instrument's own face, and
-            it names its own sections along the bottom the way the panel does. */}
+        {/* The panel does not name what it is showing, so the patch says so above
+            it: the same bar the library's rows are drawn from. */}
+        <Paper variant="outlined" sx={{ borderRadius: '10px' }}>
+          <PatchHeader
+            name={draft.name}
+            tags={draft.tags}
+            instrument={draft.instrument}
+            origin={null}
+            approximate={draft.approximate}
+            rating={null}
+            actions={[
+              {
+                label: 'Save as',
+                tone: 'green',
+                disabled: !dirty,
+                onSelect: () =>
+                  void run('Saved', async () => {
+                    const stamped = { ...draft, updatedAt: new Date().toISOString() }
+                    await store.save(stamped)
+                    setDraft(stamped)
+                    setClean(signature(stamped))
+                    await refresh()
+                  }),
+              },
+              {
+                label: 'Delete',
+                tone: 'pink',
+                /* Only a draft that has been saved is in the store to delete. */
+                disabled: !saved.some((summary) => summary.id === draft.id),
+                onSelect: () =>
+                  void run(`Deleted \u201c${draft.name}\u201d`, async () => {
+                    if (
+                      !(await ask({
+                        title: `Delete \u201c${draft.name || '(unnamed)'}\u201d?`,
+                        confirm: 'Delete',
+                        destructive: true,
+                      }))
+                    ) {
+                      throw new Cancelled()
+                    }
+                    await store.delete(draft.id)
+                    await refresh()
+                  }),
+              },
+              {
+                label: 'Export',
+                tone: 'blue',
+                onSelect: () =>
+                  void run(`Exported \u201c${draft.name}\u201d`, async () => {
+                    downloadJson(
+                      `${slugify(draft.name) || 'patch'}.moogpatch.json`,
+                      serializeBundle(createBundle([{ ...draft, values: currentValues }])),
+                    )
+                  }),
+              },
+            ]}
+          />
+        </Paper>
+
         <FitToWidth>
           <Panel
             registry={panelRegistry}
@@ -317,138 +411,7 @@ export function App() {
         )}
 
         {view === 'library' && (
-          <>
-        <Section title={`Presets (${presets.length})`}>
-          <List dense disablePadding>
-            {presets.map((preset) => (
-              <ListItem key={preset.id} divider disableGutters>
-                <ListItemText
-                  primary={
-                    <Box
-                      component="span"
-                      sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}
-                    >
-                      {preset.name}
-                      {preset.approximate && (
-                        <Chip label="approximate" size="small" variant="outlined" />
-                      )}
-                    </Box>
-                  }
-                  secondary={preset.id}
-                />
-                <Stack direction="row" spacing={1}>
-                    <Button
-                      size="small"
-                      onClick={() => adopt(copyOf(preset, { owner: null }), `Loaded “${preset.name}”`)}
-                    >
-                      Load
-                    </Button>
-                    <Button
-                      size="small"
-                      onClick={() =>
-                        void run(`Overwrote “${preset.name}”`, async () => {
-                          if (
-                            !(await ask({
-                              title: `Overwrite “${preset.name}”?`,
-                              body: 'The preset takes the values on the panel.',
-                              confirm: 'Overwrite',
-                            }))
-                          ) {
-                            throw new Cancelled()
-                          }
-                          await store.savePreset({
-                            ...draft,
-                            id: preset.id,
-                            values: currentValues,
-                            visibility: 'public',
-                            updatedAt: new Date().toISOString(),
-                          })
-                          await refresh()
-                        })
-                      }
-                    >
-                      Overwrite
-                    </Button>
-                    <Button
-                      size="small"
-                      color="error"
-                      onClick={() =>
-                        void run(`Deleted “${preset.name}”`, async () => {
-                          if (
-                            !(await ask({
-                              title: `Delete “${preset.name}”?`,
-                              body: 'This removes one file from the active presets folder. The copy kept in the repo is untouched.',
-                              confirm: 'Delete',
-                              destructive: true,
-                            }))
-                          ) {
-                            throw new Cancelled()
-                          }
-                          await store.deletePreset(preset.id)
-                          await refresh()
-                        })
-                      }
-                    >
-                      Delete
-                    </Button>
-                  </Stack>
-              </ListItem>
-            ))}
-          </List>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-            Presets are files in the active folder. Loading one starts a new patch; overwriting and
-            deleting change the file. Values marked approximate are a reconstruction, not settings
-            read off the instrument.
-          </Typography>
-        </Section>
-
-        <Section title={`Saved patches (${saved.length})`}>
-          <List dense disablePadding>
-            {saved.map((summary) => (
-              <ListItem key={summary.id} divider disableGutters>
-                <ListItemText
-                  primary={summary.name || '(unnamed)'}
-                  secondary={summary.updatedAt}
-                />
-                <Stack direction="row" spacing={1}>
-                    <Button
-                      size="small"
-                      onClick={() =>
-                        void run('', async () => {
-                          const patch = await store.get(summary.id)
-                          if (patch) adopt(patch, `Loaded “${patch.name}”`)
-                        })
-                      }
-                    >
-                      Load
-                    </Button>
-                    <Button
-                      size="small"
-                      color="error"
-                      onClick={() =>
-                        void run(`Deleted “${summary.name}”`, async () => {
-                          if (
-                            !(await ask({
-                              title: `Delete “${summary.name || '(unnamed)'}”?`,
-                              confirm: 'Delete',
-                              destructive: true,
-                            }))
-                          ) {
-                            throw new Cancelled()
-                          }
-                          await store.delete(summary.id)
-                          await refresh()
-                        })
-                      }
-                    >
-                      Delete
-                    </Button>
-                  </Stack>
-              </ListItem>
-            ))}
-          </List>
-        </Section>
-          </>
+          <PatchLibrary entries={libraryEntries} onOpen={openEntry} />
         )}
 
         {view === 'editor' && report && reportHasWarnings(report) && (

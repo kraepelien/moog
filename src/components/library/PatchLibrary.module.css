@@ -1,0 +1,56 @@
+.library {
+  gap: 16px;
+}
+
+.card {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.search {
+  padding: 16px 20px;
+}
+
+.filters {
+  gap: 10px;
+  padding: 0 20px 18px;
+}
+
+.count {
+  padding: 14px 20px;
+  border-bottom: 1px solid;
+  border-color: inherit;
+}
+
+.countText {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.pager {
+  display: flex;
+  justify-content: center;
+  padding: 14px 20px;
+  border-top: 1px solid;
+  border-color: inherit;
+}
+
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-color: inherit;
+}
+
+/* The last row's rule would double the card's own edge. */
+.rows > :last-child {
+  border-bottom: none;
+}
+
+.empty {
+  padding: 28px 20px;
+  font-size: 0.86rem;
+}
