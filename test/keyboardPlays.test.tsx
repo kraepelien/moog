@@ -72,6 +72,48 @@ describe('the drawn keyboard', () => {
     expect(screen.getByRole('button', { name: 'A4' }).getAttribute('aria-pressed')).toBe('true')
   })
 
+  test('plays from the computer keyboard', () => {
+    const instrument = playable()
+    draw(instrument)
+    fireEvent.keyDown(document.body, { key: 'z' })
+    expect(noteName(instrument.snapshot().sounding!)).toBe('C3')
+    fireEvent.keyDown(document.body, { key: 'q' })
+    /* Two keys held, and the lower one is the one that sounds. */
+    expect(instrument.snapshot().held).toHaveLength(2)
+    expect(noteName(instrument.snapshot().sounding!)).toBe('C3')
+    fireEvent.keyUp(document.body, { key: 'z' })
+    expect(noteName(instrument.snapshot().sounding!)).toBe('C4')
+    fireEvent.keyUp(document.body, { key: 'q' })
+    expect(instrument.snapshot().held).toEqual([])
+  })
+
+  test('shifts octave without playing anything', () => {
+    const instrument = playable()
+    draw(instrument)
+    fireEvent.keyDown(document.body, { key: ']' })
+    expect(instrument.snapshot().held).toEqual([])
+    fireEvent.keyDown(document.body, { key: 'z' })
+    expect(noteName(instrument.snapshot().sounding!)).toBe('C4')
+  })
+
+  /* Somebody naming a patch is typing words. A synthesiser that answered the
+     Notes field would be unusable. */
+  test('stays quiet while a field is being typed into', () => {
+    const instrument = playable()
+    const { container } = draw(instrument)
+    const field = document.createElement('input')
+    container.append(field)
+    fireEvent.keyDown(field, { key: 'z' })
+    expect(instrument.snapshot().held).toEqual([])
+  })
+
+  test('ignores a keystroke that is a shortcut', () => {
+    const instrument = playable()
+    draw(instrument)
+    fireEvent.keyDown(document.body, { key: 'z', metaKey: true })
+    expect(instrument.snapshot().held).toEqual([])
+  })
+
   /* Nothing may open an audio context before somebody asks for a sound. */
   test('is silent until a key is touched', () => {
     const context = fakeContext()

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
-import { noteName } from '../../audio/notes.ts'
+import { KEY_COUNT, noteName } from '../../audio/notes.ts'
+import { OCTAVE_DOWN, OCTAVE_UP, keyForTypedKey } from '../../audio/typing.ts'
 import type { Synth } from '../../audio/engine.ts'
 import { synth } from '../../audio/synth.ts'
 import { useSynthSettings, useSynthState } from '../../audio/useSynth.ts'
@@ -49,6 +50,43 @@ export function Keyboard({
       window.removeEventListener('pointercancel', release)
       window.removeEventListener('blur', silence)
       instrument.allOff()
+    }
+  }, [instrument])
+
+  /* The computer's keyboard plays it too, which is the only way to play two
+     notes in a row quickly enough to hear what Glide and single triggering
+     actually do. Held here rather than in state: a note held down must not
+     redraw the panel on every repeat. */
+  const typed = useRef(new Map<string, number>())
+  const octaves = useRef(0)
+
+  useEffect(() => {
+    const down = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey || event.repeat) return
+      /* Somebody naming a patch is typing words, not playing notes. */
+      const target = event.target as HTMLElement | null
+      if (target?.closest('input, textarea, [contenteditable]')) return
+      if (event.key === OCTAVE_DOWN || event.key === OCTAVE_UP) {
+        octaves.current += event.key === OCTAVE_UP ? 1 : -1
+        return
+      }
+      const key = keyForTypedKey(event.key, octaves.current, KEY_COUNT)
+      if (key === null || typed.current.has(event.key)) return
+      event.preventDefault()
+      typed.current.set(event.key, key)
+      instrument.noteOn(key)
+    }
+    const up = (event: KeyboardEvent) => {
+      const key = typed.current.get(event.key)
+      if (key === undefined) return
+      typed.current.delete(event.key)
+      instrument.noteOff(key)
+    }
+    window.addEventListener('keydown', down)
+    window.addEventListener('keyup', up)
+    return () => {
+      window.removeEventListener('keydown', down)
+      window.removeEventListener('keyup', up)
     }
   }, [instrument])
 

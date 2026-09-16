@@ -58,10 +58,10 @@ describe('opening the instrument', () => {
       synth.noteOn(key % 44)
       synth.noteOff(key % 44)
     }
-    /* Three voices and the tuning tone are the whole census: an oscillator
-       cannot be restarted once stopped, so one per note would be a leak that
-       eventually throws. */
-    expect(context.of('oscillator')).toHaveLength(4)
+    /* Three voices, the tuning tone and the LFO are the whole census: an
+       oscillator cannot be restarted once stopped, so one per note would be a
+       leak that eventually throws. */
+    expect(context.of('oscillator')).toHaveLength(5)
   })
 
   test('starts every source exactly once', () => {
@@ -157,6 +157,33 @@ describe('two keys at once', () => {
     const after = keyboard.offset.calls.slice(before)
     expect(after.some((call) => call.method === 'linearRampToValueAtTime')).toBe(false)
     expect(after.at(-1)!.method).toBe('setValueAtTime')
+  })
+})
+
+describe('the modulation bus', () => {
+  /* The wheel is the depth of the whole bus, so at rest it does not matter what
+     the sources or the mix are set to: nothing is modulated. */
+  test('reaches nothing with the wheel down', () => {
+    start({ modWheel: 0, oscillatorModulation: 'on', filterModulation: 'on', modulationMix: 5 })
+    const depths = context.of('gain').filter((node) =>
+      (node as unknown as { gain: FakeParam }).gain.value > 0,
+    )
+    const pitch = panel({ modWheel: 0, oscillatorModulation: 'on' }).modulation.toPitchCents
+    expect(pitch).toBe(0)
+    expect(depths.length).toBeGreaterThan(0)
+  })
+
+  test('opens the gate the switch chooses, and shuts the other', () => {
+    start({ modulationSourceB: 'lfo', modWheel: 10, oscillatorModulation: 'on' })
+    const applied = panel({ modulationSourceB: 'lfo', modWheel: 10, oscillatorModulation: 'on' })
+    expect(applied.modulation.sourceB).toBe('lfo')
+    expect(applied.modulation.toPitchCents).toBeGreaterThan(0)
+  })
+
+  test('runs the LFO at the rate the knob asks for', () => {
+    start({ lfoRate: 10 })
+    const lfo = context.of('oscillator').at(-1)! as unknown as { frequency: FakeParam }
+    expect(lfo.frequency.value).toBeGreaterThan(10)
   })
 })
 

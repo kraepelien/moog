@@ -39,8 +39,8 @@
 
       /* Zero crossings over the steady part: with one oscillator and the filter
          well open that is a good enough pitch to check the calibration by. */
-      function hz(data) {
-        const from = Math.floor(RATE * 0.25)
+      function hz(data, start = 0.25) {
+        const from = Math.floor(data.length * start)
         let crossings = 0
         for (let i = from + 1; i < data.length; i += 1) {
           if (data[i - 1] <= 0 && data[i] > 0) crossings += 1
@@ -78,6 +78,25 @@
 
         const tone = await render({ ...loud, osc1Volume: 0, a440: 'on' }, 40)
         out.a440Switch = { rms: +rms(tone).toFixed(4), hz: +hz(tone).toFixed(1) }
+
+        /* A slow deep vibrato: the pitch measured early in the cycle should not
+           be the pitch measured later, and with the wheel down it should not
+           move at all. */
+        const vibrato = {
+          ...loud,
+          modulationSourceB: 'lfo',
+          modulationMix: 10,
+          oscillatorModulation: 'on',
+          lfoRate: 3,
+        }
+        const wobbling = await render({ ...vibrato, modWheel: 10 }, 40, 2)
+        const still = await render({ ...vibrato, modWheel: 0 }, 40, 2)
+        const window = (data, from, to) =>
+          +hz(data.slice(Math.floor(RATE * from), Math.floor(RATE * to)), 0).toFixed(1)
+        out.vibrato = {
+          wheelUp: [window(wobbling, 0.3, 0.55), window(wobbling, 0.55, 0.8)],
+          wheelDown: [window(still, 0.3, 0.55), window(still, 0.55, 0.8)],
+        }
 
         const slow = await render({ ...loud, loudnessAttackTime: 3000 }, 40)
         out.slowAttack = {

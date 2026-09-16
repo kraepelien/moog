@@ -96,6 +96,14 @@ interface Graph {
   readonly master: GainNode
   readonly tone: OscillatorNode
   readonly toneGain: GainNode
+  readonly lfo: OscillatorNode
+  /* One gate per possible source, so the two switches are a choice of which is
+     open rather than a rewiring. */
+  readonly gates: Readonly<Record<'osc3' | 'filterEg' | 'noise' | 'lfo', GainNode>>
+  readonly modA: GainNode
+  readonly modB: GainNode
+  readonly modPitch: GainNode
+  readonly modCutoff: GainNode
   readonly waves: Map<WaveId, PeriodicWave>
 }
 
@@ -206,7 +214,47 @@ export function createSynth(open: OpenContext = () => new AudioContext()): Synth
     tone.connect(toneGain)
     toneGain.connect(master)
 
-    for (const node of [keyboard, bend, contour, ...oscillators, white, pink, tone]) node.start()
+    /* The modulation bus. Its two sides are mixed by the Modulation Mix knob and
+       the whole of it is scaled by the wheel, which is why the wheel at rest
+       leaves the instrument unmodulated whatever else is set. A depth in cents
+       turns a signal running between -1 and 1 into an interval. */
+    const lfo = context.createOscillator()
+    lfo.type = 'triangle'
+    const modA = context.createGain()
+    const modB = context.createGain()
+    modA.gain.value = 1
+    modB.gain.value = 0
+    const modPitch = context.createGain()
+    const modCutoff = context.createGain()
+    modPitch.gain.value = 0
+    modCutoff.gain.value = 0
+    for (const side of [modA, modB]) {
+      side.connect(modPitch)
+      side.connect(modCutoff)
+    }
+    for (const oscillator of oscillators) modPitch.connect(oscillator.detune)
+    for (const filter of filters) modCutoff.connect(filter.detune)
+
+    const gate = (source: AudioNode, side: GainNode, open: boolean) => {
+      const node = context.createGain()
+      node.gain.value = open ? 1 : 0
+      source.connect(node)
+      node.connect(side)
+      return node
+    }
+    const gates = {
+      /* Oscillator-3 modulates from before the mixer, so it is a source whether
+         or not its volume is up: that is what taking it off the keyboard is
+         for. */
+      osc3: gate(oscillators[2]!, modA, true),
+      filterEg: gate(contour, modA, false),
+      noise: gate(white, modB, true),
+      lfo: gate(lfo, modB, false),
+    }
+
+    for (const node of [keyboard, bend, contour, ...oscillators, white, pink, tone, lfo]) {
+      node.start()
+    }
 
     return {
       context,
@@ -226,6 +274,12 @@ export function createSynth(open: OpenContext = () => new AudioContext()): Synth
       master,
       tone,
       toneGain,
+      lfo,
+      gates,
+      modA,
+      modB,
+      modPitch,
+      modCutoff,
       waves,
     }
   }
@@ -279,6 +333,26 @@ export function createSynth(open: OpenContext = () => new AudioContext()): Synth
     }
     if (was?.filter.contourCents !== next.filter.contourCents) {
       ease(live.contourDepth.gain, next.filter.contourCents, now)
+    }
+
+    const mod = next.modulation
+    const before = was?.modulation
+    if (before?.lfoHz !== mod.lfoHz) ease(live.lfo.frequency, mod.lfoHz, now)
+    if (before?.sourceA !== mod.sourceA) {
+      ease(live.gates.osc3.gain, mod.sourceA === 'osc3' ? 1 : 0, now)
+      ease(live.gates.filterEg.gain, mod.sourceA === 'filterEg' ? 1 : 0, now)
+    }
+    if (before?.sourceB !== mod.sourceB) {
+      ease(live.gates.noise.gain, mod.sourceB === 'noise' ? 1 : 0, now)
+      ease(live.gates.lfo.gain, mod.sourceB === 'lfo' ? 1 : 0, now)
+    }
+    if (before?.mix !== mod.mix) {
+      ease(live.modA.gain, 1 - mod.mix, now)
+      ease(live.modB.gain, mod.mix, now)
+    }
+    if (before?.toPitchCents !== mod.toPitchCents) ease(live.modPitch.gain, mod.toPitchCents, now)
+    if (before?.toCutoffCents !== mod.toCutoffCents) {
+      ease(live.modCutoff.gain, mod.toCutoffCents, now)
     }
 
     if (was?.bendCents !== next.bendCents) ease(live.bend.offset, next.bendCents, now)
