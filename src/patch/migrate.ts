@@ -1,5 +1,6 @@
 import { err, ok, type Result } from '../result.ts'
-import { MINIMOOG, PATCH_SCHEMA_VERSION, parsePatch, type Patch } from './schema.ts'
+import { instrumentIdFor } from '../instruments/instruments.ts'
+import { PATCH_SCHEMA_VERSION, parsePatch, type Patch } from './schema.ts'
 
 /* Keyed by the version it upgrades FROM, producing that version plus one. A v1
    patch reaching a v3 build runs migrations[1] then migrations[2].
@@ -11,15 +12,27 @@ import { MINIMOOG, PATCH_SCHEMA_VERSION, parsePatch, type Patch } from './schema
 export type Migration = (patch: Record<string, unknown>) => Record<string, unknown>
 
 export const migrations: Readonly<Record<number, Migration>> = {
-  /* v2 gave a patch the three things the library lists it by. Everything
-     written before it predates any of them, so: no categories yet, the only
-     instrument there has ever been, and unrated — which is 0, and reads as
-     "nobody has said" rather than "nobody liked it". */
+  /* v2 gave a patch what the library lists it by and what tells one instrument
+     from another. Everything written before it predates all of them: no tags
+     yet, the only instrument there has ever been, nobody's but its author's,
+     and copied from nothing.
+
+     Private rather than public, deliberately: anything else would publish
+     somebody's work as a side effect of an upgrade. */
   1: (patch) => ({
     ...patch,
-    categories: Array.isArray(patch.categories) ? patch.categories : [],
-    synth: typeof patch.synth === 'string' && patch.synth !== '' ? patch.synth : MINIMOOG,
-    rating: typeof patch.rating === 'number' ? patch.rating : 0,
+    tags: Array.isArray(patch.tags)
+      ? patch.tags
+      : Array.isArray(patch.categories)
+        ? patch.categories
+        : [],
+    instrument:
+      typeof patch.instrument === 'string' && patch.instrument !== ''
+        ? patch.instrument
+        : instrumentIdFor(patch.synth),
+    visibility: patch.visibility === 'public' ? 'public' : 'private',
+    approximate: patch.approximate === true,
+    derivedFrom: patch.derivedFrom ?? null,
   }),
 }
 

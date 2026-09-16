@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { migrateToCurrent, migrations } from '../src/patch/migrate.ts'
-import { MINIMOOG, PATCH_SCHEMA_VERSION, createPatch, parsePatch } from '../src/patch/schema.ts'
+import { PATCH_SCHEMA_VERSION, createPatch, parsePatch } from '../src/patch/schema.ts'
+import { DEFAULT_INSTRUMENT } from '../src/instruments/instruments.ts'
 import { fixedIdentity } from './fixtures.ts'
 
 /* The bug this pins: crypto.randomUUID exists only in a secure context, so it is
@@ -112,9 +113,11 @@ describe('migrateToCurrent', () => {
     expect(result.value).toEqual({
       ...v1,
       schemaVersion: PATCH_SCHEMA_VERSION,
-      categories: [],
-      synth: MINIMOOG,
-      rating: 0,
+      tags: [],
+      instrument: DEFAULT_INSTRUMENT.id,
+      visibility: 'private',
+      approximate: false,
+      derivedFrom: null,
     })
   })
 
@@ -128,16 +131,16 @@ describe('migrateToCurrent', () => {
       name: 'Hand edited',
       notes: '',
       values: {},
-      categories: ['Lead'],
-      synth: 'Prophet-5',
-      rating: 4,
+      tags: ['Lead'],
+      instrument: 'prophet-5',
+      visibility: 'public',
       createdAt: '2026-01-01T00:00:00.000Z',
       updatedAt: '2026-01-01T00:00:00.000Z',
     })
 
-    expect(result.ok && result.value.categories).toEqual(['Lead'])
-    expect(result.ok && result.value.synth).toBe('Prophet-5')
-    expect(result.ok && result.value.rating).toBe(4)
+    expect(result.ok && result.value.tags).toEqual(['Lead'])
+    expect(result.ok && result.value.instrument).toBe('prophet-5')
+    expect(result.ok && result.value.visibility).toBe('public')
   })
 
   test('the chain has one link, from the version before the library', () => {

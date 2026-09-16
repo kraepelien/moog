@@ -1,11 +1,8 @@
 {
-  "slug": "level-3",
+  "schemaVersion": 2,
+  "id": "level-3",
   "name": "Level 3",
   "notes": "",
-  "approximate": true,
-  "categories": [],
-  "synth": "Minimoog Model D",
-  "rating": 0,
   "values": {
     "osc1Range": "ft16",
     "osc2Range": "ft16",
@@ -22,5 +19,12 @@
     "amountOfContour": 5,
     "filterSustainLevel": 8,
     "loudnessSustainLevel": 9
-  }
+  },
+  "tags": [],
+  "instrument": "minimoog-model-d",
+  "visibility": "public",
+  "approximate": true,
+  "derivedFrom": null,
+  "createdAt": "2026-09-16T00:00:00.000Z",
+  "updatedAt": "2026-09-16T00:00:00.000Z"
 }

@@ -24,7 +24,7 @@ import { isRecalled } from './controls/recall.ts'
 import type { ControlValue } from './controls/types.ts'
 import { mergeValues, resolvePatch, reportHasWarnings, type ResolveReport } from './patch/resolve.ts'
 import { createPatch, type Patch } from './patch/schema.ts'
-import { draftFromPreset, presetFromDraft, type StoredPreset } from './presets/preset.ts'
+import { copyOf } from './presets/preset.ts'
 import { createHttpStore } from './storage/httpStore.ts'
 import { StoreError, type PatchSummary } from './storage/types.ts'
 import { createBundle, parseBundle, serializeBundle } from './transfer/bundle.ts'
@@ -69,7 +69,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export function App() {
   const [draft, setDraft] = useState<Patch | null>(null)
   const [saved, setSaved] = useState<readonly PatchSummary[]>([])
-  const [presets, setPresets] = useState<readonly StoredPreset[]>([])
+  const [presets, setPresets] = useState<readonly Patch[]>([])
   const [status, setStatus] = useState('')
   const [report, setReport] = useState<ResolveReport | null>(null)
   const [failed, setFailed] = useState(false)
@@ -287,7 +287,7 @@ export function App() {
                       throw new Cancelled()
                     }
                     if (
-                      presets.some((preset) => preset.slug === slug) &&
+                      presets.some((preset) => preset.id === slug) &&
                       !(await ask({
                         title: `Replace the preset “${slug}”?`,
                         body: 'A preset of that name already exists. Its values are replaced by what is on the panel.',
@@ -296,7 +296,13 @@ export function App() {
                     ) {
                       throw new Cancelled()
                     }
-                    await store.savePreset(presetFromDraft(slug, draft, currentValues))
+                    await store.savePreset({
+                      ...draft,
+                      id: slug,
+                      values: currentValues,
+                      visibility: 'public',
+                      updatedAt: new Date().toISOString(),
+                    })
                     await refresh()
                   })
                 }
@@ -315,7 +321,7 @@ export function App() {
         <Section title={`Presets (${presets.length})`}>
           <List dense disablePadding>
             {presets.map((preset) => (
-              <ListItem key={preset.slug} divider disableGutters>
+              <ListItem key={preset.id} divider disableGutters>
                 <ListItemText
                   primary={
                     <Box
@@ -328,12 +334,12 @@ export function App() {
                       )}
                     </Box>
                   }
-                  secondary={preset.slug}
+                  secondary={preset.id}
                 />
                 <Stack direction="row" spacing={1}>
                     <Button
                       size="small"
-                      onClick={() => adopt(draftFromPreset(preset), `Loaded “${preset.name}”`)}
+                      onClick={() => adopt(copyOf(preset, { owner: null }), `Loaded “${preset.name}”`)}
                     >
                       Load
                     </Button>
@@ -350,9 +356,13 @@ export function App() {
                           ) {
                             throw new Cancelled()
                           }
-                          await store.savePreset(
-                            presetFromDraft(preset.slug, draft, currentValues),
-                          )
+                          await store.savePreset({
+                            ...draft,
+                            id: preset.id,
+                            values: currentValues,
+                            visibility: 'public',
+                            updatedAt: new Date().toISOString(),
+                          })
                           await refresh()
                         })
                       }
@@ -374,7 +384,7 @@ export function App() {
                           ) {
                             throw new Cancelled()
                           }
-                          await store.deletePreset(preset.slug)
+                          await store.deletePreset(preset.id)
                           await refresh()
                         })
                       }

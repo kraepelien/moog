@@ -1,6 +1,5 @@
 import { migrateToCurrent } from '../patch/migrate.ts'
 import type { Patch } from '../patch/schema.ts'
-import { presetSchema, type StoredPreset } from '../presets/preset.ts'
 import { StoreError, type PatchStore, type PatchSummary, type PresetStore } from './types.ts'
 
 /* Talks to the folder on disk through the server that owns it. The same
@@ -108,16 +107,13 @@ export function createHttpStore(
       await request(`/patches/${encodeURIComponent(id)}`, { method: 'DELETE' })
     },
 
-    async listPresets(): Promise<readonly StoredPreset[]> {
+    async listPresets(): Promise<readonly Patch[]> {
       const raw = (await request('/presets')) as unknown[]
-      return raw
-        .map((entry) => presetSchema.safeParse(entry))
-        .filter((parsed) => parsed.success)
-        .map((parsed) => parsed.data as StoredPreset)
+      return raw.map(toPatch).filter((patch): patch is Patch => patch !== null)
     },
 
-    async savePreset(preset: StoredPreset): Promise<void> {
-      await request(`/presets/${encodeURIComponent(preset.slug)}`, {
+    async savePreset(preset: Patch): Promise<void> {
+      await request(`/presets/${encodeURIComponent(preset.id)}`, {
         method: 'PUT',
         body: JSON.stringify(preset),
       })

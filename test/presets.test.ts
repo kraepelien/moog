@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { seedPresets } from '../server/seed.ts'
-import { PATCH_SCHEMA_VERSION } from '../src/patch/schema.ts'
-import { draftFromPreset, presetSchema, type StoredPreset } from '../src/presets/preset.ts'
+import { PATCH_SCHEMA_VERSION, createPatch, parsePatch, type Patch } from '../src/patch/schema.ts'
+import { copyOf } from '../src/presets/preset.ts'
 import { testApi, type TestApi } from './apiFixture.ts'
 import { fixedIdentity } from './fixtures.ts'
 
@@ -17,8 +17,13 @@ afterEach(() => {
 
 const SEED = 'presets'
 
-function aPreset(slug: string, name = slug): StoredPreset {
-  return { slug, name, notes: '', values: { glide: 4 } }
+/* A factory preset is a patch whose id is its slug and which came with the
+   app, so that is what one looks like here too. */
+function aPreset(slug: string, name = slug): Patch {
+  return {
+    ...createPatch({ name, values: { glide: 4 }, visibility: 'public' }, fixedIdentity()),
+    id: slug,
+  }
 }
 
 describe('the bank shipped in the repo', () => {
@@ -27,19 +32,27 @@ describe('the bank shipped in the repo', () => {
     expect(files.length).toBeGreaterThan(0)
   })
 
-  test('every file is a valid preset', () => {
+  test('every file is a valid patch, by the one schema there is', () => {
     for (const file of readdirSync(SEED).filter((f) => f.endsWith('.json'))) {
-      const parsed = presetSchema.safeParse(JSON.parse(readFileSync(join(SEED, file), 'utf8')))
-      expect([file, parsed.success]).toEqual([file, true])
+      const parsed = parsePatch(JSON.parse(readFileSync(join(SEED, file), 'utf8')))
+      expect([file, parsed.ok]).toEqual([file, true])
     }
   })
 
-  test('each file is named after the slug inside it', () => {
+  test('each file is named after the id inside it', () => {
     /* The filename is the key the API addresses it by, so the two drifting apart
        would make a preset unreachable under its own name. */
     for (const file of readdirSync(SEED).filter((f) => f.endsWith('.json'))) {
       const preset = JSON.parse(readFileSync(join(SEED, file), 'utf8'))
-      expect([file, preset.slug]).toEqual([file, file.slice(0, -'.json'.length)])
+      expect([file, preset.id]).toEqual([file, file.slice(0, -'.json'.length)])
+    }
+  })
+
+  test('the whole bank is public, and says its values are a reconstruction', () => {
+    for (const file of readdirSync(SEED).filter((f) => f.endsWith('.json'))) {
+      const preset = JSON.parse(readFileSync(join(SEED, file), 'utf8'))
+      expect([file, preset.visibility]).toEqual([file, 'public'])
+      expect([file, preset.approximate]).toEqual([file, true])
     }
   })
 })
@@ -66,7 +79,7 @@ describe('seeding the active folder', () => {
     const active = join(api.root, 'presets')
     await seedPresets(SEED, active)
     expect(existsSync(join(active, '.seeded.json'))).toBe(true)
-    expect((await api.store.listPresets()).some((p) => p.slug === '.seeded')).toBe(false)
+    expect((await api.store.listPresets()).some((p) => p.id === '.seeded')).toBe(false)
   })
 
   test('a preset added to the shipped bank later does arrive', async () => {
@@ -82,17 +95,17 @@ describe('seeding the active folder', () => {
 
     const result = await seedPresets(laterBank, active)
     expect(result.seeded).toEqual(['brand-new'])
-    expect((await api.store.listPresets()).some((p) => p.slug === 'brand-new')).toBe(true)
+    expect((await api.store.listPresets()).some((p) => p.id === 'brand-new')).toBe(true)
   })
 
   test('a preset deleted after seeding does not come back', async () => {
     const active = join(api.root, 'presets')
     await seedPresets(SEED, active)
     const first = (await api.store.listPresets())[0]!
-    await api.store.deletePreset(first.slug)
+    await api.store.deletePreset(first.id)
 
     await seedPresets(SEED, active)
-    expect((await api.store.listPresets()).some((p) => p.slug === first.slug)).toBe(false)
+    expect((await api.store.listPresets()).some((p) => p.id === first.id)).toBe(false)
   })
 
   test('never overwrites a file already there', async () => {
@@ -102,7 +115,7 @@ describe('seeding the active folder', () => {
     writeFileSync(join(active, shipped), JSON.stringify(aPreset(shipped.slice(0, -5), 'Mine')), 'utf8')
 
     await seedPresets(SEED, active)
-    const kept = (await api.store.listPresets()).find((p) => p.slug === shipped.slice(0, -5))
+    const kept = (await api.store.listPresets()).find((p) => p.id === shipped.slice(0, -5))
     expect(kept?.name).toBe('Mine')
   })
 })
@@ -133,8 +146,8 @@ describe('presets are editable files', () => {
     await api.store.savePreset(aPreset('good'))
     mkdirSync(join(api.root, 'presets'), { recursive: true })
     writeFileSync(join(api.root, 'presets', 'broken.json'), '{ not json', 'utf8')
-    writeFileSync(join(api.root, 'presets', 'wrong.json'), '{"slug":123}', 'utf8')
-    expect((await api.store.listPresets()).map((p) => p.slug)).toEqual(['good'])
+    writeFileSync(join(api.root, 'presets', 'wrong.json'), '{"id":123}', 'utf8')
+    expect((await api.store.listPresets()).map((p) => p.id)).toEqual(['good'])
   })
 
   test('presets are not patches and never appear in the patch list', async () => {
@@ -143,22 +156,40 @@ describe('presets are editable files', () => {
   })
 })
 
-describe('loading a preset', () => {
-  test('makes a new patch rather than adopting the preset', () => {
-    const patch = draftFromPreset(aPreset('my-sound', 'My Sound'), fixedIdentity())
+describe('copying a preset, which is the only way to save one', () => {
+  test('makes a new patch rather than adopting the one it came from', () => {
+    const patch = copyOf(aPreset('my-sound', 'My Sound'), { owner: null }, fixedIdentity())
     expect(patch.schemaVersion).toBe(PATCH_SCHEMA_VERSION)
-    expect(patch.id).toBe('id-1')
+    expect(patch.id).not.toBe('my-sound')
     expect(patch.name).toBe('My Sound')
   })
 
   test('twice gives two independent patches', () => {
     const identity = fixedIdentity()
     const preset = aPreset('my-sound')
-    expect(draftFromPreset(preset, identity).id).not.toBe(draftFromPreset(preset, identity).id)
+    expect(copyOf(preset, {}, identity).id).not.toBe(copyOf(preset, {}, identity).id)
+  })
+
+  test('the copy is private, whatever it was copied from', () => {
+    /* Copying something public does not publish the copy. */
+    expect(copyOf(aPreset('my-sound'), { owner: null }, fixedIdentity()).visibility).toBe('private')
+  })
+
+  test('the copy records what it came from', () => {
+    const copy = copyOf(aPreset('sub-bass', 'Sub Bass'), { owner: null }, fixedIdentity())
+    expect(copy.derivedFrom).toMatchObject({ id: 'sub-bass', name: 'Sub Bass', kind: 'factory' })
+  })
+
+  test('a copy of a copy names its immediate parent, not the original', () => {
+    const identity = fixedIdentity()
+    const first = copyOf(aPreset('sub-bass', 'Sub Bass'), { owner: null }, identity)
+    const second = copyOf({ ...first, name: 'Mine' }, { owner: { id: 'u1', name: 'Peter' } }, identity)
+    expect(second.derivedFrom?.id).toBe(first.id)
+    expect(second.derivedFrom?.ownerName).toBe('Peter')
   })
 
   test('does not save anything', async () => {
-    draftFromPreset(aPreset('my-sound'), fixedIdentity())
+    copyOf(aPreset('my-sound'), {}, fixedIdentity())
     expect(await api.store.list()).toEqual([])
   })
 })

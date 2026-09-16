@@ -1,11 +1,8 @@
 {
-  "slug": "70s-french-sci-fi-movie",
+  "schemaVersion": 2,
+  "id": "70s-french-sci-fi-movie",
   "name": "'70s French Sci-Fi Movie",
   "notes": "",
-  "approximate": true,
-  "categories": [],
-  "synth": "Minimoog Model D",
-  "rating": 0,
   "values": {
     "oscillatorModulation": "on",
     "osc3Control": "lo",
@@ -28,5 +25,12 @@
     "filterSustainLevel": 3,
     "loudnessSustainLevel": 5,
     "osc3Frequency": 4
-  }
+  },
+  "tags": [],
+  "instrument": "minimoog-model-d",
+  "visibility": "public",
+  "approximate": true,
+  "derivedFrom": null,
+  "createdAt": "2026-09-16T00:00:00.000Z",
+  "updatedAt": "2026-09-16T00:00:00.000Z"
 }

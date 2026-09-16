@@ -1,11 +1,8 @@
 {
-  "slug": "bright-rude",
+  "schemaVersion": 2,
+  "id": "bright-rude",
   "name": "Bright & Rude",
   "notes": "",
-  "approximate": true,
-  "categories": [],
-  "synth": "Minimoog Model D",
-  "rating": 0,
   "values": {
     "osc1Waveform": "sawtooth",
     "osc2Frequency": 0.2,
@@ -23,5 +20,12 @@
     "amountOfContour": 5,
     "filterSustainLevel": 6,
     "loudnessSustainLevel": 8
-  }
+  },
+  "tags": [],
+  "instrument": "minimoog-model-d",
+  "visibility": "public",
+  "approximate": true,
+  "derivedFrom": null,
+  "createdAt": "2026-09-16T00:00:00.000Z",
+  "updatedAt": "2026-09-16T00:00:00.000Z"
 }
