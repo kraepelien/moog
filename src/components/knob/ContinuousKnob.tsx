@@ -194,7 +194,7 @@ export function ContinuousKnob({ def, value, onChange, hideHeader }: ContinuousK
         onDoubleClick={(event) => setEditing(event.currentTarget)}
       >
         <Scale def={def} />
-        <KnobBody angle={angle} size={size} />
+        <KnobBody angle={angle} />
         <text
           x={CENTRE.x}
           y={CENTRE.y}

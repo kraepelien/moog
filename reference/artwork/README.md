@@ -15,17 +15,20 @@ file.
 | `OSC. 1 (1).svg` | rotary selector body, tick spokes, six waveform marks | `knob/artwork.ts`, `knob/waveforms.ts` |
 | `OSC. 1 (2).svg` | nothing — read to understand the octave variant, whose labels are live text | — |
 | `OSC. 3.svg` | the reverse sawtooth mark, which Oscillator-1 has and the others do not | `knob/waveforms.ts` |
-| `TUNE.svg` | the small continuous knob body and its indicator | `knob/dialArtwork.ts` |
-| `MODULATION MIX.svg` | the large continuous knob body and its indicator | `knob/dialArtwork.ts` |
+| `KNOB 5.svg` | the continuous knob body, its cap and its indicator dot | `knob/dialArtwork.ts` |
+| `TUNE.svg` | nothing now — it drew the small continuous knob before `KNOB 5.svg` replaced both | — |
+| `MODULATION MIX.svg` | nothing now — it drew the large one, and a bigger knob is a render scale rather than a second path | — |
 | `BUTTON.svg` | switch body, rocker and tab, with the rocker at the right | `switch/ToggleSwitch.tsx` |
 | `BUTTON (1).svg` | nothing — it is `BUTTON.svg` mirrored, and the component reflects rather than carrying a second copy | — |
 | `WHEEL.svg` | frame, face, the eighteen ribs and the marker | `wheel/wheelArtwork.ts` |
 
 Two things worth knowing before changing any of them:
 
-- **The two knob exports are the same size.** They differ in indicator radius and
-  in the angle they were drawn at, not in scale. A bigger knob is a render scale,
-  not different paths.
+- **One drawing serves every continuous knob.** A bigger knob is a render scale,
+  not a second path. `KNOB 5.svg` is drawn in its own 100-unit box, and the code
+  fits it onto the 116-unit dial with a group transform rather than re-pathing it.
+- **Its cap holds a `0`.** That is the digit it was drawn with, not artwork: the
+  dial prints the live value as text, so the glyph is left out.
 - **Each export is drawn turned to some angle**, recorded in the code as
   `bakedAngle`, and rendering rotates by the difference. Re-export at a different
   angle and that number has to change with it.
