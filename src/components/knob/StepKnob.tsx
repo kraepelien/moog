@@ -112,9 +112,13 @@ export interface StepKnobProps {
   def: StepKnobDef
   value: string
   onChange: (value: string) => void
+  /* Set when a column heading already names this knob, as the panel does for
+     Range and Waveform. The label is still given to a screen reader, which
+     cannot see the heading. */
+  hideHeader?: boolean
 }
 
-export function StepKnob({ def, value, onChange }: StepKnobProps) {
+export function StepKnob({ def, value, onChange, hideHeader }: StepKnobProps) {
   const labelId = useId()
   const index = positionIndex(def, value)
   const current = def.positions[index]
@@ -164,16 +168,19 @@ export function StepKnob({ def, value, onChange }: StepKnobProps) {
 
   return (
     <div className={styles.knob}>
-      <span className={styles.header} id={labelId}>
-        {def.label}
-      </span>
+      {!hideHeader && (
+        <span className={styles.header} id={labelId}>
+          {def.label}
+        </span>
+      )}
       <div className={styles.dialWrap}>
       <svg
         viewBox={`${VIEWBOX.x} ${VIEWBOX.y} ${VIEWBOX.width} ${VIEWBOX.height}`}
         className={styles.dial}
         role="slider"
         tabIndex={0}
-        aria-labelledby={labelId}
+        aria-labelledby={hideHeader ? undefined : labelId}
+        aria-label={hideHeader ? def.label : undefined}
         aria-valuemin={1}
         aria-valuemax={def.positions.length}
         aria-valuenow={index + 1}

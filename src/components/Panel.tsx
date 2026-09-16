@@ -11,13 +11,7 @@ import { StepKnob } from './knob/StepKnob.tsx'
 import { TimeKnob } from './knob/TimeKnob.tsx'
 import { ToggleSwitch } from './switch/ToggleSwitch.tsx'
 import { Wheel } from './wheel/Wheel.tsx'
-import {
-  BELOW_PANEL,
-  PANEL_ROW,
-  gridFor,
-  placedIn,
-  templateAreas,
-} from './panelLayout.ts'
+import { BELOW_PANEL, PANEL_ROW, layoutFor, placedIn, templateAreas } from './panelLayout.ts'
 import styles from './Panel.module.css'
 
 /* Two views of the same registry. `Panel` draws the controls that have real
@@ -33,10 +27,12 @@ function Control({
   item,
   value,
   onChange,
+  hideHeader,
 }: {
   item: PanelItem
   value: ControlValue
   onChange: (value: ControlValue) => void
+  hideHeader?: boolean
 }) {
   if (isDecoration(item)) return null
   const stored = typeof value === 'string' ? value : ''
@@ -69,7 +65,7 @@ function Control({
     )
   }
   if (isStepKnob(item)) {
-    return <StepKnob def={item} value={stored} onChange={onChange} />
+    return <StepKnob def={item} value={stored} onChange={onChange} hideHeader={hideHeader} />
   }
   if (isToggleSwitch(item)) {
     return <ToggleSwitch def={item} value={stored} onChange={onChange} />
@@ -89,19 +85,29 @@ interface SectionProps {
    grid does not mention flow underneath it rather than vanishing — which is what
    keeps "add a knob, touch no layout" true. */
 function PanelSection({ registry, section, values, onChange }: SectionProps) {
-  const grid = gridFor(section.id)
+  const layout = layoutFor(section.id)
   const built = registry.itemsInSection(section.id).filter(isBuilt)
 
-  const draw = (item: PanelItem) => (
-    <Control
-      key={item.id}
-      item={item}
-      value={values[item.id]}
-      onChange={(next) => onChange(item.id, next)}
-    />
-  )
+  const draw = (item: PanelItem) => {
+    /* A printed label the panel chooses over the registry's, which stays what a
+       screen reader hears. An empty one means the column heading covers it. */
+    const override = layout?.labels?.[item.id]
+    /* Renaming replaces the printed label; an empty one hides it and leaves the
+       registry's name for a screen reader, since the heading it defers to is
+       not something a screen reader can associate on its own. */
+    const renamed = override && !isDecoration(item) ? { ...item, label: override } : item
+    return (
+      <Control
+        key={item.id}
+        item={renamed}
+        value={values[item.id]}
+        onChange={(next) => onChange(item.id, next)}
+        hideHeader={override === ''}
+      />
+    )
+  }
 
-  if (!grid) {
+  if (!layout) {
     return (
       <section className={styles.section}>
         <div className={styles.sectionBody}>
@@ -129,7 +135,14 @@ function PanelSection({ registry, section, values, onChange }: SectionProps) {
 
   return (
     <section className={styles.section}>
-      <div className={styles.grid} style={{ gridTemplateAreas: templateAreas(grid) }}>
+      <div className={styles.grid} style={{ gridTemplateAreas: templateAreas(layout.rows) }}>
+        {Object.entries(layout.headings ?? {}).map(([area, lines]) => (
+          <h3 key={area} style={{ gridArea: area }} className={styles.columnHeader}>
+            {lines.map((line) => (
+              <span key={line}>{line}</span>
+            ))}
+          </h3>
+        ))}
         {built
           .filter((item) => placed.has(item.id))
           .map((item) => (
