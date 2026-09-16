@@ -33,6 +33,11 @@ services:
       MOOG_SESSION_SECRET: ${MOOG_SESSION_SECRET:-}
       MOOG_PUBLIC_ORIGIN: ${MOOG_PUBLIC_ORIGIN:-}
       MOOG_ADMINS: ${MOOG_ADMINS:-}
+      MOOG_MAX_PATCHES: ${MOOG_MAX_PATCHES:-}
+      MOOG_MAX_PATCH_BYTES: ${MOOG_MAX_PATCH_BYTES:-}
+      MOOG_TRASH_DAYS: ${MOOG_TRASH_DAYS:-}
+      MOOG_WRITES_PER_MINUTE: ${MOOG_WRITES_PER_MINUTE:-}
+      MOOG_SIGN_INS_PER_MINUTE: ${MOOG_SIGN_INS_PER_MINUTE:-}
 
     # Published so Traefik can reach it by host and port, the way its dynamic
     # configuration expects. Change it here and in traefik/dynamic/moog.yml

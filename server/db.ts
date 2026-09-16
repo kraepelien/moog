@@ -1,5 +1,5 @@
 import { Database } from 'bun:sqlite'
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, renameSync, rmSync } from 'node:fs'
 import { dirname } from 'node:path'
 
 /* One file, opened once. `bun:sqlite` is part of the runtime, so this costs no
@@ -109,5 +109,12 @@ export function openDatabase(path: string): Database {
    database in WAL mode can catch it mid-write. */
 export function backupTo(db: Database, path: string): void {
   mkdirSync(dirname(path), { recursive: true })
-  db.run(`vacuum into ?`, [path])
+
+  /* `vacuum into` refuses an existing file, and the day's copy is already there
+     on every restart after the first — so it is written beside and moved over,
+     which also means a failed copy never replaces a good one. */
+  const partial = `${path}.partial`
+  rmSync(partial, { force: true })
+  db.run(`vacuum into ?`, [partial])
+  renameSync(partial, path)
 }

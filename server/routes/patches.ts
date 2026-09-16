@@ -1,5 +1,6 @@
 import { migrateToCurrent } from '../../src/patch/migrate.ts'
 import { createPatch, type Patch } from '../../src/patch/schema.ts'
+import type { Limits } from '../limits.ts'
 import { isSafeName, type Located, type Store } from '../store.ts'
 import type { UserRow } from '../users.ts'
 
@@ -14,6 +15,7 @@ export interface RouteContext {
   readonly store: Store
   readonly viewer: UserRow | null
   readonly admin: boolean
+  readonly limits: Limits
   readonly json: (body: unknown, status?: number) => Response
   readonly body: (request: Request) => Promise<unknown>
   readonly newId: () => string
@@ -62,6 +64,17 @@ export async function handlePatches(
     return json({ id: parts.name, stars })
   }
 
+  /* Unpublishing is its own route rather than a PUT of the whole patch: an
+     admin taking something out of everyone's library should not have to send
+     back a body they never read. */
+  if (parts.sub === 'unpublish') {
+    if (method !== 'POST') return json({ error: 'method not allowed' }, 405)
+    const refusal = mayWrite(found, viewer, admin)
+    if (refusal) return json({ error: refusal.error }, refusal.status)
+    store.setVisibility(found.uid, 'private')
+    return json(store.getPatch(found.uid))
+  }
+
   if (parts.sub === 'restore') {
     if (method !== 'POST') return json({ error: 'method not allowed' }, 405)
     const refusal = mayWrite(found, viewer, admin)
@@ -85,6 +98,10 @@ export async function handlePatches(
 
     const parsed = migrateToCurrent(await body(request))
     if (!parsed.ok) return json({ error: parsed.error }, 400)
+
+    const tooBig = overSized(parsed.value, context.limits)
+    if (tooBig) return json({ error: tooBig }, 413)
+
     /* The id and the owner are the route's, not the body's: a PUT edits the
        patch it names and cannot hand it to somebody else. */
     store.putPatch(found.uid, { ...parsed.value, id: found.uid }, found.ownerId ?? viewer.id)
@@ -92,6 +109,15 @@ export async function handlePatches(
   }
 
   return json({ error: 'method not allowed' }, 405)
+}
+
+/* Values are the only part of a patch that has no natural size, and a patch
+   of the whole panel is well under a kilobyte. */
+function overSized(patch: Patch, limits: Limits): string | null {
+  const bytes = JSON.stringify(patch.values).length
+  return bytes > limits.maxPatchBytes
+    ? `That patch carries ${bytes} bytes of control values, and the limit is ${limits.maxPatchBytes}.`
+    : null
 }
 
 function mayWrite(
@@ -108,8 +134,15 @@ function mayWrite(
    preset and pressing Save arrives here, which is what makes "you can never
    save over one" a missing route rather than a rule to remember. */
 async function create(request: Request, context: RouteContext): Promise<Response> {
-  const { store, viewer, json, body, newId, now } = context
+  const { store, viewer, json, body, newId, now, limits } = context
   if (!viewer) return json({ error: 'sign in' }, 401)
+
+  if (store.countOwnedBy(viewer.id) >= limits.maxPatches) {
+    return json(
+      { error: `You have ${limits.maxPatches} patches, which is as many as this install keeps.` },
+      413,
+    )
+  }
 
   const payload = (await body(request)) as { from?: unknown } | null
   const parsed = migrateToCurrent({
@@ -122,6 +155,9 @@ async function create(request: Request, context: RouteContext): Promise<Response
     updatedAt: now(),
   })
   if (!parsed.ok) return json({ error: parsed.error }, 400)
+
+  const tooBig = overSized(parsed.value, limits)
+  if (tooBig) return json({ error: tooBig }, 413)
 
   const source = typeof payload?.from === 'string' ? store.locate(payload.from) : null
   if (payload?.from !== undefined && (!source || !mayRead(source, viewer))) {

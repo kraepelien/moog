@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createApi } from '../server/api.ts'
-import { openDatabase } from '../server/db.ts'
+import { backupTo, openDatabase } from '../server/db.ts'
 import { syncInstruments } from '../server/factory.ts'
 import { createStore, isSafeName } from '../server/store.ts'
 import { ensureLocalUser } from '../server/users.ts'
@@ -205,5 +205,27 @@ describe('the request handler', () => {
     const response = (await call(handle, 'POST', '/api/patches', aPatch('One')))!
     expect(response.status).toBe(500)
     expect((await response.json()).error).toBeTruthy()
+  })
+})
+
+describe('the daily backup', () => {
+  test('replaces the copy already made today rather than failing', () => {
+    const root = mkdtempSync(join(tmpdir(), 'moog-backup-'))
+    roots.push(root)
+    const db = openDatabase(join(root, 'moog.db'))
+    syncInstruments(db)
+    const path = join(root, 'backups', 'moog-today.db')
+
+    backupTo(db, path)
+    createStore(db).createPatch(aPatch('Saved After The First Copy'), owned(db), 'later')
+
+    /* A restart on the same day used to die here, and the container came back
+       up into the same failure. */
+    backupTo(db, path)
+
+    const copy = openDatabase(path)
+    expect(copy.query(`select count(*) as n from patches`).get()).toEqual({ n: 1 })
+    copy.close()
+    expect(existsSync(`${path}.partial`)).toBe(false)
   })
 })

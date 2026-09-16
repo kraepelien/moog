@@ -213,6 +213,27 @@ export function createStore(db: Database) {
       ])
     },
 
+    countOwnedBy(owner: number): number {
+      return (
+        db
+          .query<{ n: number }, [number]>(
+            `select count(*) as n from patches where owner_id = ? and deleted_at is null`,
+          )
+          .get(owner)?.n ?? 0
+      )
+    },
+
+    /* Trash older than the app keeps it. Deleted for real here, which is what
+       makes the soft delete a grace period rather than a leak. */
+    purgeTrash(before: string): number {
+      return db.run(`delete from patches where deleted_at is not null and deleted_at < ?`, [before])
+        .changes
+    },
+
+    setVisibility(id: string, visibility: 'private' | 'public'): void {
+      db.run(`update patches set visibility = ? where uid = ?`, [visibility, id])
+    },
+
     /* The healthcheck asks a real question, so an unmounted volume fails it. */
     countPatches(): number {
       return db.query<{ n: number }, []>(`select count(*) as n from patches`).get()?.n ?? 0
