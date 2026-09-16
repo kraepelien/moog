@@ -23,6 +23,12 @@ export interface SectionLayout {
      already headed needs — the instrument labels the column, not each knob in
      it. The registry's label is still what a screen reader hears. */
   readonly labels?: Readonly<Record<string, string>>
+  /* Set where the section's rows alternate between columns, so that the cell
+     beside a knob's neighbour is empty and the knob can stand taller than the
+     row it is in. The switches then set the pitch, which is how the panel
+     stacks the mixer: sized by the knobs instead, the column runs a knob and a
+     caption taller per row than the instrument does. */
+  readonly knobsOverlapRows?: boolean
 }
 
 /* The sheet prints these across the page in this order. */
@@ -82,6 +88,7 @@ const SECTIONS: Readonly<Record<string, SectionLayout>> = {
      and then the other. Every knob has its switch beside it; the column is
      shared, not the pairing. */
   mixer: {
+    knobsOverlapRows: true,
     rows: [
       'osc1Volume osc1Enable          .                   .',
       '.          externalInputEnable externalInputVolume overloadLamp',

@@ -197,6 +197,7 @@ function PanelSection({ registry, section, values, onChange }: SectionProps) {
     <section className={styles.section}>
       <div
         className={styles.grid}
+        data-overlap={layout.knobsOverlapRows ? '' : undefined}
         style={{
           gridTemplateAreas: templateAreas(withCaptionRows(layout.rows)),
           gridTemplateColumns: `repeat(${columnCount(layout.rows)}, auto)`,
@@ -226,7 +227,16 @@ function PanelSection({ registry, section, values, onChange }: SectionProps) {
                   {caption}
                 </span>
               ),
-              <div key={item.id} style={{ gridArea: item.id }} className={styles.cell}>
+              <div
+                key={item.id}
+                style={{ gridArea: item.id }}
+                className={styles.cell}
+                /* The switches set the pitch in a section laid out this way, so
+                   the knobs are lifted out of the row's height. */
+                data-overlap={
+                  layout.knobsOverlapRows && !toggle && !isDecoration(item) ? '' : undefined
+                }
+              >
                 {draw(item, !wheel)}
               </div>,
             ]

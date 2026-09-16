@@ -38,7 +38,7 @@
 /* Positions come from the layout map as grid areas named after control ids. */
 .grid {
   display: grid;
-  gap: 6px 8px;
+  gap: 4px 8px;
   justify-items: center;
   /* Centred rather than top-aligned: a switch is a third the height of the knob
      it sits beside, and starting both at the same top edge leaves it floating
@@ -58,6 +58,23 @@
   justify-content: center;
 }
 
+/* A knob in a section whose rows the switches set. It is taken out of the row's
+   height and hung on the row's centre line instead, so it stands taller than
+   the row and overlaps the cells either side of it — which are empty, because
+   the section alternates columns down the page. That is the pitch the panel
+   stacks the mixer at, and the knob still centres on the switch that enables
+   it, which is the whole point of the column. */
+.cell[data-overlap] {
+  height: 0;
+  align-items: center;
+}
+
+/* Such a knob stands above its row as well as below it, and what is above it is
+   its own name. This is how far its topmost numeral reaches. */
+.grid[data-overlap] .caption {
+  padding-bottom: 20px;
+}
+
 /* The name over a control, printed by the section in a row of its own so that
    the control's box holds nothing but the control. Sits on the bottom of that
    row, right above what it names.
@@ -73,7 +90,7 @@
   min-width: 100%;
   font-size: 0.95rem;
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.05;
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -95,7 +112,7 @@
   margin: 0;
   font-size: 0.95rem;
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.05;
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -127,7 +144,7 @@
    height, so every name in the row sits on one line as the panel prints them. */
 .sectionLabel {
   margin: 0;
-  padding-top: 16px;
+  padding-top: 8px;
   margin-top: auto;
   font-size: 1.6rem;
   font-weight: 300;
