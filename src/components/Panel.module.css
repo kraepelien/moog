@@ -91,16 +91,16 @@
   align-self: end;
   width: max-content;
   min-width: 100%;
-  font-size: 0.95rem;
+  /* Measured off the sheet, where a name stands about a ninth of the tick ring
+     it labels and a block's heading stands half again taller than that. A knob
+     is 78 units across its ticks, so a name is 11.8 of them and a heading 15.2.
+     Switches are named in the same size as knobs there, not a smaller one. */
+  font-size: 0.74rem;
   font-weight: 700;
   line-height: 1.05;
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-}
-
-.caption[data-for='switch'] {
-  font-size: 0.88rem;
 }
 
 /* A word the panel prints over a column or a block, rather than on each control

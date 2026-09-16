@@ -420,6 +420,7 @@ export const items: readonly PanelItem[] = [
      tone you switch on and then off again. */
   knob0to10('mainVolume', 'Volume', 'output', 5, { recalled: false }),
   onOff('mainOutput', 'Main Output', 'output', {
+    headline: 'Main Output',
     default: 'on',
     cap: 'blue',
     recalled: false,

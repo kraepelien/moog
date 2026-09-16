@@ -237,7 +237,6 @@ function PanelSection({ registry, section, values, onChange }: SectionProps) {
                   key={`${item.id}-cap`}
                   style={{ gridArea: `${item.id}-cap` }}
                   className={styles.caption}
-                  data-for={toggle ? 'switch' : undefined}
                 >
                   {caption.map((line) => (
                     <span key={line}>{line}</span>
