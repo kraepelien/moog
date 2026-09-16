@@ -1,0 +1,19 @@
+.row {
+  align-items: baseline;
+  gap: 16px;
+}
+
+/* Fixed so the rows stacked under each other start their chips on one line. */
+.label {
+  flex: none;
+  width: 72px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.chips {
+  flex-wrap: wrap;
+  gap: 8px;
+}

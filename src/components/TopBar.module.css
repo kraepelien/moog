@@ -2,7 +2,12 @@
    to change them. */
 
 .bar {
-  gap: 12px;
+  gap: 16px;
+}
+
+.mark {
+  margin: 0;
+  display: flex;
 }
 
 .logo {
@@ -10,14 +15,23 @@
   display: block;
 }
 
-.title {
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  white-space: nowrap;
+/* The bar is dense, so the tab strip has to give up MUI's default height or it
+   sets the bar's instead. */
+.tabs {
+  min-height: 0;
 }
 
-/* Takes the slack, so the navigation sits at the right whatever the page puts
-   in the middle. */
+.tab {
+  min-height: 0;
+  padding: 8px 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Takes the slack, so the account button sits at the right whatever the page
+   puts in the middle. */
 .spacer {
   flex: 1;
   display: flex;

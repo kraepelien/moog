@@ -1,0 +1,10 @@
+/* Squared off rather than MUI's pill, as the sheet draws them: a row carries
+   several of these and a pill's ends eat the gap between them. */
+.chip {
+  border-radius: 4px;
+  height: 22px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}

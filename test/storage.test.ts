@@ -36,6 +36,25 @@ describe('patches are rows', () => {
     expect(list[0]).not.toHaveProperty('values')
   })
 
+  /* The library filters on these without fetching each patch, so dropping one
+     from the summary would quietly stop a chip from reaching a saved patch
+     rather than failing anywhere. */
+  test('a summary carries what the library filters on', async () => {
+    const patch = {
+      ...make('Tagged', '2026-01-01T00:00:00.000Z'),
+      tags: ['bass', 'lead'],
+      visibility: 'public' as const,
+    }
+    await api.store.save(patch)
+    const [summary] = await api.store.list()
+    expect(summary).toMatchObject({
+      name: 'Tagged',
+      tags: ['bass', 'lead'],
+      instrument: patch.instrument,
+      visibility: 'public',
+    })
+  })
+
   test('delete removes only the one named', async () => {
     const keep = make('Keep', '2026-01-01T00:00:00.000Z')
     const drop = make('Drop', '2026-01-01T00:00:00.000Z')
