@@ -123,6 +123,27 @@ Both exports share one tick geometry — centre (53, 65), spokes to radius 39 ev
 picks between them. Each was exported turned to a particular angle, recorded as `bakedAngle`, so
 rendering rotates by `angle − bakedAngle` and no path is redrawn.
 
+### Time knobs (Attack and Decay)
+
+The one control whose printed scale is not proportional to its travel: the marks are evenly spaced
+around the dial while their values are not. The first half of the turn covers 0 to 800 ms, the
+second covers 1 to 30 seconds.
+
+**Stored in milliseconds.** A real quantity, so it keeps its meaning if the dial is ever redrawn and
+it reads plainly in an exported patch. A fraction of travel would mean the number in the file only
+made sense against the version of the table that produced it.
+
+**Stepping is by fraction of travel, not by a fixed number of milliseconds.** That is forced by the
+scale: 10 ms is an enormous jump at the bottom and invisible at the top. A nudge is 1/120 of the
+sweep, and landing within half a nudge of a printed mark snaps exactly onto it so the marked values
+stay reachable from the keyboard.
+
+Each control carries its own table, so Attack and Decay can diverge — they reportedly differ
+slightly despite identical markings — without touching anything else.
+
+The even spacing is what puts 800 ms at exactly half travel, which is how the knob was described to
+us independently; there is a test pinning that.
+
 ### Two-position switches
 
 **A switch is not a boolean.** Several choose between two named things rather than turning one on —

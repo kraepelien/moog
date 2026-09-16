@@ -2,10 +2,12 @@ import { isPlaceholder } from '../controls/placeholder.ts'
 import type { Registry } from '../controls/registry.ts'
 import { isContinuousKnob } from '../controls/continuousKnob.ts'
 import { isStepKnob } from '../controls/stepKnob.ts'
+import { isTimeKnob } from '../controls/timeKnob.ts'
 import { isToggleSwitch } from '../controls/toggleSwitch.ts'
 import { isDecoration, type ControlValue, type PanelItem } from '../controls/types.ts'
 import { ContinuousKnob } from './knob/ContinuousKnob.tsx'
 import { StepKnob } from './knob/StepKnob.tsx'
+import { TimeKnob } from './knob/TimeKnob.tsx'
 import { ToggleSwitch } from './switch/ToggleSwitch.tsx'
 import styles from './Panel.module.css'
 
@@ -30,6 +32,15 @@ function Control({
   if (isDecoration(item)) return null
   const stored = typeof value === 'string' ? value : ''
 
+  if (isTimeKnob(item)) {
+    return (
+      <TimeKnob
+        def={item}
+        value={typeof value === 'number' ? value : item.default}
+        onChange={onChange}
+      />
+    )
+  }
   if (isContinuousKnob(item)) {
     return (
       <ContinuousKnob

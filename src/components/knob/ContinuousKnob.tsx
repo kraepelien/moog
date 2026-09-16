@@ -6,30 +6,18 @@ import {
   type ContinuousKnobDef,
 } from '../../controls/continuousKnob.ts'
 import {
-  CAP_RADIUS,
   CENTRE,
-  INDICATOR_RADIUS,
   LABEL_RADIUS,
-  SWEEP_END,
-  SWEEP_START,
   TICK_INNER,
   TICK_OUTER,
   VIEWBOX,
-  knobSizes,
 } from './dialArtwork.ts'
+import { KnobBody } from './KnobBody.tsx'
+import { angleForFraction, pointAt } from './dialGeometry.ts'
 import styles from './ContinuousKnob.module.css'
 
-function pointAt(angleDeg: number, radius: number) {
-  const radians = ((angleDeg - 90) * Math.PI) / 180
-  return {
-    x: CENTRE.x + Math.cos(radians) * radius,
-    y: CENTRE.y + Math.sin(radians) * radius,
-  }
-}
-
 function angleFor(def: ContinuousKnobDef, value: number): number {
-  const fraction = (value - def.min) / (def.max - def.min)
-  return SWEEP_START + fraction * (SWEEP_END - SWEEP_START)
+  return angleForFraction((value - def.min) / (def.max - def.min))
 }
 
 /* Fixed: the printed scale does not turn with the knob. Depends only on the
@@ -65,20 +53,6 @@ const Scale = memo(function Scale({ def }: { def: ContinuousKnobDef }) {
           </g>
         )
       })}
-    </g>
-  )
-})
-
-/* The scalloped body and its indicator dot turn together, exactly as exported.
-   Memoized on two primitives so turning one knob does not repaint the rest. */
-const Body = memo(function Body({ angle, size }: { angle: number; size: 'small' | 'large' }) {
-  const art = knobSizes[size]
-  const dot = pointAt(art.bakedAngle, art.indicatorRadius)
-  return (
-    <g transform={`rotate(${angle - art.bakedAngle} ${CENTRE.x} ${CENTRE.y})`}>
-      <path d={art.body} className={styles.body} />
-      <circle cx={CENTRE.x} cy={CENTRE.y} r={CAP_RADIUS} className={styles.cap} />
-      <circle cx={dot.x} cy={dot.y} r={INDICATOR_RADIUS} className={styles.indicator} />
     </g>
   )
 })
@@ -167,7 +141,7 @@ export function ContinuousKnob({ def, value, onChange }: ContinuousKnobProps) {
         onPointerCancel={endDrag}
       >
         <Scale def={def} />
-        <Body angle={angle} size={size} />
+        <KnobBody angle={angle} size={size} />
         <text
           x={CENTRE.x}
           y={CENTRE.y}

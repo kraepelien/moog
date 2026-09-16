@@ -2,6 +2,7 @@ import { placeholderType, type PlaceholderDef } from './placeholder.ts'
 import { createRegistry } from './registry.ts'
 import { continuousKnobType, type ContinuousKnobDef } from './continuousKnob.ts'
 import { stepKnobType, type StepKnobDef, type StepPosition } from './stepKnob.ts'
+import { timeKnobType, type TimeKnobDef } from './timeKnob.ts'
 import { toggleSwitchType, type ToggleSwitchDef } from './toggleSwitch.ts'
 import type { ControlType, DecorationDef, GroupDef, PanelItem, SectionDef } from './types.ts'
 
@@ -21,6 +22,7 @@ export const controlTypes: readonly ControlType<never, never>[] = [
   stepKnobType as unknown as ControlType<never, never>,
   toggleSwitchType as unknown as ControlType<never, never>,
   continuousKnobType as unknown as ControlType<never, never>,
+  timeKnobType as unknown as ControlType<never, never>,
 ]
 
 /* The six rotary-selector positions, counter-clockwise end first, matching the
@@ -198,6 +200,36 @@ function knobSymmetric(
   }
 }
 
+/* The attack and decay marks, in milliseconds. Evenly spaced around the dial
+   while their values are not — the first half of the turn covers 0 to 800 ms,
+   the second 1 to 30 seconds. That even spacing is what puts 800 ms at exactly
+   half travel, which is how the knob was described to us.
+
+   Reported second-hand and described as approximate; see
+   reference/control-values.md. Attack and Decay appear to differ slightly
+   despite identical markings, so each control carries its own table and the two
+   can diverge without touching anything else. */
+const CONTOUR_TIME_MS = [
+  0, 10, 100, 200, 400, 600, 800, 1_000, 3_000, 5_000, 7_500, 10_000, 30_000,
+] as const
+
+function timeKnob(
+  id: string,
+  label: string,
+  section: string,
+  extra: { group?: string; default?: number } = {},
+): TimeKnobDef {
+  return {
+    id,
+    type: 'timeKnob',
+    label,
+    section,
+    anchors: CONTOUR_TIME_MS,
+    default: extra.default ?? 0,
+    ...(extra.group ? { group: extra.group } : {}),
+  }
+}
+
 function decoration(
   id: string,
   label: string,
@@ -311,23 +343,11 @@ export const items: readonly PanelItem[] = [
   }),
   knob0to10('filterEmphasis', 'Filter Emphasis', 'modifiers', 0, { group: 'filter' }),
   knob0to10('amountOfContour', 'Amount of Contour', 'modifiers', 0, { group: 'filter' }),
-  placeholder('filterAttackTime', 'Attack Time', 'modifiers', 'knob', {
-    group: 'filterContour',
-    sheetScale: '10 msec … 10 sec',
-  }),
-  placeholder('filterDecayTime', 'Decay Time', 'modifiers', 'knob', {
-    group: 'filterContour',
-    sheetScale: '10 msec … 10 sec',
-  }),
+  timeKnob('filterAttackTime', 'Attack Time', 'modifiers', { group: 'filterContour' }),
+  timeKnob('filterDecayTime', 'Decay Time', 'modifiers', { group: 'filterContour' }),
   knob0to10('filterSustainLevel', 'Sustain Level', 'modifiers', 0, { group: 'filterContour' }),
-  placeholder('loudnessAttackTime', 'Attack Time', 'modifiers', 'knob', {
-    group: 'loudnessContour',
-    sheetScale: '10 msec … 10 sec',
-  }),
-  placeholder('loudnessDecayTime', 'Decay Time', 'modifiers', 'knob', {
-    group: 'loudnessContour',
-    sheetScale: '10 msec … 10 sec',
-  }),
+  timeKnob('loudnessAttackTime', 'Attack Time', 'modifiers', { group: 'loudnessContour' }),
+  timeKnob('loudnessDecayTime', 'Decay Time', 'modifiers', { group: 'loudnessContour' }),
   knob0to10('loudnessSustainLevel', 'Sustain Level', 'modifiers', 0, { group: 'loudnessContour' }),
 
   /* Output and Power are drawn but hold nothing. Level, headphone level, main

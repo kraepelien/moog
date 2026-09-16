@@ -58,3 +58,18 @@
   font-weight: 700;
   pointer-events: none;
 }
+
+/* "800 ms" and "7.5 s" are far longer than a bare number, so the time knob's cap
+   reads smaller to stay inside the same circle. */
+.capTimeText {
+  fill: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.unitText {
+  fill: #fff;
+  font-size: 7px;
+  letter-spacing: 0.04em;
+}

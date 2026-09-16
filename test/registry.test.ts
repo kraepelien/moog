@@ -7,7 +7,7 @@ import { rangeDef, testEnumType, testNumberType, testRegistry, volumeDef } from 
 describe('registry', () => {
   test('a control is either built or an unspecified placeholder, nothing in between', () => {
     expect(panelRegistry.controls.length).toBeGreaterThan(0)
-    const known = ['placeholder', 'stepKnob', 'toggleSwitch', 'continuousKnob']
+    const known = ['placeholder', 'stepKnob', 'toggleSwitch', 'continuousKnob', 'timeKnob']
     expect(panelRegistry.controls.every((def) => known.includes(def.type))).toBe(true)
   })
 
