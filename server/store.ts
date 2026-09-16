@@ -1,4 +1,4 @@
-import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 /* Patches and presets as files in a folder. One record per file, named by its id
@@ -39,9 +39,23 @@ async function readJson(path: string): Promise<unknown | null> {
   }
 }
 
+/* Written to a neighbouring temp file and renamed into place. writeFile truncates
+   before it writes, so a crash or a full disk partway through would leave a
+   half-written preset that parses as nothing; rename on the same filesystem is
+   atomic, so a reader sees either the old file or the new one and never a
+   fragment. The temp name carries a random suffix so two writes to the same
+   record cannot collide on it. */
 async function writeJson(path: string, value: unknown): Promise<void> {
-  await mkdir(join(path, '..'), { recursive: true })
-  await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
+  const dir = join(path, '..')
+  await mkdir(dir, { recursive: true })
+  const temp = `${path}.${Math.random().toString(36).slice(2)}.tmp`
+  try {
+    await writeFile(temp, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
+    await rename(temp, path)
+  } catch (error) {
+    await rm(temp, { force: true })
+    throw error
+  }
 }
 
 async function listJson(dir: string): Promise<{ name: string; value: unknown }[]> {
@@ -53,7 +67,9 @@ async function listJson(dir: string): Promise<{ name: string; value: unknown }[]
   }
   const out: { name: string; value: unknown }[] = []
   for (const file of names.sort()) {
-    if (!file.endsWith('.json')) continue
+    /* Dotfiles are bookkeeping, not records: .seeded.json ends in .json and
+       would otherwise be listed as a preset. */
+    if (file.startsWith('.') || !file.endsWith('.json')) continue
     const value = await readJson(join(dir, file))
     if (value !== null) out.push({ name: file.slice(0, -'.json'.length), value })
   }

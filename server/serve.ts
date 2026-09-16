@@ -12,7 +12,9 @@ const dist = process.env.MOOG_DIST ?? 'dist'
 const port = Number(process.env.PORT ?? 5174)
 
 const seeded = await seedPresets(seed, layoutFor(root).presets)
-if (seeded.reason === 'seeded') console.log(`Seeded ${seeded.seeded} presets into ${root}/presets`)
+if (seeded.seeded.length > 0) {
+  console.log(`Seeded ${seeded.seeded.length} new presets into ${root}/presets`)
+}
 
 const handle = createApi({ root })
 

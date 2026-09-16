@@ -52,8 +52,10 @@ export function patchApi(options: PatchApiOptions): Plugin {
     name: 'moog-patch-api',
     async configureServer(server) {
       const seeded = await seedPresets(options.seed, layoutFor(options.root).presets)
-      if (seeded.reason === 'seeded') {
-        server.config.logger.info(`  ➜  Seeded ${seeded.seeded} presets into ${options.root}/presets`)
+      if (seeded.seeded.length > 0) {
+        server.config.logger.info(
+          `  ➜  Seeded ${seeded.seeded.length} new presets into ${options.root}/presets`,
+        )
       }
 
       const handle = createApi({ root: options.root })

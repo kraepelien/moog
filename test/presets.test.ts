@@ -48,22 +48,44 @@ describe('seeding the active folder', () => {
   test('copies the shipped bank in on first run', async () => {
     const active = join(api.root, 'presets')
     const result = await seedPresets(SEED, active)
-    expect(result.reason).toBe('seeded')
-    expect(result.seeded).toBe(readdirSync(SEED).filter((f) => f.endsWith('.json')).length)
-    expect(await api.store.listPresets()).toHaveLength(result.seeded)
+    const shipped = readdirSync(SEED).filter((f) => f.endsWith('.json')).length
+    expect(result.seeded).toHaveLength(shipped)
+    expect(await api.store.listPresets()).toHaveLength(shipped)
   })
 
-  test('does nothing on later runs', async () => {
+  test('copies nothing on later runs', async () => {
     const active = join(api.root, 'presets')
     await seedPresets(SEED, active)
     const again = await seedPresets(SEED, active)
-    expect(again.reason).toBe('already-present')
-    expect(again.seeded).toBe(0)
+    expect(again.seeded).toEqual([])
   })
 
-  test('a deleted preset stays deleted across restarts', async () => {
-    /* The reason seeding is once rather than a merge: re-seeding would bring
-       back every preset the user had removed, every time the server started. */
+  test('the bookkeeping file is not offered as a preset', async () => {
+    /* It ends in .json and sits in the same folder, so nothing but an explicit
+       rule keeps it out of the bank. */
+    const active = join(api.root, 'presets')
+    await seedPresets(SEED, active)
+    expect(existsSync(join(active, '.seeded.json'))).toBe(true)
+    expect((await api.store.listPresets()).some((p) => p.slug === '.seeded')).toBe(false)
+  })
+
+  test('a preset added to the shipped bank later does arrive', async () => {
+    /* The reason the manifest lists slugs rather than setting a done flag: an
+       image that gains a preset must be able to deliver it to a folder that has
+       already been seeded once. */
+    const active = join(api.root, 'presets')
+    await seedPresets(SEED, active)
+
+    const laterBank = join(api.root, 'later-bank')
+    mkdirSync(laterBank, { recursive: true })
+    writeFileSync(join(laterBank, 'brand-new.json'), JSON.stringify(aPreset('brand-new')), 'utf8')
+
+    const result = await seedPresets(laterBank, active)
+    expect(result.seeded).toEqual(['brand-new'])
+    expect((await api.store.listPresets()).some((p) => p.slug === 'brand-new')).toBe(true)
+  })
+
+  test('a preset deleted after seeding does not come back', async () => {
     const active = join(api.root, 'presets')
     await seedPresets(SEED, active)
     const first = (await api.store.listPresets())[0]!
