@@ -23,6 +23,10 @@ start, but not every Vite plugin is happy there, so it stays opt-in per command.
 Five control types cover the instrument: step knob, two-position switch, continuous knob, time knob
 and wheel.
 
+**The keyboard plays.** Every control drives the sound: three oscillators, the mixer with noise,
+the filter with its contour, both envelopes, glide, the modulation bus and both wheels. See
+"Making a sound" below for what is modelled and what is not.
+
 The `placeholder` type stays registered even though nothing uses it. It is how every control here
 arrived: laid out on the panel so the layout could be checked, before anything was specified. Its
 codec passes stored values straight through and never reports one invalid, so a placeholder can
@@ -42,9 +46,11 @@ src/
   storage/    types.ts (the adapter interface) · webStorage.ts (localStorage + in-memory backends)
   presets/    factory.ts (placeholder presets)
   transfer/   bundle.ts (JSON import/export)
+  audio/      calibration.ts (every dial-to-physical number) · settings.ts (the panel read as
+              an instrument) · engine.ts (the Web Audio graph)
 test/         fixtures.ts defines fake control types; nothing here ships
 reference/    manual scans, recovered geometry, the hand-drawn knob SVG
-tools/        artwork measurement script
+tools/        artwork measurement script · audio-check.html (what the engine sounds like)
 ```
 
 `@/` is an alias for `src/` (set in both `vite.config.ts` and `tsconfig.app.json`).
@@ -286,6 +292,54 @@ build cannot strip a newer build's controls.
 `migrations` in `patch/migrate.ts` is keyed by the version it upgrades *from*. It is empty while
 there is one version; the shape exists from the first commit so that v2 is one entry rather than a
 guess at what unversioned data meant.
+
+## Making a sound
+
+The panel stores what the silkscreen says: a knob at 7 stores 7. Sounding it needs hertz, seconds
+and gains, and `reference/` supplies almost none of them. It gives geometry, the ranges behind four
+printed scales, and one table of contour times. It states no cutoff frequency, no glide time, no LFO
+rate and no oscillator interval.
+
+So **every dial-to-physical number lives in `audio/calibration.ts`, with its source**: `printed`
+(the panel says so, which is true of exactly one number, A-440), `measured`, `reported`, or
+`derived` with the reasoning written out. A test enforces it — anything not marked `derived` must
+cite a path under `reference/`. That file is also the tuning bench: nothing else may write a number,
+so every adjustment made by ear is one edit in one place.
+
+`audio/settings.ts` reads the panel into physical quantities and is pure, total, and panel-only. It
+holds no note, because pitch is a function of the panel *and* a key, and a description that changed
+on every key press could not be diffed to find what a knob did.
+
+`audio/engine.ts` owns the graph. The rule that shapes it: cutoff and pitch are each wanted by
+several things at once, so the panel's static reading goes on `frequency` and everything summed or
+moving goes on `detune`, in cents. Keyboard tracking is then a plain gain on a voltage already in
+cents, and glide is one ramp on the one node every oscillator reads, which is what the instrument's
+single keyboard voltage is. Nothing is built per note: oscillators cannot be restarted, so they run
+for the life of the context and the contours gate them.
+
+Three oscillators that agreed exactly would be a wrong model rather than a quiet one: summed dead
+in phase they give one louder oscillator where three real ones give a thick one. So Oscillator-2 and
+Oscillator-3 sit a few cents off Oscillator-1, which has no frequency knob precisely because it is
+what they are tuned against, and all three wander slowly. Both numbers are `derived`, and both are
+why the panel's A-440 switch has something to be a reference *for*.
+
+### What is not modelled
+
+- **The filter is two cascaded biquads, not a ladder.** Four poles and resonance, but it will not
+  self-oscillate at Emphasis 10 and the resonance is thinner than the real thing's. The seam for an
+  AudioWorklet ladder is the filter section of `engine.ts` and nothing else.
+- **The external input** has no jack to plug into, and **Phones Volume** has no second bus. Both are
+  listed in `SILENT` with their reason, surfaced in the checklist, and a test moves each through its
+  whole travel to prove the sound does not change.
+- **The mixer does not overdrive.** The instrument's does, audibly; this divides by its own source
+  count instead of clipping.
+
+### Hearing it
+
+`tools/audio-check.html` answers what no unit test can. Run `bun run dev`, open
+`/tools/audio-check.html`, and it renders the engine through an `OfflineAudioContext` and prints
+what came out. Read `a4` against `a440Switch` first: the same pitch reached two ways, so if they
+disagree the keyboard is in the wrong octave.
 
 ## Storage
 

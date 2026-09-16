@@ -61,6 +61,21 @@ remapping every saved patch.
 - **Ids reaching the filesystem are pattern-checked** in `server/store.ts` before they become
   filenames. The pattern, not the path join, is what keeps an id of `../../etc/passwd` in its folder.
 
+## The sound is derived, and says so
+
+`src/audio/calibration.ts` is the only place a dial reading becomes hertz, seconds or a gain. Every
+entry carries its source, and `test/calibration.test.ts` fails if one claims to come from the
+hardware without citing a path under `reference/`. Tune by ear there and nowhere else.
+
+Two invariants in `src/audio/engine.ts` that are easy to break and hard to hear: `apply()` never
+calls `cancelScheduledValues` on anything, because that is how a knob turned mid-note destroys a
+running contour; and nothing is created per note, because an oscillator cannot be restarted once
+stopped. Both are pinned by tests that assert an absence, so read them before rearranging the graph.
+
+What cannot be modelled is listed in `SILENT` in `src/audio/settings.ts` with its reason, shown in
+the checklist, and proved silent by moving each control through its whole travel. Add to that list
+rather than leaving a control quietly doing nothing.
+
 ## Gotchas that have already cost time
 
 - **SVG gradient and filter ids are document-global.** Shared `<defs>` once, not per knob.
@@ -68,6 +83,10 @@ remapping every saved patch.
   knob repaints every other.
 - **`localStorage` does not exist in Bun's runtime.** The storage adapter takes its `Storage` object
   as a parameter; keep it injected rather than reaching for `window`.
+- **happy-dom has no Web Audio.** `test/fakeAudio.ts` is a context that records instead of
+  sounding, which is why the engine only ever uses the factory methods (`context.createGain()`)
+  rather than the constructor forms: one surface to keep faked.
+- **`fireEvent` cannot target `window` under happy-dom.** Dispatch on `document.body`; it bubbles.
 - **happy-dom has no pointer capture.** `test/setup.ts` installs no-ops, without which any
   `pointerdown` on a knob throws before a drag can be exercised.
 - **Floating point does not accumulate.** Continuous values are re-rounded to the control's `step`

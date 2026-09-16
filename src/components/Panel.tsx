@@ -1,3 +1,4 @@
+import { SILENT } from '../audio/settings.ts'
 import { isPlaceholder } from '../controls/placeholder.ts'
 import type { Registry } from '../controls/registry.ts'
 import { isContinuousKnob } from '../controls/continuousKnob.ts'
@@ -16,6 +17,7 @@ import { OverloadLamp } from './OverloadLamp.tsx'
 import { StepKnob } from './knob/StepKnob.tsx'
 import { TimeKnob } from './knob/TimeKnob.tsx'
 import { ToggleSwitch } from './switch/ToggleSwitch.tsx'
+import { Keyboard } from './keyboard/Keyboard.tsx'
 import { Wheel } from './wheel/Wheel.tsx'
 import {
   BELOW_PANEL,
@@ -46,8 +48,9 @@ function spoken(label: string | readonly string[]): string {
   return typeof label === 'string' ? label : label.join(' ')
 }
 
-/* Drawn as its shape until it has artwork. The overload lamp is the exception:
-   it records nothing but it is not inert — it reads the panel. */
+/* Drawn as its shape until it has artwork. Two are exceptions: the overload
+   lamp records nothing but is not inert — it reads the panel — and the keyboard
+   is a drawing of forty-four keys rather than a slot. */
 function Decoration({
   item,
   values,
@@ -56,6 +59,7 @@ function Decoration({
   values: Readonly<Record<string, ControlValue>>
 }) {
   if (item.id === 'overloadLamp') return <OverloadLamp values={values} />
+  if (item.id === 'keyboard') return <Keyboard values={values} />
   return (
     <div
       className={styles.slot}
@@ -187,7 +191,7 @@ function PanelSection({ registry, section, values, onChange }: SectionProps) {
             )
           })}
         </div>
-        <h2 className={styles.sectionLabel}>{section.label}</h2>
+        {section.label && <h2 className={styles.sectionLabel}>{section.label}</h2>}
       </section>
     )
   }
@@ -196,7 +200,7 @@ function PanelSection({ registry, section, values, onChange }: SectionProps) {
   const loose = built.filter((item) => !placed.has(item.id))
 
   return (
-    <section className={styles.section}>
+    <section className={styles.section} data-fill={layout.fillsRow ? '' : undefined}>
       <div
         className={styles.grid}
         data-overlap={layout.knobsOverlapRows ? '' : undefined}
@@ -248,7 +252,7 @@ function PanelSection({ registry, section, values, onChange }: SectionProps) {
       {loose.length > 0 && (
         <div className={styles.groupRow}>{loose.map((item) => draw(item))}</div>
       )}
-      <h2 className={styles.sectionLabel}>{section.label}</h2>
+      {section.label && <h2 className={styles.sectionLabel}>{section.label}</h2>}
     </section>
   )
 }
@@ -291,7 +295,14 @@ export function Panel({
   return (
     <div className={styles.panel}>
       <div className={styles.panelRow}>{[...row, ...rest].map(render)}</div>
-      {below.length > 0 && <div className={styles.panelRow}>{below.map(render)}</div>}
+      {below.length > 0 && (
+        <div
+          className={styles.panelRow}
+          data-fill={below.some((id) => layoutFor(id)?.fillsRow) ? '' : undefined}
+        >
+          {below.map(render)}
+        </div>
+      )}
     </div>
   )
 }
@@ -315,6 +326,10 @@ function ChecklistItem({ item }: { item: PanelItem }) {
         <span className={styles.label}>{item.label}</span>
         <span className={styles.scale}>built · {item.type}</span>
         <code className={styles.id}>{item.id}</code>
+        {/* A control that turns, reads out and is saved, and that the sound
+            here cannot answer. Said in the working view rather than left for
+            somebody to discover by listening. */}
+        {SILENT[item.id] && <span className={styles.note}>silent: {SILENT[item.id]}</span>}
       </div>
     )
   }
@@ -349,7 +364,7 @@ export function PanelChecklist({ registry }: { registry: Registry }) {
               </div>
             ))}
           </div>
-          <h2 className={styles.sectionLabel}>{section.label}</h2>
+          {section.label && <h2 className={styles.sectionLabel}>{section.label}</h2>}
         </section>
       ))}
     </div>

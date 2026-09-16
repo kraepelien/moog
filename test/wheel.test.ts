@@ -121,14 +121,15 @@ describe('the panel is complete', () => {
 
   test('every control holds a value and every decoration does not', () => {
     /* Four of the decorations became controls when Output was built: two
-       volumes and two switches. What is left is the sockets, the lamps and the
-       mains switch. */
+       volumes and two switches. What is left is the sockets, the lamps, the
+       mains switch and the keyboard, which is played rather than set. */
     expect(panelRegistry.controls).toHaveLength(47)
     expect(panelRegistry.decorations.map((item) => item.id)).toEqual([
       'overloadLamp',
       'phonesJack',
       'powerLamp',
       'power',
+      'keyboard',
     ])
   })
 

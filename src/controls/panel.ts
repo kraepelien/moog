@@ -77,6 +77,9 @@ export const sections: readonly SectionDef[] = [
   { id: 'output', label: 'Output' },
   { id: 'power', label: 'Power' },
   { id: 'performance', label: 'Performance' },
+  /* Unnamed: the instrument prints a section name under every part of the panel
+     except this one. */
+  { id: 'keyboard', label: '' },
 ]
 
 export const groups: readonly GroupDef[] = [
@@ -362,7 +365,11 @@ export const items: readonly PanelItem[] = [
   }),
 
   // Mixer
-  knob0to10('osc1Volume', 'Osc.1 Volume', 'mixer', 0, { group: 'mixOsc1' }),
+  /* The one path a blank patch has open, for the same reason the switches start
+     on: a patch sheet records a sound that was making noise, and now that the
+     keys play, a blank one that cannot be heard is a fault report waiting to
+     happen. The other two stay down so the starting sound is one oscillator. */
+  knob0to10('osc1Volume', 'Osc.1 Volume', 'mixer', 8, { group: 'mixOsc1' }),
   onOff('osc1Enable', 'Osc.1', 'mixer', { group: 'mixOsc1', cap: 'blue' }),
   knob0to10('osc2Volume', 'Osc.2 Volume', 'mixer', 0, { group: 'mixOsc2' }),
   onOff('osc2Enable', 'Osc.2', 'mixer', { group: 'mixOsc2', cap: 'blue' }),
@@ -409,7 +416,10 @@ export const items: readonly PanelItem[] = [
   knob0to10('filterSustainLevel', 'Sustain Level', 'modifiers', 0, { group: 'filterContour' }),
   timeKnob('loudnessAttackTime', 'Attack Time', 'modifiers', { group: 'loudnessContour' }),
   timeKnob('loudnessDecayTime', 'Decay Time', 'modifiers', { group: 'loudnessContour' }),
-  knob0to10('loudnessSustainLevel', 'Sustain Level', 'modifiers', 0, { group: 'loudnessContour' }),
+  /* Held at full while a key is down. At zero, with the times at zero beside
+     it, a note ends in the instant it begins, which is right for the
+     instrument and wrong for the patch everybody meets first. */
+  knob0to10('loudnessSustainLevel', 'Sustain Level', 'modifiers', 10, { group: 'loudnessContour' }),
 
   /* Output and Power are drawn but hold nothing. Level, headphone level, main
      output, A-440 and mains power are all real controls on the instrument that a
@@ -445,6 +455,11 @@ export const items: readonly PanelItem[] = [
     group: 'wheels',
   }),
   wheel('modWheel', 'Mod.', 'performance', { min: 0, max: 10, default: 0 }, { group: 'wheels' }),
+
+  /* One item rather than forty-four: a patch holds nothing a key would set, so
+     the keyboard is on the panel as a shape. What it sounds comes from the rest
+     of the panel, which is why it needs no value of its own. */
+  decoration('keyboard', 'Keyboard', 'keyboard', 'keyboard', { note: '44 keys, F to C' }),
 ]
 
 export const panelRegistry = createRegistry({ types: controlTypes, sections, groups, items })
