@@ -1,5 +1,4 @@
 import type { Patch } from '../patch/schema.ts'
-import type { StoredPreset } from '../presets/preset.ts'
 
 export interface PatchSummary {
   readonly id: string
@@ -35,11 +34,14 @@ export interface PatchStore {
   delete(id: string): Promise<void>
 }
 
-/* Separate again, because a preset is not a patch: it is keyed by a slug rather
-   than a generated id, it carries no timestamps, and the bank is small enough
-   that listing it whole is the only access anyone needs. */
+/* Still its own interface, but no longer its own type: a factory preset is a
+   patch kept in the repo rather than saved by anyone. What is different is
+   where it lives and that nobody may write over it, and both of those are the
+   store's business rather than the record's.
+
+   Listed whole because the bank is small and the library shows all of it. */
 export interface PresetStore {
-  listPresets(): Promise<readonly StoredPreset[]>
-  savePreset(preset: StoredPreset): Promise<void>
+  listPresets(): Promise<readonly Patch[]>
+  savePreset(preset: Patch): Promise<void>
   deletePreset(slug: string): Promise<void>
 }

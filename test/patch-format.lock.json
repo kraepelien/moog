@@ -9,11 +9,30 @@
     "name",
     "notes",
     "values",
-    "categories",
-    "synth",
-    "rating",
+    "tags",
+    "instrument",
+    "visibility",
+    "approximate",
+    "derivedFrom",
     "createdAt",
     "updatedAt"
+  ],
+  "removed": [
+    {
+      "field": "rating",
+      "on": "2026-09-16",
+      "why": "A rating is personal, so it belongs to a user rather than to the patch everyone shares."
+    },
+    {
+      "field": "synth",
+      "on": "2026-09-16",
+      "why": "A display string where an id was needed; `instrument` holds the id and the instruments table holds the name."
+    },
+    {
+      "field": "categories",
+      "on": "2026-09-16",
+      "why": "Renamed to `tags`, which is what they are called everywhere else."
+    }
   ],
   "controls": {
     "amountOfContour": {

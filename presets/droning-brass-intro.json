@@ -1,11 +1,8 @@
 {
-  "slug": "droning-brass-intro",
+  "schemaVersion": 2,
+  "id": "droning-brass-intro",
   "name": "Droning Brass Intro",
   "notes": "",
-  "approximate": true,
-  "categories": [],
-  "synth": "Minimoog Model D",
-  "rating": 0,
   "values": {
     "osc1Range": "ft32",
     "osc1Waveform": "sawtooth",
@@ -23,5 +20,12 @@
     "amountOfContour": 4,
     "filterSustainLevel": 9,
     "loudnessSustainLevel": 9
-  }
+  },
+  "tags": [],
+  "instrument": "minimoog-model-d",
+  "visibility": "public",
+  "approximate": true,
+  "derivedFrom": null,
+  "createdAt": "2026-09-16T00:00:00.000Z",
+  "updatedAt": "2026-09-16T00:00:00.000Z"
 }
