@@ -1,23 +1,13 @@
 import { describe, expect, test } from 'bun:test'
 import {
   BLACK_WIDTH,
-  KEY_COUNT,
   WHITE_WIDTH,
-  isSharp,
   keyboardKeys,
   naturalCount,
 } from '../src/components/keyboard/keyboardArtwork.ts'
+import { KEY_COUNT } from '../src/audio/notes.ts'
 
 describe('the keyboard', () => {
-  test('runs 44 keys from F to C', () => {
-    expect(KEY_COUNT).toBe(44)
-    expect(isSharp(0)).toBe(false)
-    expect(isSharp(KEY_COUNT - 1)).toBe(false)
-    /* F and C are seven semitones apart within the octave, which is what makes
-       three and a half octaves come out as a whole number of keys. */
-    expect((KEY_COUNT - 1) % 12).toBe(7)
-  })
-
   test('is 26 naturals and 18 sharps', () => {
     const keys = keyboardKeys()
     expect(keys).toHaveLength(KEY_COUNT)

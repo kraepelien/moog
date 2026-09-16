@@ -7,18 +7,16 @@
    a little over half the width of a natural and around two thirds its length.
 
    Naturals are of even width and each sharp sits on the seam between two of
-   them, which is what lets the pattern come from the note rather than a list. */
+   them, so the pattern is drawn from the note rather than listed. Which keys
+   those are is a question about music, not about drawing, so it is answered in
+   src/audio/notes.ts and only read here. */
+
+import { KEY_COUNT, isSharp } from '../../audio/notes.ts'
 
 export const WHITE_WIDTH = 34
 export const WHITE_LENGTH = 212
 export const BLACK_WIDTH = 21
 export const BLACK_LENGTH = 134
-
-/* Semitones above C that are sharps, and the one the lowest key sounds. */
-const SHARPS = new Set([1, 3, 6, 8, 10])
-const LOWEST = 5
-
-export const KEY_COUNT = 44
 
 export interface Key {
   /* Semitones above the lowest F. */
@@ -27,10 +25,6 @@ export interface Key {
   readonly x: number
   readonly width: number
   readonly length: number
-}
-
-export function isSharp(index: number): boolean {
-  return SHARPS.has((LOWEST + index) % 12)
 }
 
 /* Every natural before every sharp, so drawing them in order lays the sharps
