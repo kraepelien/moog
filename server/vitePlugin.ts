@@ -1,16 +1,17 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { Readable } from 'node:stream'
 import type { Plugin } from 'vite'
+import { join } from 'node:path'
 import { createApi } from './api.ts'
-import { layoutFor } from './store.ts'
-import { seedPresets } from './seed.ts'
+import { openDatabase } from './db.ts'
+import { loadFactory } from './factory.ts'
 
 /* The same API the standalone server serves, from inside `bun run dev`, so dev
    and production cannot answer differently. */
 
 export interface PatchApiOptions {
   readonly root: string
-  /* The bank shipped in the repo, copied into root/presets the first time. */
+  /* The bank shipped in the repo, reloaded into the database on every start. */
   readonly seed: string
 }
 
@@ -60,14 +61,11 @@ export function patchApi(options: PatchApiOptions): Plugin {
   return {
     name: 'moog-patch-api',
     async configureServer(server) {
-      const seeded = await seedPresets(options.seed, layoutFor(options.root).presets)
-      if (seeded.seeded.length > 0) {
-        server.config.logger.info(
-          `  ➜  Seeded ${seeded.seeded.length} new presets into ${options.root}/presets`,
-        )
-      }
+      const db = openDatabase(join(options.root, 'moog.db'))
+      const factory = loadFactory(db, options.seed)
+      server.config.logger.info(`  ➜  Factory bank: ${factory.loaded} presets`)
 
-      const handle = createApi({ root: options.root })
+      const handle = createApi({ db })
       /* Every request, because the handler decides what is its own — filtering
          by prefix here is what made dev and production disagree. */
       server.middlewares.use((req, res, next) => {

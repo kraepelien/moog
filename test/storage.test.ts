@@ -1,6 +1,4 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs'
-import { join } from 'node:path'
 import { createPatch, type Patch } from '../src/patch/schema.ts'
 import { StoreError } from '../src/storage/types.ts'
 import { testApi, type TestApi } from './apiFixture.ts'
@@ -19,17 +17,8 @@ function make(name: string, updatedAt: string): Patch {
   return { ...createPatch({ name }, fixedIdentity(name)), updatedAt }
 }
 
-describe('patches are files in a folder', () => {
-  test('saving one writes a file named by its id', async () => {
-    const patch = make('Bass', '2026-01-02T00:00:00.000Z')
-    await api.store.save(patch)
-    const file = join(api.root, 'patches', `${patch.id}.json`)
-    expect(existsSync(file)).toBe(true)
-    /* Readable and hand-editable, which is the point of files over a database. */
-    expect(JSON.parse(readFileSync(file, 'utf8')).name).toBe('Bass')
-  })
-
-  test('reads back unchanged', async () => {
+describe('patches are rows', () => {
+  test('saving one and reading it back gives the same patch', async () => {
     const patch = make('Bass', '2026-01-02T00:00:00.000Z')
     await api.store.save(patch)
     expect(await api.store.get(patch.id)).toEqual(patch)
@@ -47,7 +36,7 @@ describe('patches are files in a folder', () => {
     expect(list[0]).not.toHaveProperty('values')
   })
 
-  test('delete removes only the named file', async () => {
+  test('delete removes only the one named', async () => {
     const keep = make('Keep', '2026-01-01T00:00:00.000Z')
     const drop = make('Drop', '2026-01-01T00:00:00.000Z')
     await api.store.save(keep)
@@ -57,24 +46,25 @@ describe('patches are files in a folder', () => {
     expect(await api.store.get(keep.id)).not.toBeNull()
   })
 
-  test('a file edited by hand into nonsense does not hide the others', async () => {
-    await api.store.save(make('Good', '2026-01-01T00:00:00.000Z'))
-    mkdirSync(join(api.root, 'patches'), { recursive: true })
-    writeFileSync(join(api.root, 'patches', 'broken.json'), '{ not json', 'utf8')
-    expect((await api.store.list()).map((s) => s.name)).toEqual(['Good'])
+  test('a deleted patch stays gone across a reload', async () => {
+    const patch = make('Gone', '2026-01-01T00:00:00.000Z')
+    await api.store.save(patch)
+    await api.store.delete(patch.id)
+    expect(await api.store.get(patch.id)).toBeNull()
+    expect(await api.store.list()).toEqual([])
   })
 
-  test('files that are not JSON are ignored', async () => {
-    mkdirSync(join(api.root, 'patches'), { recursive: true })
-    writeFileSync(join(api.root, 'patches', 'notes.txt'), 'hello', 'utf8')
-    expect(await api.store.list()).toEqual([])
+  test('saving over one replaces it rather than adding a second', async () => {
+    const patch = make('First', '2026-01-01T00:00:00.000Z')
+    await api.store.save(patch)
+    await api.store.save({ ...patch, name: 'Second' })
+    const list = await api.store.list()
+    expect(list.map((entry) => entry.name)).toEqual(['Second'])
   })
 })
 
-describe('an id becomes a filename, so it is checked first', () => {
-  test('a traversing id cannot reach outside the folder', async () => {
-    /* Without the check, this would read or write above the data folder. The
-       pattern is what prevents it, not the path join. */
+describe('an id arriving from a URL is checked before it is used', () => {
+  test('one that is not a word is refused', async () => {
     await expect(api.store.get('../../etc/passwd')).rejects.toBeInstanceOf(StoreError)
     await expect(api.store.delete('../../secrets')).rejects.toBeInstanceOf(StoreError)
   })

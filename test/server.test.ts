@@ -1,121 +1,99 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
-import { readFile, writeFile } from 'node:fs/promises'
+import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createApi } from '../server/api.ts'
-import { createFileStore, isSafeName } from '../server/store.ts'
-import { seedPresets } from '../server/seed.ts'
+import { openDatabase } from '../server/db.ts'
+import { syncInstruments } from '../server/factory.ts'
+import { createStore, isSafeName } from '../server/store.ts'
+import { createPatch, type Patch } from '../src/patch/schema.ts'
+import { fixedIdentity } from './fixtures.ts'
 
-/* The part of the store the happy path never reaches: failed writes, races,
-   hostile input, and a folder someone has edited by hand. */
+/* The request handler and the store beneath it, driven directly: malformed and
+   hostile input, and the answers a client depends on telling apart. */
 
 const roots: string[] = []
 
-function freshRoot(): string {
+function freshDb() {
   const root = mkdtempSync(join(tmpdir(), 'moog-server-'))
   roots.push(root)
-  return root
+  const db = openDatabase(join(root, 'moog.db'))
+  syncInstruments(db)
+  return db
 }
 
 afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
 })
 
-const temps = (dir: string) => readdirSync(dir).filter((name) => name.endsWith('.tmp'))
+/* The prefix becomes the id, so it has to be one word. */
+const aPatch = (name: string): Patch =>
+  createPatch({ name }, fixedIdentity(name.toLowerCase().replace(/[^a-z0-9]+/g, '-')))
 
-describe('a name that becomes a filename', () => {
-  test('accepts what a slug and an id actually look like', () => {
+describe('an id arriving from a URL', () => {
+  test('accepts what an id and a slug actually look like', () => {
     for (const name of ['abc', 'A-1', 'sub_bass', '60s-space', '0']) {
       expect(isSafeName(name)).toBe(true)
     }
   })
 
-  test('refuses anything that could leave the folder', () => {
+  test('refuses anything that is not one word', () => {
     for (const name of ['..', '../x', 'a/b', 'a\\b', '.hidden', 'a.json', '', ' ', 'a b']) {
       expect(isSafeName(name)).toBe(false)
     }
   })
 
-  test('refuses a name too long to be a filename', () => {
+  test('refuses one too long to be a name', () => {
     expect(isSafeName('a'.repeat(128))).toBe(true)
     expect(isSafeName('a'.repeat(129))).toBe(false)
   })
-})
 
-describe('writing a record', () => {
-  test('leaves no temp file behind', async () => {
-    const store = createFileStore(freshRoot())
-    await store.putPatch('one', { name: 'One' })
-    expect(temps(store.layout.patches)).toEqual([])
-  })
-
-  test('that fails leaves the previous one intact and no litter', async () => {
-    /* What proves the rename itself is atomic is the test below. */
-    const store = createFileStore(freshRoot())
-    await store.putPatch('one', { name: 'Good' })
-
-    await expect(store.putPatch('one', { bad: 1n })).rejects.toThrow()
-
-    expect(await store.getPatch('one')).toEqual({ name: 'Good' })
-    expect(temps(store.layout.patches)).toEqual([])
-  })
-
-  test('twice at once ends with one whole record, never a fragment', async () => {
-    const store = createFileStore(freshRoot())
-    const writes = Array.from({ length: 25 }, (_, index) =>
-      store.putPatch('one', { name: `Take ${index}`, index }),
-    )
-    await Promise.all(writes)
-
-    const saved = (await store.getPatch('one')) as { index: number } | null
-    expect(saved).not.toBeNull()
-    expect(saved!.index).toBeGreaterThanOrEqual(0)
-    expect(saved!.index).toBeLessThan(25)
-    expect(temps(store.layout.patches)).toEqual([])
-  })
-
-  test('to different records at once loses none of them', async () => {
-    const store = createFileStore(freshRoot())
-    await Promise.all(
-      Array.from({ length: 20 }, (_, index) => store.putPatch(`p${index}`, { index })),
-    )
-    expect(await store.listPatches()).toHaveLength(20)
+  test('is refused by the store before it reaches a statement', () => {
+    const store = createStore(freshDb())
+    expect(store.getPatch('../escape')).toBeNull()
+    expect(() => store.putPatch('../escape', aPatch('X'))).toThrow(/Unsafe/)
+    expect(() => store.deletePatch('../escape')).toThrow(/Unsafe/)
   })
 })
 
-describe('reading a folder someone has been in by hand', () => {
-  test('a half-written file is skipped rather than failing the listing', async () => {
-    const store = createFileStore(freshRoot())
-    await store.putPatch('good', { name: 'Good' })
-    await writeFile(join(store.layout.patches, 'broken.json'), '{"name": "Bro', 'utf8')
+describe('writing a patch', () => {
+  test('twice at once leaves one row, not two', () => {
+    const store = createStore(freshDb())
+    const patch = aPatch('Contended')
+    for (let i = 0; i < 25; i++) store.putPatch(patch.id, { ...patch, name: `Take ${i}` })
 
-    expect(await store.listPatches()).toEqual([{ name: 'Good' }])
-    expect(await store.getPatch('broken')).toBeNull()
+    const all = store.listPatches()
+    expect(all).toHaveLength(1)
+    expect(all[0]!.name).toBe('Take 24')
   })
 
-  test('bookkeeping and stray files are not records', async () => {
-    const store = createFileStore(freshRoot())
-    await store.putPreset('real', { slug: 'real' })
-    await writeFile(join(store.layout.presets, '.seeded.json'), '{"slugs":[]}', 'utf8')
-    await writeFile(join(store.layout.presets, 'notes.txt'), 'hello', 'utf8')
-
-    expect(await store.listPresets()).toEqual([{ slug: 'real' }])
+  test('for an instrument nothing knows is refused, not filed under the default', () => {
+    const store = createStore(freshDb())
+    expect(() => store.putPatch('x1', { ...aPatch('Alien'), instrument: 'prophet-5' })).toThrow(
+      /Unknown instrument/,
+    )
   })
 
-  test('a folder that does not exist is empty, not an error', async () => {
-    const store = createFileStore(join(freshRoot(), 'never-made'))
-    expect(await store.listPatches()).toEqual([])
-    expect(await store.listPresets()).toEqual([])
-    expect(await store.getPatch('nothing')).toBeNull()
+  test('keeps a control id this build has never heard of', () => {
+    /* The format's promise: an older build must not strip a newer one's data. */
+    const store = createStore(freshDb())
+    const patch = { ...aPatch('Future'), values: { osc1Volume: 5, fromLater: 'kept' } }
+    store.putPatch(patch.id, patch)
+    expect(store.getPatch(patch.id)?.values).toEqual({ osc1Volume: 5, fromLater: 'kept' })
   })
 
-  test('an unsafe id is refused before the filesystem sees it', async () => {
-    const store = createFileStore(freshRoot())
-    expect(await store.getPatch('../escape')).toBeNull()
-    await expect(store.putPatch('../escape', {})).rejects.toThrow(/Unsafe/)
-    await expect(store.deletePatch('../escape')).rejects.toThrow(/Unsafe/)
-    await expect(store.putPreset('a/b', {})).rejects.toThrow(/Unsafe/)
+  test('a deleted patch is gone from every listing but still a row', () => {
+    /* Soft, so a copy or a rating that points at it still has something to
+       point at. */
+    const db = freshDb()
+    const store = createStore(db)
+    const patch = aPatch('Gone')
+    store.putPatch(patch.id, patch)
+    store.deletePatch(patch.id)
+
+    expect(store.listPatches()).toEqual([])
+    expect(store.getPatch(patch.id)).toBeNull()
+    expect(db.query<{ n: number }, []>(`select count(*) as n from patches`).get()?.n).toBe(1)
   })
 })
 
@@ -135,57 +113,72 @@ describe('the request handler', () => {
       }),
     )
 
+  const api = () => createApi({ db: freshDb() })
+
   test('leaves anything that is not the API alone', async () => {
-    /* Null rather than a 404, so the caller can serve the app: a 404 here would
-       mean every page load returned one. */
-    const handle = createApi({ root: freshRoot() })
+    /* Null rather than a 404, so the caller can serve the app. */
+    const handle = api()
     expect(await call(handle, 'GET', '/')).toBeNull()
     expect(await call(handle, 'GET', '/index.html')).toBeNull()
     expect(await call(handle, 'GET', '/apiary')).toBeNull()
   })
 
   test('answers 404 for a resource it does not have', async () => {
-    const handle = createApi({ root: freshRoot() })
+    const handle = api()
     expect((await call(handle, 'GET', '/api/'))!.status).toBe(404)
     expect((await call(handle, 'GET', '/api/sounds'))!.status).toBe(404)
   })
 
+  test('health asks the database a real question', async () => {
+    const response = (await call(api(), 'GET', '/api/health'))!
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ ok: true, patches: 0 })
+  })
+
   test('round-trips a patch', async () => {
-    const handle = createApi({ root: freshRoot() })
-    expect((await call(handle, 'PUT', '/api/patches/one', { name: 'One' }))!.status).toBe(200)
+    const handle = api()
+    const patch = aPatch('One')
+    expect((await call(handle, 'PUT', `/api/patches/${patch.id}`, patch))!.status).toBe(200)
 
-    const got = (await call(handle, 'GET', '/api/patches/one'))!
-    expect(await got.json()).toEqual({ name: 'One' })
+    const got = (await call(handle, 'GET', `/api/patches/${patch.id}`))!
+    expect(await got.json()).toMatchObject({ name: 'One' })
 
-    expect((await call(handle, 'DELETE', '/api/patches/one'))!.status).toBe(200)
-    expect((await call(handle, 'GET', '/api/patches/one'))!.status).toBe(404)
+    expect((await call(handle, 'DELETE', `/api/patches/${patch.id}`))!.status).toBe(200)
+    expect((await call(handle, 'GET', `/api/patches/${patch.id}`))!.status).toBe(404)
   })
 
   test('deleting something that is not there is not an error', async () => {
-    const handle = createApi({ root: freshRoot() })
-    expect((await call(handle, 'DELETE', '/api/patches/ghost'))!.status).toBe(200)
+    expect((await call(api(), 'DELETE', '/api/patches/ghost'))!.status).toBe(200)
   })
 
-  test('refuses a body that is not JSON rather than writing it', async () => {
-    const handle = createApi({ root: freshRoot() })
-    const response = (await call(handle, 'PUT', '/api/patches/one', 'not json at all'))!
-    expect(response.status).toBe(400)
+  test('refuses a body that is not a patch rather than storing it', async () => {
+    /* The columns are typed now, so anything that is not a patch has to be
+       refused before it becomes a row. */
+    const handle = api()
+    expect((await call(handle, 'PUT', '/api/patches/one', 'not json at all'))!.status).toBe(400)
+    expect((await call(handle, 'PUT', '/api/patches/one', { name: 'half a patch' }))!.status).toBe(
+      400,
+    )
     expect((await call(handle, 'GET', '/api/patches/one'))!.status).toBe(404)
   })
 
-  test('refuses a name that could leave the folder', async () => {
-    const root = freshRoot()
-    const handle = createApi({ root })
-    /* An encoded slash survives URL parsing, so it reaches the handler as one
-       path segment and has to be caught by the name check. */
+  test('refuses a patch from a newer build instead of downgrading it', async () => {
+    const handle = api()
+    const patch = { ...aPatch('From The Future'), schemaVersion: 99 }
+    const response = (await call(handle, 'PUT', `/api/patches/${patch.id}`, patch))!
+    expect(response.status).toBe(400)
+    expect((await response.json()).error).toMatch(/Update the app/)
+  })
+
+  test('refuses a name that could not be a name', async () => {
+    const handle = api()
     for (const path of ['/api/patches/..%2F..%2Fescape', '/api/presets/..%2Fescape']) {
-      expect((await call(handle, 'PUT', path, { gotcha: true }))!.status).toBe(400)
+      expect((await call(handle, 'PUT', path, aPatch('Gotcha')))!.status).toBe(400)
     }
-    expect(readdirSync(root)).toEqual([])
   })
 
   test('says which methods a route has', async () => {
-    const handle = createApi({ root: freshRoot() })
+    const handle = api()
     expect((await call(handle, 'POST', '/api/patches'))!.status).toBe(405)
     expect((await call(handle, 'POST', '/api/patches/one'))!.status).toBe(405)
     expect((await call(handle, 'GET', '/api/presets/one'))!.status).toBe(405)
@@ -193,42 +186,13 @@ describe('the request handler', () => {
   })
 
   test('reports a storage failure as one, with a reason', async () => {
-    /* The same shape as a full disk or an unmounted volume. */
-    const root = freshRoot()
-    writeFileSync(join(root, 'patches'), 'in the way', 'utf8')
+    const db = freshDb()
+    const handle = createApi({ db })
+    db.close()
 
-    const response = (await createApi({ root })(
-      new Request('http://test/api/patches/one', {
-        method: 'PUT',
-        body: JSON.stringify({ name: 'One' }),
-      }),
-    ))!
+    const patch = aPatch('One')
+    const response = (await call(handle, 'PUT', `/api/patches/${patch.id}`, patch))!
     expect(response.status).toBe(500)
     expect((await response.json()).error).toBeTruthy()
-  })
-})
-
-describe('seeding', () => {
-  test('does nothing when there is no bank to seed from', async () => {
-    const root = freshRoot()
-    const result = await seedPresets(join(root, 'no-such-bank'), join(root, 'active'))
-    expect(result).toEqual({ seeded: [], skipped: 0 })
-  })
-
-  test('a manifest edited into nonsense seeds again rather than refusing to run', async () => {
-    /* Unreadable means "nothing seeded here"; files present are still kept. */
-    const root = freshRoot()
-    const bank = join(root, 'bank')
-    const active = join(root, 'active')
-    mkdirSync(bank, { recursive: true })
-    await writeFile(join(bank, 'one.json'), '{"slug":"one"}', 'utf8')
-
-    expect((await seedPresets(bank, active)).seeded).toEqual(['one'])
-    await writeFile(join(active, 'one.json'), '{"slug":"one","name":"Mine"}', 'utf8')
-    await writeFile(join(active, '.seeded.json'), 'not json', 'utf8')
-
-    const again = await seedPresets(bank, active)
-    expect(again.seeded).toEqual([])
-    expect(JSON.parse(await readFile(join(active, 'one.json'), 'utf8')).name).toBe('Mine')
   })
 })
