@@ -25,6 +25,16 @@ export const VIEWBOX = { x: -5, y: 7, width: 116, height: 116 } as const
 
 export const CAP_RADIUS = 19
 
+/* Both exports draw the knob at the same scale — measured, their bodies are
+   60.6 and 60.5 units across — so a bigger knob cannot come from the artwork.
+   It is a render scale instead: the same paths drawn larger, which is what the
+   panel does, where the oscillator frequency knobs are physically bigger than
+   the levels around them. */
+export const SIZE_SCALE: Record<KnobSize, number> = {
+  small: 1,
+  large: 1.3,
+}
+
 export interface KnobArtwork {
   readonly body: string
   readonly indicatorRadius: number

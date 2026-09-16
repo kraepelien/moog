@@ -9,6 +9,7 @@ import {
 import {
   CENTRE,
   LABEL_RADIUS,
+  SIZE_SCALE,
   TICK_INNER,
   TICK_OUTER,
   VIEWBOX,
@@ -154,6 +155,7 @@ export function ContinuousKnob({ def, value, onChange }: ContinuousKnobProps) {
      widened for them and the element sized from it at one pixel per unit — the
      dial stays the same size on the panel, it just gains margin. */
   const box = hasNamedMarks(def) ? { ...VIEWBOX, x: VIEWBOX.x - 26, width: VIEWBOX.width + 52 } : VIEWBOX
+  const scale = SIZE_SCALE[size]
   const reading = formatValue(def, current)
 
   return (
@@ -165,7 +167,7 @@ export function ContinuousKnob({ def, value, onChange }: ContinuousKnobProps) {
       <svg
         viewBox={`${box.x} ${box.y} ${box.width} ${box.height}`}
         className={styles.dial}
-        style={{ width: box.width, height: box.height }}
+        style={{ width: box.width * scale, height: box.height * scale }}
         data-size={size}
         role="slider"
         tabIndex={0}
