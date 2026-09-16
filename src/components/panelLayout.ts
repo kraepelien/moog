@@ -145,6 +145,30 @@ export function placedIn(sectionId: string): ReadonlySet<string> {
   return names
 }
 
+/* Each layout row becomes two grid rows: the captions, then the controls. A
+   caption drawn by the section rather than by the control keeps it out of the
+   control's own box, so a two-line caption no longer pushes its knob down past
+   the switch beside it — every body in a row centres on one line whatever is
+   printed above it.
+ *
+ * A cell repeated from the row above is a control spanning rows, and its area
+ * has to stay one rectangle, so the span continues through the caption row
+ * instead of being broken by it.
+ */
+export function withCaptionRows(rows: readonly string[]): string[] {
+  const grid = rows.map((row) => row.trim().split(/\s+/))
+  const out: string[] = []
+  grid.forEach((cells, index) => {
+    const above = grid[index - 1]
+    const captions = cells.map((cell, column) => {
+      if (cell === '.') return '.'
+      return above?.[column] === cell ? cell : `${cell}-cap`
+    })
+    out.push(captions.join(' '), cells.join(' '))
+  })
+  return out
+}
+
 /* Columns are even rather than sized to their contents, so a switch centres
    under the knob it belongs to instead of drifting with the width of the
    longest legend in its column. */

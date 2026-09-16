@@ -37,6 +37,16 @@
   align-items: baseline;
   gap: 8px;
   width: 82px;
+  line-height: 1.2;
+}
+
+/* The legend hangs below the body; without a matching slot above it, the body
+   sits half a line high in the cell and misses the knob it stands beside. */
+.switch[data-orientation='horizontal']:has(.endLabels)::before {
+  content: '';
+  font-size: 0.6rem;
+  line-height: 1.2;
+  height: 1.2em;
 }
 
 .endLabel {

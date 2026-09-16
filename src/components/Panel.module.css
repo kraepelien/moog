@@ -37,6 +37,21 @@
   justify-content: center;
 }
 
+/* The name over a control, printed by the section in a row of its own so that
+   the control's box holds nothing but the control. Sits on the bottom of that
+   row, right above what it names. */
+.caption {
+  align-self: end;
+  font-size: 0.7rem;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.caption[data-for='switch'] {
+  font-size: 0.65rem;
+}
+
 /* A word the panel prints over a column or a block, rather than on each control
    in it. Set on as many lines as the layout gives it. */
 .columnHeader {

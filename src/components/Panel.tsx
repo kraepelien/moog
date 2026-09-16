@@ -18,6 +18,7 @@ import {
   layoutFor,
   placedIn,
   templateAreas,
+  withCaptionRows,
 } from './panelLayout.ts'
 import styles from './Panel.module.css'
 
@@ -77,7 +78,7 @@ function Control({
     return <StepKnob def={item} value={stored} onChange={onChange} hideHeader={hideHeader} />
   }
   if (isToggleSwitch(item)) {
-    return <ToggleSwitch def={item} value={stored} onChange={onChange} />
+    return <ToggleSwitch def={item} value={stored} onChange={onChange} hideHeader={hideHeader} />
   }
   return <span className={styles.unbuilt}>no component for “{item.id}”</span>
 }
@@ -97,7 +98,7 @@ function PanelSection({ registry, section, values, onChange }: SectionProps) {
   const layout = layoutFor(section.id)
   const built = registry.itemsInSection(section.id).filter(isBuilt)
 
-  const draw = (item: PanelItem) => {
+  const draw = (item: PanelItem, captionDrawn = false) => {
     /* A printed label the panel chooses over the registry's, which stays what a
        screen reader hears. An empty one means the column heading covers it. */
     const override = layout?.labels?.[item.id]
@@ -111,9 +112,18 @@ function PanelSection({ registry, section, values, onChange }: SectionProps) {
         item={renamed}
         value={values[item.id]}
         onChange={(next) => onChange(item.id, next)}
-        hideHeader={override === ''}
+        hideHeader={captionDrawn || override === ''}
       />
     )
+  }
+
+  /* What the panel prints over a control. The section prints it, so the control
+     is told not to — except a wheel, which carries its name underneath. */
+  const captionFor = (item: PanelItem): string | undefined => {
+    const override = layout?.labels?.[item.id]
+    if (override === '' || isDecoration(item) || isWheel(item)) return undefined
+    if (isToggleSwitch(item)) return item.headline
+    return override ?? item.label
   }
 
   if (!layout) {
@@ -129,7 +139,7 @@ function PanelSection({ registry, section, values, onChange }: SectionProps) {
                 className={run.group ? styles.group : styles.run}
               >
                 {run.group?.label && <h3 className={styles.groupHeader}>{run.group.label}</h3>}
-                <div className={styles.groupRow}>{items.map(draw)}</div>
+                <div className={styles.groupRow}>{items.map((item) => draw(item))}</div>
               </div>
             )
           })}
@@ -147,7 +157,7 @@ function PanelSection({ registry, section, values, onChange }: SectionProps) {
       <div
         className={styles.grid}
         style={{
-          gridTemplateAreas: templateAreas(layout.rows),
+          gridTemplateAreas: templateAreas(withCaptionRows(layout.rows)),
           gridTemplateColumns: `repeat(${columnCount(layout.rows)}, 1fr)`,
         }}
       >
@@ -160,13 +170,30 @@ function PanelSection({ registry, section, values, onChange }: SectionProps) {
         ))}
         {built
           .filter((item) => placed.has(item.id))
-          .map((item) => (
-            <div key={item.id} style={{ gridArea: item.id }} className={styles.cell}>
-              {draw(item)}
-            </div>
-          ))}
+          .flatMap((item) => {
+            const caption = captionFor(item)
+            const wheel = !isDecoration(item) && isWheel(item)
+            const toggle = !isDecoration(item) && isToggleSwitch(item)
+            return [
+              caption && (
+                <span
+                  key={`${item.id}-cap`}
+                  style={{ gridArea: `${item.id}-cap` }}
+                  className={styles.caption}
+                  data-for={toggle ? 'switch' : undefined}
+                >
+                  {caption}
+                </span>
+              ),
+              <div key={item.id} style={{ gridArea: item.id }} className={styles.cell}>
+                {draw(item, !wheel)}
+              </div>,
+            ]
+          })}
       </div>
-      {loose.length > 0 && <div className={styles.groupRow}>{loose.map(draw)}</div>}
+      {loose.length > 0 && (
+        <div className={styles.groupRow}>{loose.map((item) => draw(item))}</div>
+      )}
       <h2 className={styles.sectionLabel}>{section.label}</h2>
     </section>
   )

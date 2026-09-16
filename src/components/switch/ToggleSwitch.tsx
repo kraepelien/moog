@@ -19,9 +19,12 @@ export interface ToggleSwitchProps {
   def: ToggleSwitchDef
   value: string
   onChange: (value: string) => void
+  /* Set when the section prints the headline in its own row, so the body lines
+     up with the knob beside it. The name still reaches a screen reader. */
+  hideHeader?: boolean
 }
 
-export function ToggleSwitch({ def, value, onChange }: ToggleSwitchProps) {
+export function ToggleSwitch({ def, value, onChange, hideHeader }: ToggleSwitchProps) {
   const labelId = useId()
   const index = positionIndex(def, value)
   const vertical = def.orientation === 'vertical'
@@ -61,7 +64,7 @@ export function ToggleSwitch({ def, value, onChange }: ToggleSwitchProps) {
 
   return (
     <div className={styles.switch} data-orientation={vertical ? 'vertical' : 'horizontal'}>
-      {def.headline && (
+      {def.headline && !hideHeader && (
         <span className={styles.headline} id={labelId}>
           {def.headline}
         </span>
@@ -77,8 +80,8 @@ export function ToggleSwitch({ def, value, onChange }: ToggleSwitchProps) {
           role="switch"
           tabIndex={0}
           aria-checked={index === 1}
-          aria-label={def.headline ? undefined : def.label}
-          aria-labelledby={def.headline ? labelId : undefined}
+          aria-label={def.headline && !hideHeader ? undefined : (def.headline ?? def.label)}
+          aria-labelledby={def.headline && !hideHeader ? labelId : undefined}
           onClick={toggle}
           onKeyDown={onKeyDown}
         >
