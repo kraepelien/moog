@@ -8,31 +8,48 @@
 .panel {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  background: #000;
+  align-items: flex-start;
+  gap: 16px;
   color: #fff;
-  padding: 20px 16px 16px;
   width: max-content;
+}
+
+/* The checklist has no rows to carry the black, so it carries its own. */
+.checklist {
+  background: #000;
+  padding: 12px 10px 10px;
 }
 
 /* The sheet prints the sections across the page, so this does not wrap: the
    whole panel is scaled to the window instead, which keeps the order the
-   instrument has. */
+   instrument has.
+ *
+ * The black is the row's rather than the whole panel's, because the strip below
+ * carries four controls against the main row's sixty: painted as one field it
+ * is an empty page of black beside them, where the sheet prints it as its own
+ * small box. */
 .panelRow {
   display: flex;
   align-items: stretch;
+  background: #000;
+  padding: 12px 10px 10px;
 }
 
 /* Positions come from the layout map as grid areas named after control ids. */
 .grid {
   display: grid;
-  gap: 8px;
+  gap: 4px 8px;
   justify-items: center;
   /* Centred rather than top-aligned: a switch is a third the height of the knob
      it sits beside, and starting both at the same top edge leaves it floating
      above the dial it belongs to. Column headings override this to sit on the
      row beneath them. */
   align-items: center;
+  /* The row stretches every section to the height of the tallest, and auto rows
+     would share that slack out between them — which spread Controllers' three
+     rows over the ten that Modifiers needs, at a knob's height of air apiece.
+     The block keeps its own height and the section pads underneath it. */
+  align-content: start;
   flex: 1;
 }
 
@@ -41,20 +58,49 @@
   justify-content: center;
 }
 
-/* The name over a control, printed by the section in a row of its own so that
-   the control's box holds nothing but the control. Sits on the bottom of that
-   row, right above what it names. */
-.caption {
-  align-self: end;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-align: center;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+/* A knob in a section whose rows the switches set. It is taken out of the row's
+   height and hung on the row's centre line instead, so it stands taller than
+   the row and overlaps the cells either side of it — which are empty, because
+   the section alternates columns down the page. That is the pitch the panel
+   stacks the mixer at, and the knob still centres on the switch that enables
+   it, which is the whole point of the column. */
+.cell[data-overlap] {
+  height: 0;
+  align-items: center;
 }
 
-.caption[data-for='switch'] {
-  font-size: 0.65rem;
+/* Such a knob stands above its row as well as below it, and what is above it is
+   its own name. This is how far its topmost numeral reaches. */
+.grid[data-overlap] .caption {
+  padding-bottom: 20px;
+}
+
+/* The name over a control, printed by the section in a row of its own so that
+   the control's box holds nothing but the control. Sits on the bottom of that
+   row, right above what it names.
+
+   Each line is set unbroken and the name is as wide as its longest, so it takes
+   exactly the room the panel gives it — CUTOFF FREQUENCY across, AMOUNT OF /
+   CONTOUR over two — rather than the room the widest name in the section needs.
+   Where a name breaks is in the layout, since that is what decides a column's
+   width. The percentage minimum fills a column the controls made wider. */
+.caption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  align-self: end;
+  width: max-content;
+  min-width: 100%;
+  /* Measured off the sheet, where a name stands about a ninth of the tick ring
+     it labels and a block's heading stands half again taller than that. A knob
+     is 78 units across its ticks, so a name is 11.8 of them and a heading 15.2.
+     Switches are named in the same size as knobs there, not a smaller one. */
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.05;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 /* A word the panel prints over a column or a block, rather than on each control
@@ -64,18 +110,21 @@
   flex-direction: column;
   align-items: center;
   margin: 0;
-  font-size: 0.75rem;
+  font-size: 0.95rem;
   font-weight: 700;
+  line-height: 1.05;
   text-align: center;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   align-self: end;
+  width: min-content;
+  min-width: 100%;
 }
 
 .section {
   display: flex;
   flex-direction: column;
-  padding: 0 22px;
+  padding: 0 11px;
 }
 
 /* One rule between neighbours, as printed — the panel has no boxes. */
@@ -95,7 +144,7 @@
    height, so every name in the row sits on one line as the panel prints them. */
 .sectionLabel {
   margin: 0;
-  padding-top: 24px;
+  padding-top: 8px;
   margin-top: auto;
   font-size: 1.6rem;
   font-weight: 300;
