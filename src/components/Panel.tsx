@@ -12,6 +12,7 @@ import {
   type PanelItem,
 } from '../controls/types.ts'
 import { ContinuousKnob } from './knob/ContinuousKnob.tsx'
+import { OverloadLamp } from './OverloadLamp.tsx'
 import { StepKnob } from './knob/StepKnob.tsx'
 import { TimeKnob } from './knob/TimeKnob.tsx'
 import { ToggleSwitch } from './switch/ToggleSwitch.tsx'
@@ -38,23 +39,36 @@ function isBuilt(item: PanelItem): boolean {
 
 /* A control on the instrument that a patch does not record and nothing reads:
    a socket, an indicator, the mains switch. Drawn as its shape, since that is
-   all that is known about it until its artwork exists. */
-function Decoration({ item }: { item: DecorationDef }) {
+   all that is known about it until its artwork exists.
+
+   The overload lamp is the exception: it records nothing, but it is not inert
+   — it reads the panel. */
+function Decoration({
+  item,
+  values,
+}: {
+  item: DecorationDef
+  values: Readonly<Record<string, ControlValue>>
+}) {
+  if (item.id === 'overloadLamp') return <OverloadLamp values={values} />
   return <div className={styles.slot} data-shape={item.shape} aria-hidden="true" />
 }
 
 function Control({
   item,
   value,
+  values,
   onChange,
   hideHeader,
 }: {
   item: PanelItem
   value: ControlValue
+  /* The whole panel, for the one item that is a reading of it. */
+  values: Readonly<Record<string, ControlValue>>
   onChange: (value: ControlValue) => void
   hideHeader?: boolean
 }) {
-  if (isDecoration(item)) return <Decoration item={item} />
+  if (isDecoration(item)) return <Decoration item={item} values={values} />
   const stored = typeof value === 'string' ? value : ''
 
   if (isWheel(item)) {
@@ -128,6 +142,7 @@ function PanelSection({ registry, section, values, onChange }: SectionProps) {
         key={item.id}
         item={renamed}
         value={values[item.id]}
+        values={values}
         onChange={(next) => onChange(item.id, next)}
         hideHeader={captionDrawn || override === ''}
       />
@@ -138,8 +153,9 @@ function PanelSection({ registry, section, values, onChange }: SectionProps) {
      is told not to — except a wheel, which carries its name underneath. */
   const captionFor = (item: PanelItem): string | undefined => {
     const override = layout?.labels?.[item.id]
-    if (override === '' || isWheel(item)) return undefined
+    if (override === '') return undefined
     if (isDecoration(item)) return item.label
+    if (isWheel(item)) return undefined
     if (isToggleSwitch(item)) return item.headline
     return override ?? item.label
   }

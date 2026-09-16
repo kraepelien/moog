@@ -1,0 +1,22 @@
+/* A lamp behind a lens: dark and plainly there when it is out, burning through
+   the panel when it is lit. The transition time is set on the element, since it
+   is the loudness contour's, not a constant. */
+
+.lamp {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid #fff;
+  background: #3a1a0e;
+  transition-property: opacity, background-color, box-shadow;
+  transition-timing-function: ease-out;
+}
+
+.lamp[data-lit] {
+  background: #ff7a30;
+  /* Two shadows: the glass itself, and the light it throws on the black panel
+     around it. */
+  box-shadow:
+    0 0 6px 1px rgb(255 122 48 / 90%),
+    0 0 18px 6px rgb(255 122 48 / 45%);
+}
