@@ -15,7 +15,7 @@ services:
 
     # Must match whoever owns the share, or the files land unreadable from the
     # NAS. 1026:100 is the Synology account and its `users` group.
-    user: "${MOOG_UID:-1026}:${MOOG_GID:-100}"
+    user: "${MOOG_UID:-1027}:${MOOG_GID:-100}"
 
     environment:
       PORT: 8080

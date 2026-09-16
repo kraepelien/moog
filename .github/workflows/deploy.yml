@@ -63,7 +63,7 @@ jobs:
           # are the Synology account this deploys to; the variables only need
           # setting for a different host.
           build-args: |
-            UID=${{ vars.MOOG_UID || '1026' }}
+            UID=${{ vars.MOOG_UID || '1027' }}
             GID=${{ vars.MOOG_GID || '100' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
