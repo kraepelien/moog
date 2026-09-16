@@ -5,9 +5,32 @@
 
 .panel {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* The sheet prints the sections across the page, so this does not wrap. When the
+   window is narrower than the panel the row scrolls rather than reflowing into
+   an order the instrument does not have. */
+.panelRow {
+  display: flex;
   align-items: stretch;
   gap: 4px;
+  overflow-x: auto;
+}
+
+/* Positions come from the layout map as grid areas named after control ids. */
+.grid {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  align-items: start;
+  flex: 1;
+}
+
+.cell {
+  display: flex;
+  justify-content: center;
 }
 
 .section {

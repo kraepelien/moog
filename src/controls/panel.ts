@@ -108,7 +108,11 @@ function stepKnob(
 }
 
 /* An on/off rocker prints its legend on one side only, which is why the off
-   position carries an empty label rather than the word OFF. */
+   position carries an empty label rather than the word OFF.
+
+   These start on. A patch sheet is a record of a sound that was making noise,
+   so a blank one is a better starting point with everything routed than with
+   every path switched out. */
 function onOff(
   id: string,
   label: string,
@@ -124,7 +128,7 @@ function onOff(
       { id: 'off', label: '' },
       { id: 'on', label: 'ON' },
     ],
-    default: extra.default ?? 'off',
+    default: extra.default ?? 'on',
     ...(extra.group ? { group: extra.group } : {}),
     ...(extra.headline ? { headline: extra.headline } : {}),
   }
@@ -347,7 +351,7 @@ export const items: readonly PanelItem[] = [
 
   // Mixer
   knob0to10('osc1Volume', 'Osc.1 Volume', 'mixer', 0, { group: 'mixOsc1' }),
-  onOff('osc1Enable', 'Osc.1', 'mixer', { group: 'mixOsc1', default: 'on' }),
+  onOff('osc1Enable', 'Osc.1', 'mixer', { group: 'mixOsc1' }),
   knob0to10('osc2Volume', 'Osc.2 Volume', 'mixer', 0, { group: 'mixOsc2' }),
   onOff('osc2Enable', 'Osc.2', 'mixer', { group: 'mixOsc2' }),
   knob0to10('osc3Volume', 'Osc.3 Volume', 'mixer', 0, { group: 'mixOsc3' }),

@@ -11,6 +11,13 @@ import { StepKnob } from './knob/StepKnob.tsx'
 import { TimeKnob } from './knob/TimeKnob.tsx'
 import { ToggleSwitch } from './switch/ToggleSwitch.tsx'
 import { Wheel } from './wheel/Wheel.tsx'
+import {
+  BELOW_PANEL,
+  PANEL_ROW,
+  gridFor,
+  placedIn,
+  templateAreas,
+} from './panelLayout.ts'
 import styles from './Panel.module.css'
 
 /* Two views of the same registry. `Panel` draws the controls that have real
@@ -70,6 +77,73 @@ function Control({
   return <span className={styles.unbuilt}>no component for “{item.id}”</span>
 }
 
+interface SectionProps {
+  registry: Registry
+  section: { id: string; label: string }
+  values: Readonly<Record<string, ControlValue>>
+  onChange: (id: string, value: ControlValue) => void
+}
+
+/* A section with a grid places its controls by id; one without falls back to the
+   grouped rows, so a section nobody has laid out yet still draws. Controls the
+   grid does not mention flow underneath it rather than vanishing — which is what
+   keeps "add a knob, touch no layout" true. */
+function PanelSection({ registry, section, values, onChange }: SectionProps) {
+  const grid = gridFor(section.id)
+  const built = registry.itemsInSection(section.id).filter(isBuilt)
+
+  const draw = (item: PanelItem) => (
+    <Control
+      key={item.id}
+      item={item}
+      value={values[item.id]}
+      onChange={(next) => onChange(item.id, next)}
+    />
+  )
+
+  if (!grid) {
+    return (
+      <section className={styles.section}>
+        <div className={styles.sectionBody}>
+          {registry.runsInSection(section.id).map((run, index) => {
+            const items = run.items.filter(isBuilt)
+            if (items.length === 0) return null
+            return (
+              <div
+                key={run.group?.id ?? `ungrouped-${index}`}
+                className={run.group ? styles.group : styles.run}
+              >
+                {run.group?.label && <h3 className={styles.groupHeader}>{run.group.label}</h3>}
+                <div className={styles.groupRow}>{items.map(draw)}</div>
+              </div>
+            )
+          })}
+        </div>
+        <h2 className={styles.sectionLabel}>{section.label}</h2>
+      </section>
+    )
+  }
+
+  const placed = placedIn(section.id)
+  const loose = built.filter((item) => !placed.has(item.id))
+
+  return (
+    <section className={styles.section}>
+      <div className={styles.grid} style={{ gridTemplateAreas: templateAreas(grid) }}>
+        {built
+          .filter((item) => placed.has(item.id))
+          .map((item) => (
+            <div key={item.id} style={{ gridArea: item.id }} className={styles.cell}>
+              {draw(item)}
+            </div>
+          ))}
+      </div>
+      {loose.length > 0 && <div className={styles.groupRow}>{loose.map(draw)}</div>}
+      <h2 className={styles.sectionLabel}>{section.label}</h2>
+    </section>
+  )
+}
+
 export function Panel({
   registry,
   values,
@@ -79,43 +153,35 @@ export function Panel({
   values: Readonly<Record<string, ControlValue>>
   onChange: (id: string, value: ControlValue) => void
 }) {
-  const sections = registry.sections.filter((section) =>
-    registry.itemsInSection(section.id).some(isBuilt),
-  )
+  const has = (id: string) => registry.itemsInSection(id).some(isBuilt)
+  const byId = new Map(registry.sections.map((section) => [section.id, section]))
 
-  if (sections.length === 0) return <p>Nothing built yet.</p>
+  const row = PANEL_ROW.filter(has)
+  /* Anything the layout does not name still appears, after the ones it does. */
+  const known = new Set([...PANEL_ROW, ...BELOW_PANEL])
+  const rest = registry.sections.filter((s) => !known.has(s.id) && has(s.id)).map((s) => s.id)
+  const below = BELOW_PANEL.filter(has)
+
+  if (row.length + below.length + rest.length === 0) return <p>Nothing built yet.</p>
+
+  const render = (id: string) => {
+    const section = byId.get(id)
+    if (!section) return null
+    return (
+      <PanelSection
+        key={id}
+        registry={registry}
+        section={section}
+        values={values}
+        onChange={onChange}
+      />
+    )
+  }
 
   return (
     <div className={styles.panel}>
-      {sections.map((section) => (
-        <section key={section.id} className={styles.section}>
-          <div className={styles.sectionBody}>
-            {registry.runsInSection(section.id).map((run, index) => {
-              const built = run.items.filter(isBuilt)
-              if (built.length === 0) return null
-              return (
-                <div
-                  key={run.group?.id ?? `ungrouped-${index}`}
-                  className={run.group ? styles.group : styles.run}
-                >
-                  {run.group?.label && <h3 className={styles.groupHeader}>{run.group.label}</h3>}
-                  <div className={styles.groupRow}>
-                    {built.map((item) => (
-                      <Control
-                        key={item.id}
-                        item={item}
-                        value={values[item.id]}
-                        onChange={(next) => onChange(item.id, next)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-          <h2 className={styles.sectionLabel}>{section.label}</h2>
-        </section>
-      ))}
+      <div className={styles.panelRow}>{[...row, ...rest].map(render)}</div>
+      {below.length > 0 && <div className={styles.panelRow}>{below.map(render)}</div>}
     </div>
   )
 }
