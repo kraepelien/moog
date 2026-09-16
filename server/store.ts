@@ -20,6 +20,17 @@ export function isSafeName(name: string): boolean {
   return SAFE_NAME.test(name) && name.length <= 128
 }
 
+export interface Located {
+  readonly uid: string
+  readonly slug: string | null
+  readonly ownerId: number | null
+  readonly ownerUid: string | null
+  readonly ownerName: string | null
+  readonly visibility: string
+  readonly name: string
+  readonly deletedAt: string | null
+}
+
 interface PatchRow {
   uid: string
   slug: string | null
@@ -110,10 +121,12 @@ export function createStore(db: Database) {
   return {
     db,
 
-    listPatches(): Patch[] {
+    listPatches(owner: number): Patch[] {
       return db
-        .query<PatchRow, []>(`${SELECT} and p.slug is null order by p.updated_at desc`)
-        .all()
+        .query<PatchRow, [number]>(
+          `${SELECT} and p.slug is null and p.owner_id = ? order by p.updated_at desc`,
+        )
+        .all(owner)
         .map(toPatch)
     },
 
@@ -126,6 +139,48 @@ export function createStore(db: Database) {
     putPatch(id: string, patch: Patch, owner: number): void {
       if (!isSafeName(id)) throw new Error(`Unsafe patch id: ${id}`)
       write({ ...patch, id }, { owner })
+    },
+
+    /* Everything a route needs to decide whether the viewer may do this, in one
+       question: who owns it, whether it came from the repo, and who may see
+       it. */
+    locate(id: string): Located | null {
+      if (!isSafeName(id)) return null
+      return (
+        db
+          .query<Located, [string, string]>(
+            `select p.uid, p.slug, p.owner_id as ownerId, p.visibility, p.name,
+                    u.uid as ownerUid, u.display_name as ownerName,
+                    p.deleted_at as deletedAt
+               from patches p
+               left join users u on u.id = p.owner_id
+              where p.uid = ? or p.slug = ?`,
+          )
+          .get(id, id) ?? null
+      )
+    },
+
+    /* The only way a patch is created: the server mints the id, so a client
+       cannot choose one that collides or resurrect something it deleted. */
+    createPatch(patch: Patch, owner: number, id: string): Patch {
+      write({ ...patch, id }, { owner })
+      return { ...patch, id }
+    },
+
+    restorePatch(id: string): boolean {
+      if (!isSafeName(id)) return false
+      return db.run(`update patches set deleted_at = null where uid = ?`, [id]).changes > 0
+    },
+
+    /* Everything the viewer may see: their own, anything public, and the bank. */
+    listVisible(viewerId: number | null): Patch[] {
+      return db
+        .query<PatchRow, [number | null]>(
+          `${SELECT} and (p.slug is not null or p.visibility = 'public' or p.owner_id = ?)
+            order by p.updated_at desc`,
+        )
+        .all(viewerId)
+        .map(toPatch)
     },
 
     deletePatch(id: string): void {

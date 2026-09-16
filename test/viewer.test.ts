@@ -93,8 +93,9 @@ describe('the session route', () => {
 describe('a saved patch has an owner', () => {
   test('from the first write', async () => {
     const { db, call } = server()
-    const patch = aPatch('Mine')
-    expect((await call('PUT', `/api/patches/${patch.id}`, patch))!.status).toBe(200)
+    const created = (await call('POST', '/api/patches', aPatch('Mine')))!
+    expect(created.status).toBe(201)
+    const patch = (await created.json()) as Patch
 
     const row = db
       .query<{ owner: string | null }, [string]>(
@@ -106,16 +107,14 @@ describe('a saved patch has an owner', () => {
 
   test('and cannot be saved by nobody', async () => {
     const { call } = server('oauth')
-    const patch = aPatch('Theirs')
-    expect((await call('PUT', `/api/patches/${patch.id}`, patch))!.status).toBe(401)
+    expect((await call('POST', '/api/patches', aPatch('Theirs')))!.status).toBe(401)
   })
 })
 
 describe('a rating belongs to whoever gave it', () => {
   test('and is written without touching the patch', async () => {
     const { db, call, store } = server()
-    const patch = aPatch('Rated')
-    await call('PUT', `/api/patches/${patch.id}`, patch)
+    const patch = (await (await call('POST', '/api/patches', aPatch('Rated')))!.json()) as Patch
     const before = store.getPatch(patch.id)!
 
     expect((await call('PUT', `/api/patches/${patch.id}/rating`, { stars: 4 }))!.status).toBe(200)
@@ -163,8 +162,7 @@ describe('a rating belongs to whoever gave it', () => {
 
   test('anything but a whole number of stars is refused', async () => {
     const { call } = server()
-    const patch = aPatch('Rated')
-    await call('PUT', `/api/patches/${patch.id}`, patch)
+    const patch = (await (await call('POST', '/api/patches', aPatch('Rated')))!.json()) as Patch
 
     for (const stars of [-1, 6, 2.5, 'five', null]) {
       expect((await call('PUT', `/api/patches/${patch.id}/rating`, { stars }))!.status).toBe(400)

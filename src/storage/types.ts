@@ -34,20 +34,17 @@ export class StoreError extends Error {
 export interface PatchStore {
   list(): Promise<readonly PatchSummary[]>
   get(id: string): Promise<Patch | null>
+  /* The server mints the id, so a caller cannot choose one that collides or
+     bring back something it deleted. `from` records what this was copied from. */
+  create(patch: Patch, from?: string): Promise<Patch>
   /* Returns the stored patch rather than void: a server owns updatedAt, and call
      sites must not assume the local copy won. */
   save(patch: Patch): Promise<Patch>
   delete(id: string): Promise<void>
 }
 
-/* Still its own interface, but no longer its own type: a factory preset is a
-   patch kept in the repo rather than saved by anyone. What is different is
-   where it lives and that nobody may write over it, and both of those are the
-   store's business rather than the record's.
-
-   Listed whole because the bank is small and the library shows all of it. */
+/* Read-only: the bank comes from the image, so saving one is always a copy,
+   which is an ordinary patch. Listed whole because it is small. */
 export interface PresetStore {
   listPresets(): Promise<readonly Patch[]>
-  savePreset(preset: Patch): Promise<void>
-  deletePreset(slug: string): Promise<void>
 }

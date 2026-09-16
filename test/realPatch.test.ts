@@ -48,10 +48,10 @@ describe('a patch of every real control survives being saved and reloaded', () =
   test('every value comes back exactly as it went in', async () => {
     const { values, patch } = realPatch()
     const api = testApi()
-    await api.store.save(patch)
+    const stored = await api.store.create(patch)
 
-    /* Read back off disk, which is what a page reload amounts to. */
-    const reloaded = await api.store.get(patch.id)
+    /* Read back from the database, which is what a page reload amounts to. */
+    const reloaded = await api.store.get(stored.id)
     expect(reloaded).not.toBeNull()
     for (const [id, want] of Object.entries(values)) {
       expect([id, reloaded!.values[id]]).toEqual([id, want])

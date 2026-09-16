@@ -76,6 +76,11 @@ export function App() {
   /* What the draft looked like when it was last saved or loaded. Comparing
      against it is what tells the user there is something unsaved. */
   const [clean, setClean] = useState('')
+  /* Whether the server has this draft yet. A new one is created, an existing
+     one written over, and only the server ever mints an id. */
+  const [stored, setStored] = useState(false)
+  /* What the draft was copied from, until it has been saved once. */
+  const [copiedFrom, setCopiedFrom] = useState<string | null>(null)
   /* Where a control the patch does not carry keeps the position it was left in.
      The pitch wheel still moves and still reads out; it just moves nothing the
      file records, so turning it must not mark the draft unsaved either. */
@@ -140,7 +145,7 @@ export function App() {
           setStatus(`Import failed — ${parsed.error}`)
           return
         }
-        for (const patch of parsed.value.patches) await store.save(patch)
+        for (const patch of parsed.value.patches) await store.create(patch)
         await refresh()
         const { patches, rejected } = parsed.value
         setStatus(
@@ -153,17 +158,21 @@ export function App() {
     [refresh, run],
   )
 
-  const adopt = useCallback((patch: Patch, message: string) => {
-    setDraft(patch)
-    setClean(signature(patch))
-    setReport(resolvePatch(panelRegistry, patch).report)
-    setStatus(message)
-  }, [])
+  const adopt = useCallback(
+    (patch: Patch, message: string, options: { stored?: boolean; from?: string | null } = {}) => {
+      setDraft(patch)
+      setClean(signature(patch))
+      setReport(resolvePatch(panelRegistry, patch).report)
+      setStored(options.stored ?? false)
+      setCopiedFrom(options.from ?? null)
+      setStatus(message)
+    },
+    [],
+  )
 
   if (!draft) return <Typography sx={{ p: 2 }}>Loading…</Typography>
 
   const resolved = resolvePatch(panelRegistry, draft)
-  const currentValues = mergeValues(panelRegistry, draft, resolved.values)
 
   const menu: TopBarAction[] = [
     { label: 'Import a file…', onSelect: () => importing.current?.click() },
@@ -235,10 +244,13 @@ export function App() {
                 disabled={!dirty}
                 onClick={() =>
                   void run('Saved', async () => {
-                    const stamped = { ...draft, updatedAt: new Date().toISOString() }
-                    await store.save(stamped)
-                    setDraft(stamped)
-                    setClean(signature(stamped))
+                    const saved = stored
+                      ? await store.save({ ...draft, updatedAt: new Date().toISOString() })
+                      : await store.create(draft, copiedFrom ?? undefined)
+                    setDraft(saved)
+                    setClean(signature(saved))
+                    setStored(true)
+                    setCopiedFrom(null)
                     await refresh()
                   })
                 }
@@ -268,6 +280,22 @@ export function App() {
               </Button>
               <Button
                 variant="outlined"
+                disabled={!stored}
+                onClick={() =>
+                  void run('Saved as a copy', async () => {
+                    const copy = await store.create(
+                      { ...draft, name: `${draft.name} copy` },
+                      draft.id,
+                    )
+                    adopt(copy, `Saved as “${copy.name}”`, { stored: true })
+                    await refresh()
+                  })
+                }
+              >
+                Save as
+              </Button>
+              <Button
+                variant="outlined"
                 onClick={() =>
                   downloadJson(
                     `${slugify(draft.name) || 'patch'}.moogpatch.json`,
@@ -276,38 +304,6 @@ export function App() {
                 }
               >
                 Export this patch
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={() =>
-                  void run('Saved as a preset', async () => {
-                    const slug = slugify(draft.name)
-                    if (!slug) {
-                      setStatus('Name the patch before saving it as a preset')
-                      throw new Cancelled()
-                    }
-                    if (
-                      presets.some((preset) => preset.id === slug) &&
-                      !(await ask({
-                        title: `Replace the preset “${slug}”?`,
-                        body: 'A preset of that name already exists. Its values are replaced by what is on the panel.',
-                        confirm: 'Replace',
-                      }))
-                    ) {
-                      throw new Cancelled()
-                    }
-                    await store.savePreset({
-                      ...draft,
-                      id: slug,
-                      values: currentValues,
-                      visibility: 'public',
-                      updatedAt: new Date().toISOString(),
-                    })
-                    await refresh()
-                  })
-                }
-              >
-                Save as preset
               </Button>
             </Stack>
           </Stack>
@@ -339,66 +335,22 @@ export function App() {
                 <Stack direction="row" spacing={1}>
                     <Button
                       size="small"
-                      onClick={() => adopt(copyOf(preset, { owner: null }), `Loaded “${preset.name}”`)}
+                      onClick={() =>
+                        adopt(copyOf(preset, { owner: null }), `Loaded “${preset.name}”`, {
+                          from: preset.id,
+                        })
+                      }
                     >
                       Load
-                    </Button>
-                    <Button
-                      size="small"
-                      onClick={() =>
-                        void run(`Overwrote “${preset.name}”`, async () => {
-                          if (
-                            !(await ask({
-                              title: `Overwrite “${preset.name}”?`,
-                              body: 'The preset takes the values on the panel.',
-                              confirm: 'Overwrite',
-                            }))
-                          ) {
-                            throw new Cancelled()
-                          }
-                          await store.savePreset({
-                            ...draft,
-                            id: preset.id,
-                            values: currentValues,
-                            visibility: 'public',
-                            updatedAt: new Date().toISOString(),
-                          })
-                          await refresh()
-                        })
-                      }
-                    >
-                      Overwrite
-                    </Button>
-                    <Button
-                      size="small"
-                      color="error"
-                      onClick={() =>
-                        void run(`Deleted “${preset.name}”`, async () => {
-                          if (
-                            !(await ask({
-                              title: `Delete “${preset.name}”?`,
-                              body: 'This removes one file from the active presets folder. The copy kept in the repo is untouched.',
-                              confirm: 'Delete',
-                              destructive: true,
-                            }))
-                          ) {
-                            throw new Cancelled()
-                          }
-                          await store.deletePreset(preset.id)
-                          await refresh()
-                        })
-                      }
-                    >
-                      Delete
                     </Button>
                   </Stack>
               </ListItem>
             ))}
           </List>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-            Presets are files in the active folder. Loading one starts a new patch; overwriting and
-            deleting change the file. Values marked approximate are a reconstruction, not settings
-            read off the instrument.
+            The factory bank ships with the app and is never written over. Loading one starts a copy
+            that is yours. Values marked approximate are a reconstruction, not settings read off the
+            instrument.
           </Typography>
         </Section>
 
@@ -416,7 +368,7 @@ export function App() {
                       onClick={() =>
                         void run('', async () => {
                           const patch = await store.get(summary.id)
-                          if (patch) adopt(patch, `Loaded “${patch.name}”`)
+                          if (patch) adopt(patch, `Loaded “${patch.name}”`, { stored: true })
                         })
                       }
                     >
