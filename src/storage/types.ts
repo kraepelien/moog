@@ -1,4 +1,5 @@
 import type { Patch } from '../patch/schema.ts'
+import type { PresetOverride } from '../presets/overrides.ts'
 
 export interface PatchSummary {
   readonly id: string
@@ -32,6 +33,16 @@ export interface PatchStore {
      sites must not assume the local copy won. */
   save(patch: Patch): Promise<Patch>
   delete(id: string): Promise<void>
+}
+
+/* Separate again, because a preset override is not a patch: it is keyed by the
+   slug of the shipped preset it shadows, there is at most one per slug, and it
+   is deleted rather than edited when the shipped version is wanted back. */
+export interface PresetOverrideStore {
+  listOverrides(): Promise<readonly PresetOverride[]>
+  saveOverride(override: PresetOverride): Promise<void>
+  /* Reverts to whatever shipped, which is always still there. */
+  clearOverride(slug: string): Promise<void>
 }
 
 /* Separate from PatchStore because the working draft has a different lifecycle:

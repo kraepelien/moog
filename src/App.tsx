@@ -5,13 +5,24 @@ import { isPlaceholder } from './controls/placeholder.ts'
 import { mergeValues, resolvePatch, reportHasWarnings, type ResolveReport } from './patch/resolve.ts'
 import { createPatch, type Patch } from './patch/schema.ts'
 import { draftFromPreset, factoryPresets } from './presets/factory.ts'
+import { effectivePresets, type PresetOverride } from './presets/overrides.ts'
 import { createWebStorageStore, resolveBrowserStorage } from './storage/webStorage.ts'
-import type { DraftStore, PatchStore, PatchSummary } from './storage/types.ts'
+import type {
+  DraftStore,
+  PatchStore,
+  PatchSummary,
+  PresetOverrideStore,
+} from './storage/types.ts'
 import { StoreError } from './storage/types.ts'
 import { createBundle, parseBundle, serializeBundle } from './transfer/bundle.ts'
 
 const { storage, persistent } = resolveBrowserStorage()
-const store: PatchStore & DraftStore = createWebStorageStore(storage)
+const store: PatchStore & DraftStore & PresetOverrideStore = createWebStorageStore(storage)
+
+/* Thrown when a confirmation is declined. It unwinds the action the same way an
+   error does, but says nothing: declining is not a failure and reporting it as
+   one would be noise. */
+class Cancelled extends Error {}
 
 function downloadJson(filename: string, text: string): void {
   const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }))
@@ -32,10 +43,12 @@ export function App() {
   const [saved, setSaved] = useState<readonly PatchSummary[]>([])
   const [status, setStatus] = useState('')
   const [report, setReport] = useState<ResolveReport | null>(null)
+  const [overrides, setOverrides] = useState<readonly PresetOverride[]>([])
   const loadedOnce = useRef(false)
 
   const refreshList = useCallback(async () => {
     setSaved(await store.list())
+    setOverrides(await store.listOverrides())
   }, [])
 
   useEffect(() => {
@@ -61,6 +74,7 @@ export function App() {
       await action()
       setStatus(message)
     } catch (error) {
+      if (error instanceof Cancelled) return
       setStatus(
         error instanceof StoreError ? `${error.kind}: ${error.message}` : `Failed: ${String(error)}`,
       )
@@ -78,6 +92,8 @@ export function App() {
 
   const resolved = resolvePatch(panelRegistry, draft)
   const built = panelRegistry.controls.filter((def) => !isPlaceholder(def)).length
+  const presets = effectivePresets(factoryPresets, overrides)
+  const hidden = overrides.filter((o) => o.deleted).map((o) => o.slug)
 
   return (
     <main>
@@ -164,16 +180,88 @@ export function App() {
       <section>
         <h2>Factory presets</h2>
         <ul>
-          {factoryPresets.map((preset) => (
+          {presets.map((preset) => (
             <li key={preset.slug}>
               {preset.name}
-              {preset.approximate && <small> · approximate</small>}{' '}
+              {preset.approximate && <small> · approximate</small>}
+              {preset.overridden && <small> · edited</small>}{' '}
               <button onClick={() => adopt(draftFromPreset(preset), `Loaded preset "${preset.name}"`)}>
                 Load
-              </button>
+              </button>{' '}
+              <button
+                onClick={() =>
+                  void run(`Overwrote "${preset.name}"`, async () => {
+                    if (
+                      !confirm(
+                        `Overwrite the preset "${preset.name}" with the values on the panel?\n\nThe version that shipped is kept, so this can be undone.`,
+                      )
+                    ) {
+                      throw new Cancelled()
+                    }
+                    await store.saveOverride({
+                      slug: preset.slug,
+                      name: draft.name || preset.name,
+                      notes: draft.notes,
+                      values: mergeValues(draft, resolved.values),
+                      updatedAt: new Date().toISOString(),
+                    })
+                    await refreshList()
+                  })
+                }
+              >
+                Overwrite
+              </button>{' '}
+              <button
+                onClick={() =>
+                  void run(`Deleted "${preset.name}"`, async () => {
+                    if (
+                      !confirm(
+                        `Delete the preset "${preset.name}"?\n\nThe version that shipped is kept, so this can be undone.`,
+                      )
+                    ) {
+                      throw new Cancelled()
+                    }
+                    await store.saveOverride({
+                      slug: preset.slug,
+                      deleted: true,
+                      updatedAt: new Date().toISOString(),
+                    })
+                    await refreshList()
+                  })
+                }
+              >
+                Delete
+              </button>{' '}
+              {preset.overridden && (
+                <button
+                  onClick={() =>
+                    void run(`Reverted "${preset.name}"`, async () => {
+                      await store.clearOverride(preset.slug)
+                      await refreshList()
+                    })
+                  }
+                >
+                  Revert
+                </button>
+              )}
             </li>
           ))}
         </ul>
+        {hidden.length > 0 && (
+          <p>
+            <small>{hidden.length} deleted. </small>
+            <button
+              onClick={() =>
+                void run('Restored every deleted preset', async () => {
+                  for (const slug of hidden) await store.clearOverride(slug)
+                  await refreshList()
+                })
+              }
+            >
+              Restore them
+            </button>
+          </p>
+        )}
         <p>
           <small>
             Presets are read only. Loading one starts a new unsaved patch, so saving keeps a copy
