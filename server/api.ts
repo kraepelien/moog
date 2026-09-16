@@ -1,6 +1,6 @@
 import type { Database } from 'bun:sqlite'
 import { systemIdentity } from '../src/patch/schema.ts'
-import { authConfigFromEnv, isAdmin, whoAmI, type AuthConfig } from './identity.ts'
+import { authConfigFromEnv, isAdmin, originOf, whoAmI, type AuthConfig } from './identity.ts'
 import { buildLibrary } from './library.ts'
 import { callerKey, createRateLimiter, limitsFromEnv, type Limits } from './limits.ts'
 import { handleAuth } from './routes/auth.ts'
@@ -37,7 +37,7 @@ function notFound(): Response {
 function fromElsewhere(request: Request, config: AuthConfig): boolean {
   const origin = request.headers.get('origin')
   if (origin === null) return false
-  if (config.publicOrigin && origin === config.publicOrigin) return false
+  if (origin === originOf(config, request)) return false
   return origin !== new URL(request.url).origin
 }
 
