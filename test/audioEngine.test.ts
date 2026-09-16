@@ -21,6 +21,17 @@ const start = (overrides: Record<string, ControlValue> = {}) => {
   synth.noteOn(20)
 }
 
+/* The three voices, picked out by the fact that the panel's reading is written
+   onto their detune. The wanders, the tuning tone and the LFO are never told
+   anything about the panel, so nothing else qualifies, and no test has to know
+   what order the graph was built in. */
+const voices = () =>
+  context
+    .of('oscillator')
+    .filter((node) => (node as unknown as { detune: FakeParam }).detune.calls.length > 0)
+
+const rateOf = (node: unknown) => (node as { frequency: FakeParam }).frequency.value
+
 /* The gain the loudness contour gates, which is the node between the filters
    and the master. */
 const vcaGain = (): FakeParam => {
@@ -58,10 +69,10 @@ describe('opening the instrument', () => {
       synth.noteOn(key % 44)
       synth.noteOff(key % 44)
     }
-    /* Three voices, the tuning tone and the LFO are the whole census: an
-       oscillator cannot be restarted once stopped, so one per note would be a
-       leak that eventually throws. */
-    expect(context.of('oscillator')).toHaveLength(5)
+    /* Three voices, a slow wander apiece, the tuning tone and the LFO are the
+       whole census: an oscillator cannot be restarted once stopped, so one per
+       note would be a leak that eventually throws. */
+    expect(context.of('oscillator')).toHaveLength(8)
   })
 
   test('starts every source exactly once', () => {
@@ -76,6 +87,35 @@ describe('opening the instrument', () => {
     context.state = 'suspended'
     synth.noteOn(21)
     expect(context.resumed).toBe(1)
+  })
+})
+
+describe('three oscillators set the same way', () => {
+  /* Identical oscillators are not a quiet instrument, they are a wrong one:
+     summed dead in phase they give one louder oscillator where three real ones
+     give a thick one. */
+  test('are not in exact tune with each other', () => {
+    start({ osc1Volume: 10, osc2Volume: 10, osc3Volume: 10 })
+    const detunes = voices().map((node) => (node as unknown as { detune: FakeParam }).detune.value)
+    expect(detunes).toHaveLength(3)
+    expect(new Set(detunes).size).toBe(3)
+  })
+
+  test('leave Oscillator-1 where the panel put it, since it is the reference', () => {
+    start()
+    /* It carries no frequency knob because the other two are tuned against it,
+       so it is the one that is right by definition. */
+    const first = voices()[0]! as unknown as { detune: FakeParam }
+    expect(first.detune.value).toBe(0)
+  })
+
+  test('each wander at their own rate, so the three never move as one', () => {
+    /* The LFO is sent to the top of its range so that the only oscillators left
+       running below a hertz are the wanders. */
+    start({ lfoRate: 10 })
+    const slow = context.of('oscillator').map(rateOf).filter((rate) => rate > 0 && rate < 1)
+    expect(slow).toHaveLength(3)
+    expect(new Set(slow).size).toBe(3)
   })
 })
 

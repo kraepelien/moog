@@ -47,6 +47,17 @@ export type OpenContext = () => BaseAudioContext
 
 const SMOOTHING = cal.smoothingMs / 1000
 
+/* Oscillator-1 carries no frequency knob on the panel because it is what the
+   other two are tuned against, so it is the one that is right by definition and
+   they are the ones somebody set by hand. Kept here rather than in the panel's
+   reading, which says what the panel says: being slightly out is a property of
+   the instrument, not of the patch. */
+const TUNING_ERROR = [0, cal.tuningSpreadCents, -cal.tuningSpreadCents]
+
+/* No two wander at the same rate, and none is a multiple of another, so the
+   three never line up into one motion. */
+const DRIFT_PERIODS = [1, 1.31, 1.73]
+
 /* Two seconds is long enough that the loop is not heard as a pitch. */
 const NOISE_SECONDS = 2
 
@@ -167,6 +178,7 @@ export function createSynth(open: OpenContext = () => new AudioContext()): Synth
     const oscillators: OscillatorNode[] = []
     const oscGains: GainNode[] = []
     const tracking: GainNode[] = []
+    const wanders: OscillatorNode[] = []
     for (let i = 0; i < 3; i += 1) {
       const oscillator = context.createOscillator()
       /* The bottom key at 8'. Everything else about this oscillator's pitch is
@@ -177,6 +189,20 @@ export function createSynth(open: OpenContext = () => new AudioContext()): Synth
       keyboard.connect(track)
       track.connect(oscillator.detune)
       bend.connect(oscillator.detune)
+      /* An oscillator that never wavers is not a quiet one, it is a wrong one:
+         three of them summing dead in phase give one louder oscillator where
+         the instrument gives a thick one. A slow cycle rather than a true
+         random walk, which reads as the same unsteadiness for one node instead
+         of a worklet, and one per oscillator because a shared source would move
+         all three together and leave them as locked as they began. */
+      const wander = context.createOscillator()
+      wander.type = 'sine'
+      wander.frequency.value = 1 / (cal.driftSeconds * DRIFT_PERIODS[i]!)
+      const depth = context.createGain()
+      depth.gain.value = cal.driftCents
+      wander.connect(depth)
+      depth.connect(oscillator.detune)
+
       const gain = context.createGain()
       gain.gain.value = 0
       oscillator.connect(gain)
@@ -184,6 +210,7 @@ export function createSynth(open: OpenContext = () => new AudioContext()): Synth
       oscillators.push(oscillator)
       oscGains.push(gain)
       tracking.push(track)
+      wanders.push(wander)
     }
 
     const noiseGain = context.createGain()
@@ -252,7 +279,17 @@ export function createSynth(open: OpenContext = () => new AudioContext()): Synth
       lfo: gate(lfo, modB, false),
     }
 
-    for (const node of [keyboard, bend, contour, ...oscillators, white, pink, tone, lfo]) {
+    for (const node of [
+      keyboard,
+      bend,
+      contour,
+      ...oscillators,
+      ...wanders,
+      white,
+      pink,
+      tone,
+      lfo,
+    ]) {
       node.start()
     }
 
@@ -308,7 +345,7 @@ export function createSynth(open: OpenContext = () => new AudioContext()): Synth
         live.oscillators[index]!.setPeriodicWave(waveFor(live, oscillator.wave))
       }
       if (!before || before.detuneCents !== oscillator.detuneCents) {
-        ease(live.oscillators[index]!.detune, oscillator.detuneCents, now)
+        ease(live.oscillators[index]!.detune, oscillator.detuneCents + TUNING_ERROR[index]!, now)
       }
       if (!before || before.level !== oscillator.level) {
         ease(live.oscGains[index]!.gain, oscillator.level, now)

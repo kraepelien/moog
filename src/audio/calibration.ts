@@ -67,6 +67,28 @@ const table = {
     why: 'The frequency knobs print integers to 7 and travel to 8, so a unit is a musical step and the printed numerals are stops; a fifth either way is what that makes the knob worth. Nothing in reference/ states an interval.',
   },
 
+  /* Nothing on the instrument is exactly anything. Both of these are ours: the
+     panel says nothing about how far out of tune an oscillator sits, which is
+     unsurprising, since an instrument that knew would have corrected it. */
+  tuningSpreadCents: {
+    value: 3,
+    unit: 'cents',
+    source: 'derived',
+    why: 'How far Oscillator-2 and Oscillator-3 sit from Oscillator-1, which has no frequency knob and is therefore what they are tuned against. Enough to thicken three oscillators stacked, too little to hear as out of tune on its own.',
+  },
+  driftCents: {
+    value: 2.5,
+    unit: 'cents',
+    source: 'derived',
+    why: 'How far an oscillator wanders as it warms. The reason the panel carries a Tune knob and an A-440 reference to set it against, and the reason two oscillators beat instead of standing still.',
+  },
+  driftSeconds: {
+    value: 17,
+    unit: 'seconds',
+    source: 'derived',
+    why: 'How long one oscillator takes to wander out and back. Slow enough to be heard as unsteadiness rather than as vibrato, which is what the LFO is for.',
+  },
+
   cutoffAtZero: {
     value: 440,
     unit: 'Hz',

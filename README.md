@@ -278,6 +278,12 @@ cents, and glide is one ramp on the one node every oscillator reads, which is wh
 single keyboard voltage is. Nothing is built per note: oscillators cannot be restarted, so they run
 for the life of the context and the contours gate them.
 
+Three oscillators that agreed exactly would be a wrong model rather than a quiet one: summed dead
+in phase they give one louder oscillator where three real ones give a thick one. So Oscillator-2 and
+Oscillator-3 sit a few cents off Oscillator-1, which has no frequency knob precisely because it is
+what they are tuned against, and all three wander slowly. Both numbers are `derived`, and both are
+why the panel's A-440 switch has something to be a reference *for*.
+
 ### What is not modelled
 
 - **The filter is two cascaded biquads, not a ladder.** Four poles and resonance, but it will not

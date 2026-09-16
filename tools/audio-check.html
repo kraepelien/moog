@@ -89,6 +89,25 @@
         const tone = await render({ ...loud, osc1Volume: 0, a440: 'on' }, 40)
         out.a440Switch = { rms: +rms(tone).toFixed(4), hz: +hz(tone).toFixed(1) }
 
+        /* Two oscillators set identically. Real ones are never quite in tune
+           with each other, and what that sounds like is beating: the sum rises
+           and falls as they drift in and out of phase. Identical oscillators
+           hold one level for ever, so the spread across these windows is the
+           whole measurement. */
+        const stacked = await render(
+          { ...loud, osc1Volume: 10, osc2Volume: 10, loudnessSustainLevel: 10 },
+          40,
+          3,
+        )
+        const windows = []
+        for (let at = 0.25; at < 2.75; at += 0.25) {
+          windows.push(+rms(stacked.slice(Math.floor(RATE * at), Math.floor(RATE * (at + 0.25)))).toFixed(4))
+        }
+        out.twoOscillators = {
+          windows,
+          spread: +(Math.max(...windows) - Math.min(...windows)).toFixed(4),
+        }
+
         /* A slow deep vibrato: the pitch measured early in the cycle should not
            be the pitch measured later, and with the wheel down it should not
            move at all. */
