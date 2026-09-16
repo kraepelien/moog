@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Accordion from '@mui/material/Accordion'
 import AccordionDetails from '@mui/material/AccordionDetails'
 import AccordionSummary from '@mui/material/AccordionSummary'
@@ -6,10 +6,6 @@ import Alert from '@mui/material/Alert'
 import AlertTitle from '@mui/material/AlertTitle'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import Chip from '@mui/material/Chip'
-import List from '@mui/material/List'
-import ListItem from '@mui/material/ListItem'
-import ListItemText from '@mui/material/ListItemText'
 import Paper from '@mui/material/Paper'
 import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
@@ -17,6 +13,13 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { FitToWidth } from './components/FitToWidth.tsx'
 import { TopBar, type TopBarAction } from './components/TopBar.tsx'
+import { PatchLibrary } from './components/library/PatchLibrary.tsx'
+import { PatchHeader } from './components/library/PatchHeader.tsx'
+import {
+  entryFromPreset,
+  entryFromSummary,
+  type LibraryEntry,
+} from './components/library/entry.ts'
 import { Panel, PanelChecklist } from './components/Panel.tsx'
 import { useConfirm } from './components/useConfirm.tsx'
 import { panelRegistry } from './controls/panel.ts'
@@ -170,6 +173,44 @@ export function App() {
     [],
   )
 
+  /* Presets arrive whole and saved patches arrive as summaries, so the two are
+     flattened into one list here rather than in the view: what the library shows
+     is one shelf, and which store a line came from is a chip on it. */
+  const libraryEntries: readonly LibraryEntry[] = useMemo(
+    () => [...presets.map(entryFromPreset), ...saved.map(entryFromSummary)],
+    [presets, saved],
+  )
+
+  /* A preset is already in hand; a saved patch has to be fetched, because its
+     summary carries no values. */
+  const fetchEntry = useCallback(
+    async (entry: LibraryEntry): Promise<Patch | null> =>
+      entry.origin === 'factory'
+        ? (presets.find((preset) => preset.id === entry.id) ?? null)
+        : await store.get(entry.id),
+    [presets],
+  )
+
+  /* Opening is the row's whole job, so it loads and moves to the editor in one
+     go rather than loading in place and leaving you on the list. A preset opens
+     as a copy, because saving afterwards must not write back over it; a patch of
+     your own opens as itself, so saving updates the one you picked. */
+  const openEntry = useCallback(
+    (entry: LibraryEntry) =>
+      void run('', async () => {
+        const patch = await fetchEntry(entry)
+        if (!patch) return
+        const factory = entry.origin === 'factory'
+        adopt(
+          factory ? copyOf(patch, { owner: null }) : patch,
+          `Opened “${patch.name}”`,
+          factory ? { from: entry.id } : { stored: true },
+        )
+        goToView('editor')
+      }),
+    [adopt, fetchEntry, goToView, run],
+  )
+
   if (!draft) return <Typography sx={{ p: 2 }}>Loading…</Typography>
 
   const resolved = resolvePatch(panelRegistry, draft)
@@ -201,8 +242,90 @@ export function App() {
 
         {view === 'editor' && (
           <>
-        {/* No card and no heading: the panel is the instrument's own face, and
-            it names its own sections along the bottom the way the panel does. */}
+        {/* The panel does not name what it is showing, so the patch says so above
+            it: the same bar the library's rows are drawn from. */}
+        <Paper variant="outlined" sx={{ borderRadius: '10px' }}>
+          <PatchHeader
+            name={draft.name}
+            tags={draft.tags}
+            instrument={draft.instrument}
+            origin={null}
+            approximate={draft.approximate}
+            rating={null}
+            actions={[
+              {
+                label: 'Save',
+                tone: 'green',
+                disabled: !dirty,
+                onSelect: () =>
+                  void run('Saved', async () => {
+                    /* Only the server mints an id, so a draft it has never seen
+                       is created rather than written over — which is what makes
+                       saving a loaded preset impossible to do over the top. */
+                    const kept = stored
+                      ? await store.save({ ...draft, updatedAt: new Date().toISOString() })
+                      : await store.create(draft, copiedFrom ?? undefined)
+                    setDraft(kept)
+                    setClean(signature(kept))
+                    setStored(true)
+                    setCopiedFrom(null)
+                    await refresh()
+                  }),
+              },
+              {
+                label: 'Save as',
+                tone: 'green',
+                /* There is nothing to branch from until the draft is somewhere. */
+                disabled: !stored,
+                onSelect: () =>
+                  void run('', async () => {
+                    const copy = await store.create(
+                      { ...draft, name: `${draft.name} copy` },
+                      draft.id,
+                    )
+                    adopt(copy, `Saved as “${copy.name}”`, { stored: true })
+                    await refresh()
+                  }),
+              },
+              {
+                label: 'Delete',
+                tone: 'pink',
+                /* Only a draft the server has is there to delete. */
+                disabled: !stored,
+                onSelect: () =>
+                  void run(`Deleted “${draft.name}”`, async () => {
+                    if (
+                      !(await ask({
+                        title: `Delete “${draft.name || '(unnamed)'}”?`,
+                        confirm: 'Delete',
+                        destructive: true,
+                      }))
+                    ) {
+                      throw new Cancelled()
+                    }
+                    await store.delete(draft.id)
+                    await refresh()
+                  }),
+              },
+              {
+                label: 'Export',
+                tone: 'blue',
+                onSelect: () =>
+                  void run(`Exported “${draft.name}”`, async () => {
+                    /* The draft as it stands, not the panel's resolved values: a
+                       control the patch does not carry falls through to the
+                       registry default, and writing that default into the file
+                       turns an honest omission into a stored setting. */
+                    downloadJson(
+                      `${slugify(draft.name) || 'patch'}.moogpatch.json`,
+                      serializeBundle(createBundle([draft])),
+                    )
+                  }),
+              },
+            ]}
+          />
+        </Paper>
+
         <FitToWidth>
           <Panel
             registry={panelRegistry}
@@ -240,24 +363,6 @@ export function App() {
             />
             <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
               <Button
-                variant="contained"
-                disabled={!dirty}
-                onClick={() =>
-                  void run('Saved', async () => {
-                    const saved = stored
-                      ? await store.save({ ...draft, updatedAt: new Date().toISOString() })
-                      : await store.create(draft, copiedFrom ?? undefined)
-                    setDraft(saved)
-                    setClean(signature(saved))
-                    setStored(true)
-                    setCopiedFrom(null)
-                    await refresh()
-                  })
-                }
-              >
-                Save
-              </Button>
-              <Button
                 variant="outlined"
                 onClick={() =>
                   void run('', async () => {
@@ -278,33 +383,6 @@ export function App() {
               >
                 New
               </Button>
-              <Button
-                variant="outlined"
-                disabled={!stored}
-                onClick={() =>
-                  void run('Saved as a copy', async () => {
-                    const copy = await store.create(
-                      { ...draft, name: `${draft.name} copy` },
-                      draft.id,
-                    )
-                    adopt(copy, `Saved as “${copy.name}”`, { stored: true })
-                    await refresh()
-                  })
-                }
-              >
-                Save as
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={() =>
-                  downloadJson(
-                    `${slugify(draft.name) || 'patch'}.moogpatch.json`,
-                    serializeBundle(createBundle([draft])),
-                  )
-                }
-              >
-                Export this patch
-              </Button>
             </Stack>
           </Stack>
         </Section>
@@ -313,94 +391,7 @@ export function App() {
         )}
 
         {view === 'library' && (
-          <>
-        <Section title={`Presets (${presets.length})`}>
-          <List dense disablePadding>
-            {presets.map((preset) => (
-              <ListItem key={preset.id} divider disableGutters>
-                <ListItemText
-                  primary={
-                    <Box
-                      component="span"
-                      sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}
-                    >
-                      {preset.name}
-                      {preset.approximate && (
-                        <Chip label="approximate" size="small" variant="outlined" />
-                      )}
-                    </Box>
-                  }
-                  secondary={preset.id}
-                />
-                <Stack direction="row" spacing={1}>
-                    <Button
-                      size="small"
-                      onClick={() =>
-                        adopt(copyOf(preset, { owner: null }), `Loaded “${preset.name}”`, {
-                          from: preset.id,
-                        })
-                      }
-                    >
-                      Load
-                    </Button>
-                  </Stack>
-              </ListItem>
-            ))}
-          </List>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-            The factory bank ships with the app and is never written over. Loading one starts a copy
-            that is yours. Values marked approximate are a reconstruction, not settings read off the
-            instrument.
-          </Typography>
-        </Section>
-
-        <Section title={`Saved patches (${saved.length})`}>
-          <List dense disablePadding>
-            {saved.map((summary) => (
-              <ListItem key={summary.id} divider disableGutters>
-                <ListItemText
-                  primary={summary.name || '(unnamed)'}
-                  secondary={summary.updatedAt}
-                />
-                <Stack direction="row" spacing={1}>
-                    <Button
-                      size="small"
-                      onClick={() =>
-                        void run('', async () => {
-                          const patch = await store.get(summary.id)
-                          if (patch) adopt(patch, `Loaded “${patch.name}”`, { stored: true })
-                        })
-                      }
-                    >
-                      Load
-                    </Button>
-                    <Button
-                      size="small"
-                      color="error"
-                      onClick={() =>
-                        void run(`Deleted “${summary.name}”`, async () => {
-                          if (
-                            !(await ask({
-                              title: `Delete “${summary.name || '(unnamed)'}”?`,
-                              confirm: 'Delete',
-                              destructive: true,
-                            }))
-                          ) {
-                            throw new Cancelled()
-                          }
-                          await store.delete(summary.id)
-                          await refresh()
-                        })
-                      }
-                    >
-                      Delete
-                    </Button>
-                  </Stack>
-              </ListItem>
-            ))}
-          </List>
-        </Section>
-          </>
+          <PatchLibrary entries={libraryEntries} onOpen={openEntry} />
         )}
 
         {view === 'editor' && report && reportHasWarnings(report) && (
