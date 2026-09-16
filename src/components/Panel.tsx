@@ -1,8 +1,10 @@
 import { isPlaceholder } from '../controls/placeholder.ts'
 import type { Registry } from '../controls/registry.ts'
+import { isContinuousKnob } from '../controls/continuousKnob.ts'
 import { isStepKnob } from '../controls/stepKnob.ts'
 import { isToggleSwitch } from '../controls/toggleSwitch.ts'
 import { isDecoration, type ControlValue, type PanelItem } from '../controls/types.ts'
+import { ContinuousKnob } from './knob/ContinuousKnob.tsx'
 import { StepKnob } from './knob/StepKnob.tsx'
 import { ToggleSwitch } from './switch/ToggleSwitch.tsx'
 import styles from './Panel.module.css'
@@ -28,6 +30,15 @@ function Control({
   if (isDecoration(item)) return null
   const stored = typeof value === 'string' ? value : ''
 
+  if (isContinuousKnob(item)) {
+    return (
+      <ContinuousKnob
+        def={item}
+        value={typeof value === 'number' ? value : item.default}
+        onChange={onChange}
+      />
+    )
+  }
   if (isStepKnob(item)) {
     return <StepKnob def={item} value={stored} onChange={onChange} />
   }

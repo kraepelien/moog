@@ -1,0 +1,60 @@
+/* White-on-black line art, so the knob carries its own ink rather than inheriting
+   the page's. The rest is sizing, hit area and focus. */
+
+.knob {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.header {
+  font-size: 0.7rem;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dial {
+  width: 116px;
+  height: 116px;
+  touch-action: none;
+  cursor: ns-resize;
+  background: #000;
+}
+
+.dial:focus-visible {
+  outline: 2px solid;
+  outline-offset: 2px;
+}
+
+.tick,
+.tickMajor {
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+.scaleText {
+  fill: #fff;
+  font-size: 10px;
+}
+
+.body {
+  fill: #fff;
+  stroke: #000;
+  stroke-width: 4;
+}
+
+.cap,
+.indicator {
+  fill: #000;
+}
+
+.capText {
+  fill: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  pointer-events: none;
+}

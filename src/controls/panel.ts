@@ -1,5 +1,6 @@
 import { placeholderType, type PlaceholderDef } from './placeholder.ts'
 import { createRegistry } from './registry.ts'
+import { continuousKnobType, type ContinuousKnobDef } from './continuousKnob.ts'
 import { stepKnobType, type StepKnobDef, type StepPosition } from './stepKnob.ts'
 import { toggleSwitchType, type ToggleSwitchDef } from './toggleSwitch.ts'
 import type { ControlType, DecorationDef, GroupDef, PanelItem, SectionDef } from './types.ts'
@@ -19,6 +20,7 @@ export const controlTypes: readonly ControlType<never, never>[] = [
   placeholderType as unknown as ControlType<never, never>,
   stepKnobType as unknown as ControlType<never, never>,
   toggleSwitchType as unknown as ControlType<never, never>,
+  continuousKnobType as unknown as ControlType<never, never>,
 ]
 
 /* The six rotary-selector positions, counter-clockwise end first, matching the
@@ -146,6 +148,56 @@ function chooser(
   }
 }
 
+/* The 0-10 knobs: one tick per unit, a numeral every other tick, settable in
+   tenths. */
+function knob0to10(
+  id: string,
+  label: string,
+  section: string,
+  defaultValue: number,
+  extra: { group?: string; size?: 'small' | 'large' } = {},
+): ContinuousKnobDef {
+  return {
+    id,
+    type: 'continuousKnob',
+    label,
+    section,
+    min: 0,
+    max: 10,
+    default: defaultValue,
+    step: 0.1,
+    scale: { tickStep: 1, labelStep: 2 },
+    ...extra,
+  }
+}
+
+/* The symmetric knobs, where 0 sits at the top of the sweep. On every one of
+   these the silkscreen stops short of where the knob actually travels, so the
+   printed scale is given separately from the range. */
+function knobSymmetric(
+  id: string,
+  label: string,
+  section: string,
+  range: number,
+  printed: number,
+  scale: { tickStep: number; labelStep: number },
+  extra: { group?: string; size?: 'small' | 'large'; step?: number } = {},
+): ContinuousKnobDef {
+  const { step = 0.1, ...rest } = extra
+  return {
+    id,
+    type: 'continuousKnob',
+    label,
+    section,
+    min: -range,
+    max: range,
+    default: 0,
+    step,
+    scale: { from: -printed, to: printed, ...scale },
+    ...rest,
+  }
+}
+
 function decoration(
   id: string,
   label: string,
@@ -161,9 +213,9 @@ const NOT_A_SOUND = 'not part of a patch'
 
 export const items: readonly PanelItem[] = [
   // Controllers
-  placeholder('tune', 'Tune', 'controllers', 'knob', { sheetScale: '−2 … 0 … 2' }),
-  placeholder('glide', 'Glide', 'controllers', 'knob', { sheetScale: '0 … 10' }),
-  placeholder('modulationMix', 'Modulation Mix', 'controllers', 'knob', { sheetScale: '0 … 10' }),
+  knobSymmetric('tune', 'Tune', 'controllers', 2.5, 2, { tickStep: 0.5, labelStep: 1 }),
+  knob0to10('glide', 'Glide', 'controllers', 0),
+  knob0to10('modulationMix', 'Modulation Mix', 'controllers', 0, { size: 'large' }),
   chooser(
     'modulationSourceA',
     'Osc.3 / Filter EG',
@@ -200,51 +252,36 @@ export const items: readonly PanelItem[] = [
     group: 'osc1',
   }),
   stepKnob('osc2Range', 'Range', 'oscillatorBank', RANGE_POSITIONS, 'ft8', { group: 'osc2' }),
-  placeholder('osc2Frequency', 'Frequency', 'oscillatorBank', 'knob', {
+  knobSymmetric('osc2Frequency', 'Frequency', 'oscillatorBank', 8, 7, { tickStep: 1, labelStep: 2 }, {
     group: 'osc2',
-    sheetScale: '−7 … 0 … 7',
+    size: 'large',
   }),
   stepKnob('osc2Waveform', 'Waveform', 'oscillatorBank', WAVEFORM_POSITIONS, 'triangle', {
     group: 'osc2',
   }),
   stepKnob('osc3Range', 'Range', 'oscillatorBank', RANGE_POSITIONS, 'ft8', { group: 'osc3' }),
-  placeholder('osc3Frequency', 'Frequency', 'oscillatorBank', 'knob', {
+  knobSymmetric('osc3Frequency', 'Frequency', 'oscillatorBank', 8, 7, { tickStep: 1, labelStep: 2 }, {
     group: 'osc3',
-    sheetScale: '−7 … 0 … 7',
+    size: 'large',
   }),
   stepKnob('osc3Waveform', 'Waveform', 'oscillatorBank', WAVEFORM_POSITIONS, 'triangle', {
     group: 'osc3',
   }),
 
   // Mixer
-  placeholder('osc1Volume', 'Osc.1 Volume', 'mixer', 'knob', {
-    group: 'mixOsc1',
-    sheetScale: '0 … 10',
-  }),
+  knob0to10('osc1Volume', 'Osc.1 Volume', 'mixer', 0, { group: 'mixOsc1' }),
   onOff('osc1Enable', 'Osc.1', 'mixer', { group: 'mixOsc1', default: 'on' }),
-  placeholder('osc2Volume', 'Osc.2 Volume', 'mixer', 'knob', {
-    group: 'mixOsc2',
-    sheetScale: '0 … 10',
-  }),
+  knob0to10('osc2Volume', 'Osc.2 Volume', 'mixer', 0, { group: 'mixOsc2' }),
   onOff('osc2Enable', 'Osc.2', 'mixer', { group: 'mixOsc2' }),
-  placeholder('osc3Volume', 'Osc.3 Volume', 'mixer', 'knob', {
-    group: 'mixOsc3',
-    sheetScale: '0 … 10',
-  }),
+  knob0to10('osc3Volume', 'Osc.3 Volume', 'mixer', 0, { group: 'mixOsc3' }),
   onOff('osc3Enable', 'Osc.3', 'mixer', { group: 'mixOsc3' }),
-  placeholder('externalInputVolume', 'External Input Volume', 'mixer', 'knob', {
-    group: 'mixExternal',
-    sheetScale: '0 … 10',
-  }),
+  knob0to10('externalInputVolume', 'External Input Volume', 'mixer', 0, { group: 'mixExternal' }),
   onOff('externalInputEnable', 'External Input', 'mixer', { group: 'mixExternal' }),
   decoration('overloadLamp', 'Overload', 'mixer', 'lamp', {
     group: 'mixExternal',
     note: 'reflects the external input level; nothing to set',
   }),
-  placeholder('noiseVolume', 'Noise Volume', 'mixer', 'knob', {
-    group: 'mixNoise',
-    sheetScale: '0 … 10',
-  }),
+  knob0to10('noiseVolume', 'Noise Volume', 'mixer', 0, { group: 'mixNoise' }),
   onOff('noiseEnable', 'Noise', 'mixer', { group: 'mixNoise' }),
   chooser(
     'noiseColour',
@@ -268,18 +305,12 @@ export const items: readonly PanelItem[] = [
     group: 'filterRouting',
     headline: 'Keyboard Control 2',
   }),
-  placeholder('cutoffFrequency', 'Cutoff Frequency', 'modifiers', 'knob', {
+  knobSymmetric('cutoffFrequency', 'Cutoff Frequency', 'modifiers', 5, 4, { tickStep: 1, labelStep: 2 }, {
     group: 'filter',
-    sheetScale: '−4 … 0 … 4',
+    size: 'large',
   }),
-  placeholder('filterEmphasis', 'Filter Emphasis', 'modifiers', 'knob', {
-    group: 'filter',
-    sheetScale: '0 … 10',
-  }),
-  placeholder('amountOfContour', 'Amount of Contour', 'modifiers', 'knob', {
-    group: 'filter',
-    sheetScale: '0 … 10',
-  }),
+  knob0to10('filterEmphasis', 'Filter Emphasis', 'modifiers', 0, { group: 'filter' }),
+  knob0to10('amountOfContour', 'Amount of Contour', 'modifiers', 0, { group: 'filter' }),
   placeholder('filterAttackTime', 'Attack Time', 'modifiers', 'knob', {
     group: 'filterContour',
     sheetScale: '10 msec … 10 sec',
@@ -288,10 +319,7 @@ export const items: readonly PanelItem[] = [
     group: 'filterContour',
     sheetScale: '10 msec … 10 sec',
   }),
-  placeholder('filterSustainLevel', 'Sustain Level', 'modifiers', 'knob', {
-    group: 'filterContour',
-    sheetScale: '0 … 10',
-  }),
+  knob0to10('filterSustainLevel', 'Sustain Level', 'modifiers', 0, { group: 'filterContour' }),
   placeholder('loudnessAttackTime', 'Attack Time', 'modifiers', 'knob', {
     group: 'loudnessContour',
     sheetScale: '10 msec … 10 sec',
@@ -300,10 +328,7 @@ export const items: readonly PanelItem[] = [
     group: 'loudnessContour',
     sheetScale: '10 msec … 10 sec',
   }),
-  placeholder('loudnessSustainLevel', 'Sustain Level', 'modifiers', 'knob', {
-    group: 'loudnessContour',
-    sheetScale: '0 … 10',
-  }),
+  knob0to10('loudnessSustainLevel', 'Sustain Level', 'modifiers', 0, { group: 'loudnessContour' }),
 
   /* Output and Power are drawn but hold nothing. Level, headphone level, main
      output, A-440 and mains power are all real controls on the instrument that a
@@ -318,7 +343,7 @@ export const items: readonly PanelItem[] = [
   decoration('power', 'Power', 'power', 'switch', { note: NOT_A_SOUND }),
 
   // Performance (the bottom-left strip)
-  placeholder('lfoRate', 'LFO Rate', 'performance', 'knob', { sheetScale: '0 … 10' }),
+  knob0to10('lfoRate', 'LFO Rate', 'performance', 0),
   onOff('glideEnable', 'Glide', 'performance', { headline: 'Glide' }),
   onOff('decayEnable', 'Decay', 'performance', { headline: 'Decay' }),
   placeholder('pitchWheel', 'Pitch', 'performance', 'wheel', { group: 'wheels' }),

@@ -101,6 +101,28 @@ the printed artwork in `reference/measurements.md`.
 `waveforms.ts` holds the six waveform marks split out individually, each with its path and bounds,
 so one can be drawn on its own — beside a knob, in a cap, or in a legend.
 
+### Continuous knobs
+
+Stored as a **number in the control's own printed units** — a cutoff of −1.5 is stored as `-1.5`,
+not as a fraction of travel. Normalising to 0…1 would mean that changing a range later silently
+remaps every saved patch, and it would make the JSON unreadable in a format people send each other.
+Real units mean a narrowed range *clamps* instead, which is the right failure: a patch saved at
+maximum stays at maximum rather than jumping to the middle.
+
+**The printed scale is not the range.** Several of these travel further than the silkscreen admits —
+Tune prints to 2 but reaches 2.5, the oscillator frequency knobs print to 7 but reach 8, Cutoff
+prints to 4 but reaches 5. So `scale` (what is drawn) is given separately from `min`/`max` (what is
+storable), and `validateDef` rejects a scale that runs outside the range.
+
+`step` is separate again: it is what one nudge changes and what stored values round to. A knob can
+print a numeral every 2 and still be settable in tenths. Values are re-rounded on every change,
+because adding 0.1 thirty times does not give 3 in binary floating point.
+
+Both exports share one tick geometry — centre (53, 65), spokes to radius 39 every 30° from −150 to
++150, a 300° sweep — and differ only in body size and indicator radius, so `size: 'small' | 'large'`
+picks between them. Each was exported turned to a particular angle, recorded as `bakedAngle`, so
+rendering rotates by `angle − bakedAngle` and no path is redrawn.
+
 ### Two-position switches
 
 **A switch is not a boolean.** Several choose between two named things rather than turning one on —
