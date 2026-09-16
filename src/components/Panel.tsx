@@ -11,7 +11,14 @@ import { StepKnob } from './knob/StepKnob.tsx'
 import { TimeKnob } from './knob/TimeKnob.tsx'
 import { ToggleSwitch } from './switch/ToggleSwitch.tsx'
 import { Wheel } from './wheel/Wheel.tsx'
-import { BELOW_PANEL, PANEL_ROW, layoutFor, placedIn, templateAreas } from './panelLayout.ts'
+import {
+  BELOW_PANEL,
+  PANEL_ROW,
+  columnCount,
+  layoutFor,
+  placedIn,
+  templateAreas,
+} from './panelLayout.ts'
 import styles from './Panel.module.css'
 
 /* Two views of the same registry. `Panel` draws the controls that have real
@@ -52,6 +59,7 @@ function Control({
         def={item}
         value={typeof value === 'number' ? value : item.default}
         onChange={onChange}
+        hideHeader={hideHeader}
       />
     )
   }
@@ -61,6 +69,7 @@ function Control({
         def={item}
         value={typeof value === 'number' ? value : item.default}
         onChange={onChange}
+        hideHeader={hideHeader}
       />
     )
   }
@@ -135,7 +144,13 @@ function PanelSection({ registry, section, values, onChange }: SectionProps) {
 
   return (
     <section className={styles.section}>
-      <div className={styles.grid} style={{ gridTemplateAreas: templateAreas(layout.rows) }}>
+      <div
+        className={styles.grid}
+        style={{
+          gridTemplateAreas: templateAreas(layout.rows),
+          gridTemplateColumns: `repeat(${columnCount(layout.rows)}, 1fr)`,
+        }}
+      >
         {Object.entries(layout.headings ?? {}).map(([area, lines]) => (
           <h3 key={area} style={{ gridArea: area }} className={styles.columnHeader}>
             {lines.map((line) => (

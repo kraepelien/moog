@@ -76,6 +76,14 @@ describe('a knob with a hidden label is still announced', () => {
     expect(screen.getAllByRole('slider', { name: 'Range' }).length).toBe(3)
     expect(screen.getAllByRole('slider', { name: 'Waveform' }).length).toBe(3)
   })
+
+  test('a mixer volume under a blank label answers to its oscillator', () => {
+    /* The Mixer heads only the top knob; the two under it are named by the
+       switch beside them, which a screen reader cannot follow. */
+    renderPanel()
+    expect(screen.getByRole('slider', { name: 'Osc.2 Volume' })).toBeTruthy()
+    expect(screen.getByRole('slider', { name: 'Osc.3 Volume' })).toBeTruthy()
+  })
 })
 
 describe('turning a step knob', () => {

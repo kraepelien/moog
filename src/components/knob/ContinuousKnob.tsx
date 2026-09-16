@@ -93,9 +93,13 @@ export interface ContinuousKnobProps {
   def: ContinuousKnobDef
   value: number
   onChange: (value: number) => void
+  /* Set when the layout heads this knob elsewhere — a column heading, or the
+     switch beside it. The label still reaches a screen reader, which has no way
+     to associate a heading two cells away. */
+  hideHeader?: boolean
 }
 
-export function ContinuousKnob({ def, value, onChange }: ContinuousKnobProps) {
+export function ContinuousKnob({ def, value, onChange, hideHeader }: ContinuousKnobProps) {
   const labelId = useId()
   const current = quantise(def, value)
   const angle = angleFor(def, current)
@@ -160,9 +164,11 @@ export function ContinuousKnob({ def, value, onChange }: ContinuousKnobProps) {
 
   return (
     <div className={styles.knob}>
-      <span className={styles.header} id={labelId}>
-        {def.label}
-      </span>
+      {!hideHeader && (
+        <span className={styles.header} id={labelId}>
+          {def.label}
+        </span>
+      )}
       <div className={styles.dialWrap}>
       <svg
         viewBox={`${box.x} ${box.y} ${box.width} ${box.height}`}
@@ -171,7 +177,8 @@ export function ContinuousKnob({ def, value, onChange }: ContinuousKnobProps) {
         data-size={size}
         role="slider"
         tabIndex={0}
-        aria-labelledby={labelId}
+        aria-labelledby={hideHeader ? undefined : labelId}
+        aria-label={hideHeader ? def.label : undefined}
         aria-valuemin={def.min}
         aria-valuemax={def.max}
         aria-valuenow={current}

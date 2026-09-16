@@ -72,9 +72,13 @@ export interface TimeKnobProps {
   def: TimeKnobDef
   value: number
   onChange: (value: number) => void
+  /* Set when the layout heads this knob elsewhere — a column heading, or the
+     switch beside it. The label still reaches a screen reader, which has no way
+     to associate a heading two cells away. */
+  hideHeader?: boolean
 }
 
-export function TimeKnob({ def, value, onChange }: TimeKnobProps) {
+export function TimeKnob({ def, value, onChange, hideHeader }: TimeKnobProps) {
   const labelId = useId()
   const current = quantiseMs(def, value)
   const fraction = fractionForMs(def, current)
@@ -133,16 +137,19 @@ export function TimeKnob({ def, value, onChange }: TimeKnobProps) {
 
   return (
     <div className={styles.knob}>
-      <span className={styles.header} id={labelId}>
-        {def.label}
-      </span>
+      {!hideHeader && (
+        <span className={styles.header} id={labelId}>
+          {def.label}
+        </span>
+      )}
       <div className={styles.dialWrap}>
       <svg
         viewBox={`${VIEWBOX.x} ${VIEWBOX.y} ${VIEWBOX.width} ${VIEWBOX.height}`}
         className={styles.dial}
         role="slider"
         tabIndex={0}
-        aria-labelledby={labelId}
+        aria-labelledby={hideHeader ? undefined : labelId}
+        aria-label={hideHeader ? def.label : undefined}
         aria-valuemin={minMs(def)}
         aria-valuemax={maxMs(def)}
         aria-valuenow={current}

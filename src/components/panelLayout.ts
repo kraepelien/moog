@@ -76,17 +76,26 @@ const SECTIONS: Readonly<Record<string, SectionLayout>> = {
     },
   },
 
-  /* All five source switches share one column on the instrument, running down
-     past the three volume knobs — they are not paired beside the thing each one
-     enables, which is how the registry groups them. */
+  /* The five source switches are one column, and each sits level with the knob
+     it enables — which alternates between the oscillator volumes on the left and
+     the external and noise knobs on the right, rather than running down one side
+     and then the other. Every knob has its switch beside it; the column is
+     shared, not the pairing. */
   mixer: {
     rows: [
-      'osc1Volume osc1Enable          externalInputVolume overloadLamp',
-      'osc2Volume osc2Enable          noiseVolume         noiseColour',
+      'osc1Volume osc1Enable          .                   .',
+      '.          externalInputEnable externalInputVolume overloadLamp',
+      'osc2Volume osc2Enable          .                   .',
+      '.          noiseEnable         noiseVolume         noiseColour',
       'osc3Volume osc3Enable          .                   .',
-      '.          externalInputEnable .                   .',
-      '.          noiseEnable         .                   .',
     ],
+    /* Only the top knob is headed: the switch beside each of the others already
+       says which oscillator it belongs to. */
+    labels: {
+      osc1Volume: 'Volume',
+      osc2Volume: '',
+      osc3Volume: '',
+    },
   },
 
   /* Two contours with identical markings, told apart by the heading over the
@@ -134,6 +143,13 @@ export function placedIn(sectionId: string): ReadonlySet<string> {
     }
   }
   return names
+}
+
+/* Columns are even rather than sized to their contents, so a switch centres
+   under the knob it belongs to instead of drifting with the width of the
+   longest legend in its column. */
+export function columnCount(rows: readonly string[]): number {
+  return Math.max(...rows.map((row) => row.trim().split(/\s+/).length))
 }
 
 /* `grid-template-areas` wants each row quoted. */

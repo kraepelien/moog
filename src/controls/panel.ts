@@ -282,8 +282,10 @@ const NOT_A_SOUND = 'not part of a patch'
 
 export const items: readonly PanelItem[] = [
   // Controllers
-  knobSymmetric('tune', 'Tune', 'controllers', 2.5, 2, { tickStep: 0.5, labelStep: 1 }),
-  knob0to10('glide', 'Glide', 'controllers', 0),
+  knobSymmetric('tune', 'Tune', 'controllers', 2.5, 2, { tickStep: 0.5, labelStep: 1 }, {
+    size: 'large',
+  }),
+  knob0to10('glide', 'Glide', 'controllers', 0, { size: 'large' }),
   /* A level like any other, but its ends name what it mixes between rather than
      counting, so 0 and 10 are printed as sources instead of as numbers. */
   {
