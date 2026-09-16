@@ -105,6 +105,14 @@ function CapGlyph({ glyph }: { glyph: WaveformId }) {
   )
 }
 
+/* "8'" and "32'" share one circle. Shrinking past two characters keeps the wider
+   octave readings inside the cap rather than over its edge. */
+function capFontSize(length: number): number {
+  if (length <= 2) return 22
+  if (length === 3) return 16
+  return 13
+}
+
 export interface StepKnobProps {
   def: StepKnobDef
   value: string
@@ -193,6 +201,7 @@ export function StepKnob({ def, value, onChange }: StepKnobProps) {
               x={CAP.cx}
               y={CAP.cy}
               className={styles.capText}
+              style={{ fontSize: capFontSize(current.cap.length) }}
               textAnchor="middle"
               dominantBaseline="central"
             >

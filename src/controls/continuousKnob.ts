@@ -18,6 +18,10 @@ export interface KnobScale {
   readonly to?: number
   readonly tickStep: number
   readonly labelStep: number
+  /* Text printed instead of the numeral at a given value, as one line per entry.
+     Modulation Mix is a level like any other but its ends name what it is mixing
+     between, so 0 and 10 read as sources rather than as numbers. */
+  readonly labels?: Readonly<Record<number, readonly string[]>>
 }
 
 export interface ContinuousKnobDef extends ControlDef {
@@ -37,9 +41,25 @@ export interface ContinuousKnobDef extends ControlDef {
 
 export function decimalsFor(def: ContinuousKnobDef): number {
   if (def.decimals !== undefined) return def.decimals
+  return stepDecimals(def)
+}
+
+/* The precision the control actually stores at, which may be finer than the one
+   it usually prints. */
+export function stepDecimals(def: { readonly step: number }): number {
   const text = String(def.step)
   const dot = text.indexOf('.')
   return dot === -1 ? 0 : text.length - dot - 1
+}
+
+/* Prints the usual precision, and the finer one only when there is something
+   there to show. A control storing hundredths but always printing tenths would
+   let you set 3.23 and never see that you had — 3.23 and 3.24 would read alike —
+   so the extra digit appears exactly when it carries information. */
+export function formatValue(def: ContinuousKnobDef, value: number): string {
+  const shown = decimalsFor(def)
+  const rounded = Number(value.toFixed(shown))
+  return rounded === value ? value.toFixed(shown) : value.toFixed(stepDecimals(def))
 }
 
 /* Rounding to the step keeps stored values off the long binary tails that
@@ -66,7 +86,7 @@ export const continuousKnobType: ControlType<ContinuousKnobDef, number> = {
     return { status: 'ok', value: raw }
   },
   defaultValue: (def) => def.default,
-  format: (value, def) => value.toFixed(decimalsFor(def)),
+  format: (value, def) => formatValue(def, value),
   validateDef(def) {
     if (!(def.min < def.max)) return `min ${def.min} is not below max ${def.max}`
     if (!(def.step > 0)) return `step ${def.step} must be positive`
@@ -94,6 +114,14 @@ export function isContinuousKnob(def: ControlDef): def is ContinuousKnobDef {
 export interface ScaleMark {
   readonly value: number
   readonly labelled: boolean
+  /* Set when the scale names this value instead of numbering it. */
+  readonly lines?: readonly string[]
+}
+
+/* Whether any mark carries text rather than a numeral, which needs more room
+   around the dial than a number does. */
+export function hasNamedMarks(def: ContinuousKnobDef): boolean {
+  return Object.keys(def.scale?.labels ?? {}).length > 0
 }
 
 /* Numerals come from the printed scale, which stops short of the range on several
@@ -113,9 +141,12 @@ export function scaleMarks(def: ContinuousKnobDef): readonly ScaleMark[] {
   for (let i = 0; i <= count; i++) {
     const value = Number((from + i * scale.tickStep).toFixed(10))
     const stepsFromZero = Math.round((value - from) / scale.labelStep)
+    const named = scale.labels?.[value]
+    /* A named mark is always printed, whatever the label interval says. */
     const labelled =
+      named !== undefined ||
       Math.abs(from + stepsFromZero * scale.labelStep - value) < scale.tickStep / 1000
-    marks.push({ value, labelled })
+    marks.push(named ? { value, labelled, lines: named } : { value, labelled })
   }
 
   if (def.max > to) marks.push({ value: def.max, labelled: false })

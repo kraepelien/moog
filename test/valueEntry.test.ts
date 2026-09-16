@@ -1,11 +1,15 @@
 import { describe, expect, test } from 'bun:test'
 import {
   decimalsFor,
+  formatValue,
+  hasNamedMarks,
   isContinuousKnob,
   quantise,
+  scaleMarks,
   type ContinuousKnobDef,
 } from '../src/controls/continuousKnob.ts'
 import { panelRegistry } from '../src/controls/panel.ts'
+import type { StepKnobDef } from '../src/controls/stepKnob.ts'
 import { parseTimeInput } from '../src/controls/timeKnob.ts'
 import { isWheel } from '../src/controls/wheel.ts'
 
@@ -78,6 +82,66 @@ describe('out-of-range input clamps to the end of travel', () => {
   test('a value inside the range is kept exactly', () => {
     expect(quantise(frequency, 3.23)).toBe(3.23)
     expect(quantise(frequency, 7.99)).toBe(7.99)
+  })
+})
+
+describe('the extra digit appears only when it says something', () => {
+  const frequency = panelRegistry.control('osc2Frequency') as ContinuousKnobDef
+
+  test('a round tenth prints one decimal', () => {
+    expect(formatValue(frequency, 3.2)).toBe('3.2')
+    expect(formatValue(frequency, 0)).toBe('0.0')
+    expect(formatValue(frequency, -8)).toBe('-8.0')
+  })
+
+  test('a hundredth prints two, so it is visible rather than secret', () => {
+    expect(formatValue(frequency, 3.23)).toBe('3.23')
+    expect(formatValue(frequency, -7.41)).toBe('-7.41')
+    expect(formatValue(frequency, 0.05)).toBe('0.05')
+  })
+
+  test('two values that differ are never printed the same', () => {
+    expect(formatValue(frequency, 3.23)).not.toBe(formatValue(frequency, 3.24))
+  })
+})
+
+describe('a scale mark may name a source instead of numbering a level', () => {
+  const mix = panelRegistry.control('modulationMix') as ContinuousKnobDef
+
+  test('modulation mix is still an ordinary 0 to 10 control', () => {
+    expect([mix.min, mix.max]).toEqual([0, 10])
+    expect(mix.step).toBe(0.01)
+  })
+
+  test('its ends are named and its middle is numbered', () => {
+    const marks = scaleMarks(mix)
+    const at = (value: number) => marks.find((m) => m.value === value)
+    expect(at(0)?.lines).toEqual(['Osc. 3 /', 'Filter EG'])
+    expect(at(10)?.lines).toEqual(['Noise /', 'LFO'])
+    expect(at(4)?.lines).toBeUndefined()
+    expect(at(4)?.labelled).toBe(true)
+  })
+
+  test('a named mark is always printed, whatever the label interval says', () => {
+    /* 0 and 10 happen to fall on the interval here; the rule must not depend on
+       that, or naming an odd value would silently print nothing. */
+    const odd = scaleMarks({
+      ...mix,
+      scale: { tickStep: 1, labelStep: 4, labels: { 3: ['Three'] } },
+    })
+    expect(odd.find((m) => m.value === 3)?.labelled).toBe(true)
+  })
+
+  test('only knobs with named marks ask for the wider box', () => {
+    expect(hasNamedMarks(mix)).toBe(true)
+    expect(hasNamedMarks(panelRegistry.control('glide') as ContinuousKnobDef)).toBe(false)
+  })
+})
+
+describe('the octave caps carry their apostrophe', () => {
+  test('the knob reads 8’ rather than 8', () => {
+    const range = panelRegistry.control('osc1Range') as StepKnobDef
+    expect(range.positions.map((p) => p.cap)).toEqual(['LO', "32'", "16'", "8'", "4'", "2'"])
   })
 })
 

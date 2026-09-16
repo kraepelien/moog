@@ -1,6 +1,7 @@
 import { memo, useCallback, useId, useRef, useState } from 'react'
 import {
-  decimalsFor,
+  formatValue,
+  hasNamedMarks,
   quantise,
   scaleMarks,
   type ContinuousKnobDef,
@@ -16,6 +17,16 @@ import { KnobBody } from './KnobBody.tsx'
 import { angleForFraction, pointAt } from './dialGeometry.ts'
 import { ValueEntry } from './ValueEntry.tsx'
 import styles from './ContinuousKnob.module.css'
+
+/* The cap is a fixed circle but the reading is not a fixed width: "8" and
+   "-7.41" have to sit in the same 40 units. Shrinking past three characters
+   keeps the longer ones inside the cap instead of spilling over its edge. */
+function capFontSize(length: number): number {
+  if (length <= 3) return 15
+  if (length === 4) return 13
+  if (length === 5) return 11
+  return 9
+}
 
 function angleFor(def: ContinuousKnobDef, value: number): number {
   return angleForFraction((value - def.min) / (def.max - def.min))
@@ -40,17 +51,36 @@ const Scale = memo(function Scale({ def }: { def: ContinuousKnobDef }) {
               y2={outer.y}
               className={mark.labelled ? styles.tickMajor : styles.tick}
             />
-            {mark.labelled && (
-              <text
-                x={label.x}
-                y={label.y}
-                className={styles.scaleText}
-                textAnchor="middle"
-                dominantBaseline="middle"
-              >
-                {mark.value}
-              </text>
-            )}
+            {mark.labelled &&
+              (mark.lines ? (
+                <text
+                  x={label.x}
+                  y={label.y}
+                  className={styles.namedText}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                >
+                  {mark.lines.map((line, row) => (
+                    <tspan
+                      key={line}
+                      x={label.x}
+                      dy={row === 0 ? -((mark.lines!.length - 1) * 4) : 8}
+                    >
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              ) : (
+                <text
+                  x={label.x}
+                  y={label.y}
+                  className={styles.scaleText}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                >
+                  {mark.value}
+                </text>
+              ))}
           </g>
         )
       })}
@@ -120,6 +150,11 @@ export function ContinuousKnob({ def, value, onChange }: ContinuousKnobProps) {
   }, [])
 
   const size = def.size ?? 'small'
+  /* Words at the ends of the sweep run far wider than a numeral, so the box is
+     widened for them and the element sized from it at one pixel per unit — the
+     dial stays the same size on the panel, it just gains margin. */
+  const box = hasNamedMarks(def) ? { ...VIEWBOX, x: VIEWBOX.x - 26, width: VIEWBOX.width + 52 } : VIEWBOX
+  const reading = formatValue(def, current)
 
   return (
     <div className={styles.knob}>
@@ -128,8 +163,9 @@ export function ContinuousKnob({ def, value, onChange }: ContinuousKnobProps) {
       </span>
       <div className={styles.dialWrap}>
       <svg
-        viewBox={`${VIEWBOX.x} ${VIEWBOX.y} ${VIEWBOX.width} ${VIEWBOX.height}`}
+        viewBox={`${box.x} ${box.y} ${box.width} ${box.height}`}
         className={styles.dial}
+        style={{ width: box.width, height: box.height }}
         data-size={size}
         role="slider"
         tabIndex={0}
@@ -150,10 +186,11 @@ export function ContinuousKnob({ def, value, onChange }: ContinuousKnobProps) {
           x={CENTRE.x}
           y={CENTRE.y}
           className={styles.capText}
+          style={{ fontSize: capFontSize(reading.length) }}
           textAnchor="middle"
           dominantBaseline="central"
         >
-          {current.toFixed(decimalsFor(def))}
+          {reading}
         </text>
       </svg>
       {editing && (

@@ -34,11 +34,11 @@ export const controlTypes: readonly ControlType<never, never>[] = [
    scramble the order of anything later keyed by position id. */
 const RANGE_POSITIONS = [
   { id: 'lo', label: 'LO', cap: 'LO' },
-  { id: 'ft32', label: "32'", cap: '32' },
-  { id: 'ft16', label: "16'", cap: '16' },
-  { id: 'ft8', label: "8'", cap: '8' },
-  { id: 'ft4', label: "4'", cap: '4' },
-  { id: 'ft2', label: "2'", cap: '2' },
+  { id: 'ft32', label: "32'", cap: "32'" },
+  { id: 'ft16', label: "16'", cap: "16'" },
+  { id: 'ft8', label: "8'", cap: "8'" },
+  { id: 'ft4', label: "4'", cap: "4'" },
+  { id: 'ft2', label: "2'", cap: "2'" },
 ] as const
 
 const WAVEFORM_POSITIONS = [
@@ -268,7 +268,19 @@ export const items: readonly PanelItem[] = [
   // Controllers
   knobSymmetric('tune', 'Tune', 'controllers', 2.5, 2, { tickStep: 0.5, labelStep: 1 }),
   knob0to10('glide', 'Glide', 'controllers', 0),
-  knob0to10('modulationMix', 'Modulation Mix', 'controllers', 0, { size: 'large' }),
+  /* A level like any other, but its ends name what it mixes between rather than
+     counting, so 0 and 10 are printed as sources instead of as numbers. */
+  {
+    ...knob0to10('modulationMix', 'Modulation Mix', 'controllers', 0, { size: 'large' }),
+    scale: {
+      tickStep: 1,
+      labelStep: 2,
+      labels: {
+        0: ['Osc. 3 /', 'Filter EG'],
+        10: ['Noise /', 'LFO'],
+      },
+    },
+  },
   chooser(
     'modulationSourceA',
     'Osc.3 / Filter EG',

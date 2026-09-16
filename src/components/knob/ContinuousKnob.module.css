@@ -24,6 +24,9 @@
   display: flex;
 }
 
+/* The default box. A knob whose scale carries words overrides this inline from
+   its own viewBox, at one pixel per unit, so it gains margin rather than
+   shrinking the dial. */
 .dial {
   width: 116px;
   height: 116px;
@@ -52,6 +55,14 @@
 .scaleText {
   fill: #fff;
   font-size: 10px;
+}
+
+/* A mark that names a source rather than numbering a level. Smaller than a
+   numeral because it is words, and set on more than one line. */
+.namedText {
+  fill: #fff;
+  font-size: 7px;
+  letter-spacing: 0.02em;
 }
 
 .body {
