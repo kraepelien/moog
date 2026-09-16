@@ -37,7 +37,7 @@ describe('patch lifecycle', () => {
     /* Nothing is stored until Save: editing the panel writes nothing. */
     expect(await store.list()).toEqual([])
 
-    await store.save(draft)
+    draft = await store.create(draft)
     const list = await store.list()
     expect(list.map((s) => s.name)).toEqual(['Round Trip'])
     expect((await store.get(draft.id))!.values.testVolume).toBe(8)
@@ -49,9 +49,12 @@ describe('patch lifecycle', () => {
     const parsed = parseBundle(file, fixedIdentity('imp'))
     expect(parsed.ok).toBe(true)
     if (!parsed.ok) return
-    for (const patch of parsed.value.patches) await otherStore.save(patch)
+    /* Imported rather than written over: they are new to this install, and the
+       server mints their ids. */
+    const created = []
+    for (const patch of parsed.value.patches) created.push(await otherStore.create(patch))
 
-    const imported = (await otherStore.get(parsed.value.patches[0]!.id))!
+    const imported = (await otherStore.get(created[0]!.id))!
     expect(imported.name).toBe('Round Trip')
     expect(imported.id).not.toBe(draft.id)
 

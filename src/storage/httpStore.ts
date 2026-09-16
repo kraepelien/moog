@@ -96,6 +96,16 @@ export function createHttpStore(
       return raw === null ? null : toPatch(raw)
     },
 
+    async create(patch: Patch, from?: string): Promise<Patch> {
+      const raw = await request('/patches', {
+        method: 'POST',
+        body: JSON.stringify(from === undefined ? patch : { ...patch, from }),
+      })
+      const stored = toPatch(raw)
+      if (!stored) throw new StoreError('io', 'The server stored something unreadable.')
+      return stored
+    },
+
     async save(patch: Patch): Promise<Patch> {
       await request(`/patches/${encodeURIComponent(patch.id)}`, {
         method: 'PUT',
@@ -113,15 +123,5 @@ export function createHttpStore(
       return raw.map(toPatch).filter((patch): patch is Patch => patch !== null)
     },
 
-    async savePreset(preset: Patch): Promise<void> {
-      await request(`/presets/${encodeURIComponent(preset.id)}`, {
-        method: 'PUT',
-        body: JSON.stringify(preset),
-      })
-    },
-
-    async deletePreset(slug: string): Promise<void> {
-      await request(`/presets/${encodeURIComponent(slug)}`, { method: 'DELETE' })
-    },
   }
 }

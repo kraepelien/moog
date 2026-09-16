@@ -79,6 +79,11 @@ export function App() {
   /* What the draft looked like when it was last saved or loaded. Comparing
      against it is what tells the user there is something unsaved. */
   const [clean, setClean] = useState('')
+  /* Whether the server has this draft yet. A new one is created, an existing
+     one written over, and only the server ever mints an id. */
+  const [stored, setStored] = useState(false)
+  /* What the draft was copied from, until it has been saved once. */
+  const [copiedFrom, setCopiedFrom] = useState<string | null>(null)
   /* Where a control the patch does not carry keeps the position it was left in.
      The pitch wheel still moves and still reads out; it just moves nothing the
      file records, so turning it must not mark the draft unsaved either. */
@@ -143,7 +148,7 @@ export function App() {
           setStatus(`Import failed — ${parsed.error}`)
           return
         }
-        for (const patch of parsed.value.patches) await store.save(patch)
+        for (const patch of parsed.value.patches) await store.create(patch)
         await refresh()
         const { patches, rejected } = parsed.value
         setStatus(
@@ -156,12 +161,17 @@ export function App() {
     [refresh, run],
   )
 
-  const adopt = useCallback((patch: Patch, message: string) => {
-    setDraft(patch)
-    setClean(signature(patch))
-    setReport(resolvePatch(panelRegistry, patch).report)
-    setStatus(message)
-  }, [])
+  const adopt = useCallback(
+    (patch: Patch, message: string, options: { stored?: boolean; from?: string | null } = {}) => {
+      setDraft(patch)
+      setClean(signature(patch))
+      setReport(resolvePatch(panelRegistry, patch).report)
+      setStored(options.stored ?? false)
+      setCopiedFrom(options.from ?? null)
+      setStatus(message)
+    },
+    [],
+  )
 
   /* Presets arrive whole and saved patches arrive as summaries, so the two are
      flattened into one list here rather than in the view: what the library shows
@@ -190,8 +200,12 @@ export function App() {
       void run('', async () => {
         const patch = await fetchEntry(entry)
         if (!patch) return
-        const opened = entry.origin === 'factory' ? copyOf(patch, { owner: null }) : patch
-        adopt(opened, `Opened “${patch.name}”`)
+        const factory = entry.origin === 'factory'
+        adopt(
+          factory ? copyOf(patch, { owner: null }) : patch,
+          `Opened “${patch.name}”`,
+          factory ? { from: entry.id } : { stored: true },
+        )
         goToView('editor')
       }),
     [adopt, fetchEntry, goToView, run],
@@ -200,7 +214,6 @@ export function App() {
   if (!draft) return <Typography sx={{ p: 2 }}>Loading…</Typography>
 
   const resolved = resolvePatch(panelRegistry, draft)
-  const currentValues = mergeValues(panelRegistry, draft, resolved.values)
 
   const menu: TopBarAction[] = [
     { label: 'Import a file…', onSelect: () => importing.current?.click() },
@@ -241,23 +254,44 @@ export function App() {
             rating={null}
             actions={[
               {
-                label: 'Save as',
+                label: 'Save',
                 tone: 'green',
                 disabled: !dirty,
                 onSelect: () =>
                   void run('Saved', async () => {
-                    const stamped = { ...draft, updatedAt: new Date().toISOString() }
-                    await store.save(stamped)
-                    setDraft(stamped)
-                    setClean(signature(stamped))
+                    /* Only the server mints an id, so a draft it has never seen
+                       is created rather than written over — which is what makes
+                       saving a loaded preset impossible to do over the top. */
+                    const kept = stored
+                      ? await store.save({ ...draft, updatedAt: new Date().toISOString() })
+                      : await store.create(draft, copiedFrom ?? undefined)
+                    setDraft(kept)
+                    setClean(signature(kept))
+                    setStored(true)
+                    setCopiedFrom(null)
+                    await refresh()
+                  }),
+              },
+              {
+                label: 'Save as',
+                tone: 'green',
+                /* There is nothing to branch from until the draft is somewhere. */
+                disabled: !stored,
+                onSelect: () =>
+                  void run('', async () => {
+                    const copy = await store.create(
+                      { ...draft, name: `${draft.name} copy` },
+                      draft.id,
+                    )
+                    adopt(copy, `Saved as “${copy.name}”`, { stored: true })
                     await refresh()
                   }),
               },
               {
                 label: 'Delete',
                 tone: 'pink',
-                /* Only a draft that has been saved is in the store to delete. */
-                disabled: !saved.some((summary) => summary.id === draft.id),
+                /* Only a draft the server has is there to delete. */
+                disabled: !stored,
                 onSelect: () =>
                   void run(`Deleted “${draft.name}”`, async () => {
                     if (
@@ -348,38 +382,6 @@ export function App() {
                 }
               >
                 New
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={() =>
-                  void run('Saved as a preset', async () => {
-                    const slug = slugify(draft.name)
-                    if (!slug) {
-                      setStatus('Name the patch before saving it as a preset')
-                      throw new Cancelled()
-                    }
-                    if (
-                      presets.some((preset) => preset.id === slug) &&
-                      !(await ask({
-                        title: `Replace the preset “${slug}”?`,
-                        body: 'A preset of that name already exists. Its values are replaced by what is on the panel.',
-                        confirm: 'Replace',
-                      }))
-                    ) {
-                      throw new Cancelled()
-                    }
-                    await store.savePreset({
-                      ...draft,
-                      id: slug,
-                      values: currentValues,
-                      visibility: 'public',
-                      updatedAt: new Date().toISOString(),
-                    })
-                    await refresh()
-                  })
-                }
-              >
-                Save as preset
               </Button>
             </Stack>
           </Stack>

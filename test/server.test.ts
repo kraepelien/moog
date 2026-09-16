@@ -6,6 +6,7 @@ import { createApi } from '../server/api.ts'
 import { openDatabase } from '../server/db.ts'
 import { syncInstruments } from '../server/factory.ts'
 import { createStore, isSafeName } from '../server/store.ts'
+import { ensureLocalUser } from '../server/users.ts'
 import { createPatch, type Patch } from '../src/patch/schema.ts'
 import { fixedIdentity } from './fixtures.ts'
 
@@ -21,6 +22,10 @@ function freshDb() {
   syncInstruments(db)
   return db
 }
+
+/* Writing straight to the store skips the route that resolves a viewer, so
+   these supply the owner the route would have. */
+const owned = (db: ReturnType<typeof freshDb>) => ensureLocalUser(db, 'local').id
 
 afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
@@ -49,36 +54,41 @@ describe('an id arriving from a URL', () => {
   })
 
   test('is refused by the store before it reaches a statement', () => {
-    const store = createStore(freshDb())
+    const db = freshDb()
+    const store = createStore(db)
     expect(store.getPatch('../escape')).toBeNull()
-    expect(() => store.putPatch('../escape', aPatch('X'))).toThrow(/Unsafe/)
+    expect(() => store.putPatch('../escape', aPatch('X'), owned(db))).toThrow(/Unsafe/)
     expect(() => store.deletePatch('../escape')).toThrow(/Unsafe/)
   })
 })
 
 describe('writing a patch', () => {
   test('twice at once leaves one row, not two', () => {
-    const store = createStore(freshDb())
+    const db = freshDb()
+    const store = createStore(db)
+    const owner = owned(db)
     const patch = aPatch('Contended')
-    for (let i = 0; i < 25; i++) store.putPatch(patch.id, { ...patch, name: `Take ${i}` })
+    for (let i = 0; i < 25; i++) store.putPatch(patch.id, { ...patch, name: `Take ${i}` }, owner)
 
-    const all = store.listPatches()
+    const all = store.listPatches(owner)
     expect(all).toHaveLength(1)
     expect(all[0]!.name).toBe('Take 24')
   })
 
   test('for an instrument nothing knows is refused, not filed under the default', () => {
-    const store = createStore(freshDb())
-    expect(() => store.putPatch('x1', { ...aPatch('Alien'), instrument: 'prophet-5' })).toThrow(
-      /Unknown instrument/,
-    )
+    const db = freshDb()
+    const store = createStore(db)
+    expect(() =>
+      store.putPatch('x1', { ...aPatch('Alien'), instrument: 'prophet-5' }, owned(db)),
+    ).toThrow(/Unknown instrument/)
   })
 
   test('keeps a control id this build has never heard of', () => {
     /* The format's promise: an older build must not strip a newer one's data. */
-    const store = createStore(freshDb())
+    const db = freshDb()
+    const store = createStore(db)
     const patch = { ...aPatch('Future'), values: { osc1Volume: 5, fromLater: 'kept' } }
-    store.putPatch(patch.id, patch)
+    store.putPatch(patch.id, patch, owned(db))
     expect(store.getPatch(patch.id)?.values).toEqual({ osc1Volume: 5, fromLater: 'kept' })
   })
 
@@ -87,11 +97,12 @@ describe('writing a patch', () => {
        point at. */
     const db = freshDb()
     const store = createStore(db)
+    const owner = owned(db)
     const patch = aPatch('Gone')
-    store.putPatch(patch.id, patch)
+    store.putPatch(patch.id, patch, owner)
     store.deletePatch(patch.id)
 
-    expect(store.listPatches()).toEqual([])
+    expect(store.listPatches(owner)).toEqual([])
     expect(store.getPatch(patch.id)).toBeNull()
     expect(db.query<{ n: number }, []>(`select count(*) as n from patches`).get()?.n).toBe(1)
   })
@@ -137,52 +148,53 @@ describe('the request handler', () => {
 
   test('round-trips a patch', async () => {
     const handle = api()
-    const patch = aPatch('One')
-    expect((await call(handle, 'PUT', `/api/patches/${patch.id}`, patch))!.status).toBe(200)
+    const created = (await call(handle, 'POST', '/api/patches', aPatch('One')))!
+    expect(created.status).toBe(201)
+    const { id } = (await created.json()) as { id: string }
 
-    const got = (await call(handle, 'GET', `/api/patches/${patch.id}`))!
+    const got = (await call(handle, 'GET', `/api/patches/${id}`))!
     expect(await got.json()).toMatchObject({ name: 'One' })
 
-    expect((await call(handle, 'DELETE', `/api/patches/${patch.id}`))!.status).toBe(200)
-    expect((await call(handle, 'GET', `/api/patches/${patch.id}`))!.status).toBe(404)
+    expect((await call(handle, 'DELETE', `/api/patches/${id}`))!.status).toBe(200)
+    expect((await call(handle, 'GET', `/api/patches/${id}`))!.status).toBe(404)
   })
 
-  test('deleting something that is not there is not an error', async () => {
-    expect((await call(api(), 'DELETE', '/api/patches/ghost'))!.status).toBe(200)
+  test('deleting something that is not there is a 404', async () => {
+    expect((await call(api(), 'DELETE', '/api/patches/ghost'))!.status).toBe(404)
   })
 
   test('refuses a body that is not a patch rather than storing it', async () => {
     /* The columns are typed now, so anything that is not a patch has to be
        refused before it becomes a row. */
     const handle = api()
-    expect((await call(handle, 'PUT', '/api/patches/one', 'not json at all'))!.status).toBe(400)
-    expect((await call(handle, 'PUT', '/api/patches/one', { name: 'half a patch' }))!.status).toBe(
+    expect((await call(handle, 'POST', '/api/patches', 'not json at all'))!.status).toBe(400)
+    expect((await call(handle, 'POST', '/api/patches', { notes: 'half a patch' }))!.status).toBe(
       400,
     )
-    expect((await call(handle, 'GET', '/api/patches/one'))!.status).toBe(404)
+    expect(await (await call(handle, 'GET', '/api/patches'))!.json()).toEqual([])
   })
 
   test('refuses a patch from a newer build instead of downgrading it', async () => {
     const handle = api()
-    const patch = { ...aPatch('From The Future'), schemaVersion: 99 }
-    const response = (await call(handle, 'PUT', `/api/patches/${patch.id}`, patch))!
+    const response = (await call(handle, 'POST', '/api/patches', {
+      ...aPatch('From The Future'),
+      schemaVersion: 99,
+    }))!
     expect(response.status).toBe(400)
     expect((await response.json()).error).toMatch(/Update the app/)
   })
 
   test('refuses a name that could not be a name', async () => {
     const handle = api()
-    for (const path of ['/api/patches/..%2F..%2Fescape', '/api/presets/..%2Fescape']) {
-      expect((await call(handle, 'PUT', path, aPatch('Gotcha')))!.status).toBe(400)
-    }
+    expect((await call(handle, 'PUT', '/api/patches/..%2F..%2Fescape', aPatch('X')))!.status).toBe(
+      400,
+    )
   })
 
   test('says which methods a route has', async () => {
     const handle = api()
-    expect((await call(handle, 'POST', '/api/patches'))!.status).toBe(405)
-    expect((await call(handle, 'POST', '/api/patches/one'))!.status).toBe(405)
-    expect((await call(handle, 'GET', '/api/presets/one'))!.status).toBe(405)
-    expect((await call(handle, 'POST', '/api/presets'))!.status).toBe(405)
+    expect((await call(handle, 'DELETE', '/api/patches'))!.status).toBe(405)
+    expect((await call(handle, 'POST', '/api/presets'))!.status).toBe(403)
   })
 
   test('reports a storage failure as one, with a reason', async () => {
@@ -190,8 +202,7 @@ describe('the request handler', () => {
     const handle = createApi({ db })
     db.close()
 
-    const patch = aPatch('One')
-    const response = (await call(handle, 'PUT', `/api/patches/${patch.id}`, patch))!
+    const response = (await call(handle, 'POST', '/api/patches', aPatch('One')))!
     expect(response.status).toBe(500)
     expect((await response.json()).error).toBeTruthy()
   })

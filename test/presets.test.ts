@@ -120,30 +120,10 @@ describe('loading the bank into the database', () => {
   })
 })
 
-describe('presets are rows an admin owns', () => {
-  test('saving one writes it under its slug', async () => {
-    await api.store.savePreset(aPreset('my-sound', 'My Sound'))
-    expect((await api.store.listPresets()).map((preset) => preset.id)).toEqual(['my-sound'])
-  })
-
-  test('overwriting replaces what is there', async () => {
-    await api.store.savePreset(aPreset('my-sound', 'First'))
-    await api.store.savePreset({ ...aPreset('my-sound', 'Second'), values: { glide: 9 } })
-    const all = await api.store.listPresets()
-    expect(all).toHaveLength(1)
-    expect(all[0]!.name).toBe('Second')
-    expect(all[0]!.values).toEqual({ glide: 9 })
-  })
-
-  test('deleting removes it from the listing', async () => {
-    await api.store.savePreset(aPreset('my-sound'))
-    await api.store.deletePreset('my-sound')
-    expect(await api.store.listPresets()).toEqual([])
-  })
-
-  test('a slug keeps its row through a reload of the bank', async () => {
+describe('a factory row', () => {
+  test('keeps its identity through a reload of the bank', () => {
     /* The uid is minted once; the slug is what the bank matches on, so a
-       preset keeps its identity across restarts and across installs. */
+       preset keeps its row across restarts and across installs. */
     const bank = aBank(join(api.root, 'bank'), { one: aPreset('one', 'First') })
     loadFactory(api.db, bank)
     const first = createStore(api.db).listPresets()[0]!
@@ -151,6 +131,13 @@ describe('presets are rows an admin owns', () => {
     loadFactory(api.db, bank)
     const again = createStore(api.db).listPresets()[0]!
     expect(again.id).toBe(first.id)
+  })
+
+  test('has no owner, which is what makes it the bank', () => {
+    loadFactory(api.db, SEED)
+    const found = createStore(api.db).locate('sub-bass')
+    expect(found?.ownerId).toBeNull()
+    expect(found?.slug).toBe('sub-bass')
   })
 })
 

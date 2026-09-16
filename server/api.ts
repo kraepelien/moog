@@ -1,7 +1,8 @@
 import type { Database } from 'bun:sqlite'
-import { migrateToCurrent } from '../src/patch/migrate.ts'
+import { systemIdentity } from '../src/patch/schema.ts'
 import { authConfigFromEnv, isAdmin, whoAmI, type AuthConfig } from './identity.ts'
-import { createStore, isSafeName, type Store } from './store.ts'
+import { handlePatches } from './routes/patches.ts'
+import { createStore, type Store } from './store.ts'
 import { ensureLocalUser, findUser, type UserRow } from './users.ts'
 
 /* One request handler, shared by the Vite dev plugin and the standalone server,
@@ -10,7 +11,14 @@ import { ensureLocalUser, findUser, type UserRow } from './users.ts'
    A write is validated here rather than at the store: the columns are typed
    now, so anything that is not a patch has to be refused before it is one. */
 
-const JSON_HEADERS = { 'content-type': 'application/json' }
+/* Every answer differs per viewer now, so none of them may be cached by
+   anything in between, and any cache that keys on the URL alone must be told
+   the cookie matters. */
+const JSON_HEADERS = {
+  'content-type': 'application/json',
+  'cache-control': 'private, no-store',
+  vary: 'Cookie',
+}
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS })
@@ -18,6 +26,15 @@ function json(body: unknown, status = 200): Response {
 
 function notFound(): Response {
   return json({ error: 'not found' }, 404)
+}
+
+/* SameSite=Lax already keeps another site's form from reaching a PUT here with
+   the cookie attached; this closes what is left, and costs one header read. */
+function fromElsewhere(request: Request, config: AuthConfig): boolean {
+  const origin = request.headers.get('origin')
+  if (origin === null) return false
+  if (config.publicOrigin && origin === config.publicOrigin) return false
+  return origin !== new URL(request.url).origin
 }
 
 async function body(request: Request): Promise<unknown> {
@@ -40,6 +57,16 @@ export function createApi({
   const store: Store = createStore(db)
   if (config.mode === 'off') ensureLocalUser(db, config.localUser)
 
+  const routeContext = (viewer: UserRow | null) => ({
+    store,
+    viewer,
+    admin: viewer !== null && isAdmin(viewer.email, config),
+    json,
+    body,
+    newId: systemIdentity.newId,
+    now: systemIdentity.now,
+  })
+
   /* Returns null for anything that is not ours, so the caller can fall through
      to serving the app rather than 404ing every page load. */
   return async function handle(request: Request): Promise<Response | null> {
@@ -49,6 +76,10 @@ export function createApi({
     const parts = url.pathname.slice('/api/'.length).split('/').filter(Boolean)
     const [resource, name, sub] = parts
     const method = request.method.toUpperCase()
+
+    if (method !== 'GET' && method !== 'HEAD' && fromElsewhere(request, config)) {
+      return json({ error: 'cross-site request' }, 403)
+    }
 
     try {
       /* Inside the try: reading the session touches the database, and a failure
@@ -91,61 +122,17 @@ export function createApi({
       }
 
       if (resource === 'patches') {
-        if (!name) {
-          if (method === 'GET') return json(store.listPatches())
-          return json({ error: 'method not allowed' }, 405)
-        }
-        if (!isSafeName(name)) return json({ error: 'invalid id' }, 400)
-
-        /* A rating is the viewer's, so it hangs off the patch's URL but never
-           touches the patch. */
-        if (sub === 'rating') {
-          if (!viewer) return json({ error: 'sign in' }, 401)
-          if (method !== 'PUT') return json({ error: 'method not allowed' }, 405)
-          const payload = (await body(request)) as { stars?: unknown } | null
-          const stars = payload?.stars
-          if (typeof stars !== 'number' || !Number.isInteger(stars) || stars < 0 || stars > 5) {
-            return json({ error: 'stars must be a whole number from 0 to 5' }, 400)
-          }
-          if (!store.setRating(viewer.id, name, stars)) return notFound()
-          return json({ id: name, stars })
-        }
-
-        if (method === 'GET') {
-          const patch = store.getPatch(name)
-          return patch === null ? notFound() : json(patch)
-        }
-        if (method === 'PUT') {
-          if (!viewer) return json({ error: 'sign in' }, 401)
-          const parsed = migrateToCurrent(await body(request))
-          if (!parsed.ok) return json({ error: parsed.error }, 400)
-          store.putPatch(name, parsed.value, viewer.id)
-          return json(parsed.value)
-        }
-        if (method === 'DELETE') {
-          store.deletePatch(name)
-          return json({ deleted: name })
-        }
-        return json({ error: 'method not allowed' }, 405)
+        return handlePatches(request, routeContext(viewer), { name, sub })
       }
 
+      /* The bank is read-only to every route: it comes from the image, and a
+         change here would be overwritten at the next start. Saving one is
+         always a copy, which is POST /api/patches. */
       if (resource === 'presets') {
-        if (!name) {
-          if (method === 'GET') return json(store.listPresets())
-          return json({ error: 'method not allowed' }, 405)
-        }
-        if (!isSafeName(name)) return json({ error: 'invalid slug' }, 400)
-        if (method === 'PUT') {
-          const parsed = migrateToCurrent(await body(request))
-          if (!parsed.ok) return json({ error: parsed.error }, 400)
-          store.putPreset(name, parsed.value)
-          return json(parsed.value)
-        }
-        if (method === 'DELETE') {
-          store.deletePreset(name)
-          return json({ deleted: name })
-        }
-        return json({ error: 'method not allowed' }, 405)
+        if (method !== 'GET') return json({ error: 'factory presets are read-only' }, 403)
+        /* One of them is read through /api/patches, like anything else. */
+        if (name) return notFound()
+        return json(store.listPresets())
       }
 
       return notFound()
