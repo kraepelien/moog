@@ -1,0 +1,14 @@
+{
+  "slug": "dark-toms",
+  "name": "Dark Toms",
+  "notes": "",
+  "approximate": true,
+  "values": {
+    "osc1Range": "ft4",
+    "osc1Volume": 8,
+    "noiseVolume": 2,
+    "cutoffFrequency": 3,
+    "filterEmphasis": 4,
+    "amountOfContour": 8
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "slug": "sawyer-s-bass",
+  "name": "Sawyer's Bass",
+  "notes": "",
+  "approximate": true,
+  "values": {
+    "osc1Range": "ft16",
+    "osc1Waveform": "sawtooth",
+    "osc2Range": "ft16",
+    "osc2Waveform": "sawtooth",
+    "osc1Volume": 8,
+    "osc2Volume": 7,
+    "osc2Enable": "on",
+    "keyboardControl1": "on",
+    "filterEmphasis": 5,
+    "amountOfContour": 7,
+    "filterSustainLevel": 3,
+    "loudnessSustainLevel": 7,
+    "externalInputVolume": 3
+  }
+}

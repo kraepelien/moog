@@ -1,5 +1,5 @@
 import type { Patch } from '../patch/schema.ts'
-import type { PresetOverride } from '../presets/overrides.ts'
+import type { StoredPreset } from '../presets/preset.ts'
 
 export interface PatchSummary {
   readonly id: string
@@ -35,14 +35,13 @@ export interface PatchStore {
   delete(id: string): Promise<void>
 }
 
-/* Separate again, because a preset override is not a patch: it is keyed by the
-   slug of the shipped preset it shadows, there is at most one per slug, and it
-   is deleted rather than edited when the shipped version is wanted back. */
-export interface PresetOverrideStore {
-  listOverrides(): Promise<readonly PresetOverride[]>
-  saveOverride(override: PresetOverride): Promise<void>
-  /* Reverts to whatever shipped, which is always still there. */
-  clearOverride(slug: string): Promise<void>
+/* Separate again, because a preset is not a patch: it is keyed by a slug rather
+   than a generated id, it carries no timestamps, and the bank is small enough
+   that listing it whole is the only access anyone needs. */
+export interface PresetStore {
+  listPresets(): Promise<readonly StoredPreset[]>
+  savePreset(preset: StoredPreset): Promise<void>
+  deletePreset(slug: string): Promise<void>
 }
 
 /* Separate from PatchStore because the working draft has a different lifecycle:

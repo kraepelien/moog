@@ -1,0 +1,18 @@
+{
+  "slug": "rez-hit",
+  "name": "Rez Hit",
+  "notes": "",
+  "approximate": true,
+  "values": {
+    "osc1Waveform": "sawtooth",
+    "osc2Waveform": "narrowPulse",
+    "osc1Volume": 7,
+    "osc2Volume": 6,
+    "osc2Enable": "on",
+    "cutoffFrequency": 5,
+    "filterEmphasis": 9,
+    "amountOfContour": 7,
+    "filterSustainLevel": 1,
+    "loudnessSustainLevel": 1
+  }
+}

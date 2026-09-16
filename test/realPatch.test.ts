@@ -3,7 +3,7 @@ import { panelRegistry } from '../src/controls/panel.ts'
 import { defaultValues } from '../src/controls/registry.ts'
 import { mergeValues, resolvePatch } from '../src/patch/resolve.ts'
 import { createPatch } from '../src/patch/schema.ts'
-import { createMemoryStorage, createWebStorageStore } from '../src/storage/webStorage.ts'
+import { testApi } from './apiFixture.ts'
 import { createBundle, parseBundle, serializeBundle } from '../src/transfer/bundle.ts'
 
 /* The storage and transfer layers were built before any control existed and were
@@ -36,15 +36,16 @@ function realPatch() {
 describe('a patch of every real control survives being saved and reloaded', () => {
   test('every value comes back exactly as it went in', async () => {
     const { values, patch } = realPatch()
-    const storage = createMemoryStorage()
-    await createWebStorageStore(storage).save(patch)
+    const api = testApi()
+    await api.store.save(patch)
 
-    /* A second store over the same storage is what a page reload amounts to. */
-    const reloaded = await createWebStorageStore(storage).get(patch.id)
+    /* Read back off disk, which is what a page reload amounts to. */
+    const reloaded = await api.store.get(patch.id)
     expect(reloaded).not.toBeNull()
     for (const [id, want] of Object.entries(values)) {
       expect([id, reloaded!.values[id]]).toEqual([id, want])
     }
+    api.cleanup()
   })
 })
 

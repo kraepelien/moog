@@ -1,0 +1,24 @@
+{
+  "slug": "the-haunting",
+  "name": "The Haunting",
+  "notes": "",
+  "approximate": true,
+  "values": {
+    "osc1Range": "ft32",
+    "osc1Waveform": "sawtooth",
+    "osc2Range": "ft32",
+    "osc2Frequency": 0.1,
+    "osc2Waveform": "sawtooth",
+    "osc3Range": "ft16",
+    "osc3Enable": "on",
+    "osc3Volume": 4,
+    "osc1Volume": 6,
+    "osc2Volume": 6,
+    "osc2Enable": "on",
+    "cutoffFrequency": 2,
+    "filterEmphasis": 4,
+    "amountOfContour": 4,
+    "filterSustainLevel": 9,
+    "loudnessSustainLevel": 9
+  }
+}

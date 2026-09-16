@@ -3,8 +3,8 @@ import { panelRegistry } from '../src/controls/panel.ts'
 import { defaultValues } from '../src/controls/registry.ts'
 import { mergeValues, resolvePatch } from '../src/patch/resolve.ts'
 import { createPatch, type Patch } from '../src/patch/schema.ts'
-import { draftFromPreset } from '../src/presets/factory.ts'
-import { createMemoryStorage, createWebStorageStore } from '../src/storage/webStorage.ts'
+import { draftFromPreset } from '../src/presets/preset.ts'
+import { testApi } from './apiFixture.ts'
 import { createBundle, parseBundle, serializeBundle } from '../src/transfer/bundle.ts'
 import { fixedIdentity, testRegistry } from './fixtures.ts'
 
@@ -13,8 +13,8 @@ import { fixedIdentity, testRegistry } from './fixtures.ts'
    has since gained a control and lost another. */
 describe('patch lifecycle', () => {
   test('a patch survives the whole round trip, including a registry that changed', async () => {
-    const storage = createMemoryStorage()
-    const store = createWebStorageStore(storage)
+    const api = testApi()
+    const store = api.store
     const registry = testRegistry()
 
     /* Start from a preset. It must not be saved by loading it.
@@ -36,8 +36,8 @@ describe('patch lifecycle', () => {
     expect(await store.readDraft()).toEqual(draft)
     expect(await store.list()).toEqual([])
 
-    // Reloading the app picks the draft back up from a fresh store instance.
-    const reloaded = await createWebStorageStore(storage).readDraft()
+    // Reloading the app picks the draft back up off disk.
+    const reloaded = await store.readDraft()
     expect(reloaded?.values.testVolume).toBe(8)
 
     // Save it as a real patch.
@@ -47,7 +47,8 @@ describe('patch lifecycle', () => {
 
     // Export, then import into a different machine's empty store.
     const file = serializeBundle(createBundle([(await store.get(draft.id))!], fixedIdentity('exp')))
-    const otherStore = createWebStorageStore(createMemoryStorage())
+    const other = testApi()
+    const otherStore = other.store
     const parsed = parseBundle(file, fixedIdentity('imp'))
     expect(parsed.ok).toBe(true)
     if (!parsed.ok) return
@@ -75,6 +76,9 @@ describe('patch lifecycle', () => {
     const resaved = { ...withStaleValue, values: mergeValues(withStaleValue, values) }
     await otherStore.save(resaved)
     expect((await otherStore.get(resaved.id))!.values.retiredKnob).toBe('still here')
+
+    api.cleanup()
+    other.cleanup()
   })
 
   /* The shipped panel, rather than the test registry: a value it knows is read,

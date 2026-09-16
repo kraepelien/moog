@@ -1,0 +1,22 @@
+{
+  "slug": "70s-violin-lead",
+  "name": "'70s Violin Lead",
+  "notes": "",
+  "approximate": true,
+  "values": {
+    "osc2Frequency": 0.2,
+    "osc3Frequency": -0.2,
+    "osc3Waveform": "narrowPulse",
+    "osc3Enable": "on",
+    "osc3Volume": 5,
+    "osc1Volume": 7,
+    "osc2Volume": 7,
+    "osc2Enable": "on",
+    "glide": 1,
+    "cutoffFrequency": 4,
+    "filterEmphasis": 6,
+    "amountOfContour": 5,
+    "filterSustainLevel": 6,
+    "loudnessSustainLevel": 8
+  }
+}

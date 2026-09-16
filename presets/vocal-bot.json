@@ -1,0 +1,28 @@
+{
+  "slug": "vocal-bot",
+  "name": "Vocal-Bot",
+  "notes": "",
+  "approximate": true,
+  "values": {
+    "oscillatorModulation": "on",
+    "osc3Control": "lo",
+    "osc1Range": "ft4",
+    "osc1Waveform": "widePulse",
+    "osc2Range": "ft2",
+    "osc2Frequency": 2,
+    "osc2Waveform": "sawtooth",
+    "osc3Range": "lo",
+    "osc3Enable": "on",
+    "osc1Volume": 6,
+    "osc2Volume": 4,
+    "osc2Enable": "on",
+    "modulationMix": 7,
+    "filterModulation": "on",
+    "lfoRate": 6,
+    "cutoffFrequency": 4,
+    "filterEmphasis": 7,
+    "amountOfContour": 8,
+    "filterSustainLevel": 3,
+    "loudnessSustainLevel": 5
+  }
+}

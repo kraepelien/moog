@@ -1,0 +1,18 @@
+{
+  "slug": "sub-bass",
+  "name": "Sub Bass",
+  "notes": "",
+  "approximate": true,
+  "values": {
+    "osc1Range": "ft32",
+    "osc2Range": "ft16",
+    "osc2Waveform": "sawtooth",
+    "osc1Volume": 8,
+    "osc2Volume": 7,
+    "keyboardControl1": "on",
+    "cutoffFrequency": -1,
+    "amountOfContour": 7,
+    "filterSustainLevel": 3,
+    "loudnessSustainLevel": 7
+  }
+}

@@ -1,90 +1,116 @@
-import { beforeEach, describe, expect, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { join } from 'node:path'
 import { createPatch, type Patch } from '../src/patch/schema.ts'
-import { StoreError, type DraftStore, type PatchStore } from '../src/storage/types.ts'
-import { createMemoryStorage, createWebStorageStore, type StorageLike } from '../src/storage/webStorage.ts'
+import { StoreError } from '../src/storage/types.ts'
+import { testApi, type TestApi } from './apiFixture.ts'
 import { fixedIdentity } from './fixtures.ts'
 
-let storage: StorageLike
-let store: PatchStore & DraftStore
+let api: TestApi
 
 beforeEach(() => {
-  storage = createMemoryStorage()
-  store = createWebStorageStore(storage)
+  api = testApi()
+})
+afterEach(() => {
+  api.cleanup()
 })
 
 function make(name: string, updatedAt: string): Patch {
   return { ...createPatch({ name }, fixedIdentity(name)), updatedAt }
 }
 
-describe('patch store', () => {
-  test('saves and reads a patch back unchanged', async () => {
+describe('patches are files in a folder', () => {
+  test('saving one writes a file named by its id', async () => {
     const patch = make('Bass', '2026-01-02T00:00:00.000Z')
-    await store.save(patch)
-    expect(await store.get(patch.id)).toEqual(patch)
+    await api.store.save(patch)
+    const file = join(api.root, 'patches', `${patch.id}.json`)
+    expect(existsSync(file)).toBe(true)
+    /* Readable and hand-editable, which is the point of files over a database. */
+    expect(JSON.parse(readFileSync(file, 'utf8')).name).toBe('Bass')
   })
 
-  test('returns null for an id that was never saved', async () => {
-    expect(await store.get('nope')).toBeNull()
+  test('reads back unchanged', async () => {
+    const patch = make('Bass', '2026-01-02T00:00:00.000Z')
+    await api.store.save(patch)
+    expect(await api.store.get(patch.id)).toEqual(patch)
   })
 
-  test('lists summaries newest first and without control values', async () => {
-    await store.save(make('Older', '2026-01-01T00:00:00.000Z'))
-    await store.save(make('Newer', '2026-02-01T00:00:00.000Z'))
-    const list = await store.list()
+  test('an id that was never saved reads as null, not an error', async () => {
+    expect(await api.store.get('never-saved')).toBeNull()
+  })
+
+  test('lists newest first, without the control values', async () => {
+    await api.store.save(make('Older', '2026-01-01T00:00:00.000Z'))
+    await api.store.save(make('Newer', '2026-02-01T00:00:00.000Z'))
+    const list = await api.store.list()
     expect(list.map((s) => s.name)).toEqual(['Newer', 'Older'])
     expect(list[0]).not.toHaveProperty('values')
   })
 
-  test('delete removes only the named patch', async () => {
+  test('delete removes only the named file', async () => {
     const keep = make('Keep', '2026-01-01T00:00:00.000Z')
     const drop = make('Drop', '2026-01-01T00:00:00.000Z')
-    await store.save(keep)
-    await store.save(drop)
-    await store.delete(drop.id)
-    expect(await store.get(drop.id)).toBeNull()
-    expect(await store.get(keep.id)).not.toBeNull()
+    await api.store.save(keep)
+    await api.store.save(drop)
+    await api.store.delete(drop.id)
+    expect(await api.store.get(drop.id)).toBeNull()
+    expect(await api.store.get(keep.id)).not.toBeNull()
   })
 
-  test('one unreadable record does not hide the others', async () => {
-    await store.save(make('Good', '2026-01-01T00:00:00.000Z'))
-    storage.setItem('moog:patch:broken', '{ not json')
-    expect((await store.list()).map((s) => s.name)).toEqual(['Good'])
+  test('a file edited by hand into nonsense does not hide the others', async () => {
+    await api.store.save(make('Good', '2026-01-01T00:00:00.000Z'))
+    mkdirSync(join(api.root, 'patches'), { recursive: true })
+    writeFileSync(join(api.root, 'patches', 'broken.json'), '{ not json', 'utf8')
+    expect((await api.store.list()).map((s) => s.name)).toEqual(['Good'])
   })
 
-  test('ignores keys that are not patches', async () => {
-    storage.setItem('unrelated', 'x')
-    expect(await store.list()).toEqual([])
-  })
-
-  test('translates a backend failure into a StoreError', async () => {
-    const failing: StorageLike = {
-      ...createMemoryStorage(),
-      setItem() {
-        throw new Error('disk on fire')
-      },
-    }
-    const failingStore = createWebStorageStore(failing)
-    await expect(failingStore.save(make('X', '2026-01-01T00:00:00.000Z'))).rejects.toBeInstanceOf(
-      StoreError,
-    )
+  test('files that are not JSON are ignored', async () => {
+    mkdirSync(join(api.root, 'patches'), { recursive: true })
+    writeFileSync(join(api.root, 'patches', 'notes.txt'), 'hello', 'utf8')
+    expect(await api.store.list()).toEqual([])
   })
 })
 
-describe('draft store', () => {
-  test('a draft survives a reload and is not listed as a saved patch', async () => {
+describe('an id becomes a filename, so it is checked first', () => {
+  test('a traversing id cannot reach outside the folder', async () => {
+    /* Without the check, this would read or write above the data folder. The
+       pattern is what prevents it, not the path join. */
+    await expect(api.store.get('../../etc/passwd')).rejects.toBeInstanceOf(StoreError)
+    await expect(api.store.delete('../../secrets')).rejects.toBeInstanceOf(StoreError)
+  })
+
+  test('a slug with a slash is refused too', async () => {
+    await expect(api.store.deletePreset('a/b')).rejects.toBeInstanceOf(StoreError)
+  })
+})
+
+describe('the working draft', () => {
+  test('survives a reload and is not listed as a saved patch', async () => {
     const draft = make('In progress', '2026-01-01T00:00:00.000Z')
-    await store.writeDraft(draft)
-    expect(await createWebStorageStore(storage).readDraft()).toEqual(draft)
-    expect(await store.list()).toEqual([])
+    await api.store.writeDraft(draft)
+    expect(await api.store.readDraft()).toEqual(draft)
+    expect(await api.store.list()).toEqual([])
   })
 
   test('no draft reads as null', async () => {
-    expect(await store.readDraft()).toBeNull()
+    expect(await api.store.readDraft()).toBeNull()
   })
 
-  test('clearDraft removes it', async () => {
-    await store.writeDraft(make('X', '2026-01-01T00:00:00.000Z'))
-    await store.clearDraft()
-    expect(await store.readDraft()).toBeNull()
+  test('clearing it removes the file', async () => {
+    await api.store.writeDraft(make('X', '2026-01-01T00:00:00.000Z'))
+    await api.store.clearDraft()
+    expect(await api.store.readDraft()).toBeNull()
+    expect(existsSync(join(api.root, 'draft.json'))).toBe(false)
+  })
+})
+
+describe('when the server is not answering', () => {
+  test('the failure says so rather than surfacing as a parse error', async () => {
+    const { createHttpStore } = await import('../src/storage/httpStore.ts')
+    const offline = createHttpStore(() => Promise.reject(new Error('connection refused')))
+    await expect(offline.list()).rejects.toMatchObject({
+      name: 'StoreError',
+      kind: 'unavailable',
+    })
   })
 })

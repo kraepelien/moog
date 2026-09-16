@@ -1,0 +1,23 @@
+{
+  "slug": "level-3",
+  "name": "Level 3",
+  "notes": "",
+  "approximate": true,
+  "values": {
+    "osc1Range": "ft16",
+    "osc2Range": "ft16",
+    "osc2Frequency": 0.15,
+    "osc3Range": "ft16",
+    "osc3Frequency": -0.15,
+    "osc3Enable": "on",
+    "osc3Volume": 5,
+    "osc1Volume": 6,
+    "osc2Volume": 6,
+    "osc2Enable": "on",
+    "cutoffFrequency": 3,
+    "filterEmphasis": 3,
+    "amountOfContour": 5,
+    "filterSustainLevel": 8,
+    "loudnessSustainLevel": 9
+  }
+}

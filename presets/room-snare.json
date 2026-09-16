@@ -1,0 +1,14 @@
+{
+  "slug": "room-snare",
+  "name": "Room Snare",
+  "notes": "",
+  "approximate": true,
+  "values": {
+    "osc1Range": "ft4",
+    "osc1Volume": 8,
+    "noiseVolume": 4,
+    "cutoffFrequency": 3,
+    "filterEmphasis": 4,
+    "amountOfContour": 8
+  }
+}

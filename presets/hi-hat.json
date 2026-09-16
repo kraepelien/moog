@@ -1,0 +1,14 @@
+{
+  "slug": "hi-hat",
+  "name": "Hi-Hat",
+  "notes": "",
+  "approximate": true,
+  "values": {
+    "osc1Range": "ft4",
+    "osc1Enable": "off",
+    "noiseVolume": 6,
+    "cutoffFrequency": 3,
+    "filterEmphasis": 4,
+    "amountOfContour": 8
+  }
+}

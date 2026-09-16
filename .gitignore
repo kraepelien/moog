@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Working data written by the patch server. The shipped bank lives in presets/.
+data/
