@@ -3,6 +3,9 @@
   "name": "'70s French Sci-Fi Movie",
   "notes": "",
   "approximate": true,
+  "categories": [],
+  "synth": "Minimoog Model D",
+  "rating": 0,
   "values": {
     "oscillatorModulation": "on",
     "osc3Control": "lo",

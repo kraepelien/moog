@@ -3,6 +3,9 @@
   "name": "'70s Violin Lead",
   "notes": "",
   "approximate": true,
+  "categories": [],
+  "synth": "Minimoog Model D",
+  "rating": 0,
   "values": {
     "osc2Frequency": 0.2,
     "osc3Frequency": -0.2,

@@ -26,9 +26,12 @@ const at = (version: number, values: Record<string, unknown> = {}) => ({
 })
 
 describe('the migration chain', () => {
-  test('is empty, and the current version needs nothing from it', () => {
-    /* When this stops being true, everything below stops being hypothetical. */
-    expect(Object.keys(migrations)).toEqual([])
+  test('has a link for every version below the current one', () => {
+    /* The check that catches the mistake of bumping the version without
+       writing the upgrade: a patch of any older version must have a way up. */
+    for (let version = 1; version < PATCH_SCHEMA_VERSION; version++) {
+      expect(migrations[version]).toBeDefined()
+    }
     const patch = at(PATCH_SCHEMA_VERSION, { osc1Volume: 5 })
     expect(runMigrations(patch, PATCH_SCHEMA_VERSION, migrations, PATCH_SCHEMA_VERSION)).toEqual({
       ok: true,

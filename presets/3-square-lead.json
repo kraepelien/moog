@@ -3,6 +3,9 @@
   "name": "3-Square Lead",
   "notes": "",
   "approximate": true,
+  "categories": [],
+  "synth": "Minimoog Model D",
+  "rating": 0,
   "values": {
     "osc1Waveform": "sawtooth",
     "osc2Frequency": 0.3,

@@ -3,6 +3,9 @@
   "name": "Dark Toms",
   "notes": "",
   "approximate": true,
+  "categories": [],
+  "synth": "Minimoog Model D",
+  "rating": 0,
   "values": {
     "osc1Range": "ft4",
     "osc1Volume": 8,

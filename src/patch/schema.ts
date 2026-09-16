@@ -2,7 +2,11 @@ import { z } from 'zod'
 import type { ControlValue } from '../controls/types.ts'
 import { err, ok, type Result } from '../result.ts'
 
-export const PATCH_SCHEMA_VERSION = 1
+/* 2 added the three fields the library sorts and filters on. Bump this with a
+   migration in migrate.ts, never on its own: a patch on disk keeps the version
+   it was written with, and the number is what tells the loader which upgrades
+   it still needs. */
+export const PATCH_SCHEMA_VERSION = 2
 
 export interface Patch {
   readonly schemaVersion: number
@@ -13,9 +17,22 @@ export interface Patch {
      not know are kept here verbatim so a round-trip through an older build does
      not destroy a newer build's data. */
   readonly values: Readonly<Record<string, ControlValue>>
+  /* What the library groups by. Several per patch and free-form: a sound is a
+     synth bass and a disco bass at once, and no fixed list survives contact
+     with what people actually call things. */
+  readonly categories: readonly string[]
+  /* Which instrument the patch is for. One today, and it is written down
+     rather than assumed so the library can filter on it the day there are
+     two. */
+  readonly synth: string
+  /* Stars, 0 to 5, where 0 means nobody has said. */
+  readonly rating: number
   readonly createdAt: string
   readonly updatedAt: string
 }
+
+export const MINIMOOG = 'Minimoog Model D'
+export const MAX_RATING = 5
 
 export interface PatchIdentity {
   readonly newId: () => string
@@ -58,7 +75,14 @@ export const systemIdentity: PatchIdentity = {
 }
 
 export function createPatch(
-  fields: { name?: string; notes?: string; values?: Readonly<Record<string, ControlValue>> },
+  fields: {
+    name?: string
+    notes?: string
+    values?: Readonly<Record<string, ControlValue>>
+    categories?: readonly string[]
+    synth?: string
+    rating?: number
+  },
   identity: PatchIdentity = systemIdentity,
 ): Patch {
   const timestamp = identity.now()
@@ -68,6 +92,9 @@ export function createPatch(
     name: fields.name ?? '',
     notes: fields.notes ?? '',
     values: { ...(fields.values ?? {}) },
+    categories: [...(fields.categories ?? [])],
+    synth: fields.synth ?? MINIMOOG,
+    rating: fields.rating ?? 0,
     createdAt: timestamp,
     updatedAt: timestamp,
   }
@@ -91,6 +118,9 @@ export const patchSchema = z.object({
   name: z.string(),
   notes: z.string(),
   values: z.record(z.string(), z.unknown()),
+  categories: z.array(z.string()),
+  synth: z.string(),
+  rating: z.int().min(0).max(MAX_RATING),
   createdAt: z.string(),
   updatedAt: z.string(),
 })

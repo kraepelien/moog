@@ -3,6 +3,18 @@
   "patchSchemaVersion": 1,
   "bundleFormat": "minimoog-patch-bundle",
   "bundleFormatVersion": 1,
+  "patchFields": [
+    "schemaVersion",
+    "id",
+    "name",
+    "notes",
+    "values",
+    "categories",
+    "synth",
+    "rating",
+    "createdAt",
+    "updatedAt"
+  ],
   "controls": {
     "amountOfContour": {
       "type": "continuousKnob"

@@ -3,6 +3,9 @@
   "name": "Smooth-E-P",
   "notes": "",
   "approximate": true,
+  "categories": [],
+  "synth": "Minimoog Model D",
+  "rating": 0,
   "values": {
     "osc1Range": "ft16",
     "osc2Range": "ft16",

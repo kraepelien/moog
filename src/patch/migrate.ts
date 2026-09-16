@@ -1,13 +1,27 @@
 import { err, ok, type Result } from '../result.ts'
-import { PATCH_SCHEMA_VERSION, parsePatch, type Patch } from './schema.ts'
+import { MINIMOOG, PATCH_SCHEMA_VERSION, parsePatch, type Patch } from './schema.ts'
 
 /* Keyed by the version it upgrades FROM, producing that version plus one. A v1
-   patch reaching a v3 build runs migrations[1] then migrations[2]. Empty while
-   there is only one version; the shape exists from the first commit so v2 is a
-   single entry rather than a guess at what unversioned data meant. */
+   patch reaching a v3 build runs migrations[1] then migrations[2].
+
+   A migration only ever fills in what the new version needs. It does not
+   validate — parsePatch does that afterwards, on the result — and it does not
+   touch `values`, because a control the build does not recognise is data the
+   format promises to carry through untouched. */
 export type Migration = (patch: Record<string, unknown>) => Record<string, unknown>
 
-export const migrations: Readonly<Record<number, Migration>> = {}
+export const migrations: Readonly<Record<number, Migration>> = {
+  /* v2 gave a patch the three things the library lists it by. Everything
+     written before it predates any of them, so: no categories yet, the only
+     instrument there has ever been, and unrated — which is 0, and reads as
+     "nobody has said" rather than "nobody liked it". */
+  1: (patch) => ({
+    ...patch,
+    categories: Array.isArray(patch.categories) ? patch.categories : [],
+    synth: typeof patch.synth === 'string' && patch.synth !== '' ? patch.synth : MINIMOOG,
+    rating: typeof patch.rating === 'number' ? patch.rating : 0,
+  }),
+}
 
 export function migrateToCurrent(raw: unknown): Result<Patch> {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {

@@ -3,7 +3,7 @@ import { panelRegistry } from '../src/controls/panel.ts'
 import { isRecalled } from '../src/controls/recall.ts'
 import { defaultValues } from '../src/controls/registry.ts'
 import { mergeValues, resolvePatch } from '../src/patch/resolve.ts'
-import { createPatch } from '../src/patch/schema.ts'
+import { PATCH_SCHEMA_VERSION, createPatch } from '../src/patch/schema.ts'
 import { testApi } from './apiFixture.ts'
 import { createBundle, parseBundle, serializeBundle } from '../src/transfer/bundle.ts'
 
@@ -103,7 +103,7 @@ describe('the shape of an exported file', () => {
     expect(file.format).toBe('minimoog-patch-bundle')
     expect(file.formatVersion).toBe(1)
     expect(file.patches).toHaveLength(1)
-    expect(file.patches[0].schemaVersion).toBe(1)
+    expect(file.patches[0].schemaVersion).toBe(PATCH_SCHEMA_VERSION)
     /* Every control the format carries: the panel's, less the five it plays
        but does not record. */
     expect(Object.keys(file.patches[0].values)).toHaveLength(42)

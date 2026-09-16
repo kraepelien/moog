@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import lock from './patch-format.lock.json'
 import { panelRegistry } from '../src/controls/panel.ts'
-import { PATCH_SCHEMA_VERSION } from '../src/patch/schema.ts'
+import { PATCH_SCHEMA_VERSION, patchSchema } from '../src/patch/schema.ts'
 import { BUNDLE_FORMAT, BUNDLE_FORMAT_VERSION } from '../src/transfer/bundle.ts'
 
 /* The names in a saved patch are a published interface. A control id or a
@@ -100,6 +100,30 @@ describe('position ids are a published interface too', () => {
     expect({
       unrecorded,
       why: 'New position ids must be added to test/patch-format.lock.json.',
+    }).toEqual({ unrecorded: [], why: expect.any(String) })
+  })
+})
+
+describe('the fields of a patch are a published interface', () => {
+  test('every locked field is still in the schema', () => {
+    /* Renaming `notes` drops it from every saved patch exactly the way renaming
+       a control id would, and just as quietly: the old key becomes unknown and
+       the new one is empty. */
+    const live = Object.keys(patchSchema.shape)
+    const missing = (lock.patchFields as string[]).filter((field) => !live.includes(field))
+    expect({
+      missing,
+      why: 'A locked patch field is gone. Restore the name rather than editing the lock; if the field really must change, it needs a migration and a new schema version.',
+    }).toEqual({ missing: [], why: expect.any(String) })
+  })
+
+  test('every field in the schema is recorded', () => {
+    const unrecorded = Object.keys(patchSchema.shape).filter(
+      (field) => !(lock.patchFields as string[]).includes(field),
+    )
+    expect({
+      unrecorded,
+      why: 'New patch fields must be added to test/patch-format.lock.json.',
     }).toEqual({ unrecorded: [], why: expect.any(String) })
   })
 })

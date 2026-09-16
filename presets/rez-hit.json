@@ -3,6 +3,9 @@
   "name": "Rez Hit",
   "notes": "",
   "approximate": true,
+  "categories": [],
+  "synth": "Minimoog Model D",
+  "rating": 0,
   "values": {
     "osc1Waveform": "sawtooth",
     "osc2Waveform": "narrowPulse",

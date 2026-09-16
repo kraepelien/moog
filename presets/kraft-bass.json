@@ -3,6 +3,9 @@
   "name": "Kraft Bass",
   "notes": "",
   "approximate": true,
+  "categories": [],
+  "synth": "Minimoog Model D",
+  "rating": 0,
   "values": {
     "osc1Range": "ft16",
     "osc1Waveform": "sawtooth",

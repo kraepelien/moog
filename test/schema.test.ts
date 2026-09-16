@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { migrateToCurrent, migrations } from '../src/patch/migrate.ts'
-import { PATCH_SCHEMA_VERSION, createPatch, parsePatch } from '../src/patch/schema.ts'
+import { MINIMOOG, PATCH_SCHEMA_VERSION, createPatch, parsePatch } from '../src/patch/schema.ts'
 import { fixedIdentity } from './fixtures.ts'
 
 /* The bug this pins: crypto.randomUUID exists only in a secure context, so it is
@@ -88,7 +88,59 @@ describe('migrateToCurrent', () => {
     expect(!result.ok && result.error).toMatch(/Update the app/)
   })
 
-  test('the migration chain is empty while there is only one version', () => {
-    expect(Object.keys(migrations)).toEqual([])
+  test('opens a patch written before the library fields existed', () => {
+    /* What a v1 file on disk looks like: everything a patch had then, and
+       nothing the library added. Somebody's saved sound, which has to keep
+       opening. */
+    const v1 = {
+      schemaVersion: 1,
+      id: 'older-patch',
+      name: 'Sub Bass',
+      notes: 'from before',
+      values: { osc1Volume: 8, osc1Range: 'ft32' },
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    }
+
+    const result = migrateToCurrent(v1)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+
+    /* Upgraded in place, with the values untouched and the new fields saying
+       what is true of a patch written before them: uncategorised, the only
+       instrument there was, and unrated. */
+    expect(result.value).toEqual({
+      ...v1,
+      schemaVersion: PATCH_SCHEMA_VERSION,
+      categories: [],
+      synth: MINIMOOG,
+      rating: 0,
+    })
+  })
+
+  test('leaves fields alone when an older file somehow already has them', () => {
+    /* A patch hand-edited, or written by a build that had the fields before the
+       version was bumped. Filling in is the migration's job; overwriting is
+       not. */
+    const result = migrateToCurrent({
+      schemaVersion: 1,
+      id: 'x',
+      name: 'Hand edited',
+      notes: '',
+      values: {},
+      categories: ['Lead'],
+      synth: 'Prophet-5',
+      rating: 4,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    })
+
+    expect(result.ok && result.value.categories).toEqual(['Lead'])
+    expect(result.ok && result.value.synth).toBe('Prophet-5')
+    expect(result.ok && result.value.rating).toBe(4)
+  })
+
+  test('the chain has one link, from the version before the library', () => {
+    expect(Object.keys(migrations)).toEqual(['1'])
   })
 })

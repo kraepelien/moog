@@ -3,6 +3,9 @@
   "name": "Jurassic Love",
   "notes": "",
   "approximate": true,
+  "categories": [],
+  "synth": "Minimoog Model D",
+  "rating": 0,
   "values": {
     "osc1Range": "ft32",
     "osc1Waveform": "sawtooth",

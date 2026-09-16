@@ -3,6 +3,9 @@
   "name": "Vocal-Bot",
   "notes": "",
   "approximate": true,
+  "categories": [],
+  "synth": "Minimoog Model D",
+  "rating": 0,
   "values": {
     "oscillatorModulation": "on",
     "osc3Control": "lo",

@@ -3,6 +3,9 @@
   "name": "Steel Wound",
   "notes": "",
   "approximate": true,
+  "categories": [],
+  "synth": "Minimoog Model D",
+  "rating": 0,
   "values": {
     "osc1Waveform": "narrowPulse",
     "osc2Frequency": 0.2,
