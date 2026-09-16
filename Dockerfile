@@ -21,11 +21,14 @@ WORKDIR /app
 # need a passwd entry to run as a uid, and creating one here would fail anyway:
 # the bun base image already occupies 1000:1000.
 #
-# Defaults to the Synology `docker` account, 1027, whose primary group is 100 —
-# not the usual 1000, which would be wrong everywhere this actually runs.
-# Override both for a different host.
+# Defaults to the Synology `docker` account, 1027, with the `docker` group,
+# 65536 — the group the data folder belongs to, not that account's primary group
+# of 100. Matching the folder's group is what gives the container write access;
+# with gid 100 it would match neither owner nor group, fall through to "other",
+# list the presets happily and fail every save. Override both for a different
+# host.
 ARG UID=1027
-ARG GID=100
+ARG GID=65536
 
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/server ./server

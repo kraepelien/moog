@@ -13,9 +13,10 @@ services:
     container_name: moog
     restart: unless-stopped
 
-    # Must match whoever owns the share, or the files land unreadable from the
-    # NAS. 1026:100 is the Synology account and its `users` group.
-    user: "${MOOG_UID:-1027}:${MOOG_GID:-100}"
+    # 1027 is the Synology `docker` account; 65536 is the `docker` group, which
+    # the data folder belongs to and which contains the login account too, so
+    # both the container and a person can work on the same files.
+    user: "${MOOG_UID:-1027}:${MOOG_GID:-65536}"
 
     environment:
       PORT: 8080

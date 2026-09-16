@@ -6,6 +6,12 @@ import { layoutFor } from './store.ts'
 /* Serves the built app plus the same API the dev plugin serves, for running the
    editor without a toolchain. `bun run serve` after `bun run build`. */
 
+/* New files are written group-writable rather than the default 644. The data
+   folder belongs to a group holding both this process and the person who logs
+   in, and the point of keeping patches as files is that they can be edited by
+   hand — which a group-readable-only file does not allow. */
+process.umask(0o002)
+
 const root = process.env.MOOG_DATA ?? 'data'
 const seed = process.env.MOOG_PRESETS ?? 'presets'
 const dist = process.env.MOOG_DIST ?? 'dist'

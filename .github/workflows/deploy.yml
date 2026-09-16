@@ -64,7 +64,7 @@ jobs:
           # setting for a different host.
           build-args: |
             UID=${{ vars.MOOG_UID || '1027' }}
-            GID=${{ vars.MOOG_GID || '100' }}
+            GID=${{ vars.MOOG_GID || '65536' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
