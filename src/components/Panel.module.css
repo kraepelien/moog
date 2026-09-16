@@ -79,14 +79,17 @@
    the control's box holds nothing but the control. Sits on the bottom of that
    row, right above what it names.
 
-   It takes its column's width without setting it: the column is measured
-   against the longest word, and the percentage minimum then fills whatever the
-   controls settled on. So a long name breaks over two lines, the way the panel
-   sets EXTERNAL / INPUT VOLUME, instead of making itself the widest thing in
-   the section and the column wider than the knob it names. */
+   Each line is set unbroken and the name is as wide as its longest, so it takes
+   exactly the room the panel gives it — CUTOFF FREQUENCY across, AMOUNT OF /
+   CONTOUR over two — rather than the room the widest name in the section needs.
+   Where a name breaks is in the layout, since that is what decides a column's
+   width. The percentage minimum fills a column the controls made wider. */
 .caption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   align-self: end;
-  width: min-content;
+  width: max-content;
   min-width: 100%;
   font-size: 0.95rem;
   font-weight: 700;
@@ -94,9 +97,6 @@
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  /* Otherwise "Keyboard Control 1" breaks after the last word and leaves the
-     digit alone on the second line. */
-  text-wrap: balance;
 }
 
 .caption[data-for='switch'] {

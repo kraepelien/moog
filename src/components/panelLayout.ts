@@ -21,8 +21,14 @@ export interface SectionLayout {
   /* What a control prints above itself, when the panel does not use the name the
      registry gives it. An empty string prints nothing, which is what a column
      already headed needs — the instrument labels the column, not each knob in
-     it. The registry's label is still what a screen reader hears. */
-  readonly labels?: Readonly<Record<string, string>>
+     it. The registry's label is still what a screen reader hears.
+
+     An array is set on that many lines. A name is as wide as its longest line
+     and a name sets the width of its column, so where a name breaks is where a
+     section's width is decided — which is why the ones longer than the knob
+     they name are broken here rather than left to the browser. The panel does
+     the same, and these follow it. */
+  readonly labels?: Readonly<Record<string, string | readonly string[]>>
   /* Set where the section's rows alternate between columns, so that the cell
      beside a knob's neighbour is empty and the knob can stand taller than the
      row it is in. The switches then set the pitch, which is how the panel
@@ -79,6 +85,8 @@ const SECTIONS: Readonly<Record<string, SectionLayout>> = {
       osc3Waveform: '',
       osc2Frequency: 'Oscillator-2',
       osc3Frequency: 'Oscillator-3',
+      oscillatorModulation: ['Oscillator', 'Modulation'],
+      osc3Control: ['Osc. 3', 'Control'],
     },
   },
 
@@ -102,6 +110,7 @@ const SECTIONS: Readonly<Record<string, SectionLayout>> = {
       osc1Volume: 'Volume',
       osc2Volume: '',
       osc3Volume: '',
+      externalInputVolume: ['External', 'Input Volume'],
     },
   },
 
@@ -119,6 +128,12 @@ const SECTIONS: Readonly<Record<string, SectionLayout>> = {
     headings: {
       hdrFilter: ['Filter'],
       hdrLoudness: ['Loudness Contour'],
+    },
+    labels: {
+      filterModulation: ['Filter', 'Modulation'],
+      keyboardControl1: ['Keyboard', 'Control 1'],
+      keyboardControl2: ['Keyboard', 'Control 2'],
+      amountOfContour: ['Amount of', 'Contour'],
     },
   },
 

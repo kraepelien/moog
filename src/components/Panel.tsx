@@ -37,6 +37,18 @@ function isBuilt(item: PanelItem): boolean {
   return !isDecoration(item) && !isPlaceholder(item)
 }
 
+/* A printed name, as the lines the panel sets it on. One unbroken line unless
+   the layout says where it breaks. */
+function lines(label: string | readonly string[]): readonly string[] {
+  return typeof label === 'string' ? [label] : label
+}
+
+/* And the same name as one string, which is what a screen reader reads out: the
+   breaks are the panel's typography, not part of what the control is called. */
+function spoken(label: string | readonly string[]): string {
+  return typeof label === 'string' ? label : label.join(' ')
+}
+
 /* A control on the instrument that a patch does not record and nothing reads:
    a socket, an indicator, the mains switch. Drawn as its shape, since that is
    all that is known about it until its artwork exists.
@@ -143,7 +155,8 @@ function PanelSection({ registry, section, values, onChange }: SectionProps) {
     /* Renaming replaces the printed label; an empty one hides it and leaves the
        registry's name for a screen reader, since the heading it defers to is
        not something a screen reader can associate on its own. */
-    const renamed = override && !isDecoration(item) ? { ...item, label: override } : item
+    const renamed =
+      override && !isDecoration(item) ? { ...item, label: spoken(override) } : item
     return (
       <Control
         key={item.id}
@@ -156,15 +169,17 @@ function PanelSection({ registry, section, values, onChange }: SectionProps) {
     )
   }
 
-  /* What the panel prints over a control. The section prints it, so the control
-     is told not to — except a wheel, which carries its name underneath. */
-  const captionFor = (item: PanelItem): string | undefined => {
+  /* What the panel prints over a control, as the lines it is set on. The section
+     prints it, so the control is told not to — except a wheel, which carries its
+     name underneath. */
+  const captionFor = (item: PanelItem): readonly string[] | undefined => {
     const override = layout?.labels?.[item.id]
     if (override === '') return undefined
-    if (isDecoration(item)) return item.label
+    if (override !== undefined) return lines(override)
+    if (isDecoration(item)) return lines(item.label)
     if (isWheel(item)) return undefined
-    if (isToggleSwitch(item)) return item.headline
-    return override ?? item.label
+    if (isToggleSwitch(item)) return item.headline ? lines(item.headline) : undefined
+    return lines(item.label)
   }
 
   if (!layout) {
@@ -224,7 +239,9 @@ function PanelSection({ registry, section, values, onChange }: SectionProps) {
                   className={styles.caption}
                   data-for={toggle ? 'switch' : undefined}
                 >
-                  {caption}
+                  {caption.map((line) => (
+                    <span key={line}>{line}</span>
+                  ))}
                 </span>
               ),
               <div
