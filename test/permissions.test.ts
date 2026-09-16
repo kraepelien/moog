@@ -256,7 +256,7 @@ describe('a request from another site', () => {
 
   test('and allowed when it only reads', async () => {
     const { db } = await world()
-    const handle = createApi({ db })
+    const handle = createApi({ db, config: authConfigFromEnv({}) })
     const response = (await handle(
       new Request('http://test/api/session', { headers: { origin: 'https://evil.example' } }),
     ))!

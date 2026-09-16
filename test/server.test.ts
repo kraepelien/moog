@@ -3,6 +3,8 @@ import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createApi } from '../server/api.ts'
+import { authConfigFromEnv } from '../server/identity.ts'
+import { limitsFromEnv } from '../server/limits.ts'
 import { backupTo, openDatabase } from '../server/db.ts'
 import { syncInstruments } from '../server/factory.ts'
 import { createStore, isSafeName } from '../server/store.ts'
@@ -124,7 +126,9 @@ describe('the request handler', () => {
       }),
     )
 
-  const api = () => createApi({ db: freshDb() })
+  /* From an empty environment rather than process.env — see apiFixture.ts. */
+  const api = () =>
+    createApi({ db: freshDb(), config: authConfigFromEnv({}), limits: limitsFromEnv({}) })
 
   test('leaves anything that is not the API alone', async () => {
     /* Null rather than a 404, so the caller can serve the app. */
@@ -199,7 +203,7 @@ describe('the request handler', () => {
 
   test('reports a storage failure as one, with a reason', async () => {
     const db = freshDb()
-    const handle = createApi({ db })
+    const handle = createApi({ db, config: authConfigFromEnv({}), limits: limitsFromEnv({}) })
     db.close()
 
     const response = (await call(handle, 'POST', '/api/patches', aPatch('One')))!
