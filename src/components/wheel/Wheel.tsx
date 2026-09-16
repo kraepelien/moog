@@ -1,4 +1,4 @@
-import { useId, useRef } from 'react'
+import { useId, useRef, useState } from 'react'
 import {
   quantiseWheel,
   wheelDecimals,
@@ -16,6 +16,7 @@ import {
   VIEWBOX,
   markerY,
 } from './wheelArtwork.ts'
+import { ValueEntry } from '../knob/ValueEntry.tsx'
 import styles from './Wheel.module.css'
 
 export interface WheelProps {
@@ -29,6 +30,7 @@ export function Wheel({ def, value, onChange }: WheelProps) {
   const current = quantiseWheel(def, value)
   const fraction = wheelFraction(def, current)
   const drag = useRef<{ y: number; value: number } | null>(null)
+  const [editing, setEditing] = useState(false)
 
   /* Plain functions rather than useCallback: every handler here lands on a DOM
      element, never on a memoized child, so a stable identity buys nothing — and
@@ -77,6 +79,7 @@ export function Wheel({ def, value, onChange }: WheelProps) {
 
   return (
     <div className={styles.wheel}>
+      <div className={styles.stripWrap}>
       <svg
         viewBox={`${VIEWBOX.x} ${VIEWBOX.y} ${VIEWBOX.width} ${VIEWBOX.height}`}
         className={styles.strip}
@@ -92,6 +95,7 @@ export function Wheel({ def, value, onChange }: WheelProps) {
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
+        onDoubleClick={() => setEditing(true)}
       >
         <rect {...FRAME} className={styles.frame} />
         <rect {...FACE} className={styles.face} />
@@ -112,6 +116,18 @@ export function Wheel({ def, value, onChange }: WheelProps) {
           className={styles.marker}
         />
       </svg>
+      {editing && (
+        <ValueEntry
+          initial={current.toFixed(wheelDecimals(def))}
+          parse={(text) => {
+            const parsed = Number(text.trim().replace(',', '.'))
+            return Number.isFinite(parsed) && text.trim() !== '' ? quantiseWheel(def, parsed) : null
+          }}
+          onCommit={onChange}
+          onClose={() => setEditing(false)}
+        />
+      )}
+      </div>
       <span className={styles.header} id={labelId}>
         {def.label}
       </span>

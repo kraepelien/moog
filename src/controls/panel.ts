@@ -50,6 +50,13 @@ const WAVEFORM_POSITIONS = [
   { id: 'narrowPulse', label: 'Narrow pulse', glyph: 'narrowPulse' },
 ] as const
 
+/* Every continuous control stores to a hundredth and prints a tenth. Nothing on
+   the panel steps in whole units — the controls with set values are the rotary
+   selectors and the switches, and those are discrete types, not knobs with a
+   step of 1. */
+const KNOB_STEP = 0.01
+const KNOB_DECIMALS = 1
+
 export const sections: readonly SectionDef[] = [
   { id: 'controllers', label: 'Controllers' },
   { id: 'oscillatorBank', label: 'Oscillator Bank' },
@@ -138,8 +145,9 @@ function chooser(
   }
 }
 
-/* The 0-10 knobs: one tick per unit, a numeral every other tick, settable in
-   tenths. */
+/* The 0-10 knobs: one tick per unit, a numeral every other tick. Stored to a
+   hundredth but shown to a tenth, so a value set by dragging keeps the precision
+   it was given while the panel stays readable. */
 function knob0to10(
   id: string,
   label: string,
@@ -155,7 +163,8 @@ function knob0to10(
     min: 0,
     max: 10,
     default: defaultValue,
-    step: 0.1,
+    step: KNOB_STEP,
+    decimals: KNOB_DECIMALS,
     scale: { tickStep: 1, labelStep: 2 },
     ...extra,
   }
@@ -173,7 +182,7 @@ function knobSymmetric(
   scale: { tickStep: number; labelStep: number },
   extra: { group?: string; size?: 'small' | 'large'; step?: number } = {},
 ): ContinuousKnobDef {
-  const { step = 0.1, ...rest } = extra
+  const { step = KNOB_STEP, ...rest } = extra
   return {
     id,
     type: 'continuousKnob',
@@ -183,6 +192,7 @@ function knobSymmetric(
     max: range,
     default: 0,
     step,
+    decimals: KNOB_DECIMALS,
     scale: { from: -printed, to: printed, ...scale },
     ...rest,
   }
@@ -234,7 +244,8 @@ function wheel(
     type: 'wheel',
     label,
     section,
-    step: 0.1,
+    step: KNOB_STEP,
+    decimals: KNOB_DECIMALS,
     ...range,
     ...(extra.group ? { group: extra.group } : {}),
   }

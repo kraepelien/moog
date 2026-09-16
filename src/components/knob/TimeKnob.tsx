@@ -1,10 +1,11 @@
-import { memo, useCallback, useId, useRef } from 'react'
+import { memo, useCallback, useId, useRef, useState } from 'react'
 import {
   formatMs,
   fractionForMs,
   maxMs,
   minMs,
   msAtFraction,
+  parseTimeInput,
   quantiseMs,
   scaleLabel,
   stepFractionOf,
@@ -13,6 +14,7 @@ import {
 import { CENTRE, LABEL_RADIUS, TICK_INNER, TICK_OUTER, VIEWBOX } from './dialArtwork.ts'
 import { KnobBody } from './KnobBody.tsx'
 import { angleForFraction, pointAt } from './dialGeometry.ts'
+import { ValueEntry } from './ValueEntry.tsx'
 import styles from './ContinuousKnob.module.css'
 
 /* The marks sit at even intervals around the dial even though their values do
@@ -77,6 +79,7 @@ export function TimeKnob({ def, value, onChange }: TimeKnobProps) {
   const current = quantiseMs(def, value)
   const fraction = fractionForMs(def, current)
   const drag = useRef<{ y: number; fraction: number } | null>(null)
+  const [editing, setEditing] = useState(false)
 
   /* Nudging moves by a fraction of travel, never by a fixed number of
      milliseconds, so a press feels the same at both ends of a scale whose value
@@ -133,6 +136,7 @@ export function TimeKnob({ def, value, onChange }: TimeKnobProps) {
       <span className={styles.header} id={labelId}>
         {def.label}
       </span>
+      <div className={styles.dialWrap}>
       <svg
         viewBox={`${VIEWBOX.x} ${VIEWBOX.y} ${VIEWBOX.width} ${VIEWBOX.height}`}
         className={styles.dial}
@@ -148,6 +152,7 @@ export function TimeKnob({ def, value, onChange }: TimeKnobProps) {
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
+        onDoubleClick={() => setEditing(true)}
       >
         <Scale def={def} />
         <KnobBody angle={angleForFraction(fraction)} size={def.size ?? 'small'} />
@@ -161,6 +166,18 @@ export function TimeKnob({ def, value, onChange }: TimeKnobProps) {
           {formatMs(current)}
         </text>
       </svg>
+      {editing && (
+        <ValueEntry
+          initial={formatMs(current)}
+          parse={(text) => {
+            const ms = parseTimeInput(text)
+            return ms === null ? null : quantiseMs(def, ms)
+          }}
+          onCommit={onChange}
+          onClose={() => setEditing(false)}
+        />
+      )}
+      </div>
     </div>
   )
 }

@@ -117,9 +117,18 @@ Where the range runs past the printed scale, the end gets an **unlabelled tick**
 is visible. Without it a knob that reaches 8 while printing to 7 looks like it stops at 7, and the
 extra travel reads as a bug rather than as the instrument.
 
-`step` is separate again: it is what one nudge changes and what stored values round to. A knob can
-print a numeral every 2 and still be settable in tenths. Values are re-rounded on every change,
-because adding 0.1 thirty times does not give 3 in binary floating point.
+`step` is separate again: it is what one nudge changes and what stored values round to. Every
+continuous control on the panel **stores to a hundredth and prints a tenth**, so a value set by
+dragging keeps the precision it was given while the panel stays readable. Nothing here steps in
+whole units — the controls with set values are the rotary selectors and the switches, which are
+discrete types rather than knobs with a step of 1. Values are re-rounded on every change, because
+adding 0.01 a hundred times does not give 1 in binary floating point.
+
+**Double click any knob or wheel to type a value.** That leaves single click and drag free to turn
+it. Enter and blur commit, Escape abandons, and text that does not parse abandons too — quietly
+substituting a default would look like the control ignored you. On a time knob a bare number is
+milliseconds, the unit it stores; seconds have to be said (`1.5s`), so `1.5` cannot silently mean a
+second and a half when the rest of the scale is in milliseconds.
 
 ### Wheels
 

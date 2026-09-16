@@ -97,6 +97,20 @@ export function formatMs(ms: number): string {
   return `${Number((ms / 1000).toFixed(2))} s`
 }
 
+/* Reads a typed value back. A bare number is milliseconds, because that is the
+   unit the control stores; seconds have to be said, so "1.5" cannot silently
+   mean a second and a half when the rest of the scale is in milliseconds.
+   Returns null for anything unparseable rather than guessing. */
+export function parseTimeInput(text: string): number | null {
+  const cleaned = text.trim().toLowerCase().replace(',', '.')
+  const match = /^(\d*\.?\d+)\s*(ms|msec|s|sec)?$/.exec(cleaned)
+  if (!match) return null
+  const amount = Number(match[1])
+  if (!Number.isFinite(amount)) return null
+  const unit = match[2]
+  return unit === 's' || unit === 'sec' ? amount * 1000 : amount
+}
+
 export const timeKnobType: ControlType<TimeKnobDef, number> = {
   type: 'timeKnob',
   decode(raw, def): DecodeResult<number> {

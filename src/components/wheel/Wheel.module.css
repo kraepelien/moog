@@ -9,6 +9,12 @@
   -webkit-user-select: none;
 }
 
+/* The positioning context for the typed-value input. */
+.stripWrap {
+  position: relative;
+  display: flex;
+}
+
 .strip {
   width: 52px;
   height: 204px;

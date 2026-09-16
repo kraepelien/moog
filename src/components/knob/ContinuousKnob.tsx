@@ -1,4 +1,4 @@
-import { memo, useCallback, useId, useRef } from 'react'
+import { memo, useCallback, useId, useRef, useState } from 'react'
 import {
   decimalsFor,
   quantise,
@@ -14,6 +14,7 @@ import {
 } from './dialArtwork.ts'
 import { KnobBody } from './KnobBody.tsx'
 import { angleForFraction, pointAt } from './dialGeometry.ts'
+import { ValueEntry } from './ValueEntry.tsx'
 import styles from './ContinuousKnob.module.css'
 
 function angleFor(def: ContinuousKnobDef, value: number): number {
@@ -68,6 +69,7 @@ export function ContinuousKnob({ def, value, onChange }: ContinuousKnobProps) {
   const current = quantise(def, value)
   const angle = angleFor(def, current)
   const drag = useRef<{ y: number; value: number } | null>(null)
+  const [editing, setEditing] = useState(false)
 
   const nudge = useCallback(
     (steps: number) => onChange(quantise(def, current + steps * def.step)),
@@ -124,6 +126,7 @@ export function ContinuousKnob({ def, value, onChange }: ContinuousKnobProps) {
       <span className={styles.header} id={labelId}>
         {def.label}
       </span>
+      <div className={styles.dialWrap}>
       <svg
         viewBox={`${VIEWBOX.x} ${VIEWBOX.y} ${VIEWBOX.width} ${VIEWBOX.height}`}
         className={styles.dial}
@@ -139,6 +142,7 @@ export function ContinuousKnob({ def, value, onChange }: ContinuousKnobProps) {
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
+        onDoubleClick={() => setEditing(true)}
       >
         <Scale def={def} />
         <KnobBody angle={angle} size={size} />
@@ -152,6 +156,18 @@ export function ContinuousKnob({ def, value, onChange }: ContinuousKnobProps) {
           {current.toFixed(decimalsFor(def))}
         </text>
       </svg>
+      {editing && (
+        <ValueEntry
+          initial={current.toFixed(decimalsFor(def))}
+          parse={(text) => {
+            const parsed = Number(text.trim().replace(',', '.'))
+            return Number.isFinite(parsed) && text.trim() !== '' ? quantise(def, parsed) : null
+          }}
+          onCommit={onChange}
+          onClose={() => setEditing(false)}
+        />
+      )}
+      </div>
     </div>
   )
 }

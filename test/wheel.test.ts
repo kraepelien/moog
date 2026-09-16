@@ -5,6 +5,7 @@ import {
   isSprung,
   isWheel,
   quantiseWheel,
+  wheelDecimals,
   wheelFraction,
   wheelType,
   type WheelDef,
@@ -64,10 +65,19 @@ describe('travel', () => {
 })
 
 describe('quantiseWheel', () => {
-  test('snaps to the step and clamps', () => {
-    expect(quantiseWheel(mod, 3.44)).toBe(3.4)
+  test('keeps hundredths and clamps to the range', () => {
+    expect(quantiseWheel(mod, 3.44)).toBe(3.44)
+    expect(quantiseWheel(mod, 3.446)).toBe(3.45)
     expect(quantiseWheel(mod, -2)).toBe(0)
     expect(quantiseWheel(pitch, 99)).toBe(5)
+  })
+
+  /* Stored to a hundredth, shown to a tenth: dragging keeps the precision it was
+     given while the panel stays readable. */
+  test('stores finer than it displays', () => {
+    expect(mod.step).toBe(0.01)
+    expect(wheelDecimals(mod)).toBe(1)
+    expect(quantiseWheel(mod, 3.44).toFixed(wheelDecimals(mod))).toBe('3.4')
   })
 
   test('does not accumulate binary drift', () => {
