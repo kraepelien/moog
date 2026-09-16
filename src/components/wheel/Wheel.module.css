@@ -1,12 +1,11 @@
 /* White-on-black line art, as exported. The rest is sizing and hit area. */
 
 .wheel {
+  composes: noSelect from '../controlSurface.module.css';
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  user-select: none;
-  -webkit-user-select: none;
 }
 
 /* The positioning context for the typed-value input. */
@@ -16,28 +15,16 @@
 }
 
 .strip {
+  composes: dragSurface from '../controlSurface.module.css';
   width: 52px;
   height: 204px;
-  touch-action: none;
-  cursor: ns-resize;
-  background: #000;
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* See ToggleSwitch.module.css: the browser's own focus ring on every click. */
-.strip:focus {
-  outline: none;
-}
-
-.strip:focus-visible {
-  outline: 2px solid;
-  outline-offset: 2px;
 }
 
 .header {
-  font-size: 0.74rem;
+  font-size: var(--legend-size);
+  font-weight: var(--legend-weight);
+  letter-spacing: var(--legend-tracking);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 .reading {
@@ -46,19 +33,19 @@
 }
 
 .frame {
-  fill: #000;
-  stroke: #fff;
+  fill: var(--moog-panel);
+  stroke: var(--moog-ink);
   stroke-width: 2;
 }
 
 .face,
 .rib {
-  fill: #000;
-  stroke: #fff;
+  fill: var(--moog-panel);
+  stroke: var(--moog-ink);
 }
 
 .marker {
-  fill: #000;
-  stroke: #fff;
+  fill: var(--moog-panel);
+  stroke: var(--moog-ink);
   stroke-width: 2;
 }
