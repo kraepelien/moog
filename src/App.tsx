@@ -12,6 +12,7 @@ import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { FitToWidth } from './components/FitToWidth.tsx'
 import { TopBar, type TopBarAction } from './components/TopBar.tsx'
+import surface from './components/controlSurface.module.css'
 import { PatchLibrary } from './components/library/PatchLibrary.tsx'
 import { PatchHeader } from './components/library/PatchHeader.tsx'
 import { SavePatchDialog, type PatchFields } from './components/library/SavePatchDialog.tsx'
@@ -257,7 +258,15 @@ export function App() {
   return (
     <>
       <TopBar view={view} onView={goToView} actions={menu} />
-      <Box component="main" sx={{ p: 2 }}>
+      {/* The whole editor, not each control: a drag that starts a hair off a knob,
+          or a double click meant for its value box, otherwise selects whatever
+          caption it landed on and leaves it highlighted behind the panel. The
+          library keeps its text selectable. */}
+      <Box
+        component="main"
+        className={view === 'editor' ? surface.noSelect : undefined}
+        sx={{ p: 2 }}
+      >
         <Stack spacing={2}>
         {failed && (
           <Alert severity="error">
