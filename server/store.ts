@@ -8,7 +8,8 @@ import { PATCH_SCHEMA_VERSION, type Patch } from '../src/patch/schema.ts'
    column or a join, which a folder of JSON files could not answer without
    reading all of them.
 
-   `owner_id` stays null until there are accounts to own anything. */
+   A saved patch carries its owner from the first write, though with sign-in
+   off there is only ever the one local user to be. */
 
 /* An id still reaches the API from a URL, so it is still pattern-checked. It no
    longer becomes a filename, but a parameter that cannot be a word is one fewer
@@ -87,11 +88,11 @@ export function createStore(db: Database) {
       values_json = excluded.values_json, instrument_id = excluded.instrument_id,
       updated_at = excluded.updated_at, deleted_at = null`)
 
-  const write = (patch: Patch, options: { slug?: string | null } = {}) => {
+  const write = (patch: Patch, options: { slug?: string | null; owner?: number | null } = {}) => {
     upsert.run({
       $uid: patch.id,
       $slug: options.slug ?? null,
-      $owner: null,
+      $owner: options.owner ?? null,
       $instrument: requireInstrument(patch.instrument || DEFAULT_INSTRUMENT.id),
       $name: patch.name,
       $notes: patch.notes,
@@ -122,9 +123,9 @@ export function createStore(db: Database) {
       return row ? toPatch(row) : null
     },
 
-    putPatch(id: string, patch: Patch): void {
+    putPatch(id: string, patch: Patch, owner: number): void {
       if (!isSafeName(id)) throw new Error(`Unsafe patch id: ${id}`)
-      write({ ...patch, id })
+      write({ ...patch, id }, { owner })
     },
 
     deletePatch(id: string): void {
@@ -160,6 +161,57 @@ export function createStore(db: Database) {
     /* The healthcheck asks a real question, so an unmounted volume fails it. */
     countPatches(): number {
       return db.query<{ n: number }, []>(`select count(*) as n from patches`).get()?.n ?? 0
+    },
+
+    /* Stars are the viewer's, never the patch's: two people rating the same
+       sound must not overwrite each other, and a rating is not part of what a
+       patch is. 0 means unrated, which is a row removed rather than stored. */
+    setRating(userId: number, patchUid: string, stars: number): boolean {
+      const patch = db
+        .query<{ id: number }, [string, string]>(`select id from patches where uid = ? or slug = ?`)
+        .get(patchUid, patchUid)
+      if (!patch) return false
+
+      if (stars === 0) {
+        db.run(`delete from ratings where user_id = ? and patch_id = ?`, [userId, patch.id])
+        return true
+      }
+      db.run(
+        `insert into ratings (user_id, patch_id, stars, updated_at) values (?, ?, ?, ?)
+         on conflict(user_id, patch_id) do update set stars = excluded.stars,
+                                                      updated_at = excluded.updated_at`,
+        [userId, patch.id, stars, new Date().toISOString()],
+      )
+      return true
+    },
+
+    ratingsOf(userId: number): Record<string, number> {
+      const rows = db
+        .query<
+          { uid: string; slug: string | null; stars: number },
+          [number]
+        >(
+          `select p.uid, p.slug, r.stars from ratings r
+             join patches p on p.id = r.patch_id
+            where r.user_id = ?`,
+        )
+        .all(userId)
+      return Object.fromEntries(rows.map((row) => [row.slug ?? row.uid, row.stars]))
+    },
+
+    settingsOf(userId: number): unknown {
+      const row = db
+        .query<{ json: string }, [number]>(`select json from settings where user_id = ?`)
+        .get(userId)
+      return row ? JSON.parse(row.json) : {}
+    },
+
+    putSettings(userId: number, settings: unknown): void {
+      db.run(
+        `insert into settings (user_id, json) values (?, ?)
+         on conflict(user_id) do update set json = excluded.json`,
+        [userId, JSON.stringify(settings)],
+      )
     },
   }
 }
