@@ -5,6 +5,7 @@ import { buildLibrary } from './library.ts'
 import { handleAuth } from './routes/auth.ts'
 import { handlePatches } from './routes/patches.ts'
 import { createStore, type Store } from './store.ts'
+import { listTags } from './tags.ts'
 import { ensureLocalUser, findUser, type UserRow } from './users.ts'
 
 /* One request handler, shared by the Vite dev plugin and the standalone server,
@@ -129,6 +130,14 @@ export function createApi({
               ? null
               : { uid: viewer.uid, name: viewer.display_name, avatar: viewer.avatar_url },
         })
+      }
+
+      /* Readable by anyone, because the save form needs it before it knows
+         who is looking. Writing is the admin page's, which does not exist
+         yet. */
+      if (resource === 'tags') {
+        if (method === 'GET') return json(listTags(db))
+        return json({ error: 'method not allowed' }, 405)
       }
 
       if (resource === 'settings') {

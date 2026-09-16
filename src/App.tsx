@@ -72,6 +72,10 @@ export function App() {
   const [saved, setSaved] = useState<readonly PatchSummary[]>([])
   const [presets, setPresets] = useState<readonly Patch[]>([])
   const [library, setLibrary] = useState<readonly LibraryEntry[]>([])
+  /* The categories an admin keeps, which is what the save form offers — not the
+     tags patches happen to wear, or a bank nothing is tagged in yet could never
+     be given its first one. */
+  const [tags, setTags] = useState<readonly string[]>([])
   const [status, setStatus] = useState('')
   const [report, setReport] = useState<ResolveReport | null>(null)
   const [failed, setFailed] = useState(false)
@@ -101,14 +105,16 @@ export function App() {
   const dirty = draft !== null && signature(draft) !== clean
 
   const refresh = useCallback(async () => {
-    const [patches, bank, shelf] = await Promise.all([
+    const [patches, bank, shelf, categories] = await Promise.all([
       store.list(),
       store.listPresets(),
       store.library(),
+      store.listTags(),
     ])
     setSaved(patches)
     setPresets(bank)
     setLibrary(shelf)
+    setTags(categories)
   }, [])
 
   useEffect(() => {
@@ -196,13 +202,6 @@ export function App() {
      go rather than loading in place and leaving you on the list. A preset opens
      as a copy, because saving afterwards must not write back over it; a patch of
      your own opens as itself, so saving updates the one you picked. */
-  /* Every tag anything in the library already wears. There is nowhere in the
-     save form to invent one, so this is the whole vocabulary it can offer. */
-  const knownTags = useMemo(
-    () => [...new Set(libraryEntries.flatMap((entry) => entry.tags))].sort(),
-    [libraryEntries],
-  )
-
   const openEntry = useCallback(
     (entry: LibraryEntry) =>
       void run('', async () => {
@@ -463,7 +462,7 @@ export function App() {
       <SavePatchDialog
         open={saving}
         patch={draft}
-        tagChoices={knownTags}
+        tagChoices={tags}
         onCancel={() => setSaving(false)}
         onSave={(fields: PatchFields) =>
           void run('Saved', async () => {

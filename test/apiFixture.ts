@@ -6,14 +6,14 @@ import { createApi } from '../server/api.ts'
 import { openDatabase } from '../server/db.ts'
 import { syncInstruments } from '../server/factory.ts'
 import { createHttpStore } from '../src/storage/httpStore.ts'
-import type { PatchStore, PresetStore } from '../src/storage/types.ts'
+import type { PatchStore, PresetStore, TagStore } from '../src/storage/types.ts'
 
 /* Drives the browser's own adapter against the server's own handler over a real
    temporary folder, with no socket in between. Every layer a save passes through
    is the shipped one — adapter, routing, path checks, file writing — so a test
    here fails for the same reasons the app would. */
 export interface TestApi {
-  readonly store: PatchStore & PresetStore
+  readonly store: PatchStore & PresetStore & TagStore
   readonly root: string
   readonly db: Database
   cleanup(): void
