@@ -7,13 +7,8 @@ import { createApi } from '../server/api.ts'
 import { createFileStore, isSafeName } from '../server/store.ts'
 import { seedPresets } from '../server/seed.ts'
 
-/* The file store and the request handler, driven directly rather than through
-   the browser adapter. What is covered here is the part the happy path never
-   reaches: a write that fails halfway, two writes at once, a request that is
-   malformed or hostile, and a folder someone has made a mess of by hand.
-
-   These are the failures that lose someone's work rather than showing an error,
-   which is why they are worth a test each. */
+/* The part of the store the happy path never reaches: failed writes, races,
+   hostile input, and a folder someone has edited by hand. */
 
 const roots: string[] = []
 
@@ -56,9 +51,7 @@ describe('writing a record', () => {
   })
 
   test('that fails leaves the previous one intact and no litter', async () => {
-    /* A write that cannot complete must leave the folder as it found it: the
-       old patch still readable, and no temp file for the next listing to trip
-       over. What proves the rename itself is atomic is the test below. */
+    /* What proves the rename itself is atomic is the test below. */
     const store = createFileStore(freshRoot())
     await store.putPatch('one', { name: 'Good' })
 
@@ -169,8 +162,6 @@ describe('the request handler', () => {
   })
 
   test('deleting something that is not there is not an error', async () => {
-    /* Two tabs deleting the same patch: the second must not see a failure for
-       an outcome that is exactly what it asked for. */
     const handle = createApi({ root: freshRoot() })
     expect((await call(handle, 'DELETE', '/api/patches/ghost'))!.status).toBe(200)
   })
@@ -202,8 +193,7 @@ describe('the request handler', () => {
   })
 
   test('reports a storage failure as one, with a reason', async () => {
-    /* A file where the patches folder should be: the same shape as a disk that
-       has filled up or a volume that is not mounted. */
+    /* The same shape as a full disk or an unmounted volume. */
     const root = freshRoot()
     writeFileSync(join(root, 'patches'), 'in the way', 'utf8')
 
@@ -226,9 +216,7 @@ describe('seeding', () => {
   })
 
   test('a manifest edited into nonsense seeds again rather than refusing to run', async () => {
-    /* It cannot tell what was deleted on purpose any more, so the safe reading
-       is "nothing has been seeded here" — files already present are still not
-       overwritten, which is what stops that from losing an edit. */
+    /* Unreadable means "nothing seeded here"; files present are still kept. */
     const root = freshRoot()
     const bank = join(root, 'bank')
     const active = join(root, 'active')

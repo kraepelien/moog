@@ -1,39 +1,24 @@
-/* Where things sit, kept apart from what things are.
- *
- * The registry says a control belongs to Oscillator Bank; this says it sits in
- * the second column of the third row. Splitting them keeps the rule that adding
- * a knob to a section needs no layout edit: a control with no position here is
- * still drawn, it just flows after the placed ones instead of landing somewhere
- * chosen.
- *
- * A row is a line of `grid-template-areas`, and the area names are control ids,
- * which works because every id is already a valid CSS identifier — letters,
- * digits, dashes and underscores, never leading with a digit. A `.` is an empty
- * cell, and repeating an id spans it. Names that are not control ids are
- * headings, declared below.
- */
+/* Where things sit, kept apart from what things are, so that adding a knob
+   needs no layout edit: one with no position here still draws, it just flows
+   after the placed ones.
+
+   A row is a line of `grid-template-areas` whose area names are control ids,
+   which works because an id is already a valid CSS identifier. `.` is empty,
+   a repeated id spans, and a name that is not a control id is a heading. */
 
 export interface SectionLayout {
   readonly rows: readonly string[]
-  /* Cells that print a word rather than holding a control, one entry per line,
-     because several of them are set on two lines on the panel. */
+  /* One entry per line, because several are set on two lines on the panel. */
   readonly headings?: Readonly<Record<string, readonly string[]>>
-  /* What a control prints above itself, when the panel does not use the name the
-     registry gives it. An empty string prints nothing, which is what a column
-     already headed needs — the instrument labels the column, not each knob in
-     it. The registry's label is still what a screen reader hears.
-
-     An array is set on that many lines. A name is as wide as its longest line
-     and a name sets the width of its column, so where a name breaks is where a
-     section's width is decided — which is why the ones longer than the knob
-     they name are broken here rather than left to the browser. The panel does
-     the same, and these follow it. */
+  /* What the panel prints over a control instead of the registry's name. An
+     empty string prints nothing, for a column already headed; the registry's
+     name is still what a screen reader hears. An array breaks the name where
+     the panel breaks it — a name sets its column's width, so leaving the break
+     to the browser leaves the section's width to the browser. */
   readonly labels?: Readonly<Record<string, string | readonly string[]>>
-  /* Set where the section's rows alternate between columns, so that the cell
-     beside a knob's neighbour is empty and the knob can stand taller than the
-     row it is in. The switches then set the pitch, which is how the panel
-     stacks the mixer: sized by the knobs instead, the column runs a knob and a
-     caption taller per row than the instrument does. */
+  /* For sections whose rows alternate between columns: lets a knob stand
+     taller than its row so the switches set the row pitch, which is how the
+     mixer stacks on the instrument. */
   readonly knobsOverlapRows?: boolean
 }
 
@@ -59,11 +44,7 @@ const SECTIONS: Readonly<Record<string, SectionLayout>> = {
     ],
   },
 
-  /* Range and Waveform are headed once across the top, as on the panel, so the
-     six knobs beneath them print nothing of their own. The middle column heads
-     Oscillator-1 — which has no frequency knob, hence the gap — and the other
-     two frequency knobs carry their oscillator's name, which is how the panel
-     names those rows. */
+  /* Oscillator-1 has no frequency knob, hence the gap in the middle column. */
   oscillatorBank: {
     rows: [
       '.                    hdrRange  hdrOsc1       hdrWave',
@@ -90,11 +71,8 @@ const SECTIONS: Readonly<Record<string, SectionLayout>> = {
     },
   },
 
-  /* The five source switches are one column, and each sits level with the knob
-     it enables — which alternates between the oscillator volumes on the left and
-     the external and noise knobs on the right, rather than running down one side
-     and then the other. Every knob has its switch beside it; the column is
-     shared, not the pairing. */
+  /* The switches share a column but not a side: each sits level with the knob
+     it enables, alternating between the two knob columns. */
   mixer: {
     knobsOverlapRows: true,
     rows: [
@@ -104,8 +82,8 @@ const SECTIONS: Readonly<Record<string, SectionLayout>> = {
       '.          noiseEnable         noiseVolume         noiseColour',
       'osc3Volume osc3Enable          .                   .',
     ],
-    /* Only the top knob is headed: the switch beside each of the others already
-       says which oscillator it belongs to. */
+    /* Only the top knob is headed; the switch beside each of the others already
+       names its oscillator. */
     labels: {
       osc1Volume: 'Volume',
       osc2Volume: '',
@@ -114,9 +92,7 @@ const SECTIONS: Readonly<Record<string, SectionLayout>> = {
     },
   },
 
-  /* Two contours with identical markings, told apart by the heading over the
-     second — which is exactly why a control needed a group as well as a
-     section. Filter heads the first block the same way. */
+  /* Two contours with identical markings, told apart only by their headings. */
   modifiers: {
     rows: [
       '.                hdrFilter          hdrFilter         hdrFilter',
@@ -153,8 +129,8 @@ export function layoutFor(sectionId: string): SectionLayout | undefined {
   return SECTIONS[sectionId]
 }
 
-/* Every name the grid places, headings included, so the renderer can tell a
-   positioned control from one that has to flow. */
+/* Headings included: the renderer needs to tell a positioned control from one
+   that has to flow. */
 export function placedIn(sectionId: string): ReadonlySet<string> {
   const layout = SECTIONS[sectionId]
   if (!layout) return new Set()
@@ -191,12 +167,9 @@ export function withCaptionRows(rows: readonly string[]): string[] {
   return out
 }
 
-/* Each column takes the width of its own widest control. Even columns would put
-   a switch's column — five knobs wide on the sheet, a third of one here — on the
-   same footing as the frequency knobs beside it, and the panel is scaled to the
-   window, so every idle column is taken off the size of every knob on it. What
-   an even column was for is captions, and those no longer set a column's width;
-   see .caption. */
+/* Columns take the width of their own widest control rather than an even
+   share: the panel is scaled to the window, so space given to a switch's
+   column comes off every knob. */
 export function columnCount(rows: readonly string[]): number {
   return Math.max(...rows.map((row) => row.trim().split(/\s+/).length))
 }

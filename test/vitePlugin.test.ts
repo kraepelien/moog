@@ -3,11 +3,8 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { Readable } from 'node:stream'
 import { send, toRequest } from '../server/vitePlugin.ts'
 
-/* The bridge between Vite's Node request objects and the Fetch handler both
-   servers share. Everything it gets wrong is invisible in production and
-   visible only while developing, which is the worst way round: a cookie that
-   arrives merged, an origin that is always localhost, a body consumed on its
-   way past. Each of those has its own test here. */
+/* Everything this bridge gets wrong is visible only in dev, which is the worst
+   way round. */
 
 function nodeRequest(
   options: {
@@ -44,9 +41,6 @@ function nodeResponse() {
 
 describe('a request crossing the bridge', () => {
   test('keeps the host it actually arrived on', () => {
-    /* Built against a constant, every request would tell the handler it was on
-       localhost — and anything deciding from the origin, such as whether a
-       cookie may be Secure, would be reasoning about a fiction. */
     const request = toRequest(nodeRequest({ url: '/api/patches', headers: { host: 'nas:10072' } }))
     expect(new URL(request.url).host).toBe('nas:10072')
   })
@@ -67,9 +61,7 @@ describe('a request crossing the bridge', () => {
   })
 
   test('hands the body over without reading it', async () => {
-    /* Every request is offered to the handler now, so one it declines has to
-       reach Vite with its body intact. A buffered body would have drained the
-       stream on the way past. */
+    /* A request the handler declines has to reach Vite with its body intact. */
     const request = toRequest(nodeRequest({ method: 'PUT', body: '{"name":"Sub Bass"}' }))
     expect(request.bodyUsed).toBe(false)
     expect(await request.json()).toEqual({ name: 'Sub Bass' })
@@ -82,10 +74,7 @@ describe('a request crossing the bridge', () => {
 
 describe('a response crossing back', () => {
   test('carries every Set-Cookie separately', async () => {
-    /* `Headers.forEach` yields these joined by a comma, which is not a valid
-       Set-Cookie and loses all but the first. Signing in sets two at once — the
-       flow cookie cleared and the session set — so this is the bug that would
-       have broken sign-in in dev and nowhere else. */
+    /* `Headers.forEach` joins these with a comma and loses all but the first. */
     const response = new Response('{}', {
       headers: [
         ['set-cookie', 'moog_oauth=; Max-Age=0'],
