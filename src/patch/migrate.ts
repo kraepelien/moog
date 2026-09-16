@@ -30,15 +30,42 @@ export function migrateToCurrent(raw: unknown): Result<Patch> {
     )
   }
 
-  let current = source
-  for (let from = version; from < PATCH_SCHEMA_VERSION; from++) {
-    const migration = migrations[from]
-    if (!migration) return err(`No migration from patch schema version ${from} to ${from + 1}`)
-    current = migration(current)
-    current = { ...current, schemaVersion: from + 1 }
-  }
+  const migrated = runMigrations(source, version, migrations, PATCH_SCHEMA_VERSION)
+  if (!migrated.ok) return migrated
 
-  const parsed = parsePatch(current)
+  const parsed = parsePatch(migrated.value)
   if (!parsed.ok) return parsed
   return ok(parsed.value)
+}
+
+/* The chain itself, taking its table rather than reading the one above, so the
+   machinery can be exercised before there is a real migration to exercise it
+   with. The first genuine one should not be the first run of this loop.
+
+   Each step is stamped with the version it produced rather than trusting the
+   migration to do it: a migration that forgets would otherwise loop, and one
+   that stamps the wrong number would be believed. */
+export function runMigrations(
+  source: Record<string, unknown>,
+  from: number,
+  table: Readonly<Record<number, Migration>>,
+  target: number,
+): Result<Record<string, unknown>> {
+  let current = source
+  for (let version = from; version < target; version++) {
+    const migration = table[version]
+    if (!migration) {
+      return err(`No migration from patch schema version ${version} to ${version + 1}`)
+    }
+    try {
+      current = { ...migration(current), schemaVersion: version + 1 }
+    } catch (error) {
+      /* A migration is ordinary code and can throw on data it did not expect.
+         Reported as a refusal so one bad patch in an import is skipped and
+         named, rather than taking the whole file down with it. */
+      const reason = error instanceof Error ? error.message : String(error)
+      return err(`Migration from patch schema version ${version} failed: ${reason}`)
+    }
+  }
+  return ok(current)
 }
