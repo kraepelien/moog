@@ -8,7 +8,17 @@ export interface PatchSummary {
   readonly updatedAt: string
 }
 
-export type StoreErrorKind = 'unavailable' | 'quota' | 'corrupt' | 'io'
+/* `unauthenticated` and `forbidden` are separate from `io` because they are the
+   only failures a person can do something about: sign in, or ask whoever owns
+   the thing. Collapsed into `io`, both would reach the screen as "storage
+   failed", which is both wrong and unhelpful. */
+export type StoreErrorKind =
+  | 'unavailable'
+  | 'unauthenticated'
+  | 'forbidden'
+  | 'quota'
+  | 'corrupt'
+  | 'io'
 
 /* Backend failures are translated into this before they leave an adapter, so no
    call site ever sees a DOMException or has to know what threw. */
