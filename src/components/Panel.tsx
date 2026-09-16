@@ -65,7 +65,7 @@ function Decoration({
   values: Readonly<Record<string, ControlValue>>
 }) {
   if (item.id === 'overloadLamp') return <OverloadLamp values={values} />
-  if (item.id === 'keyboard') return <Keyboard />
+  if (item.id === 'keyboard') return <Keyboard values={values} />
   return (
     <div
       className={styles.slot}

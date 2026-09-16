@@ -1,0 +1,106 @@
+<!doctype html>
+<html>
+  <head><title>audio check</title></head>
+  <body>
+    <pre id="out">rendering…</pre>
+    <!-- Whether the instrument sounds, and at what pitch, which no unit test
+         can answer: it renders the engine through an OfflineAudioContext and
+         measures what comes out. Run `bun run dev` and open
+         /tools/audio-check.html; the figures print on the page.
+
+         The one worth reading first is a4 against a440Switch. They are the same
+         pitch arrived at two ways, so if they disagree the keyboard is in the
+         wrong octave. -->
+    <script type="module">
+      import { createSynth } from '/src/audio/engine.ts'
+      import { settingsFrom } from '/src/audio/settings.ts'
+      import { defaultValues } from '/src/controls/registry.ts'
+      import { panelRegistry } from '/src/controls/panel.ts'
+
+      const RATE = 48000
+      const show = (text) => {
+        document.getElementById('out').textContent = text
+      }
+
+      async function render(overrides, key, seconds = 1) {
+        const context = new OfflineAudioContext(1, RATE * seconds, RATE)
+        const synth = createSynth(() => context)
+        synth.apply(settingsFrom({ ...defaultValues(panelRegistry), ...overrides }))
+        synth.noteOn(key)
+        const buffer = await context.startRendering()
+        return buffer.getChannelData(0)
+      }
+
+      function rms(data, from = 0) {
+        let sum = 0
+        for (let i = from; i < data.length; i += 1) sum += data[i] * data[i]
+        return Math.sqrt(sum / (data.length - from))
+      }
+
+      /* Zero crossings over the steady part: with one oscillator and the filter
+         well open that is a good enough pitch to check the calibration by. */
+      function hz(data) {
+        const from = Math.floor(RATE * 0.25)
+        let crossings = 0
+        for (let i = from + 1; i < data.length; i += 1) {
+          if (data[i - 1] <= 0 && data[i] > 0) crossings += 1
+        }
+        return (crossings * RATE) / (data.length - from)
+      }
+
+      const loud = {
+        osc1Volume: 10,
+        mainVolume: 10,
+        loudnessSustainLevel: 10,
+        cutoffFrequency: 5,
+        osc1Waveform: 'triangle',
+      }
+
+      async function main() {
+        const out = {}
+
+        const a4 = await render(loud, 40)
+        out.a4 = { rms: +rms(a4).toFixed(4), hz: +hz(a4).toFixed(1) }
+
+        const down = await render({ ...loud, osc1Range: 'ft16' }, 40)
+        out.a4At16ft = { hz: +hz(down).toFixed(1) }
+
+        const bottom = await render(loud, 0)
+        out.bottomKey = { hz: +hz(bottom).toFixed(1) }
+
+        const detuned = await render({ ...loud, osc1Volume: 0, osc2Volume: 10, osc2Frequency: 12 }, 40)
+        out.osc2Up12 = { hz: +hz(detuned).toFixed(1) }
+
+        out.mainOutputOff = { rms: +rms(await render({ ...loud, mainOutput: 'off' }, 40)).toFixed(6) }
+        out.oscSwitchedOut = { rms: +rms(await render({ ...loud, osc1Enable: 'off' }, 40)).toFixed(6) }
+        out.filterShut = { rms: +rms(await render({ ...loud, cutoffFrequency: -5 }, 40)).toFixed(6) }
+        out.noKeyHeld = { rms: +rms(await renderSilent()).toFixed(6) }
+
+        const tone = await render({ ...loud, osc1Volume: 0, a440: 'on' }, 40)
+        out.a440Switch = { rms: +rms(tone).toFixed(4), hz: +hz(tone).toFixed(1) }
+
+        const slow = await render({ ...loud, loudnessAttackTime: 3000 }, 40)
+        out.slowAttack = {
+          early: +rms(slow.slice(0, RATE * 0.05)).toFixed(5),
+          late: +rms(slow.slice(RATE * 0.9)).toFixed(5),
+        }
+
+        show(JSON.stringify(out, null, 1))
+        document.title = 'done'
+      }
+
+      async function renderSilent() {
+        const context = new OfflineAudioContext(1, RATE, RATE)
+        const synth = createSynth(() => context)
+        synth.apply(settingsFrom({ ...defaultValues(panelRegistry), ...loud }))
+        /* Opened and then let alone: the instrument is on and nothing is held. */
+        synth.noteOn(40)
+        synth.noteOff(40)
+        const buffer = await context.startRendering()
+        return buffer.getChannelData(0)
+      }
+
+      main().catch((error) => show('THREW ' + (error?.stack || error)))
+    </script>
+  </body>
+</html>

@@ -449,8 +449,9 @@ export const items: readonly PanelItem[] = [
   }),
   wheel('modWheel', 'Mod.', 'performance', { min: 0, max: 10, default: 0 }, { group: 'wheels' }),
 
-  /* One item rather than forty-four: nothing sounds a note and a patch holds
-     nothing a key would set, so the keyboard is on the panel as a shape. */
+  /* One item rather than forty-four: a patch holds nothing a key would set, so
+     the keyboard is on the panel as a shape. What it sounds comes from the rest
+     of the panel, which is why it needs no value of its own. */
   decoration('keyboard', 'Keyboard', 'keyboard', 'keyboard', { note: '44 keys, F to C' }),
 ]
 
