@@ -18,6 +18,7 @@ svg {
   font-family: inherit;
 }
 
+/* CssBaseline zeroes this anyway; the layout supplies its own padding. */
 body {
-  margin: 16px;
+  margin: 0;
 }
