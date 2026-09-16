@@ -250,6 +250,40 @@ Opening a row loads the patch and switches to the editor in one go. A factory
 preset opens as a **copy**, so saving afterwards cannot write back over it; a
 patch of your own opens as itself, so saving updates the one you picked.
 
+Saving is a form, not a button. **Save** opens `SavePatchDialog`, which collects
+the name, the categories, the synth, whether it is public, and the notes, then
+hands them back as `PatchFields` — deliberately not a `Patch`, because what
+saving *means* (created, or written over) belongs to whoever owns the store, not
+to a form.
+
+The form refills itself as it renders rather than in an effect, comparing the
+patch it was last filled from against the one it is open on. An effect would
+paint the previous edit for a frame first, and the comparison is also what makes
+a second opening of the *same* patch forget what an abandoned first one typed.
+
+**There is no factory chip**: which bank a patch belongs to is the server's to
+decide and the write routes for it do not exist, so the row shows the one that
+applies and offers only Public.
+
+### Categories are a list an admin keeps
+
+The `tags` table holds the vocabulary the save form offers, seeded with twelve
+in `server/tags.ts`. A patch still stores the name as a plain string pointing at
+nothing, so retiring a row leaves every patch already wearing it exactly as it
+was, and an exported patch still means something on a machine that has never
+heard of the table.
+
+**Seeded once, not synced** — the opposite of instruments. Instruments are code,
+so the image is the authority and re-asserting them on every start is right.
+Categories are editorial, and re-asserting them would undo a deletion at the next
+restart, which would make an admin page look broken. `seedTags` writes only into
+an empty table.
+
+The form offers this list rather than the tags patches happen to wear, or a bank
+nothing is tagged in yet could never be given its first one. The library's filter
+chips still come from what is actually in the library, so no filter is offered
+that can only return nothing.
+
 MUI is wrapped in `StyledEngineProvider injectFirst` in `main.tsx`. Without it
 MUI's own single-class rules for things like `display` and `border-radius` are
 injected after ours and win on order alone, which makes a component's

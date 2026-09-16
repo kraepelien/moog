@@ -9,12 +9,12 @@ import Button from '@mui/material/Button'
 import Paper from '@mui/material/Paper'
 import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
-import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { FitToWidth } from './components/FitToWidth.tsx'
 import { TopBar, type TopBarAction } from './components/TopBar.tsx'
 import { PatchLibrary } from './components/library/PatchLibrary.tsx'
 import { PatchHeader } from './components/library/PatchHeader.tsx'
+import { SavePatchDialog, type PatchFields } from './components/library/SavePatchDialog.tsx'
 import type { LibraryEntry } from './components/library/entry.ts'
 import { Panel, PanelChecklist } from './components/Panel.tsx'
 import { useConfirm } from './components/useConfirm.tsx'
@@ -72,6 +72,10 @@ export function App() {
   const [saved, setSaved] = useState<readonly PatchSummary[]>([])
   const [presets, setPresets] = useState<readonly Patch[]>([])
   const [library, setLibrary] = useState<readonly LibraryEntry[]>([])
+  /* The categories an admin keeps, which is what the save form offers — not the
+     tags patches happen to wear, or a bank nothing is tagged in yet could never
+     be given its first one. */
+  const [tags, setTags] = useState<readonly string[]>([])
   const [status, setStatus] = useState('')
   const [report, setReport] = useState<ResolveReport | null>(null)
   const [failed, setFailed] = useState(false)
@@ -83,6 +87,9 @@ export function App() {
   const [stored, setStored] = useState(false)
   /* What the draft was copied from, until it has been saved once. */
   const [copiedFrom, setCopiedFrom] = useState<string | null>(null)
+  /* Saving is a form rather than a button, so Save opens this and the write
+     happens when the form is answered. */
+  const [saving, setSaving] = useState(false)
   /* Where a control the patch does not carry keeps the position it was left in.
      The pitch wheel still moves and still reads out; it just moves nothing the
      file records, so turning it must not mark the draft unsaved either. */
@@ -98,14 +105,16 @@ export function App() {
   const dirty = draft !== null && signature(draft) !== clean
 
   const refresh = useCallback(async () => {
-    const [patches, bank, shelf] = await Promise.all([
+    const [patches, bank, shelf, categories] = await Promise.all([
       store.list(),
       store.listPresets(),
       store.library(),
+      store.listTags(),
     ])
     setSaved(patches)
     setPresets(bank)
     setLibrary(shelf)
+    setTags(categories)
   }, [])
 
   useEffect(() => {
@@ -273,21 +282,10 @@ export function App() {
               {
                 label: 'Save',
                 tone: 'green',
-                disabled: !dirty,
-                onSelect: () =>
-                  void run('Saved', async () => {
-                    /* Only the server mints an id, so a draft it has never seen
-                       is created rather than written over — which is what makes
-                       saving a loaded preset impossible to do over the top. */
-                    const kept = stored
-                      ? await store.save({ ...draft, updatedAt: new Date().toISOString() })
-                      : await store.create(draft, copiedFrom ?? undefined)
-                    setDraft(kept)
-                    setClean(signature(kept))
-                    setStored(true)
-                    setCopiedFrom(null)
-                    await refresh()
-                  }),
+                /* Not disabled on a clean panel: the form is also how a patch
+                   is named, tagged and published, none of which the panel
+                   marks as an edit. */
+                onSelect: () => setSaving(true),
               },
               {
                 label: 'Save as',
@@ -363,21 +361,6 @@ export function App() {
 
         <Section title={dirty ? 'Working draft — unsaved' : 'Working draft'}>
           <Stack spacing={2}>
-            <TextField
-              label="Name"
-              size="small"
-              value={draft.name}
-              onChange={(event) => setDraft({ ...draft, name: event.target.value })}
-              sx={{ maxWidth: 360 }}
-            />
-            <TextField
-              label="Notes"
-              size="small"
-              multiline
-              minRows={3}
-              value={draft.notes}
-              onChange={(event) => setDraft({ ...draft, notes: event.target.value })}
-            />
             <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
               <Button
                 variant="outlined"
@@ -475,6 +458,29 @@ export function App() {
         autoHideDuration={4000}
         onClose={() => setStatus('')}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      />
+      <SavePatchDialog
+        open={saving}
+        patch={draft}
+        tagChoices={tags}
+        onCancel={() => setSaving(false)}
+        onSave={(fields: PatchFields) =>
+          void run('Saved', async () => {
+            setSaving(false)
+            const edited = { ...draft, ...fields, tags: [...fields.tags] }
+            /* Only the server mints an id, so a draft it has never seen is
+               created rather than written over — which is what makes saving a
+               loaded preset impossible to do over the top. */
+            const kept = stored
+              ? await store.save({ ...edited, updatedAt: new Date().toISOString() })
+              : await store.create(edited, copiedFrom ?? undefined)
+            setDraft(kept)
+            setClean(signature(kept))
+            setStored(true)
+            setCopiedFrom(null)
+            await refresh()
+          })
+        }
       />
       {dialog}
     </>

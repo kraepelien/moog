@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { createApi } from './api.ts'
 import { openDatabase } from './db.ts'
 import { loadFactory } from './factory.ts'
+import { seedTags } from './tags.ts'
 
 /* The same API the standalone server serves, from inside `bun run dev`, so dev
    and production cannot answer differently. */
@@ -63,6 +64,7 @@ export function patchApi(options: PatchApiOptions): Plugin {
     async configureServer(server) {
       const db = openDatabase(join(options.root, 'moog.db'))
       const factory = loadFactory(db, options.seed)
+      seedTags(db)
       server.config.logger.info(`  ➜  Factory bank: ${factory.loaded} presets`)
 
       const handle = createApi({ db })

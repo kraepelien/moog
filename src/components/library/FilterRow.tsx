@@ -8,6 +8,9 @@ export interface FilterChoice {
   readonly value: string
   readonly label: string
   readonly tone: Tone
+  /* Shown but not switchable — a fact about the patch rather than a choice, like
+     the bank a patch came from, which no button here can change. */
+  readonly locked?: boolean
 }
 
 /* One labelled row of chips. The label sits in a column of its own width so
@@ -37,8 +40,8 @@ export function FilterRow({
             key={choice.value}
             label={choice.label}
             tone={choice.tone}
-            selected={selected.includes(choice.value)}
-            onClick={() => onToggle(choice.value)}
+            selected={choice.locked ? undefined : selected.includes(choice.value)}
+            onClick={choice.locked ? undefined : () => onToggle(choice.value)}
           />
         ))}
       </Stack>
