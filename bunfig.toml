@@ -1,0 +1,4 @@
+[test]
+# Registers a DOM before the suite so the component tests can render. Everything
+# else in the suite is plain logic and ignores it.
+preload = ["./test/setup.ts"]
