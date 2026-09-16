@@ -9,10 +9,18 @@ import { fixedIdentity } from './fixtures.ts'
    it anywhere: let go and it springs back to centre. So it is played rather than
    set, and a patch carries nothing for it. */
 
-describe('a control that springs back', () => {
-  test('is the pitch wheel, and nothing else on the panel', () => {
+describe('what a patch does not carry', () => {
+  test('is the pitch wheel and the output, and nothing else on the panel', () => {
+    /* Two reasons, both of them "this is not part of the sound": the wheel
+       springs back to centre, and the output sets how loud the room is. */
     const played = panelRegistry.controls.filter((def) => !isRecalled(def)).map((def) => def.id)
-    expect(played).toEqual(['pitchWheel'])
+    expect(played).toEqual([
+      'mainVolume',
+      'mainOutput',
+      'a440',
+      'phonesVolume',
+      'pitchWheel',
+    ])
   })
 
   test('is still a control, so its id stays protected', () => {

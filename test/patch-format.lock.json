@@ -240,6 +240,26 @@
     },
     "tune": {
       "type": "continuousKnob"
+    },
+    "mainVolume": {
+      "type": "continuousKnob"
+    },
+    "mainOutput": {
+      "type": "toggleSwitch",
+      "positions": [
+        "off",
+        "on"
+      ]
+    },
+    "a440": {
+      "type": "toggleSwitch",
+      "positions": [
+        "off",
+        "on"
+      ]
+    },
+    "phonesVolume": {
+      "type": "continuousKnob"
     }
   }
 }

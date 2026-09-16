@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { panelRegistry } from '../src/controls/panel.ts'
+import { isRecalled } from '../src/controls/recall.ts'
 import { createRegistry, defaultValues } from '../src/controls/registry.ts'
 import { isDecoration } from '../src/controls/types.ts'
 import { rangeDef, testEnumType, testNumberType, testRegistry, volumeDef } from './fixtures.ts'
@@ -180,16 +181,19 @@ describe('decorations', () => {
 })
 
 describe('the shipped panel', () => {
-  test('Output and Power are drawn but hold no values', () => {
-    for (const sectionId of ['output', 'power']) {
-      const items = panelRegistry.itemsInSection(sectionId)
-      expect(items.length).toBeGreaterThan(0)
-      expect(items.every(isDecoration)).toBe(true)
-    }
+  test('Output works and Power does not', () => {
+    /* The output knobs turn and its switches throw — they are controls, they
+       are simply not ones a patch carries. Power is the mains: an indicator
+       and a switch that does nothing here. */
     const ids = panelRegistry.controlIds
-    expect(ids).not.toContain('mainVolume')
-    expect(ids).not.toContain('power')
-    expect(ids).not.toContain('a440')
+    for (const id of ['mainVolume', 'mainOutput', 'a440', 'phonesVolume']) {
+      expect(ids).toContain(id)
+      expect(isRecalled(panelRegistry.control(id)!)).toBe(false)
+    }
+
+    const power = panelRegistry.itemsInSection('power')
+    expect(power.length).toBeGreaterThan(0)
+    expect(power.every(isDecoration)).toBe(true)
   })
 
   test('the indicators and the socket hold no values', () => {

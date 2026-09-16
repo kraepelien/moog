@@ -120,8 +120,16 @@ describe('the panel is complete', () => {
   })
 
   test('every control holds a value and every decoration does not', () => {
-    expect(panelRegistry.controls).toHaveLength(43)
-    expect(panelRegistry.decorations).toHaveLength(8)
+    /* Four of the decorations became controls when Output was built: two
+       volumes and two switches. What is left is the sockets, the lamps and the
+       mains switch. */
+    expect(panelRegistry.controls).toHaveLength(47)
+    expect(panelRegistry.decorations.map((item) => item.id)).toEqual([
+      'overloadLamp',
+      'phonesJack',
+      'powerLamp',
+      'power',
+    ])
   })
 
   test('both wheels are wheels', () => {

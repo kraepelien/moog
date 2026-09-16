@@ -10,7 +10,9 @@ import type { ControlValue } from './types.ts'
  * - The external input is normalled after the Main Output stage, so with
  *   nothing plugged in the preamp is listening to the instrument's own output.
  *   Turning External Input Volume up closes that loop on itself, which is the
- *   feedback trick, and past roughly 8 it lights the lamp with nothing played.
+ *   feedback trick, and with the output wide open it lights the lamp past
+ *   roughly 8 with nothing played. The Main Output knob is in that loop too,
+ *   so turning the instrument down turns the lamp down with it.
  * - Anything the instrument is already making goes round that loop too, so a
  *   loud patch lights the lamp at a far lower setting than a quiet one.
  *
@@ -28,8 +30,9 @@ import type { ControlValue } from './types.ts'
  * know, so a bass with a fast attack snaps it on and a slow pad brings it up
  * over seconds. See overloadRiseMs.
  *
- * The thresholds are calibrated to the one measurement there is: with nothing
- * plugged in and nothing playing, it lights as External Input Volume passes 8.
+ * The thresholds are calibrated to the one measurement there is: nothing
+ * plugged in, nothing playing, output wide open, lighting as External Input
+ * Volume passes 8.
  */
 
 type Values = Readonly<Record<string, ControlValue>>
@@ -68,12 +71,21 @@ export function programmeLevel(values: Values): number {
   return Math.min(1, sources / 3) * level(values, 'loudnessSustainLevel')
 }
 
+/* What the loop is carrying: everything the preamp hears has come through the
+   output stage, so the Main Output knob scales all of it, and the Main Output
+   switch breaks it. */
+function outputLevel(values: Values): number {
+  return isOn(values, 'mainOutput') ? level(values, 'mainVolume') : 0
+}
+
 /* The signal at the preamp's output, in threshold units. */
 export function overloadDrive(values: Values): number {
   const external = isOn(values, 'externalInputEnable')
     ? level(values, 'externalInputVolume')
     : 0
-  return external * (LOOP_HUM + PROGRAMME_GAIN * programmeLevel(values))
+  return (
+    external * outputLevel(values) * (LOOP_HUM + PROGRAMME_GAIN * programmeLevel(values))
+  )
 }
 
 /* 0 when the trigger never fires, 1 when the signal is so far past it that the

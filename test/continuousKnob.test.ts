@@ -157,8 +157,8 @@ describe('definition validation', () => {
 describe('the shipped continuous knobs', () => {
   const knobs = panelRegistry.controls.filter(isContinuousKnob)
 
-  test('there are sixteen of them, the time knobs being their own type', () => {
-    expect(knobs).toHaveLength(16)
+  test('there are eighteen of them, the time knobs being their own type', () => {
+    expect(knobs).toHaveLength(18)
     for (const id of [
       'filterAttackTime',
       'filterDecayTime',

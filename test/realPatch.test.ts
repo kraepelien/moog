@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { panelRegistry } from '../src/controls/panel.ts'
+import { isRecalled } from '../src/controls/recall.ts'
 import { defaultValues } from '../src/controls/registry.ts'
 import { mergeValues, resolvePatch } from '../src/patch/resolve.ts'
 import { createPatch } from '../src/patch/schema.ts'
@@ -29,7 +30,17 @@ const EDITS: Record<string, unknown> = {
 }
 
 function realPatch() {
-  const values = { ...defaultValues(panelRegistry), ...EDITS }
+  const all = { ...defaultValues(panelRegistry), ...EDITS }
+  /* Without the ones a patch does not carry — the output levels and the pitch
+     wheel — because this is meant to be a patch the editor could have written,
+     and the editor never writes those. What happens when an older build did is
+     recall.test.ts. */
+  const values = Object.fromEntries(
+    Object.entries(all).filter(([id]) => {
+      const def = panelRegistry.control(id)
+      return def !== undefined && isRecalled(def)
+    }),
+  )
   return { values, patch: createPatch({ name: 'Round Trip', notes: 'all controls', values }) }
 }
 
@@ -78,16 +89,10 @@ describe('a patch of every real control survives export and import', () => {
     expect(report.missing).toEqual([])
   })
 
-  test('resolving and saving again changes nothing, bar the wheel that is played', () => {
+  test('resolving and saving again changes nothing', () => {
     const { values, patch } = realPatch()
     const resolved = resolvePatch(panelRegistry, patch)
-
-    /* The pitch wheel springs back to centre, so the file does not hold it: a
-       value written by an older build is ignored on load and gone on the next
-       save. Every other control comes through untouched. */
-    expect(resolved.values.pitchWheel).toBe(0)
-    const { pitchWheel: _played, ...kept } = values
-    expect(mergeValues(panelRegistry, patch, resolved.values)).toEqual(kept)
+    expect(mergeValues(panelRegistry, patch, resolved.values)).toEqual(values)
   })
 })
 
@@ -99,7 +104,9 @@ describe('the shape of an exported file', () => {
     expect(file.formatVersion).toBe(1)
     expect(file.patches).toHaveLength(1)
     expect(file.patches[0].schemaVersion).toBe(1)
-    expect(Object.keys(file.patches[0].values)).toHaveLength(43)
+    /* Every control the format carries: the panel's, less the five it plays
+       but does not record. */
+    expect(Object.keys(file.patches[0].values)).toHaveLength(42)
   })
 
   test('carries only plain JSON, so nothing depends on how it was built', () => {

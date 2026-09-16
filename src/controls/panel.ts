@@ -122,6 +122,7 @@ function onOff(
     headline?: string
     default?: 'on' | 'off'
     cap?: CapColour
+    recalled?: boolean
   } = {},
 ): ToggleSwitchDef {
   return {
@@ -137,6 +138,7 @@ function onOff(
     ...(extra.group ? { group: extra.group } : {}),
     ...(extra.headline ? { headline: extra.headline } : {}),
     ...(extra.cap ? { cap: extra.cap } : {}),
+    ...(extra.recalled === false ? { recalled: false } : {}),
   }
 }
 
@@ -177,7 +179,7 @@ function knob0to10(
   label: string,
   section: string,
   defaultValue: number,
-  extra: { group?: string; size?: 'small' | 'large' } = {},
+  extra: { group?: string; size?: 'small' | 'large'; recalled?: boolean } = {},
 ): ContinuousKnobDef {
   return {
     id,
@@ -412,13 +414,23 @@ export const items: readonly PanelItem[] = [
   /* Output and Power are drawn but hold nothing. Level, headphone level, main
      output, A-440 and mains power are all real controls on the instrument that a
      patch has no business recalling. */
-  decoration('mainVolume', 'Volume', 'output', 'knob', { note: NOT_A_SOUND }),
-  decoration('mainOutput', 'Main Output', 'output', 'switch', {
-    note: NOT_A_SOUND,
+  /* Output is real: the knobs turn and the switches throw. None of it is
+     recalled — a patch that reset the monitoring level would be setting the
+     volume of the room it is played in. A-440 is off, because it is a tuning
+     tone you switch on and then off again. */
+  knob0to10('mainVolume', 'Volume', 'output', 5, { recalled: false }),
+  onOff('mainOutput', 'Main Output', 'output', {
+    default: 'on',
     cap: 'blue',
+    recalled: false,
   }),
-  decoration('a440', 'A-440', 'output', 'switch', { note: 'tuning reference', cap: 'blue' }),
-  decoration('phonesVolume', 'Phones Volume', 'output', 'knob', { note: NOT_A_SOUND }),
+  onOff('a440', 'A-440', 'output', {
+    headline: 'A-440',
+    default: 'off',
+    cap: 'blue',
+    recalled: false,
+  }),
+  knob0to10('phonesVolume', 'Phones Volume', 'output', 5, { recalled: false }),
   decoration('phonesJack', 'Phones', 'output', 'jack', { note: 'a socket' }),
 
   decoration('powerLamp', 'Pilot Lamp', 'power', 'lamp', { note: 'indicator', cap: 'red' }),

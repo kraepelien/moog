@@ -19,8 +19,11 @@ const panel = (overrides: Record<string, ControlValue>): Record<string, ControlV
   ...overrides,
 })
 
-/* Nothing playing: every source off and silent. */
+/* Nothing playing: every source off and silent, with the output wide open,
+   which is where the threshold is calibrated. */
 const quiet = {
+  mainOutput: 'on',
+  mainVolume: 10,
   osc1Enable: 'off',
   osc2Enable: 'off',
   osc3Enable: 'off',
@@ -58,6 +61,8 @@ describe('with nothing plugged in and nothing playing', () => {
 
 describe('with the instrument playing into its own input', () => {
   const loud = {
+    mainOutput: 'on',
+    mainVolume: 10,
     externalInputEnable: 'on',
     osc1Enable: 'on',
     osc2Enable: 'on',
@@ -106,5 +111,26 @@ describe('how long it takes to light', () => {
     const values = panel({ loudnessAttackTime: 10, loudnessDecayTime: 4000 })
     expect(overloadRiseMs(values, true)).toBe(10)
     expect(overloadRiseMs(values, false)).toBe(4000)
+  })
+})
+
+describe('the output stage is in the loop', () => {
+  const lighting = {
+    ...quiet,
+    externalInputEnable: 'on',
+    externalInputVolume: 10,
+  } as const
+
+  test('turning the instrument down turns the lamp down with it', () => {
+    /* The external input is sourced after the Main Output knob, so the knob
+       that sets how loud the room is also sets how hard the preamp is driven. */
+    expect(overloadGlow(panel({ ...lighting, mainVolume: 10 }))).toBeGreaterThan(
+      overloadGlow(panel({ ...lighting, mainVolume: 7 })),
+    )
+    expect(overloadGlow(panel({ ...lighting, mainVolume: 5 }))).toBe(0)
+  })
+
+  test('switching the main output off breaks the loop', () => {
+    expect(overloadGlow(panel({ ...lighting, mainOutput: 'off' }))).toBe(0)
   })
 })

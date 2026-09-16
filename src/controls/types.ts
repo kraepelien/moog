@@ -25,6 +25,11 @@ export interface ControlDefBase {
   readonly label: string
   readonly section: string
   readonly group?: string
+  /* False for a control the instrument has and a player uses, but a patch does
+     not carry: the monitoring levels and the output switches, which say nothing
+     about how a sound is made and would be wrong to restore over whatever the
+     room is set to. It still turns, and it still reads out. */
+  readonly recalled?: boolean
 }
 
 export type ControlDef = ControlDefBase
