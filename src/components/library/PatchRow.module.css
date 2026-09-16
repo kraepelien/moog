@@ -1,0 +1,59 @@
+/* One grid rather than a flex row, so every line's columns agree with the ones
+   above and below without each cell being given a width. The named columns are
+   the sheet's: number, name, category, synth, where it came from, stars. */
+.row {
+  display: grid;
+  grid-template-columns: 3rem minmax(8rem, 1fr) minmax(0, 14rem) minmax(0, 12rem) minmax(0, 10rem) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 20px;
+  text-align: left;
+  border-bottom: 1px solid;
+  border-color: inherit;
+}
+
+.row:hover {
+  background: rgb(255 255 255 / 5%);
+}
+
+/* The columns collapse rather than shrink: at this width the chips have stopped
+   being readable, and the name and its rating are what the line is for. */
+@media (max-width: 880px) {
+  .row {
+    grid-template-columns: 2.5rem 1fr auto;
+  }
+
+  .tags,
+  .instrument,
+  .origin {
+    display: none;
+  }
+}
+
+.index {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+}
+
+.name {
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.tags,
+.instrument,
+.origin {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rating {
+  display: flex;
+  justify-content: flex-end;
+}

@@ -39,25 +39,18 @@ function isBuilt(item: PanelItem): boolean {
   return !isDecoration(item) && !isPlaceholder(item)
 }
 
-/* A printed name, as the lines the panel sets it on. One unbroken line unless
-   the layout says where it breaks. */
 function lines(label: string | readonly string[]): readonly string[] {
   return typeof label === 'string' ? [label] : label
 }
 
-/* And the same name as one string, which is what a screen reader reads out: the
-   breaks are the panel's typography, not part of what the control is called. */
+/* The breaks are the panel's typography, not part of the control's name. */
 function spoken(label: string | readonly string[]): string {
   return typeof label === 'string' ? label : label.join(' ')
 }
 
-/* A control on the instrument that a patch does not record and nothing reads:
-   a socket, an indicator, the mains switch. Drawn as its shape, since that is
-   all that is known about it until its artwork exists.
-
-   Two have artwork of their own. The overload lamp records nothing but is not
-   inert: it reads the panel. The keyboard is a drawing of forty-four keys
-   rather than a slot. */
+/* Drawn as its shape until it has artwork. Two are exceptions: the overload
+   lamp records nothing but is not inert — it reads the panel — and the keyboard
+   is a drawing of forty-four keys rather than a slot. */
 function Decoration({
   item,
   values,
@@ -145,20 +138,15 @@ interface SectionProps {
    keeps "add a knob, touch no layout" true. */
 function PanelSection({ registry, section, values, onChange }: SectionProps) {
   const layout = layoutFor(section.id)
-  /* Decorations are drawn too: the jacks, lamps and the power switch are on the
-     instrument, so they are on the panel. They hold no value, and none of them
-     has its own artwork yet, so they come out as the shape they are. */
+  /* Decorations included: a jack is on the instrument, so it is on the panel. */
   const built = registry
     .itemsInSection(section.id)
     .filter((item) => isBuilt(item) || isDecoration(item))
 
   const draw = (item: PanelItem, captionDrawn = false) => {
-    /* A printed label the panel chooses over the registry's, which stays what a
-       screen reader hears. An empty one means the column heading covers it. */
+    /* An empty override hides the printed label and keeps the registry's name
+       for a screen reader, which cannot associate the heading it defers to. */
     const override = layout?.labels?.[item.id]
-    /* Renaming replaces the printed label; an empty one hides it and leaves the
-       registry's name for a screen reader, since the heading it defers to is
-       not something a screen reader can associate on its own. */
     const renamed =
       override && !isDecoration(item) ? { ...item, label: spoken(override) } : item
     return (
@@ -173,9 +161,8 @@ function PanelSection({ registry, section, values, onChange }: SectionProps) {
     )
   }
 
-  /* What the panel prints over a control, as the lines it is set on. The section
-     prints it, so the control is told not to — except a wheel, which carries its
-     name underneath. */
+  /* The section prints the caption, so the control is told not to — except a
+     wheel, which carries its name underneath. */
   const captionFor = (item: PanelItem): readonly string[] | undefined => {
     const override = layout?.labels?.[item.id]
     if (override === '') return undefined

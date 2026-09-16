@@ -10,6 +10,14 @@
 
 :root {
   font-family: 'Google Sans Flex Variable', system-ui, sans-serif;
+
+  /* The panel prints some control names itself and lets each control print the
+     rest, so the two have to agree. Measured off the sheet: a name is 11.8 of the
+     78 units across the tick ring it labels, a heading 15.2, at a unit per pixel. */
+  --legend-size: 0.74rem;
+  --legend-heading-size: 0.95rem;
+  --legend-weight: 700;
+  --legend-tracking: 0.06em;
 }
 
 /* SVG text does not inherit from :root the way HTML does, so the dials and

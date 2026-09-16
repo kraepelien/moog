@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import { createApi } from './api.ts'
-import { seedPresets } from './seed.ts'
-import { layoutFor } from './store.ts'
+import { backupTo, openDatabase } from './db.ts'
+import { loadFactory } from './factory.ts'
 
 /* Serves the built app plus the same API the dev plugin serves, for running the
    editor without a toolchain. `bun run serve` after `bun run build`. */
@@ -17,12 +17,17 @@ const seed = process.env.MOOG_PRESETS ?? 'presets'
 const dist = process.env.MOOG_DIST ?? 'dist'
 const port = Number(process.env.PORT ?? 5174)
 
-const seeded = await seedPresets(seed, layoutFor(root).presets)
-if (seeded.seeded.length > 0) {
-  console.log(`Seeded ${seeded.seeded.length} new presets into ${root}/presets`)
-}
+const db = openDatabase(join(root, 'moog.db'))
+const factory = loadFactory(db, seed)
+console.log(`Factory bank: ${factory.loaded} presets, ${factory.retired} retired`)
 
-const handle = createApi({ root })
+/* A dated copy every day, because a plain file copy of a database in WAL mode
+   can catch it mid-write and the backup on the NAS is a file copy. */
+const backup = () => backupTo(db, join(root, 'backups', `moog-${new Date().toISOString().slice(0, 10)}.db`))
+backup()
+setInterval(backup, 24 * 60 * 60 * 1000)
+
+const handle = createApi({ db })
 
 Bun.serve({
   port,

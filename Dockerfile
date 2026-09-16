@@ -35,9 +35,8 @@ COPY --from=build /app/server ./server
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
 
-# The bank shipped with this image. The active copy lives in the volume; presets
-# added here reach an existing install because seeding records which slugs it has
-# already placed rather than whether it has run.
+# The bank shipped with this image, reloaded into the database on every start,
+# so a preset added or corrected here reaches an existing install.
 COPY --from=build /app/presets ./presets
 
 ENV MOOG_DATA=/data \
@@ -53,10 +52,10 @@ USER ${UID}:${GID}
 EXPOSE 8080
 VOLUME ["/data"]
 
-# No health endpoint of its own: the preset listing is a real read of the volume,
-# so it fails if the mount is missing or unreadable rather than only if the
-# process has died.
+# /api/health queries the database rather than only answering, so a missing or
+# unreadable volume fails it rather than only a dead process. It stays open when
+# the rest of the API is gated behind sign-in.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:8080/api/presets >/dev/null || exit 1
+  CMD wget -qO- http://127.0.0.1:8080/api/health >/dev/null || exit 1
 
 CMD ["bun", "run", "server/serve.ts"]
