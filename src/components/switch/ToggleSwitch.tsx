@@ -63,7 +63,11 @@ export function ToggleSwitch({ def, value, onChange, hideHeader }: ToggleSwitchP
   const outer = vertical ? `translate(${BOX.height} 0) rotate(90)` : ''
 
   return (
-    <div className={styles.switch} data-orientation={vertical ? 'vertical' : 'horizontal'}>
+    <div
+      className={styles.switch}
+      data-orientation={vertical ? 'vertical' : 'horizontal'}
+      data-cap={def.cap ?? 'orange'}
+    >
       {def.headline && !hideHeader && (
         <span className={styles.headline} id={labelId}>
           {def.headline}
@@ -90,7 +94,9 @@ export function ToggleSwitch({ def, value, onChange, hideHeader }: ToggleSwitchP
               <rect {...BODY} className={styles.body} />
               <rect {...TAB} className={styles.tab} />
               <rect {...ROCKER_INNER} className={styles.rocker} />
-              <rect {...ROCKER_OUTER} className={styles.rocker} />
+              {/* The far block is the cap itself, tipped up: the photo shows
+                  the body's colour there, with only the band beside it grey. */}
+              <rect {...ROCKER_OUTER} className={styles.rockerOuter} />
             </g>
           </g>
         </svg>

@@ -117,7 +117,12 @@ function onOff(
   id: string,
   label: string,
   section: string,
-  extra: { group?: string; headline?: string; default?: 'on' | 'off' } = {},
+  extra: {
+    group?: string
+    headline?: string
+    default?: 'on' | 'off'
+    cap?: 'orange' | 'blue' | 'black'
+  } = {},
 ): ToggleSwitchDef {
   return {
     id,
@@ -131,6 +136,7 @@ function onOff(
     default: extra.default ?? 'on',
     ...(extra.group ? { group: extra.group } : {}),
     ...(extra.headline ? { headline: extra.headline } : {}),
+    ...(extra.cap ? { cap: extra.cap } : {}),
   }
 }
 
@@ -146,6 +152,7 @@ function chooser(
     headline?: string
     default?: string
     orientation?: 'horizontal' | 'vertical'
+    cap?: 'orange' | 'blue' | 'black'
   } = {},
 ): ToggleSwitchDef {
   return {
@@ -158,6 +165,7 @@ function chooser(
     ...(extra.group ? { group: extra.group } : {}),
     ...(extra.headline ? { headline: extra.headline } : {}),
     ...(extra.orientation ? { orientation: extra.orientation } : {}),
+    ...(extra.cap ? { cap: extra.cap } : {}),
   }
 }
 
@@ -305,7 +313,7 @@ export const items: readonly PanelItem[] = [
     'controllers',
     { id: 'osc3', label: 'Osc. 3' },
     { id: 'filterEg', label: 'Filter EG' },
-    { group: 'modSources' },
+    { group: 'modSources', cap: 'black' },
   ),
   chooser(
     'modulationSourceB',
@@ -313,7 +321,7 @@ export const items: readonly PanelItem[] = [
     'controllers',
     { id: 'noise', label: 'Noise' },
     { id: 'lfo', label: 'LFO' },
-    { group: 'modSources' },
+    { group: 'modSources', cap: 'black' },
   ),
 
   // Oscillator Bank
@@ -353,19 +361,19 @@ export const items: readonly PanelItem[] = [
 
   // Mixer
   knob0to10('osc1Volume', 'Osc.1 Volume', 'mixer', 0, { group: 'mixOsc1' }),
-  onOff('osc1Enable', 'Osc.1', 'mixer', { group: 'mixOsc1' }),
+  onOff('osc1Enable', 'Osc.1', 'mixer', { group: 'mixOsc1', cap: 'blue' }),
   knob0to10('osc2Volume', 'Osc.2 Volume', 'mixer', 0, { group: 'mixOsc2' }),
-  onOff('osc2Enable', 'Osc.2', 'mixer', { group: 'mixOsc2' }),
+  onOff('osc2Enable', 'Osc.2', 'mixer', { group: 'mixOsc2', cap: 'blue' }),
   knob0to10('osc3Volume', 'Osc.3 Volume', 'mixer', 0, { group: 'mixOsc3' }),
-  onOff('osc3Enable', 'Osc.3', 'mixer', { group: 'mixOsc3' }),
+  onOff('osc3Enable', 'Osc.3', 'mixer', { group: 'mixOsc3', cap: 'blue' }),
   knob0to10('externalInputVolume', 'External Input Volume', 'mixer', 0, { group: 'mixExternal' }),
-  onOff('externalInputEnable', 'External Input', 'mixer', { group: 'mixExternal' }),
+  onOff('externalInputEnable', 'External Input', 'mixer', { group: 'mixExternal', cap: 'blue' }),
   decoration('overloadLamp', 'Overload', 'mixer', 'lamp', {
     group: 'mixExternal',
     note: 'reflects the external input level; nothing to set',
   }),
   knob0to10('noiseVolume', 'Noise Volume', 'mixer', 0, { group: 'mixNoise' }),
-  onOff('noiseEnable', 'Noise', 'mixer', { group: 'mixNoise' }),
+  onOff('noiseEnable', 'Noise', 'mixer', { group: 'mixNoise', cap: 'blue' }),
   chooser(
     'noiseColour',
     'Noise Colour',

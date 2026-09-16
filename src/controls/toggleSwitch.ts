@@ -20,6 +20,11 @@ export interface ToggleSwitchDef extends DiscreteDef {
      rather than relying on the end legends. */
   readonly headline?: string
   readonly orientation?: 'horizontal' | 'vertical'
+  /* Which cap the instrument fits. The Minimoog colour-codes its rockers:
+     orange for the modulation and filter routing switches, blue for the mixer
+     sources and the output switches, black for the two modulation source
+     selectors. Orange when unsaid. */
+  readonly cap?: 'orange' | 'blue' | 'black'
 }
 
 export const toggleSwitchType = makeDiscreteType<ToggleSwitchDef>('toggleSwitch')

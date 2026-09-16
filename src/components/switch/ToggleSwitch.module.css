@@ -1,5 +1,31 @@
-/* The artwork is white-on-black line art, so the switch carries its own ink
-   rather than inheriting the page's. The rest is structure and hit area. */
+/* The instrument colour-codes its rockers, and the panel is otherwise black and
+   white, so these are the only colours on it.
+
+   Orange and black are sampled from reference/panel-controllers-oscbank.png.
+   Blue is not in that crop and is a guess until there is a photo of one to
+   sample — drop one in reference/ and it can be read off properly.
+
+   The photo shows no outline around a switch, so the shapes are filled rather
+   than drawn: the hairlines the export carries were how a black-and-white
+   rendering said the same thing. */
+
+.switch[data-cap='orange'] {
+  --switch-body: #f37c3e;
+  --switch-rocker: #cbcdce;
+  --switch-edge: #b75c30;
+}
+
+.switch[data-cap='blue'] {
+  --switch-body: #3f6ea8;
+  --switch-rocker: #cbcdce;
+  --switch-edge: #2f5580;
+}
+
+.switch[data-cap='black'] {
+  --switch-body: #626366;
+  --switch-rocker: #39383a;
+  --switch-edge: #4b4c4f;
+}
 
 .switch {
   display: flex;
@@ -60,7 +86,6 @@
   width: 82px;
   height: 28px;
   cursor: pointer;
-  background: #000;
   flex: none;
   /* The mobile counterpart of the focus ring: without this a tap flashes the
      browser's own highlight over the switch. */
@@ -84,17 +109,18 @@
   outline-offset: 2px;
 }
 
-.body {
-  fill: #000;
-  stroke: #fff;
-}
-
+.body,
 .tab {
-  fill: #000;
-  stroke: #fff;
+  fill: var(--switch-body);
+  stroke: var(--switch-edge);
 }
 
 .rocker {
-  fill: #fff;
-  stroke: #000;
+  fill: var(--switch-rocker);
+  stroke: var(--switch-edge);
+}
+
+.rockerOuter {
+  fill: var(--switch-body);
+  stroke: var(--switch-edge);
 }
