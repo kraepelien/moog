@@ -53,11 +53,13 @@ const ORIGIN_CHOICES: readonly FilterChoice[] = [
 export function PatchLibrary({
   entries,
   onOpen,
+  onRate,
 }: {
   entries: readonly LibraryEntry[]
   /* Picking a patch opens it in the editor, so the library holds no selection of
      its own and nothing here has to be told when the editor loads something. */
   onOpen: (entry: LibraryEntry) => void
+  onRate?: (entry: LibraryEntry, stars: number) => void
 }) {
   const [filters, setFilters] = useState<LibraryFilters>(NO_FILTERS)
   const [wantedPage, setPage] = useState(1)
@@ -137,6 +139,7 @@ export function PatchLibrary({
               entry={entry}
               index={start + index}
               onOpen={() => onOpen(entry)}
+              onRate={onRate === undefined ? undefined : (stars) => onRate(entry, stars)}
             />
           ))}
         </Box>

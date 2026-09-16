@@ -1,6 +1,13 @@
 import { migrateToCurrent } from '../patch/migrate.ts'
 import type { Patch } from '../patch/schema.ts'
-import { StoreError, type PatchStore, type PatchSummary, type PresetStore } from './types.ts'
+import type { LibraryEntry } from '../components/library/entry.ts'
+import {
+  StoreError,
+  type LibraryStore,
+  type PatchStore,
+  type PatchSummary,
+  type PresetStore,
+} from './types.ts'
 
 /* The same interface the localStorage adapter implemented, which is why it was
    async from the first commit while still backed by something synchronous. */
@@ -70,7 +77,7 @@ function toPatch(raw: unknown): Patch | null {
 
 export function createHttpStore(
   doFetch: Fetch = (path, init) => fetch(path, init),
-): PatchStore & PresetStore {
+): PatchStore & PresetStore & LibraryStore {
   const request = (path: string, init?: RequestInit) => requestWith(doFetch, path, init)
 
   return {
@@ -116,6 +123,18 @@ export function createHttpStore(
 
     async delete(id: string): Promise<void> {
       await request(`/patches/${encodeURIComponent(id)}`, { method: 'DELETE' })
+    },
+
+    async library(instrument?: string): Promise<readonly LibraryEntry[]> {
+      const path = instrument === undefined ? '/library' : `/library?instrument=${encodeURIComponent(instrument)}`
+      return ((await request(path)) ?? []) as LibraryEntry[]
+    },
+
+    async rate(id: string, stars: number): Promise<void> {
+      await request(`/patches/${encodeURIComponent(id)}/rating`, {
+        method: 'PUT',
+        body: JSON.stringify({ stars }),
+      })
     },
 
     async listPresets(): Promise<readonly Patch[]> {

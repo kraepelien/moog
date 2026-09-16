@@ -18,7 +18,11 @@ function entry(overrides: Partial<LibraryEntry> & { id: string }): LibraryEntry 
     instrument: 'minimoog-model-d',
     visibility: 'public',
     approximate: false,
+    mine: false,
+    ownerName: null,
     rating: null,
+    averageRating: null,
+    ratingCount: 0,
     updatedAt: '2026-01-01T00:00:00.000Z',
     ...overrides,
   }

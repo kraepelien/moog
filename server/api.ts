@@ -1,6 +1,7 @@
 import type { Database } from 'bun:sqlite'
 import { systemIdentity } from '../src/patch/schema.ts'
 import { authConfigFromEnv, isAdmin, whoAmI, type AuthConfig } from './identity.ts'
+import { buildLibrary } from './library.ts'
 import { handlePatches } from './routes/patches.ts'
 import { createStore, type Store } from './store.ts'
 import { ensureLocalUser, findUser, type UserRow } from './users.ts'
@@ -119,6 +120,12 @@ export function createApi({
           return json(payload)
         }
         return json({ error: 'method not allowed' }, 405)
+      }
+
+      if (resource === 'library') {
+        if (!viewer) return json({ error: 'sign in' }, 401)
+        if (method !== 'GET') return json({ error: 'method not allowed' }, 405)
+        return json(buildLibrary(db, viewer.id, url.searchParams.get('instrument')))
       }
 
       if (resource === 'patches') {
