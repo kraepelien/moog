@@ -17,6 +17,7 @@ import { MidiHelp } from './components/MidiHelp.tsx'
 import { TopBar, type TopBarAction } from './components/TopBar.tsx'
 import surface from './components/controlSurface.module.css'
 import { PatchLibrary } from './components/library/PatchLibrary.tsx'
+import { PlayMidi } from './components/midi/PlayMidi.tsx'
 import { PatchHeader } from './components/library/PatchHeader.tsx'
 import {
   SavePatchDialog,
@@ -458,6 +459,8 @@ export function App() {
 
           </>
         )}
+
+        {view === 'midi' && <PlayMidi entries={library} loadPatch={fetchEntry} />}
 
         {view === 'library' && (
           <PatchLibrary
