@@ -166,6 +166,17 @@ describe('the ratings on a row', () => {
     expect(buildLibrary(db, me.id)[0]!.averageRating).toBe(3.5)
   })
 
+  test('carry a half star as it was given', () => {
+    const { db, store, person, patch } = library()
+    const me = person('me')
+    const mine = patch('Half', me.id)
+    store.setRating(me.id, mine.id, 2.5)
+
+    const row = buildLibrary(db, me.id)[0]!
+    expect(row.rating).toBe(2.5)
+    expect(row.averageRating).toBe(2.5)
+  })
+
   test('never say what any one other person thought', () => {
     /* The average and the count cross between users; a rating does not. */
     const { db, store, person, patch } = library()

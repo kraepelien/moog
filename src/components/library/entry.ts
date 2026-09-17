@@ -22,6 +22,21 @@ export interface LibraryEntry {
   readonly updatedAt: string
 }
 
+/* Half stars, shared with the server because both ends have to agree on what a
+   rating may be: the route refuses anything else and the database's check
+   constraint lists the same steps. 0 is not a step — it is unrated, which is
+   what clearing a rating sends. */
+export const RATING_STEP = 0.5
+export const MAX_STARS = 5
+
+export function isRating(stars: unknown): stars is number {
+  if (typeof stars !== 'number' || !Number.isFinite(stars)) return false
+  if (stars < 0 || stars > MAX_STARS) return false
+  /* Exact for a step of 0.5, which has an exact double: a remainder test
+     against a tenth would not be. */
+  return Number.isInteger(stars / RATING_STEP)
+}
+
 /* Which store it came from, not a field on the patch: what makes a preset a
    preset is that it lives in the repo and nobody may write over it. */
 export const ORIGINS = ['factory', 'user'] as const

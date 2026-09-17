@@ -86,8 +86,9 @@ export function PatchRow({
 
       <Box className={styles.rating}>
         <StarRating
-          value={entry.rating}
-          label={`Rating for ${entry.name || 'this patch'}`}
+          rating={entry.rating}
+          average={entry.averageRating}
+          subject={entry.name || 'this patch'}
           onRate={onRate}
         />
         <Typography component="span" color="text.secondary" className={styles.average}>

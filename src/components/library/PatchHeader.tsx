@@ -27,6 +27,9 @@ export function PatchHeader({
   origin,
   approximate,
   rating,
+  average,
+  ratingCount,
+  onRate,
   actions,
 }: {
   name: string
@@ -35,6 +38,11 @@ export function PatchHeader({
   origin: 'factory' | 'user' | null
   approximate?: boolean
   rating: number | null
+  average: number | null
+  ratingCount: number
+  /* Absent for a draft the server does not hold yet: there is nothing to hang a
+     rating on until it has been saved, so the stars are shown but not offered. */
+  onRate?: (stars: number) => void
   actions: readonly HeaderAction[]
 }) {
   return (
@@ -54,7 +62,17 @@ export function PatchHeader({
         {approximate && <ToneChip label="approximate" tone="grey" />}
       </Box>
 
-      <StarRating value={rating} label={`Rating for ${name || 'this patch'}`} />
+      <Box className={styles.rating}>
+        <StarRating
+          rating={rating}
+          average={average}
+          subject={name || 'this patch'}
+          onRate={onRate}
+        />
+        <Typography component="span" color="text.secondary" className={styles.average}>
+          {ratingCount > 0 && `${(average ?? 0).toFixed(1)} (${ratingCount})`}
+        </Typography>
+      </Box>
 
       <Box className={styles.actions}>
         {actions.map((action) => (
