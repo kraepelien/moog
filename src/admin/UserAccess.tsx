@@ -108,9 +108,10 @@ export function UserAccess({
 
         {user.envAdmin && (
           <Alert severity="info" sx={{ mt: 2 }}>
-            This address is listed in <code>MOOG_ADMINS</code>, so it is an administrator whatever
-            this page says, and the role cannot be taken away here. Individual privileges can still
-            be revoked — except the two that would lock everybody out of this page.
+            This address is listed in <code>MOOG_ADMINS</code>, which is the only thing that makes
+            an administrator. To stop it being one, take the address out and restart. Individual
+            privileges can still be revoked here — except the two that would lock everybody out of
+            this page, since the environment is how a locked-out install is recovered.
           </Alert>
         )}
 
@@ -120,35 +121,34 @@ export function UserAccess({
           </Typography>
           {ASSIGNABLE_ROLES.map((role) => {
             const held = user.roles.includes(role)
-            const locked = role === 'admin' && user.envAdmin
-            const colour = TONE_COLOURS[role === 'admin' ? 'violet' : 'blue']
+            const colour = TONE_COLOURS.blue
             return (
               <Button
                 key={role}
                 size="small"
                 className={styles.role}
                 aria-label={`${held ? 'Remove' : 'Give'} the ${role} role`}
-                aria-pressed={held || locked}
-                disabled={locked}
+                aria-pressed={held}
                 onClick={() =>
                   onRoles(
                     held ? user.roles.filter((one) => one !== role) : [...user.roles, role],
                   )
                 }
                 sx={{
-                  color: held || locked ? '#0e0e11' : colour.ink,
-                  backgroundColor: held || locked ? colour.ink : colour.field,
-                  '&:hover': {
-                    backgroundColor: held || locked ? colour.ink : colour.strong,
-                  },
+                  color: held ? '#0e0e11' : colour.ink,
+                  backgroundColor: held ? colour.ink : colour.field,
+                  '&:hover': { backgroundColor: held ? colour.ink : colour.strong },
                 }}
               >
                 {role}
               </Button>
             )
           })}
+          {/* The other two are facts rather than decisions, so neither is drawn
+              as something to press. */}
           <Typography component="span" color="text.secondary" className={styles.note}>
-            Everybody signed in is a member, which is not something to give or take away.
+            Everybody signed in is a member. Being an administrator comes from{' '}
+            <code>MOOG_ADMINS</code>, not from here.
           </Typography>
         </Box>
       </Paper>

@@ -37,6 +37,14 @@ const UNDO: Record<number, (db: Database) => void> = {
     db.run(`update users set roles = 'member' where roles = ''`)
     db.run(`update users set roles = roles || ',member' where roles != '' and roles != 'member'`)
   },
+  /* Also not an exact inverse: it makes the local user an admin again, which is
+     what the build before this stored, and leaves everybody else alone. */
+  7: (db) => {
+    db.run(`update users set roles = 'admin' where provider = 'local' and roles = ''`)
+    db.run(
+      `update users set roles = 'admin,' || roles where provider = 'local' and roles != ''`,
+    )
+  },
 }
 
 export function windBackTo(db: Database, version: number): void {

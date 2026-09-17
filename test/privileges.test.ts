@@ -39,11 +39,13 @@ describe('reading roles off a row', () => {
     expect(parseRoles(null)).toEqual([])
   })
 
-  /* Everybody is a member, so writing it says nothing and would come back as a
-     third kind of account in the admin page. */
-  test('never writes member back out', () => {
-    expect(formatRoles([ROLE.member, ROLE.admin])).toBe('admin')
+  /* Only what is actually given goes in the column. Everybody is a member, and
+     an admin is one because the environment says so — writing either would put
+     a second source next to the one that decides. */
+  test('writes only the roles that are given', () => {
+    expect(formatRoles([ROLE.member, ROLE.tester])).toBe('tester')
     expect(formatRoles([ROLE.member])).toBe('')
+    expect(formatRoles([ROLE.admin])).toBe('')
   })
 })
 
@@ -62,9 +64,24 @@ describe('who somebody counts as', () => {
     expect(effectiveRoles([ROLE.admin], true)).toEqual([ROLE.member, ROLE.admin])
   })
 
-  test('member is not something you can be given, because everyone is', () => {
+  /* Neither of the other two is a decision: everybody is a member, and an admin
+     is one because MOOG_ADMINS says so. Tester is the only thing anybody is
+     flagged as. */
+  test('leaves only tester to be given', () => {
+    expect(ASSIGNABLE_ROLES).toEqual([ROLE.tester])
     expect(ASSIGNABLE_ROLES).not.toContain(ROLE.member)
-    expect(ASSIGNABLE_ROLES).toEqual([ROLE.tester, ROLE.admin])
+    expect(ASSIGNABLE_ROLES).not.toContain(ROLE.admin)
+  })
+
+  /* A row that still says admin, from a build that stored it. Resolution takes
+     the environment's word and ignores the column's. */
+  test('ignores an admin left in a column by an older build', () => {
+    expect(effectiveRoles([ROLE.admin])).toEqual([ROLE.member])
+    expect(effectiveRoles([ROLE.admin], true)).toEqual([ROLE.member, ROLE.admin])
+  })
+
+  test('still takes a stored tester, which is a real flag', () => {
+    expect(effectiveRoles([ROLE.tester])).toEqual([ROLE.member, ROLE.tester])
   })
 })
 

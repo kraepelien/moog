@@ -23,7 +23,11 @@ afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
 })
 
-async function world(admins: readonly string[] = []) {
+/* Administrators are named by uid and become `MOOG_ADMINS` entries, because
+   that is now the only thing that makes one: the role is not stored and cannot
+   be given here. `u-boss` is one in every case, since somebody has to be able
+   to reach the page at all. */
+async function world(admins: readonly string[] = ['u-boss']) {
   const root = mkdtempSync(join(tmpdir(), 'moog-users-'))
   roots.push(root)
   const db = openDatabase(join(root, 'moog.db'))
@@ -33,7 +37,7 @@ async function world(admins: readonly string[] = []) {
     ...authConfigFromEnv({ MOOG_SESSION_SECRET: SECRET }),
     mode: 'oauth' as const,
     secret: SECRET,
-    admins,
+    admins: admins.map((uid) => `${uid}@example.com`),
   }
   const handle = createApi({ db, config })
   const repositories = createRepositories(db)
@@ -77,7 +81,7 @@ describe('reaching the page at all', () => {
 
   test('is open to an admin', async () => {
     const { person } = await world()
-    const boss = await person('u-boss', [ROLE.admin])
+    const boss = await person('u-boss')
 
     expect((await boss('GET', '/api/users'))!.status).toBe(200)
   })
@@ -91,7 +95,7 @@ describe('reaching the page at all', () => {
 describe('the list', () => {
   test('says what each account holds and where it came from', async () => {
     const { person } = await world()
-    const boss = await person('u-boss', [ROLE.admin])
+    const boss = await person('u-boss')
     await person('u-punter')
 
     const list = await body<AdminUser[]>(await boss('GET', '/api/users'))
@@ -99,12 +103,18 @@ describe('the list', () => {
 
     expect(punter.roles).toEqual([])
     expect(punter.privileges).toEqual([PRIVILEGE.StoreMidi])
-    expect(found(list, 'u-boss').roles).toEqual([ROLE.admin])
+
+    /* An admin stores no role either: the column holds what somebody was given,
+       and being an administrator is not given here. */
+    const boss_ = found(list, 'u-boss')
+    expect(boss_.roles).toEqual([])
+    expect(boss_.envAdmin).toBe(true)
+    expect(boss_.privileges).toContain(PRIVILEGE.AdminUsers)
   })
 
   test('counts what each account has made', async () => {
     const { person, repositories } = await world()
-    const boss = await person('u-boss', [ROLE.admin])
+    const boss = await person('u-boss')
     await person('u-maker')
 
     const maker = repositories.users.find('u-maker')!
@@ -117,7 +127,7 @@ describe('the list', () => {
   })
 
   test('marks somebody the environment lists, whose admin role is not stored', async () => {
-    const { person } = await world(['u-env@example.com'])
+    const { person } = await world(['u-boss', 'u-env'])
     const env = await person('u-env')
 
     const list = await body<AdminUser[]>(await env('GET', '/api/users'))
@@ -132,7 +142,7 @@ describe('the list', () => {
 describe('changing one privilege', () => {
   test('grants it to one account without touching the rest', async () => {
     const { person } = await world()
-    const boss = await person('u-boss', [ROLE.admin])
+    const boss = await person('u-boss')
     await person('u-punter')
 
     /* AccessAdmin first: the administration privileges are conditional on it,
@@ -146,9 +156,9 @@ describe('changing one privilege', () => {
   })
 
   test('revokes one from an admin and leaves the others', async () => {
-    const { person } = await world()
-    const boss = await person('u-boss', [ROLE.admin])
-    await person('u-other', [ROLE.admin])
+    const { person } = await world(['u-boss', 'u-other'])
+    const boss = await person('u-boss')
+    await person('u-other')
 
     const after = await body<AdminUser>(
       await boss('PUT', '/api/users/u-other/privileges/AdminTags', { granted: false }),
@@ -160,9 +170,9 @@ describe('changing one privilege', () => {
 
   /* Inherited is the absence of a row, not a third stored state. */
   test('puts it back to inherited by deleting the row', async () => {
-    const { person } = await world()
-    const boss = await person('u-boss', [ROLE.admin])
-    await person('u-other', [ROLE.admin])
+    const { person } = await world(['u-boss', 'u-other'])
+    const boss = await person('u-boss')
+    await person('u-other')
 
     await boss('PUT', '/api/users/u-other/privileges/AdminTags', { granted: false })
     const after = await body<AdminUser>(
@@ -175,7 +185,7 @@ describe('changing one privilege', () => {
 
   test('refuses a privilege it has never heard of', async () => {
     const { person } = await world()
-    const boss = await person('u-boss', [ROLE.admin])
+    const boss = await person('u-boss')
 
     expect(
       (await boss('PUT', '/api/users/u-boss/privileges/AdminEverything', { granted: true }))!
@@ -185,7 +195,7 @@ describe('changing one privilege', () => {
 
   test('needs a body that says which way', async () => {
     const { person } = await world()
-    const boss = await person('u-boss', [ROLE.admin])
+    const boss = await person('u-boss')
     await person('u-punter')
 
     expect(
@@ -197,7 +207,7 @@ describe('changing one privilege', () => {
 describe('an override row naming a privilege this build does not know', () => {
   test('is reported rather than acted on, and is not deleted by a write', async () => {
     const { person, repositories } = await world()
-    const boss = await person('u-boss', [ROLE.admin])
+    const boss = await person('u-boss')
     await person('u-punter')
 
     const row = repositories.users.find('u-punter')!
@@ -215,10 +225,23 @@ describe('an override row naming a privilege this build does not know', () => {
    behind it, not only hide the pages. Before this, every admin API stayed open
    to somebody who had just had it revoked. */
 describe('AccessAdmin as a boundary', () => {
+  /* Administered by grant rather than by MOOG_ADMINS, because an address the
+     environment lists cannot have either door taken away — that is the way back
+     into a locked-out install. Somebody handed the privileges here can. */
+  const administered = async (
+    boss: (method: string, path: string, payload?: unknown) => Promise<Response | null>,
+    uid: string,
+  ) => {
+    for (const privilege of [PRIVILEGE.AccessAdmin, PRIVILEGE.AdminUsers, PRIVILEGE.AdminTags]) {
+      await boss('PUT', `/api/users/${uid}/privileges/${privilege}`, { granted: true })
+    }
+  }
+
   test('closes the admin routes, not just the pages', async () => {
     const { person } = await world()
-    const boss = await person('u-boss', [ROLE.admin])
-    const other = await person('u-other', [ROLE.admin])
+    const boss = await person('u-boss')
+    const other = await person('u-other')
+    await administered(boss, 'u-other')
 
     expect((await other('GET', '/api/tags/in-use'))!.status).toBe(200)
     expect((await other('GET', '/api/users'))!.status).toBe(200)
@@ -231,8 +254,9 @@ describe('AccessAdmin as a boundary', () => {
 
   test('leaves what does not depend on it alone', async () => {
     const { person } = await world()
-    const boss = await person('u-boss', [ROLE.admin])
-    const other = await person('u-other', [ROLE.admin])
+    const boss = await person('u-boss')
+    const other = await person('u-other')
+    await administered(boss, 'u-other')
 
     await boss('PUT', '/api/users/u-other/privileges/AccessAdmin', { granted: false })
 
@@ -241,8 +265,9 @@ describe('AccessAdmin as a boundary', () => {
 
   test('is reported on the session, so the browser stops drawing the doors', async () => {
     const { person } = await world()
-    const boss = await person('u-boss', [ROLE.admin])
-    const other = await person('u-other', [ROLE.admin])
+    const boss = await person('u-boss')
+    const other = await person('u-other')
+    await administered(boss, 'u-other')
 
     await boss('PUT', '/api/users/u-other/privileges/AccessAdmin', { granted: false })
 
@@ -255,8 +280,8 @@ describe('the rules that keep an install reachable', () => {
   /* The page you would need to undo it is the one you are standing on. */
   test('refuse a self-revoke of the two doors', async () => {
     const { person } = await world()
-    const boss = await person('u-boss', [ROLE.admin])
-    await person('u-spare', [ROLE.admin])
+    const boss = await person('u-boss')
+    await person('u-spare')
 
     expect(
       (await boss('PUT', '/api/users/u-boss/privileges/AdminUsers', { granted: false }))!.status,
@@ -268,7 +293,7 @@ describe('the rules that keep an install reachable', () => {
 
   test('allow a self-revoke of anything else, which is the point of it', async () => {
     const { person } = await world()
-    const boss = await person('u-boss', [ROLE.admin])
+    const boss = await person('u-boss')
 
     const after = await body<AdminUser>(
       await boss('PUT', '/api/users/u-boss/privileges/AdminTags', { granted: false }),
@@ -278,8 +303,8 @@ describe('the rules that keep an install reachable', () => {
 
   test('let somebody else take a door from you', async () => {
     const { person } = await world()
-    const boss = await person('u-boss', [ROLE.admin])
-    await person('u-other', [ROLE.admin])
+    const boss = await person('u-boss')
+    await person('u-other')
 
     expect(
       (await boss('PUT', '/api/users/u-other/privileges/AccessAdmin', { granted: false }))!.status,
@@ -289,8 +314,8 @@ describe('the rules that keep an install reachable', () => {
   /* MOOG_ADMINS is the documented way back into a locked-out install, so a
      revoke must not be able to close it. */
   test('refuse to close the environment’s way back in', async () => {
-    const { person } = await world(['u-env@example.com'])
-    const boss = await person('u-boss', [ROLE.admin])
+    const { person } = await world(['u-boss', 'u-env'])
+    const boss = await person('u-boss')
     await person('u-env')
 
     expect(
@@ -299,8 +324,8 @@ describe('the rules that keep an install reachable', () => {
   })
 
   test('still let one ordinary privilege off an environment admin', async () => {
-    const { person } = await world(['u-env@example.com'])
-    const boss = await person('u-boss', [ROLE.admin])
+    const { person } = await world(['u-boss', 'u-env'])
+    const boss = await person('u-boss')
     await person('u-env')
 
     const after = await body<AdminUser>(
@@ -312,40 +337,45 @@ describe('the rules that keep an install reachable', () => {
 
   /* The floor. A self-check cannot stop two administrators revoking each other
      at the same moment, so the count is taken again inside the write. */
-  test('refuse a write that would leave nobody able to administer users', async () => {
+  /* Taking it from one of two is fine; it is the last one that matters. */
+  test('let one of two administrators be taken away', async () => {
     const { person } = await world()
-    const boss = await person('u-boss', [ROLE.admin])
-    await person('u-other', [ROLE.admin])
+    const boss = await person('u-boss')
+    await person('u-other')
+    for (const privilege of [PRIVILEGE.AccessAdmin, PRIVILEGE.AdminUsers]) {
+      await boss('PUT', `/api/users/u-other/privileges/${privilege}`, { granted: true })
+    }
 
-    /* Two admins: taking it from one is fine. */
     expect(
       (await boss('PUT', '/api/users/u-other/privileges/AdminUsers', { granted: false }))!.status,
     ).toBe(200)
-
-    /* One left, and it is the only one — so the role that carries it cannot go
-       either. */
-    const refused = (await boss('PUT', '/api/users/u-boss/roles', { roles: [] }))!
-    expect(refused.status).toBe(409)
-    expect((await refused.json()) as { error: string }).toMatchObject({
-      error: expect.stringContaining('nobody'),
-    })
+    expect((await boss('GET', '/api/users'))!.status).toBe(200)
   })
 
-  test('leave the install as it was when the floor refuses', async () => {
+  /* The sequential ways to reach nobody are all closed before the floor is
+     reached: you cannot take a door from yourself, and you cannot take one from
+     an address the environment lists — which, now that the role comes from
+     there and nowhere else, is every administrator who did not receive the
+     privileges by hand. The floor in `guarded` is what closes the concurrent
+     case the checks above cannot see, and that is not reachable from one
+     request. */
+  test('never leave the last administrator unable to put it back', async () => {
     const { person } = await world()
-    const boss = await person('u-boss', [ROLE.admin])
+    const boss = await person('u-boss')
 
-    await boss('PUT', '/api/users/u-boss/roles', { roles: [] })
+    const refused = (await boss('PUT', '/api/users/u-boss/privileges/AdminUsers', {
+      granted: false,
+    }))!
+    expect(refused.status).toBe(400)
 
-    const list = await body<AdminUser[]>(await boss('GET', '/api/users'))
-    expect(found(list, 'u-boss').roles).toEqual([ROLE.admin])
+    expect((await boss('GET', '/api/users'))!.status).toBe(200)
   })
 })
 
 describe('roles', () => {
   test('are assigned as presets and resolve to their privileges', async () => {
     const { person } = await world()
-    const boss = await person('u-boss', [ROLE.admin])
+    const boss = await person('u-boss')
     await person('u-punter')
 
     const after = await body<AdminUser>(
@@ -354,22 +384,46 @@ describe('roles', () => {
     expect(after.roles).toEqual([ROLE.tester])
   })
 
-  test('never store member, whoever asks for it', async () => {
+  /* Refused rather than quietly filtered: asking for one of these is asking for
+     something this page cannot do, and silence would look like it worked. */
+  test('refuse member, because everybody already is one', async () => {
     const { person } = await world()
-    const boss = await person('u-boss', [ROLE.admin])
+    const boss = await person('u-boss')
     await person('u-punter')
 
-    const after = await body<AdminUser>(
-      await boss('PUT', '/api/users/u-punter/roles', { roles: [ROLE.member, ROLE.tester] }),
-    )
-    expect(after.roles).toEqual([ROLE.tester])
+    const refused = (await boss('PUT', '/api/users/u-punter/roles', {
+      roles: [ROLE.member, ROLE.tester],
+    }))!
+    expect(refused.status).toBe(400)
   })
 
-  test('cannot be taken off somebody the environment lists', async () => {
-    const { person } = await world(['u-env@example.com'])
-    const boss = await person('u-boss', [ROLE.admin])
+  /* The whole point of taking the role out of the column: there is one place
+     that makes an administrator, and this is not it. */
+  test('refuse admin, and say where it does come from', async () => {
+    const { person } = await world()
+    const boss = await person('u-boss')
+    await person('u-punter')
+
+    const refused = (await boss('PUT', '/api/users/u-punter/roles', { roles: [ROLE.admin] }))!
+    expect(refused.status).toBe(400)
+    expect((await refused.json()) as { error: string }).toMatchObject({
+      error: expect.stringContaining('MOOG_ADMINS'),
+    })
+
+    const list = await body<AdminUser[]>(await boss('GET', '/api/users'))
+    expect(found(list, 'u-punter').privileges).toEqual([PRIVILEGE.StoreMidi])
+  })
+
+  /* There is nothing here to take away from them: the column never held it. */
+  test('cannot be cleared to un-administer somebody the environment lists', async () => {
+    const { person } = await world(['u-boss', 'u-env'])
+    const boss = await person('u-boss')
     await person('u-env')
 
-    expect((await boss('PUT', '/api/users/u-env/roles', { roles: [] }))!.status).toBe(400)
+    const after = await body<AdminUser>(
+      await boss('PUT', '/api/users/u-env/roles', { roles: [] }),
+    )
+    expect(after.envAdmin).toBe(true)
+    expect(after.privileges).toContain(PRIVILEGE.AdminUsers)
   })
 })

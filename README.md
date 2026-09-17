@@ -449,9 +449,10 @@ rejected is the reason the current shape looks odd if you meet it cold.
 - **A role is stored, rather than stamped out as grants.** Applying a preset could have written one
   grant row per privilege. That makes the role a dead shortcut: change what `tester` means and
   nobody already marked one is affected. Stored, a preset stays live.
-- **`member` is not stored, unlike the others.** It was, briefly. Every row then had to be
-  backfilled correctly or the account had no privileges at all, and two accounts with identical
-  access showed different columns. Implicit, an un-backfilled row is still a member.
+- **Only `tester` is stored.** `member` was, briefly — every row then had to be backfilled correctly
+  or the account had no privileges at all. `admin` was too, alongside `MOOG_ADMINS`, which gave one
+  fact two sources: a column could go on claiming an administrator the environment had stopped
+  naming, and the revoke masking it looked like tidy-up waiting to happen. Both are worked out now.
 - **Overrides are a table, not a JSON column on `users`.** `settings.json` looks like the precedent
   and is the wrong one — it is justified by the server never reading inside it, and these are read
   on every request. `ratings` is the real precedent: a per-(user, thing) decision with a composite
@@ -481,9 +482,18 @@ means in code reaches everyone already marked a tester, with no write.
 
 An **override** is one person's answer for one privilege, and beats the preset either way.
 
-`member` is the exception: it is **never stored**. Every signed-in account has it, applied at
-resolution, so no row can end up with no privileges at all and unlocking a basic feature reaches
-everybody without touching the database. `admin` and `tester` are the assignable ones.
+**`tester` is the only role anybody is given.** The other two are facts rather than decisions, and
+neither is ever written to a row:
+
+- `member` is what every signed-in account is, applied at resolution, so no row can end up with no
+  privileges at all and unlocking a basic feature reaches everybody without touching the database.
+- `admin` comes from `MOOG_ADMINS` and nowhere else. Storing it as well gave one fact two sources,
+  which is what let a column go on claiming an administrator the environment had stopped naming.
+  Somebody who needs one administrative power without being an administrator is given that
+  privilege, not the role.
+
+A row that still says `admin`, written by an earlier build, is ignored rather than honoured — and a
+migration takes it out of the column, so the page stops showing a role nobody is being given.
 
 **The roles are a ladder** — `member`, then `tester`, then `admin` — and each rung holds what the
 rungs below it hold. `ROLE_LADDER` states that order, and each role lists only what it *adds*.
@@ -497,30 +507,32 @@ writes and no matching edit on the rungs above.
 ### The rule
 
 ```
-roles   = stored roles + (admin, if the email is in MOOG_ADMINS)
-base    = PRESETS.member  ∪  PRESETS[role] for each role
+roles   = member + stored tester + (admin, if MOOG_ADMINS names them, or sign-in is off)
+base    = everything up to the highest rung held
 granted = base ∪ explicit grants
 final   = granted \ explicit revokes            // a revoke wins over everything
+          minus anything whose prerequisite is not held
 ```
 
-One function, `resolve()`, and nowhere else. `.env` is trump for the **role** — a listed account can
-never lose the admin role in the app — but a revoke still takes one privilege off them, which is
-what lets an admin see what everybody else sees. Being listed is protected where a revoke is
-*written*, not here, so this stays a rule rather than a rule with an exception.
+One function, `resolve()`, and nowhere else. A revoke still takes one privilege off an
+administrator, which is what lets them see what everybody else sees. What a revoke cannot do is
+close the way back in: the two doors cannot be taken from an address `MOOG_ADMINS` names, and that
+is a refusal where a revoke is *written*, not an exception in the order above.
 
 **`AccessAdmin` is a boundary, not a door.** Every other administrative privilege is conditional on
 it — `REQUIRES` in the same file — and the condition is applied last, after grants and revokes, so
 no single grant steps over it. Revoking it de-administers somebody *everywhere*: the pages stop
 being drawn, the admin routes start refusing, and editing somebody else's patch stops working, all
-from the one list every check already reads. The stored `admin` role is left alone, so putting the
-privilege back restores the lot.
+from the one list every check already reads. Nothing stored changes, so putting the privilege back
+restores the lot.
 
 That condition lives beside the privileges rather than as a second entry on each admin route,
 because a route that forgot the second entry is exactly the hole it closes — and the routes are not
 the only place these are asked about.
 
-With sign-in off there is one local user and it **holds** the admin role, rather than the check
-making an exception for the mode.
+With sign-in off there is one local user and no list to be on, so the **mode** is what makes it an
+administrator — decided in `isEnvAdmin` alongside the list, rather than stored against that one
+user. One fact, one source, in both modes.
 
 ### Names are stored now, so renaming one is not free
 
