@@ -13,16 +13,16 @@
 
 :root {
   --shell-page: #000000;
-  --shell-card: #0e0e11;
-  --shell-field: #161619;
-  --shell-edge: #212124;
+  --shell-card: #101012;
+  --shell-field: #19191e;
+  --shell-edge: #1d1d24;
   --shell-ink: #e9e9ec;
   --shell-ink-dim: #8b8b95;
   --shell-star: #f2b01e;
 
   /* The bar across the top, which is the page's colour until somebody says
      otherwise, and its own ink so a light bar can be given dark lettering. */
-  --shell-bar: #000000;
+  --shell-bar: #101012;
   --shell-bar-ink: #e9e9ec;
 
   --tone-red-ink: #f2594b;
