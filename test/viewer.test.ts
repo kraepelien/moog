@@ -6,8 +6,8 @@ import { createApi } from '../server/api.ts'
 import { openDatabase } from '../server/db.ts'
 import { syncInstruments } from '../server/factory.ts'
 import { authConfigFromEnv, sessionCookie } from '../server/identity.ts'
-import { createStore } from '../server/store.ts'
-import { ensureUser } from '../server/users.ts'
+import { createRepositories } from '../server/repositories/index.ts'
+import { createUsers } from '../server/repositories/users.ts'
 import { createPatch, type Patch } from '../src/patch/schema.ts'
 import { fixedIdentity } from './fixtures.ts'
 
@@ -37,7 +37,7 @@ function server(mode: 'off' | 'oauth' = 'off') {
       }),
     )
 
-  return { db, config, call, store: createStore(db) }
+  return { db, config, call, store: createRepositories(db) }
 }
 
 afterEach(() => {
@@ -63,7 +63,7 @@ describe('the session route', () => {
 
   test('names whoever the cookie carries', async () => {
     const { db, config, call } = server('oauth')
-    ensureUser(db, {
+    createUsers(db).ensure({
       uid: 'google-abc',
       provider: 'google',
       subject: 'abc',
@@ -115,11 +115,11 @@ describe('a rating belongs to whoever gave it', () => {
   test('and is written without touching the patch', async () => {
     const { db, call, store } = server()
     const patch = (await (await call('POST', '/api/patches', aPatch('Rated')))!.json()) as Patch
-    const before = store.getPatch(patch.id)!
+    const before = store.patches.get(patch.id)!
 
     expect((await call('PUT', `/api/patches/${patch.id}/rating`, { stars: 4 }))!.status).toBe(200)
 
-    expect(store.getPatch(patch.id)).toEqual(before)
+    expect(store.patches.get(patch.id)).toEqual(before)
     const stars = db
       .query<{ stars: number }, []>(`select stars from ratings`)
       .get()
@@ -129,35 +129,35 @@ describe('a rating belongs to whoever gave it', () => {
   test('two people rating the same patch do not overwrite each other', () => {
     const { db, store } = server()
     const patch = aPatch('Shared')
-    const one = ensureUser(db, { uid: 'u1', provider: 'test', subject: '1' })
-    const two = ensureUser(db, { uid: 'u2', provider: 'test', subject: '2' })
-    store.putPatch(patch.id, patch, one.id)
+    const one = createUsers(db).ensure({ uid: 'u1', provider: 'test', subject: '1' })
+    const two = createUsers(db).ensure({ uid: 'u2', provider: 'test', subject: '2' })
+    store.patches.put(patch.id, patch, one.id)
 
-    store.setRating(one.id, patch.id, 5)
-    store.setRating(two.id, patch.id, 2)
+    store.ratings.set(one.id, patch.id, 5)
+    store.ratings.set(two.id, patch.id, 2)
 
-    expect(store.ratingsOf(one.id)).toEqual({ [patch.id]: 5 })
-    expect(store.ratingsOf(two.id)).toEqual({ [patch.id]: 2 })
+    expect(store.ratings.of(one.id)).toEqual({ [patch.id]: 5 })
+    expect(store.ratings.of(two.id)).toEqual({ [patch.id]: 2 })
   })
 
   test('zero stars means unrated, so the rating goes away', () => {
     const { db, store } = server()
     const patch = aPatch('Unrated')
-    const user = ensureUser(db, { uid: 'u1', provider: 'test', subject: '1' })
-    store.putPatch(patch.id, patch, user.id)
+    const user = createUsers(db).ensure({ uid: 'u1', provider: 'test', subject: '1' })
+    store.patches.put(patch.id, patch, user.id)
 
-    store.setRating(user.id, patch.id, 3)
-    store.setRating(user.id, patch.id, 0)
-    expect(store.ratingsOf(user.id)).toEqual({})
+    store.ratings.set(user.id, patch.id, 3)
+    store.ratings.set(user.id, patch.id, 0)
+    expect(store.ratings.of(user.id)).toEqual({})
   })
 
   test('a factory preset is rated by its slug', () => {
     const { db, store } = server()
-    const user = ensureUser(db, { uid: 'u1', provider: 'test', subject: '1' })
-    store.putPreset('sub-bass', { ...aPatch('Sub Bass'), visibility: 'public' })
+    const user = createUsers(db).ensure({ uid: 'u1', provider: 'test', subject: '1' })
+    store.patches.putPreset('sub-bass', { ...aPatch('Sub Bass'), visibility: 'public' })
 
-    store.setRating(user.id, 'sub-bass', 5)
-    expect(store.ratingsOf(user.id)).toEqual({ 'sub-bass': 5 })
+    store.ratings.set(user.id, 'sub-bass', 5)
+    expect(store.ratings.of(user.id)).toEqual({ 'sub-bass': 5 })
   })
 
   test('and may be given in half stars', async () => {

@@ -8,7 +8,8 @@ import MenuItem from '@mui/material/MenuItem'
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
 import Toolbar from '@mui/material/Toolbar'
-import { VIEWS, type View } from '../navigation.ts'
+import { usePrivileges } from '../access/context.ts'
+import { TABS, type RouteDef } from '../navigation/routes.ts'
 import styles from './TopBar.module.css'
 
 /* Inline rather than an icon package, for a shape that is a head and a pair of
@@ -28,12 +29,6 @@ function PersonGlyph() {
   )
 }
 
-const TAB_LABELS: Record<(typeof VIEWS)[number], string> = {
-  editor: 'Patch editor',
-  library: 'Patch library',
-  midi: 'Play MIDI',
-}
-
 export interface TopBarAction {
   readonly label: string
   readonly onSelect: () => void
@@ -42,17 +37,21 @@ export interface TopBarAction {
 }
 
 export function TopBar({
-  view,
-  onView,
+  route,
+  onNavigate,
   actions,
   children,
 }: {
-  view: View
-  onView: (view: View) => void
+  route: RouteDef
+  onNavigate: (path: string) => void
   actions: readonly TopBarAction[]
   children?: ReactNode
 }) {
   const [menuAt, setMenuAt] = useState<HTMLElement | null>(null)
+  const held = usePrivileges()
+  /* A tab for a page this account cannot open would be a door most people find
+     locked; the page behind it still refuses on its own. */
+  const tabs = TABS.filter((tab) => tab.needs === undefined || held.has(tab.needs))
 
   return (
     <AppBar position="sticky">
@@ -66,13 +65,13 @@ export function TopBar({
         <Tabs
           /* False on a page without a tab, which leaves the row unselected
              rather than pointing at whichever tab sorts first. */
-          value={(VIEWS as readonly View[]).includes(view) ? view : false}
-          onChange={(_event, next: View) => onView(next)}
+          value={tabs.some((tab) => tab.name === route.name) ? route.path : false}
+          onChange={(_event, next: string) => onNavigate(next)}
           aria-label="Page"
           className={styles.tabs}
         >
-          {VIEWS.map((name) => (
-            <Tab key={name} value={name} label={TAB_LABELS[name]} className={styles.tab} />
+          {tabs.map((tab) => (
+            <Tab key={tab.name} value={tab.path} label={tab.title} className={styles.tab} />
           ))}
         </Tabs>
 

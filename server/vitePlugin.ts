@@ -7,7 +7,7 @@ import { openDatabase } from './db.ts'
 import { loadFactory } from './factory.ts'
 import { authConfigFromEnv } from './identity.ts'
 import { describeAuth, dirAt, envTrouble } from './startup.ts'
-import { seedTags } from './tags.ts'
+import { seedTags } from './services/tags.ts'
 
 /* The same API the standalone server serves, from inside `bun run dev`, so dev
    and production cannot answer differently. */

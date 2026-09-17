@@ -11,7 +11,11 @@ import { PlayMidi } from '../src/components/midi/PlayMidi.tsx'
 import { audibleParts, forgetMidiSession, type MidiSession } from '../src/components/midi/session.ts'
 import { readMidiFile } from '../src/audio/midiFile.ts'
 import type { LibraryEntry } from '../src/components/library/entry.ts'
-import { createPatch } from '../src/patch/schema.ts'
+import type { Arrangement } from '../src/components/midi/arrangement.ts'
+import type { Desk } from '../src/components/midi/desk.ts'
+import { AccessProvider } from '../src/access/AccessProvider.tsx'
+import { PRIVILEGE } from '../src/access/privileges.ts'
+import { createPatch, type Patch } from '../src/patch/schema.ts'
 
 /* The page is driven the way a person drives it, and then unmounted, because
    what is being tested is what survives the unmount: leaving the tab used to
@@ -67,12 +71,63 @@ const ENTRY: LibraryEntry = {
   updatedAt: '2026-01-01T00:00:00.000Z',
 }
 
-function show() {
+interface FakeDesk extends Desk {
+  readonly rows: Map<string, Arrangement>
+  /* Patches the desk can still find. Deleting one is how a saved arrangement
+     comes to point at a sound that is gone. */
+  readonly patches: Map<string, Patch>
+}
+
+function fakeDesk(): FakeDesk {
+  const rows = new Map<string, Arrangement>()
+  const patches = new Map<string, Patch>([['sub-bass', createPatch({ name: 'Sub Bass' })]])
+  let next = 1
+
+  return {
+    rows,
+    patches,
+    list: async () =>
+      [...rows.values()].map(({ id, name, fileName, bpm, parts, updatedAt }) => ({
+        id,
+        name,
+        fileName,
+        bpm,
+        parts: Object.keys(parts).length,
+        updatedAt,
+      })),
+    get: async (id) => rows.get(id) ?? null,
+    create: async (input) => {
+      const made = { ...input, id: `a${next++}`, updatedAt: '2026-01-01T00:00:00.000Z' }
+      rows.set(made.id, made)
+      return made
+    },
+    save: async (id, input) => {
+      const made = { ...input, id, updatedAt: '2026-01-02T00:00:00.000Z' }
+      rows.set(id, made)
+      return made
+    },
+    remove: async (id) => {
+      rows.delete(id)
+    },
+    patch: async (id) => patches.get(id) ?? null,
+  }
+}
+
+let desk: FakeDesk
+let reported: string[]
+
+function show(privileges: readonly string[] = [PRIVILEGE.StoreMidi]) {
+  desk = fakeDesk()
+  reported = []
   const { container } = render(
-    <PlayMidi
-      entries={[ENTRY]}
-      loadPatch={async () => createPatch({ name: 'Sub Bass' })}
-    />,
+    <AccessProvider privileges={privileges}>
+      <PlayMidi
+        entries={[ENTRY]}
+        loadPatch={async () => createPatch({ name: 'Sub Bass' })}
+        desk={desk}
+        onReport={(message) => reported.push(message)}
+      />
+    </AccessProvider>,
   )
   return container
 }
@@ -255,5 +310,149 @@ describe('what a file plays', () => {
 
   test('a part with no sound is never heard, whatever is pressed', () => {
     expect(heard(sessionWith({ chosen: {}, soloed: new Set([1]) }))).toEqual([])
+  })
+})
+
+/* Saving the desk and putting it back. The privilege decides whether the two
+   buttons are drawn at all; the routes behind them refuse either way. */
+describe('keeping an arrangement', () => {
+  const saveAs = async (name: string) => {
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    const field = await screen.findByLabelText('Name')
+    fireEvent.change(field, { target: { value: name } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+  }
+
+  const openSaved = async (name: string) => {
+    fireEvent.click(screen.getByRole('button', { name: 'Open' }))
+    fireEvent.click(await screen.findByText(name))
+    await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
+  }
+
+  test('offers nothing to somebody without the privilege', async () => {
+    const container = show([])
+    await upload(container, ONE_NOTE)
+
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Open' })).toBeNull()
+  })
+
+  test('offers both to somebody with it', async () => {
+    const container = show()
+    await upload(container, ONE_NOTE)
+
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Open' })).toBeDefined()
+  })
+
+  /* Open is always there because it is how a file gets onto an empty desk;
+     Save waits for something to keep. */
+  test('has nothing to save before a file is loaded', () => {
+    show()
+    expect(screen.getByRole('button', { name: 'Save' }).hasAttribute('disabled')).toBe(true)
+    expect(screen.getByRole('button', { name: 'Open' }).hasAttribute('disabled')).toBe(false)
+  })
+
+  test('keeps the file and the sound put on each part', async () => {
+    const container = show()
+    await upload(container, ONE_NOTE)
+    await dress()
+    await saveAs('Night Drive')
+
+    const stored = [...desk.rows.values()][0]!
+    expect(stored.name).toBe('Night Drive')
+    expect(stored.fileName).toBe('song.mid')
+    expect(stored.midi.length).toBeGreaterThan(0)
+    expect(stored.parts).toEqual({ '1': { patchId: 'sub-bass', name: 'Sub Bass' } })
+  })
+
+  test('keeps which parts were soloed and muted', async () => {
+    const container = show()
+    await upload(container, TWO_PARTS)
+    await dress()
+    fireEvent.click(screen.getByRole('button', { name: 'Solo Channel 1' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Mute Channel 2' }))
+    await saveAs('Mix')
+
+    const stored = [...desk.rows.values()][0]!
+    expect(stored.soloed).toEqual([1])
+    expect(stored.muted).toEqual([2])
+  })
+
+  /* Only the server mints an id, which is what stops every save becoming
+     another copy of the same arrangement. */
+  test('writes over the one that was saved rather than adding another', async () => {
+    const container = show()
+    await upload(container, ONE_NOTE)
+    await dress()
+    await saveAs('First')
+    await saveAs('Renamed')
+
+    expect(desk.rows.size).toBe(1)
+    expect([...desk.rows.values()][0]!.name).toBe('Renamed')
+  })
+
+  test('a fresh upload is a new arrangement, not a rename of the last one', async () => {
+    const container = show()
+    await upload(container, ONE_NOTE)
+    await dress()
+    await saveAs('First')
+
+    await upload(container, TWO_PARTS, 'other.mid')
+    await saveAs('Second')
+
+    expect(desk.rows.size).toBe(2)
+  })
+
+  test('puts the file, the tempo and the sounds back', async () => {
+    const container = show()
+    await upload(container, ONE_NOTE)
+    await dress()
+    fireEvent.change(screen.getByLabelText('Tempo in beats per minute'), {
+      target: { value: '96' },
+    })
+    await saveAs('Night Drive')
+
+    await upload(container, TWO_PARTS, 'other.mid')
+    await openSaved('Night Drive')
+
+    await waitFor(() => expect(screen.getByText('song.mid')).toBeDefined())
+    /* Matched without case because a restored part is labelled from the patch,
+       whose stored name is uppercase, while choosing one labels it from the
+       library row. The same string in real data; this fixture's row is not. */
+    expect(screen.getAllByText(/sub bass/i)[0]).toBeDefined()
+    expect((screen.getByLabelText('Tempo in beats per minute') as HTMLInputElement).value).toBe(
+      '96',
+    )
+  })
+
+  /* A part points at a patch rather than carrying a copy, so a deleted patch is
+     a silent part — said out loud, because a part that was dressed and now is
+     not looks like the arrangement failed to load. */
+  test('says which sounds have gone rather than loading them silently', async () => {
+    const container = show()
+    await upload(container, ONE_NOTE)
+    await dress()
+    await saveAs('Night Drive')
+
+    desk.patches.delete('sub-bass')
+    await openSaved('Night Drive')
+
+    await waitFor(() => expect(screen.getByText('silent')).toBeDefined())
+    expect(reported.join(' ')).toContain('Sub Bass')
+  })
+
+  test('drops one that is deleted from the list', async () => {
+    const container = show()
+    await upload(container, ONE_NOTE)
+    await dress()
+    await saveAs('Night Drive')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete Night Drive' }))
+
+    await waitFor(() => expect(desk.rows.size).toBe(0))
+    expect(await screen.findByText(/Nothing saved yet/)).toBeDefined()
   })
 })

@@ -6,12 +6,16 @@ import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { PatchPicker } from './PatchPicker.tsx'
+import { ArrangementPicker, SaveArrangementDialog } from './Arrangements.tsx'
+import type { ArrangementSummary } from './arrangement.ts'
+import { openArrangement, toInput, type Desk } from './desk.ts'
 import {
   chooseSound,
   dressedParts,
   holdMidiFile,
   holdMidiTrouble,
   isAudible,
+  markArrangementStored,
   playMidi,
   setTempo,
   stopMidi,
@@ -19,6 +23,8 @@ import {
   toggleSolo,
   useMidiSession,
 } from './session.ts'
+import { Can } from '../../access/Can.tsx'
+import { PRIVILEGE } from '../../access/privileges.ts'
 import { ToneChip } from '../library/ToneChip.tsx'
 import type { LibraryEntry } from '../library/entry.ts'
 import { MidiFileError, readMidiFile, type MidiChannel } from '../../audio/midiFile.ts'
@@ -88,21 +94,31 @@ function Flag({
 export function PlayMidi({
   entries,
   loadPatch,
+  desk,
+  onReport,
 }: {
   entries: readonly LibraryEntry[]
   /* The library holds summaries; playing needs the values, so the page that has
      a store hands this down rather than this one reaching for it. */
   loadPatch: (entry: LibraryEntry) => Promise<Patch | null>
+  /* Saving and reopening, for whoever the server grants StoreMidi. The buttons
+     below are hidden without it and the routes refuse without it, so this is
+     handed down unconditionally rather than being a privilege in two places. */
+  desk: Desk
+  onReport: (message: string) => void
 }) {
   const session = useMidiSession()
-  const { file, fileName, trouble, chosen, bpm, soloed, muted, playing } = session
+  const { file, fileName, name, storedId, trouble, chosen, bpm, soloed, muted, playing } = session
   const [picking, setPicking] = useState<MidiChannel | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [browsing, setBrowsing] = useState(false)
 
   const opening = useRef<HTMLInputElement>(null)
 
   const open = useCallback(async (picked: File) => {
+    const bytes = new Uint8Array(await picked.arrayBuffer())
     try {
-      holdMidiFile(readMidiFile(new Uint8Array(await picked.arrayBuffer())), picked.name)
+      holdMidiFile(readMidiFile(bytes), picked.name, bytes)
     } catch (error) {
       holdMidiTrouble(
         picked.name,
@@ -110,6 +126,60 @@ export function PlayMidi({
       )
     }
   }, [])
+
+  const save = useCallback(
+    (as: string) => {
+      setSaving(false)
+      void (async () => {
+        const input = toInput({ ...session, name: as })
+        if (!input) return
+        try {
+          /* Written back over the one that was opened, and created otherwise —
+             only the server mints an id, which is what stops a save becoming a
+             second copy every time. */
+          const stored = storedId
+            ? await desk.save(storedId, input)
+            : await desk.create(input)
+          markArrangementStored(stored.id, stored.name)
+          onReport(`Saved “${stored.name}”`)
+        } catch (error) {
+          onReport(error instanceof Error ? error.message : 'That did not save.')
+        }
+      })()
+    },
+    [desk, onReport, session, storedId],
+  )
+
+  const reopen = useCallback(
+    (arrangement: ArrangementSummary) => {
+      setBrowsing(false)
+      void (async () => {
+        try {
+          const { missing } = await openArrangement(desk, arrangement.id)
+          onReport(
+            missing.length === 0
+              ? `Opened “${arrangement.name}”`
+              : `Opened “${arrangement.name}” — ${missing.join(', ')} ${missing.length === 1 ? 'is' : 'are'} gone, so those parts are silent`,
+          )
+        } catch (error) {
+          onReport(error instanceof Error ? error.message : 'That did not open.')
+        }
+      })()
+    },
+    [desk, onReport],
+  )
+
+  const discard = useCallback(
+    async (arrangement: ArrangementSummary) => {
+      try {
+        await desk.remove(arrangement.id)
+        onReport(`Deleted “${arrangement.name}”`)
+      } catch (error) {
+        onReport(error instanceof Error ? error.message : 'That did not delete.')
+      }
+    },
+    [desk, onReport],
+  )
 
   const choose = useCallback(
     (part: MidiChannel, entry: LibraryEntry) => {
@@ -162,6 +232,39 @@ export function PlayMidi({
             >
               Upload
             </Button>
+
+            {/* Hidden without the privilege rather than disabled: a button that
+                is not for you reads as broken when it is greyed out. The routes
+                behind both of these refuse regardless. */}
+            <Can privilege={PRIVILEGE.StoreMidi}>
+              <Button
+                className={styles.action}
+                onClick={() => setBrowsing(true)}
+                sx={{
+                  color: TONE_COLOURS.blue.ink,
+                  backgroundColor: TONE_COLOURS.blue.field,
+                  '&:hover': { backgroundColor: TONE_COLOURS.blue.strong },
+                }}
+              >
+                Open
+              </Button>
+              <Button
+                className={styles.action}
+                /* Nothing to keep until there is a file. A file with no sounds
+                   on it yet is still worth saving: the tempo and the parts are
+                   the work, and the sounds come next. */
+                disabled={!file}
+                onClick={() => setSaving(true)}
+                sx={{
+                  color: TONE_COLOURS.amber.ink,
+                  backgroundColor: TONE_COLOURS.amber.field,
+                  '&:hover': { backgroundColor: TONE_COLOURS.amber.strong },
+                }}
+              >
+                Save
+              </Button>
+            </Can>
+
             {playing ? (
               <Button
                 className={styles.action}
@@ -286,6 +389,22 @@ export function PlayMidi({
         entries={entries}
         onPick={(entry) => picking && choose(picking, entry)}
         onCancel={() => setPicking(null)}
+      />
+
+      <SaveArrangementDialog
+        open={saving}
+        name={name || fileName}
+        overwriting={storedId !== null}
+        onSave={save}
+        onCancel={() => setSaving(false)}
+      />
+
+      <ArrangementPicker
+        open={browsing}
+        load={desk.list}
+        onOpen={reopen}
+        onRemove={discard}
+        onCancel={() => setBrowsing(false)}
       />
 
       {/* Out of the flow: Upload clicks this. */}

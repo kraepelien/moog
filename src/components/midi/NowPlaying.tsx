@@ -2,7 +2,8 @@ import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
 import { stopMidi, useMidiSession } from './session.ts'
-import { useView } from '../../navigation.ts'
+import { useRoute } from '../../navigation/router.ts'
+import { pathFor } from '../../navigation/routes.ts'
 import { TONE_COLOURS } from '../../tones.ts'
 import styles from './NowPlaying.module.css'
 
@@ -11,15 +12,15 @@ import styles from './NowPlaying.module.css'
    all on the MIDI page, which has both in front of you. */
 export function NowPlaying() {
   const { fileName, playing } = useMidiSession()
-  const [view, goToView] = useView()
+  const [{ route }, navigate] = useRoute()
 
-  if (!playing || view === 'midi') return null
+  if (!playing || route.name === 'midi') return null
 
   return (
     <Box className={styles.strip}>
       <Button
         className={styles.name}
-        onClick={() => goToView('midi')}
+        onClick={() => navigate(pathFor('midi'))}
         sx={{ color: TONE_COLOURS.green.ink }}
       >
         <Box component="span" className={styles.lamp} aria-hidden="true" />
