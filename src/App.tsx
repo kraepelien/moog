@@ -16,6 +16,7 @@ import type { AdminUser } from './admin/users.ts'
 import { paletteOf, type Tag, type TagInUse } from './admin/tags.ts'
 import { FitToWidth } from './components/FitToWidth.tsx'
 import { MidiHelp } from './components/MidiHelp.tsx'
+import { PreviewBanner } from './components/PreviewBanner.tsx'
 import { TopBar, type TopBarAction, type TopBarButton } from './components/TopBar.tsx'
 import surface from './components/controlSurface.module.css'
 import { PatchLibrary } from './components/library/PatchLibrary.tsx'
@@ -79,7 +80,7 @@ function signature(patch: Patch): string {
    sees an editor they cannot save from, and a signed-in one never sees the
    door. The privileges are put in reach of every component at the same moment,
    because until the session has arrived there is no honest answer to give. */
-export function App({ skin }: { skin: Skin }) {
+export function App({ skin, keepSkin }: { skin: Skin; keepSkin: (next: Skin) => boolean }) {
   const { session, refresh } = useSession()
   const [{ route }] = useRoute()
   const here = useLocation()
@@ -94,7 +95,12 @@ export function App({ skin }: { skin: Skin }) {
 
   return (
     <AccessProvider privileges={session.privileges}>
-      <Workspace session={session} refreshSession={refresh} skin={skin} />
+      <Workspace
+        session={session}
+        refreshSession={refresh}
+        skin={skin}
+        keepSkin={keepSkin}
+      />
     </AccessProvider>
   )
 }
@@ -103,6 +109,7 @@ function Workspace({
   session,
   refreshSession,
   skin: painted,
+  keepSkin,
 }: {
   session: Session
   refreshSession: () => void
@@ -110,6 +117,10 @@ function Workspace({
      the first frame. Taken as a prop so the layout page starts from what is
      actually on the screen rather than from nothing. */
   skin: Skin
+  /* Writes the preview where a reload will find it, and answers whether the
+     browser would keep it. A function rather than the store itself, so nothing
+     below here learns that a `Storage` exists. */
+  keepSkin: (next: Skin) => boolean
 }) {
   const [draft, setDraft] = useState<Patch | null>(null)
   const [saved, setSaved] = useState<readonly PatchSummary[]>([])
@@ -151,12 +162,12 @@ function Workspace({
   const mayAccessAdmin = useCan(PRIVILEGE.AccessAdmin)
   const mayAdminUsers = useCan(PRIVILEGE.AdminUsers)
   const [users, setUsers] = useState<readonly AdminUser[]>([])
-  /* What the server holds, and what the layout page is showing — which is also
-     what the document is painted with, since the page previews by painting.
-     Held here rather than on the page so that leaving it puts the paint back:
-     the page unmounts, this does not. */
+  /* What this device is being shown in, which is also what the layout page's
+     fields show. One value and no draft beside it: there is nothing to save it
+     to, so choosing a colour and keeping it are the same act. Held here rather
+     than on the page because the preview outlives the page. */
   const [skin, setSkin] = useState<Skin>(painted)
-  const [skinDraft, setSkinDraft] = useState<Skin>(painted)
+  const [keeping, setKeeping] = useState(true)
   const [midiHelp, setMidiHelp] = useState(false)
   /* The menu cannot hold a file input, so it holds a button that clicks one. */
   const importing = useRef<HTMLInputElement>(null)
@@ -345,40 +356,17 @@ function Workspace({
     [run, ask, refreshTagUse, refresh],
   )
 
-  /* The layout page previews by painting, so a draft goes onto the document as
-     soon as it is made. Nothing else in the app has to hear about it: every
+  /* The layout page previews by painting, so a colour goes onto the document as
+     soon as it is picked. Nothing else in the app has to hear about it: every
      colour anything draws with is one of these properties. */
-  const paint = useCallback((next: Skin) => {
-    setSkinDraft(next)
-    applySkin(next, document.documentElement)
-  }, [])
-
-  const saveSkin = useCallback(
-    (next: Skin) =>
-      void run(async () => {
-        const kept = await store.putSkin(next)
-        setSkin(kept)
-        paint(kept)
-      }),
-    [paint, run],
+  const paint = useCallback(
+    (next: Skin) => {
+      setSkin(next)
+      setKeeping(keepSkin(next))
+      applySkin(next, document.documentElement)
+    },
+    [keepSkin],
   )
-
-  /* Walking away from an unsaved draft takes the paint back off, because the
-     preview is the whole app and not a pane inside the page. Through a ref
-     rather than a dependency: what it goes back to is whatever is saved *at the
-     moment of leaving*, and putting `skin` in the list would instead run this
-     on every save, undoing the draft somebody is still working on. */
-  const savedSkin = useRef(skin)
-  useEffect(() => {
-    savedSkin.current = skin
-  }, [skin])
-  useEffect(() => {
-    if (route.name !== 'layout') return
-    return () => {
-      setSkinDraft(savedSkin.current)
-      applySkin(savedSkin.current, document.documentElement)
-    }
-  }, [route.name])
 
   const importFile = useCallback(
     (file: File) =>
@@ -604,6 +592,9 @@ function Workspace({
       >
         <NowPlaying />
       </TopBar>
+      {/* Under the bar and above everything else, on every page: the colours
+          follow you off the layout page, so this is what says why. */}
+      <PreviewBanner skin={skin} onReset={() => paint({})} />
       {/* The whole editor, not each control: a drag that starts a hair off a knob,
           or a double click meant for its value box, otherwise selects whatever
           caption it landed on and leaves it highlighted behind the panel. The
@@ -703,7 +694,7 @@ function Workspace({
               )}
 
               {route.name === 'layout' && (
-                <LayoutPage skin={skin} draft={skinDraft} onDraft={paint} onSave={saveSkin} />
+                <LayoutPage skin={skin} keeping={keeping} onSkin={paint} />
               )}
 
               {route.name === 'users' && (

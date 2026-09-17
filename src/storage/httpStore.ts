@@ -1,6 +1,5 @@
 import { migrateToCurrent } from '@patch/migrate.ts'
 import type { Patch } from '@patch/schema.ts'
-import type { Skin } from '@/tones.ts'
 import type { AdminUser } from '@admin/users.ts'
 import type { LibraryEntry } from '@components/library/entry.ts'
 import type { Tag, TagInUse } from '@admin/tags.ts'
@@ -18,12 +17,13 @@ import {
   type PatchStore,
   type PatchSummary,
   type PresetStore,
-  type SkinStore,
   type TagStore,
 } from './types.ts'
 
-/* The same interface the localStorage adapter implemented, which is why it was
-   async from the first commit while still backed by something synchronous. */
+/* The same interface a browser-storage adapter once implemented, which is why
+   it was async from the first commit while still backed by something
+   synchronous. `deviceSkin.ts` beside it is not one of these: it is synchronous
+   on purpose, because it is read before the first frame. */
 
 const BASE = '/api'
 
@@ -113,7 +113,6 @@ export function createHttpStore(
   PresetStore &
   LibraryStore &
   TagStore &
-  SkinStore &
   AdminStore &
   ArrangementStore &
   UserStore {
@@ -178,14 +177,6 @@ export function createHttpStore(
 
     async listTags(): Promise<readonly Tag[]> {
       return ((await request('/tags')) ?? []) as Tag[]
-    },
-
-    async getSkin(): Promise<Skin> {
-      return ((await request('/skin')) ?? {}) as Skin
-    },
-
-    async putSkin(skin: Skin): Promise<Skin> {
-      return (await request('/skin', { method: 'PUT', body: JSON.stringify(skin) })) as Skin
     },
 
     async listTagsInUse(): Promise<readonly TagInUse[]> {

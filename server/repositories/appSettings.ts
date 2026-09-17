@@ -1,8 +1,12 @@
 import type { Database } from 'bun:sqlite'
 
 /* The building's own settings, keyed and global — unlike `settings`, which is a
-   row per person. A skin is not somebody's preference: an administrator paints
-   the app and everyone who opens it sees the paint.
+   row per person.
+
+   Nothing writes one today: the skin that used to live here is a preview kept
+   on the device instead. Both this and its table are kept because a schema step
+   is append-only, and removing the accessor is how somebody comes to remove the
+   step.
 
    Stored opaquely, like the per-person table. What a key means belongs to
    whoever reads it, and a repository that knew would be a second place for the

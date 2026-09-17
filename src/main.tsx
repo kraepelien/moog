@@ -5,7 +5,7 @@ import { StyledEngineProvider, ThemeProvider } from '@mui/material/styles'
 import { App } from './App.tsx'
 import { adoptLegacyHash } from './navigation/router.ts'
 import { applySkin } from './skin.ts'
-import { createHttpStore } from './storage/httpStore.ts'
+import { createDeviceSkin, type StorageLike } from './storage/deviceSkin.ts'
 import { theme } from './theme.ts'
 import type { Skin } from './tones.ts'
 import './index.css'
@@ -16,18 +16,27 @@ import './panelPalette.css'
    fragment opens the page it names rather than the default one. */
 adoptLegacyHash()
 
-/* Also before anything renders, and before the session is even asked about:
-   whatever colours an administrator saved are the app's colours on the sign-in
-   page too, and painting after the first frame would show everybody the
-   defaults flashing past. A server that cannot answer is not a reason to show
-   nothing — the app says so itself, in whatever colours the stylesheet gives. */
-void createHttpStore()
-  .getSkin()
-  .catch((): Skin => ({}))
-  .then((skin) => {
-    applySkin(skin, document.documentElement)
-    draw(skin)
-  })
+/* The one place in the app that knows a browser has storage. Everything below
+   is handed a skin and a way to keep one, and never learns where it went.
+
+   Reading the property is itself what throws where site data is blocked, so
+   this is a probe rather than a null check. */
+function deviceStorage(): StorageLike | null {
+  try {
+    return window.sessionStorage
+  } catch {
+    return null
+  }
+}
+
+/* Also before anything renders: a preview somebody is in the middle of is the
+   app's colours on the sign-in page too, and painting after the first frame
+   would show them the defaults flashing past. Synchronous, so there is no frame
+   in which that could happen. */
+const device = createDeviceSkin(deviceStorage())
+const skin = device.read()
+applySkin(skin, document.documentElement)
+draw(skin)
 
 function draw(skin: Skin) {
   createRoot(document.getElementById('root')!).render(
@@ -40,7 +49,7 @@ function draw(skin: Skin) {
       <StyledEngineProvider injectFirst>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          <App skin={skin} />
+          <App skin={skin} keepSkin={(next) => device.write(next)} />
         </ThemeProvider>
       </StyledEngineProvider>
     </StrictMode>,

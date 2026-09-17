@@ -1,6 +1,6 @@
 import { DEFAULT_SKIN, SKIN_SWATCHES, type Skin } from '@/tones.ts'
 
-/* Painting a saved skin onto the document.
+/* Painting a previewed skin onto the document.
  *
  * Custom properties on :root rather than a theme object, for three reasons that
  * all come to the same thing: nothing has to be told. MUI's chrome, the CSS
@@ -9,8 +9,8 @@ import { DEFAULT_SKIN, SKIN_SWATCHES, type Skin } from '@/tones.ts'
  * `SHELL.card` without knowing a skin exists.
  *
  * A key a skin leaves out is *removed* rather than left as it was, so putting a
- * colour back to the default is the same operation as setting one — which is
- * what makes the preview on the layout page honest about what saving will do.
+ * colour back to the default is the same operation as setting one, and the
+ * stylesheet underneath is what the page then shows.
  */
 
 export function applySkin(skin: Skin, root: HTMLElement): void {

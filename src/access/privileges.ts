@@ -51,7 +51,7 @@ export const DESCRIPTION: Record<Privilege, string> = {
   AdminTags:
     'Keep the list of categories the save form offers, and see how many patches wear each one. Retiring a tag leaves every patch already wearing it untouched.',
   AdminLayout:
-    'Repaint the app for everybody. The colours are saved against the installation rather than the account, so whoever holds this decides what every other person sees.',
+    'Open the Layout page, try the app’s colours out on this browser, and export a prompt that changes the ones it ships with. Nothing done there repaints the app for anybody else.',
   AdminPatches:
     'Edit, delete or unpublish a patch belonging to somebody else. Factory presets stay read-only for everyone.',
   StoreMidi:
