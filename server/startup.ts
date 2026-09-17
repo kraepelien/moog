@@ -14,8 +14,15 @@ export function describeAuth(config: AuthConfig): string {
   const admins = config.admins.length > 0 ? `, ${config.admins.length} admin(s)` : ''
   /* Where a sign-in comes back to, stated rather than warned about: it is right
      for a deployment to differ from the origin being served and wrong for a
-     development machine, and only the person reading knows which this is. */
-  const back = config.publicOrigin ?? 'the origin each request arrives on'
+     development machine, and only the person reading knows which this is.
+
+     The loopback half is said out loud because the configured origin alone read
+     as a warning that local sign-in was broken, when it is the case that
+     works. */
+  const back =
+    config.publicOrigin === null
+      ? 'the origin each request arrives on'
+      : `${config.publicOrigin}, or to this machine when signed in from localhost`
   return `Google${admins} → returns to ${back}`
 }
 

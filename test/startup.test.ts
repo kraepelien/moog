@@ -22,7 +22,29 @@ describe('what the line says', () => {
       MOOG_SESSION_SECRET: 'secret',
       MOOG_PUBLIC_ORIGIN: 'https://moog.example',
     })
-    expect(describeAuth(config)).toBe('Google → returns to https://moog.example')
+    expect(describeAuth(config)).toContain('returns to https://moog.example')
+  })
+
+  /* A request from loopback answers as itself whatever this says, so a line
+     naming only the live domain read as though local sign-in were broken. */
+  test('says that a sign-in from this machine comes back here', () => {
+    const config = authConfigFromEnv({
+      MOOG_OAUTH_CLIENT_ID: 'client',
+      MOOG_SESSION_SECRET: 'secret',
+      MOOG_PUBLIC_ORIGIN: 'https://moog.example',
+    })
+    expect(describeAuth(config)).toBe(
+      'Google → returns to https://moog.example, or to this machine when signed in from localhost',
+    )
+  })
+
+  /* Nothing to add when the two answers are already the same sentence. */
+  test('says it once when no origin is configured', () => {
+    const config = authConfigFromEnv({
+      MOOG_OAUTH_CLIENT_ID: 'client',
+      MOOG_SESSION_SECRET: 'secret',
+    })
+    expect(describeAuth(config)).toBe('Google → returns to the origin each request arrives on')
   })
 
   /* The one that sent a local sign-in to production: browsing localhost while
@@ -34,7 +56,7 @@ describe('what the line says', () => {
       MOOG_PUBLIC_ORIGIN: 'https://moog.pomello.se',
       MOOG_ADMINS: 'a@example.com,b@example.com',
     })
-    expect(describeAuth(config)).toBe(
+    expect(describeAuth(config)).toStartWith(
       'Google, 2 admin(s) → returns to https://moog.pomello.se',
     )
   })
