@@ -39,11 +39,14 @@ describe('the oscillators', () => {
   test('tune together and detune apart', () => {
     /* Tune moves the whole instrument; the frequency knobs move one oscillator
        against the other two, which is what they are for. */
-    const tuned = panel({ tune: 1 })
+    /* At 8ft, so the range contributes nothing and what is left is the two
+       knobs under test. */
+    const feet = { osc1Range: 'ft8', osc2Range: 'ft8' }
+    const tuned = panel({ ...feet, tune: 1 })
     expect(oscillatorSettings(tuned, 1).detuneCents).toBe(100)
     expect(oscillatorSettings(tuned, 2).detuneCents).toBe(100)
 
-    const detuned = panel({ osc2Frequency: 7 })
+    const detuned = panel({ ...feet, osc2Frequency: 7 })
     expect(oscillatorSettings(detuned, 1).detuneCents).toBe(0)
     expect(oscillatorSettings(detuned, 2).detuneCents).toBe(700)
   })

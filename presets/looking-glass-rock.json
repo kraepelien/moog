@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "looking-glass-rock",
-  "name": "LOOKING GLASS ROCK",
+  "name": "Looking Glass Rock",
   "notes": "",
   "values": {
     "osc1Range": "ft16",
@@ -19,9 +19,18 @@
     "amountOfContour": 5,
     "filterSustainLevel": 8,
     "loudnessSustainLevel": 9,
-    "modulationMix": 5
+    "modulationMix": 5,
+    "osc1Waveform": "triangle",
+    "osc2Waveform": "triangle",
+    "osc3Waveform": "triangle",
+    "noiseVolume": 0,
+    "filterModulation": "on",
+    "keyboardControl1": "on",
+    "keyboardControl2": "on"
   },
-  "tags": [],
+  "tags": [
+    "Lead"
+  ],
   "instrument": "minimoog-model-d",
   "visibility": "public",
   "approximate": true,

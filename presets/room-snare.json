@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "room-snare",
-  "name": "ROOM SNARE",
+  "name": "Room Snare",
   "notes": "",
   "values": {
     "osc1Range": "ft4",
@@ -9,9 +9,23 @@
     "noiseVolume": 4,
     "cutoffFrequency": 3,
     "filterEmphasis": 4,
-    "amountOfContour": 8
+    "amountOfContour": 8,
+    "osc1Waveform": "triangle",
+    "osc2Range": "ft8",
+    "osc2Waveform": "triangle",
+    "osc2Volume": 0,
+    "osc3Range": "ft8",
+    "osc3Waveform": "triangle",
+    "osc3Volume": 0,
+    "noiseEnable": "on",
+    "filterModulation": "on",
+    "keyboardControl1": "on",
+    "keyboardControl2": "on",
+    "filterSustainLevel": 0
   },
-  "tags": [],
+  "tags": [
+    "Drums"
+  ],
   "instrument": "minimoog-model-d",
   "visibility": "public",
   "approximate": true,

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "midnight-funk",
-  "name": "MIDNIGHT FUNK",
+  "name": "Midnight Funk",
   "notes": "",
   "values": {
     "osc1Range": "ft16",
@@ -15,9 +15,18 @@
     "filterEmphasis": 5,
     "amountOfContour": 7,
     "filterSustainLevel": 3,
-    "loudnessSustainLevel": 7
+    "loudnessSustainLevel": 7,
+    "osc3Range": "ft8",
+    "osc3Waveform": "triangle",
+    "osc3Volume": 0,
+    "noiseVolume": 0,
+    "filterModulation": "on",
+    "keyboardControl2": "on",
+    "cutoffFrequency": 0
   },
-  "tags": [],
+  "tags": [
+    "Lead"
+  ],
   "instrument": "minimoog-model-d",
   "visibility": "public",
   "approximate": true,

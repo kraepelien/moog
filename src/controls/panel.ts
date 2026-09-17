@@ -113,9 +113,9 @@ function stepKnob(
 /* An on/off rocker prints its legend on one side only, which is why the off
    position carries an empty label rather than the word OFF.
 
-   These start on. A patch sheet is a record of a sound that was making noise,
-   so a blank one is a better starting point with everything routed than with
-   every path switched out. */
+   `on` is only the fallback for a switch that does not say. Where a default sits
+   is the init patch's business, and the init patch is the list of defaults on
+   this page rather than a rule any helper could state. */
 function onOff(
   id: string,
   label: string,
@@ -341,46 +341,46 @@ export const items: readonly PanelItem[] = [
   ),
   /* Oscillator-1 has no frequency knob — confirmed against the instrument. The
      gap in the middle column is the hardware, not an omission. */
-  stepKnob('osc1Range', 'Range', 'oscillatorBank', RANGE_POSITIONS, 'ft8', { group: 'osc1' }),
-  stepKnob('osc1Waveform', 'Waveform', 'oscillatorBank', OSC12_WAVEFORM_POSITIONS, 'triangle', {
+  stepKnob('osc1Range', 'Range', 'oscillatorBank', RANGE_POSITIONS, 'ft16', { group: 'osc1' }),
+  stepKnob('osc1Waveform', 'Waveform', 'oscillatorBank', OSC12_WAVEFORM_POSITIONS, 'sawtooth', {
     group: 'osc1',
   }),
-  stepKnob('osc2Range', 'Range', 'oscillatorBank', RANGE_POSITIONS, 'ft8', { group: 'osc2' }),
+  stepKnob('osc2Range', 'Range', 'oscillatorBank', RANGE_POSITIONS, 'ft16', { group: 'osc2' }),
   knobSymmetric('osc2Frequency', 'Frequency', 'oscillatorBank', 8, 7, { tickStep: 1, labelStep: 2 }, {
     group: 'osc2',
     size: 'large',
   }),
-  stepKnob('osc2Waveform', 'Waveform', 'oscillatorBank', OSC12_WAVEFORM_POSITIONS, 'triangle', {
+  stepKnob('osc2Waveform', 'Waveform', 'oscillatorBank', OSC12_WAVEFORM_POSITIONS, 'sawtooth', {
     group: 'osc2',
   }),
-  stepKnob('osc3Range', 'Range', 'oscillatorBank', RANGE_POSITIONS, 'ft8', { group: 'osc3' }),
+  stepKnob('osc3Range', 'Range', 'oscillatorBank', RANGE_POSITIONS, 'ft16', { group: 'osc3' }),
   knobSymmetric('osc3Frequency', 'Frequency', 'oscillatorBank', 8, 7, { tickStep: 1, labelStep: 2 }, {
     group: 'osc3',
     size: 'large',
   }),
-  stepKnob('osc3Waveform', 'Waveform', 'oscillatorBank', OSC3_WAVEFORM_POSITIONS, 'triangle', {
+  stepKnob('osc3Waveform', 'Waveform', 'oscillatorBank', OSC3_WAVEFORM_POSITIONS, 'sawtooth', {
     group: 'osc3',
   }),
 
   // Mixer
-  /* The one path a blank patch has open, for the same reason the switches start
-     on: a patch sheet records a sound that was making noise, and now that the
-     keys play, a blank one that cannot be heard is a fault report waiting to
-     happen. The other two stay down so the starting sound is one oscillator. */
-  knob0to10('osc1Volume', 'Osc.1 Volume', 'mixer', 8, { group: 'mixOsc1' }),
+  /* Oscillator-1 is the one path an init patch has open, so pressing Init and
+     playing a key makes a sound. Every other source sits at a usable level with
+     its switch down: bringing one in is a single throw, and nothing arrives
+     already mixed in at a level nobody chose. */
+  knob0to10('osc1Volume', 'Osc.1 Volume', 'mixer', 5, { group: 'mixOsc1' }),
   onOff('osc1Enable', 'Osc.1', 'mixer', { group: 'mixOsc1', cap: 'blue' }),
-  knob0to10('osc2Volume', 'Osc.2 Volume', 'mixer', 0, { group: 'mixOsc2' }),
-  onOff('osc2Enable', 'Osc.2', 'mixer', { group: 'mixOsc2', cap: 'blue' }),
-  knob0to10('osc3Volume', 'Osc.3 Volume', 'mixer', 0, { group: 'mixOsc3' }),
-  onOff('osc3Enable', 'Osc.3', 'mixer', { group: 'mixOsc3', cap: 'blue' }),
-  knob0to10('externalInputVolume', 'External Input Volume', 'mixer', 0, { group: 'mixExternal' }),
-  onOff('externalInputEnable', 'External Input', 'mixer', { group: 'mixExternal', cap: 'blue' }),
+  knob0to10('osc2Volume', 'Osc.2 Volume', 'mixer', 5, { group: 'mixOsc2' }),
+  onOff('osc2Enable', 'Osc.2', 'mixer', { group: 'mixOsc2', cap: 'blue', default: 'off' }),
+  knob0to10('osc3Volume', 'Osc.3 Volume', 'mixer', 5, { group: 'mixOsc3' }),
+  onOff('osc3Enable', 'Osc.3', 'mixer', { group: 'mixOsc3', cap: 'blue', default: 'off' }),
+  knob0to10('externalInputVolume', 'External Input Volume', 'mixer', 5, { group: 'mixExternal' }),
+  onOff('externalInputEnable', 'External Input', 'mixer', { group: 'mixExternal', cap: 'blue', default: 'off' }),
   decoration('overloadLamp', 'Overload', 'mixer', 'lamp', {
     group: 'mixExternal',
     note: 'reflects the external input level; nothing to set',
   }),
-  knob0to10('noiseVolume', 'Noise Volume', 'mixer', 0, { group: 'mixNoise' }),
-  onOff('noiseEnable', 'Noise', 'mixer', { group: 'mixNoise', cap: 'blue' }),
+  knob0to10('noiseVolume', 'Noise Volume', 'mixer', 5, { group: 'mixNoise' }),
+  onOff('noiseEnable', 'Noise', 'mixer', { group: 'mixNoise', cap: 'blue', default: 'off' }),
   chooser(
     'noiseColour',
     'Noise Colour',
@@ -394,23 +394,32 @@ export const items: readonly PanelItem[] = [
   onOff('filterModulation', 'Filter Modulation', 'modifiers', {
     group: 'filterRouting',
     headline: 'Filter Modulation',
+    default: 'off',
   }),
   onOff('keyboardControl1', 'Keyboard Control 1', 'modifiers', {
     group: 'filterRouting',
     headline: 'Keyboard Control 1',
+    default: 'off',
   }),
   onOff('keyboardControl2', 'Keyboard Control 2', 'modifiers', {
     group: 'filterRouting',
     headline: 'Keyboard Control 2',
+    default: 'off',
   }),
-  knobSymmetric('cutoffFrequency', 'Cutoff Frequency', 'modifiers', 5, 4, { tickStep: 1, labelStep: 2 }, {
-    group: 'filter',
-  }),
+  /* Wide open, which is the one position that lets the oscillators be heard as
+     they are. `knobSymmetric` centres every other knob it builds, so this one
+     says where it sits. */
+  {
+    ...knobSymmetric('cutoffFrequency', 'Cutoff Frequency', 'modifiers', 5, 4, { tickStep: 1, labelStep: 2 }, {
+      group: 'filter',
+    }),
+    default: 5,
+  },
   knob0to10('filterEmphasis', 'Filter Emphasis', 'modifiers', 0, { group: 'filter' }),
   knob0to10('amountOfContour', 'Amount of Contour', 'modifiers', 0, { group: 'filter' }),
   timeKnob('filterAttackTime', 'Attack Time', 'modifiers', { group: 'filterContour' }),
   timeKnob('filterDecayTime', 'Decay Time', 'modifiers', { group: 'filterContour' }),
-  knob0to10('filterSustainLevel', 'Sustain Level', 'modifiers', 0, { group: 'filterContour' }),
+  knob0to10('filterSustainLevel', 'Sustain Level', 'modifiers', 10, { group: 'filterContour' }),
   timeKnob('loudnessAttackTime', 'Attack Time', 'modifiers', { group: 'loudnessContour' }),
   timeKnob('loudnessDecayTime', 'Decay Time', 'modifiers', { group: 'loudnessContour' }),
   /* Held at full while a key is down. At zero, with the times at zero beside
@@ -425,7 +434,7 @@ export const items: readonly PanelItem[] = [
      recalled — a patch that reset the monitoring level would be setting the
      volume of the room it is played in. A-440 is off, because it is a tuning
      tone you switch on and then off again. */
-  knob0to10('mainVolume', 'Volume', 'output', 5, { recalled: false }),
+  knob0to10('mainVolume', 'Volume', 'output', 8, { recalled: false }),
   onOff('mainOutput', 'Main Output', 'output', {
     headline: 'Main Output',
     default: 'on',
@@ -438,7 +447,7 @@ export const items: readonly PanelItem[] = [
     cap: 'blue',
     recalled: false,
   }),
-  knob0to10('phonesVolume', 'Phones Volume', 'output', 5, { recalled: false }),
+  knob0to10('phonesVolume', 'Phones Volume', 'output', 8, { recalled: false }),
   decoration('phonesJack', 'Phones', 'output', 'jack', { note: 'a socket' }),
 
   decoration('powerLamp', 'Pilot Lamp', 'power', 'lamp', { note: 'indicator', cap: 'red' }),
@@ -446,8 +455,8 @@ export const items: readonly PanelItem[] = [
 
   // Performance (the bottom-left strip)
   knob0to10('lfoRate', 'LFO Rate', 'performance', 0),
-  onOff('glideEnable', 'Glide', 'performance', { headline: 'Glide', cap: 'white' }),
-  onOff('decayEnable', 'Decay', 'performance', { headline: 'Decay', cap: 'white' }),
+  onOff('glideEnable', 'Glide', 'performance', { headline: 'Glide', cap: 'white', default: 'off' }),
+  onOff('decayEnable', 'Decay', 'performance', { headline: 'Decay', cap: 'white', default: 'off' }),
   wheel('pitchWheel', 'Pitch', 'performance', { min: -5, max: 5, default: 0, springsTo: 0 }, {
     group: 'wheels',
   }),

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "abandoned-planet",
-  "name": "ABANDONED PLANET",
+  "name": "Abandoned Planet",
   "notes": "",
   "values": {
     "oscillatorModulation": "on",
@@ -23,9 +23,16 @@
     "filterEmphasis": 7,
     "amountOfContour": 8,
     "filterSustainLevel": 3,
-    "loudnessSustainLevel": 5
+    "loudnessSustainLevel": 5,
+    "osc3Waveform": "triangle",
+    "osc3Volume": 0,
+    "noiseVolume": 0,
+    "keyboardControl1": "on",
+    "keyboardControl2": "on"
   },
-  "tags": [],
+  "tags": [
+    "Lead"
+  ],
   "instrument": "minimoog-model-d",
   "visibility": "public",
   "approximate": true,

@@ -176,10 +176,11 @@ describe('the shipped continuous knobs', () => {
     }
   })
 
-  test('every symmetric knob centres on zero', () => {
+  /* Symmetry is about the travel, not about where the knob is left: Cutoff is
+     symmetric and an init patch has it wide open. */
+  test('every symmetric knob travels as far one way as the other', () => {
     for (const def of knobs.filter((k) => k.min < 0)) {
       expect(def.min).toBe(-def.max)
-      expect(def.default).toBe(0)
     }
   })
 })

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "smooth-e-p",
-  "name": "SMOOTH-E-P",
+  "name": "Smooth-E-P",
   "notes": "",
   "values": {
     "osc1Range": "ft16",
@@ -18,9 +18,18 @@
     "filterEmphasis": 3,
     "amountOfContour": 5,
     "filterSustainLevel": 8,
-    "loudnessSustainLevel": 9
+    "loudnessSustainLevel": 9,
+    "osc1Waveform": "triangle",
+    "osc2Waveform": "triangle",
+    "osc3Waveform": "triangle",
+    "noiseVolume": 0,
+    "filterModulation": "on",
+    "keyboardControl1": "on",
+    "keyboardControl2": "on"
   },
-  "tags": [],
+  "tags": [
+    "Lead"
+  ],
   "instrument": "minimoog-model-d",
   "visibility": "public",
   "approximate": true,

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "sub-bass",
-  "name": "SUB BASS",
+  "name": "Sub Bass",
   "notes": "",
   "values": {
     "osc1Range": "ft32",
@@ -13,9 +13,19 @@
     "cutoffFrequency": -1,
     "amountOfContour": 7,
     "filterSustainLevel": 3,
-    "loudnessSustainLevel": 7
+    "loudnessSustainLevel": 7,
+    "osc1Waveform": "triangle",
+    "osc2Enable": "on",
+    "osc3Range": "ft8",
+    "osc3Waveform": "triangle",
+    "osc3Volume": 0,
+    "noiseVolume": 0,
+    "filterModulation": "on",
+    "keyboardControl2": "on"
   },
-  "tags": [],
+  "tags": [
+    "Bass"
+  ],
   "instrument": "minimoog-model-d",
   "visibility": "public",
   "approximate": true,

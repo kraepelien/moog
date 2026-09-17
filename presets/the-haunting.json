@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "the-haunting",
-  "name": "THE HAUNTING",
+  "name": "The Haunting",
   "notes": "",
   "values": {
     "osc1Range": "ft32",
@@ -19,9 +19,16 @@
     "filterEmphasis": 4,
     "amountOfContour": 4,
     "filterSustainLevel": 9,
-    "loudnessSustainLevel": 9
+    "loudnessSustainLevel": 9,
+    "osc3Waveform": "triangle",
+    "noiseVolume": 0,
+    "filterModulation": "on",
+    "keyboardControl1": "on",
+    "keyboardControl2": "on"
   },
-  "tags": [],
+  "tags": [
+    "FX"
+  ],
   "instrument": "minimoog-model-d",
   "visibility": "public",
   "approximate": true,
