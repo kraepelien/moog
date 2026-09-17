@@ -38,13 +38,11 @@
 
 .row {
   display: flex;
-  gap: 16px;
+  gap: 8px;
   align-items: flex-start;
-  justify-content: space-between;
   padding: 12px 0;
   border-bottom: 1px solid;
   border-color: inherit;
-  flex-wrap: wrap;
 }
 
 .row:last-child {
@@ -73,16 +71,22 @@
   text-transform: uppercase;
 }
 
-/* One group, so the three read as one answer rather than three switches. */
-.choices {
-  display: flex;
-  gap: 4px;
+/* Aligned to the first line of the name rather than centred on a row whose
+   height is set by the description under it. */
+.check {
   flex: 0 0 auto;
+  margin-top: -6px;
 }
 
-.choice {
-  min-width: 82px;
-  border-radius: 6px;
+/* Nothing is stored against this account, so a role is answering. Faded rather
+   than recoloured, the way the library's filter chips show an inactive one: the
+   tick still has to read as a tick, just not as somebody's decision. */
+.row[data-stored='no'] .check {
+  opacity: 0.45;
+}
+
+.clear {
+  flex: 0 0 auto;
   font-size: 0.72rem;
-  font-weight: 600;
+  white-space: nowrap;
 }

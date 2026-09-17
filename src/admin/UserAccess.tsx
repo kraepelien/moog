@@ -1,6 +1,7 @@
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
+import Checkbox from '@mui/material/Checkbox'
 import Paper from '@mui/material/Paper'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
@@ -18,71 +19,30 @@ import {
   type Source,
 } from '@access/privileges.ts'
 import { displayName, type AdminUser } from './users.ts'
-import { TONE_COLOURS, type Tone } from '@/tones.ts'
+import { TONE_COLOURS } from '@/tones.ts'
 import styles from './UserAccess.module.css'
 
 /* What one account may do, and why.
  *
- * Three states rather than a checkbox: a privilege is whatever the presets say
- * unless somebody has said otherwise about this account, and "nobody has said"
- * is a different thing from "no". Written as three buttons with aria-pressed
- * because that is how this codebase says on and off — there is no Switch or
- * Checkbox anywhere in it — and because a tri-state checkbox cannot say which
- * of its states is the default one.
+ * The box says whether they have it; how solid it is says where that came from.
+ * Full strength means somebody decided it about this account and there is a row
+ * to prove it; faded means nothing was said and a role is answering. Fading the
+ * weaker state rather than recolouring it is how the library's filter chips
+ * already read, and for the same reason: the two have to be told apart at a
+ * glance down a column.
  *
- * Every click writes on its own. There is no Save, because one click puts it
- * back, and no whole-set write, because that would delete an override naming a
- * privilege this build has never heard of. */
+ * Ticking one writes a row saying yes or no. Going back to the roles' answer is
+ * deleting that row, which is a separate and much rarer action, so it is a
+ * button that only appears once there is something to clear rather than a third
+ * thing to aim at every time. */
 
 export type Decision = 'granted' | 'inherited' | 'revoked'
-
-const CHOICES: readonly { decision: Decision; label: string; tone: Tone; ink: string }[] = [
-  { decision: 'granted', label: 'Granted', tone: 'green', ink: '#04190c' },
-  { decision: 'inherited', label: 'Default', tone: 'grey', ink: '#0e0e11' },
-  { decision: 'revoked', label: 'Revoked', tone: 'pink', ink: '#1b0509' },
-]
 
 const SAYS: Record<Source, string> = {
   preset: 'from a role',
   granted: 'granted to this account',
   revoked: 'revoked for this account',
   none: 'no role gives this',
-}
-
-function decisionOf(source: Source): Decision {
-  if (source === 'granted') return 'granted'
-  if (source === 'revoked') return 'revoked'
-  return 'inherited'
-}
-
-function Choice({
-  choice,
-  on,
-  onPress,
-  label,
-}: {
-  choice: (typeof CHOICES)[number]
-  on: boolean
-  onPress: () => void
-  label: string
-}) {
-  const colour = TONE_COLOURS[choice.tone]
-  return (
-    <Button
-      size="small"
-      className={styles.choice}
-      aria-label={label}
-      aria-pressed={on}
-      onClick={onPress}
-      sx={{
-        color: on ? choice.ink : colour.ink,
-        backgroundColor: on ? colour.ink : colour.field,
-        '&:hover': { backgroundColor: on ? colour.ink : colour.strong },
-      }}
-    >
-      {choice.label}
-    </Button>
-  )
 }
 
 export function UserAccess({
@@ -161,22 +121,48 @@ export function UserAccess({
         <Box component="ul" className={styles.list}>
           {PRIVILEGES.map((privilege) => {
             const source = sourceOf(roles, privilege, user)
-            const decision = decisionOf(source)
+            const explicit = source === 'granted' || source === 'revoked'
+
+            /* An explicit grant stays ticked even where the account does not end
+               up holding it, because the row is real and hiding it would make
+               the grant look lost. The line underneath says why it is doing
+               nothing. */
+            const ticked = source === 'granted' || user.privileges.includes(privilege)
+
             /* A grant that says nothing today, and would only start meaning
                something once the role that covers it goes away. */
             const redundant = source === 'granted' && fromPreset(roles, privilege)
             /* Something gives it and the account still does not have it, because
-               what it is conditional on is missing. Only said where there is a
-               contradiction to explain: where nothing grants it either, the
-               prerequisite is not the reason it is absent. */
+               what it is conditional on is missing. */
             const waiting = requiredBy(privilege)
             const inert =
               (source === 'granted' || source === 'preset') &&
               waiting !== null &&
               !user.privileges.includes(privilege)
 
+            /* Where the answer came from is an attribute rather than a style,
+               so the stylesheet fades from it and a test can read it without
+               asking what colour anything ended up. */
             return (
-              <Box component="li" key={privilege} className={styles.row}>
+              <Box
+                component="li"
+                key={privilege}
+                className={styles.row}
+                data-stored={explicit ? 'yes' : 'no'}
+              >
+                <Checkbox
+                  className={styles.check}
+                  checked={ticked}
+                  slotProps={{ input: { 'aria-label': privilege } }}
+                  onChange={(event) =>
+                    onDecide(privilege, event.target.checked ? 'granted' : 'revoked')
+                  }
+                  sx={{
+                    color: source === 'revoked' ? TONE_COLOURS.pink.ink : TONE_COLOURS.grey.ink,
+                    '&.Mui-checked': { color: TONE_COLOURS.green.ink },
+                  }}
+                />
+
                 <Box className={styles.about}>
                   <Typography component="span" className={styles.name}>
                     {privilege}
@@ -191,17 +177,20 @@ export function UserAccess({
                   </Typography>
                 </Box>
 
-                <Box className={styles.choices}>
-                  {CHOICES.map((choice) => (
-                    <Choice
-                      key={choice.decision}
-                      choice={choice}
-                      on={decision === choice.decision}
-                      label={`${choice.label} ${privilege}`}
-                      onPress={() => onDecide(privilege, choice.decision)}
-                    />
-                  ))}
-                </Box>
+                {/* Only where there is a row to delete. Going back to the roles'
+                    answer is the rare action, so it does not take up a place in
+                    every row. */}
+                {explicit && (
+                  <Button
+                    size="small"
+                    className={styles.clear}
+                    aria-label={`Use the default for ${privilege}`}
+                    onClick={() => onDecide(privilege, 'inherited')}
+                    sx={{ color: TONE_COLOURS.blue.ink }}
+                  >
+                    Use default
+                  </Button>
+                )}
               </Box>
             )
           })}
@@ -215,8 +204,9 @@ export function UserAccess({
         )}
 
         <Alert severity="info" sx={{ mt: 2 }}>
-          Every administration privilege is conditional on {PRIVILEGE.AccessAdmin}. Taking that one
-          away takes back the rest as well as hiding the pages, and no single grant gets around it.
+          A faded tick is a role answering, with nothing stored against this account. Every
+          administration privilege is conditional on {PRIVILEGE.AccessAdmin}, so taking that one
+          away takes back the rest as well as hiding the pages.
         </Alert>
       </Paper>
     </Stack>
