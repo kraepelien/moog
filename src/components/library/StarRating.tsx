@@ -43,12 +43,7 @@ export function StarRating({
       onChangeActive={(_event, active) => {
         if (active !== -1) hovered.current = active
       }}
-      onChange={(event, next) => {
-        /* The row is a button; a click on a star is not a click on the row. */
-        event.stopPropagation()
-        onRate?.(next ?? (mine ? 0 : hovered.current))
-      }}
-      onClick={(event) => event.stopPropagation()}
+      onChange={(_event, next) => onRate?.(next ?? (mine ? 0 : hovered.current))}
       sx={{
         '& .MuiRating-iconFilled': { color: mine ? TONE_COLOURS.blue.ink : SHELL.star },
         '& .MuiRating-iconEmpty': { color: 'rgb(255 255 255 / 18%)' },

@@ -13,8 +13,10 @@
   border-color: inherit;
 }
 
+/* Faint, because the line is no longer a target: it is there to hold the eye on
+   one row of five columns, and the name lights separately to say where to aim. */
 .row:hover {
-  background: rgb(255 255 255 / 5%);
+  background: rgb(255 255 255 / 3%);
 }
 
 /* The row the editor is showing. A rule down its edge rather than a fill: a
@@ -38,9 +40,31 @@
   }
 }
 
+/* The one thing on the line that opens the patch, so it is boxed to its own
+   words: a button stretched across the column would put the target back in the
+   empty space beside a short name. */
+.name {
+  justify-content: flex-start;
+  justify-self: start;
+  max-width: 100%;
+  padding: 2px 6px;
+  margin: -2px -6px;
+  border-radius: 4px;
+  text-align: left;
+}
+
+.name:hover,
+.name:focus-visible {
+  background: rgb(255 255 255 / 10%);
+}
+
+.name:hover .nameText {
+  text-decoration: underline;
+}
+
 /* Set in capitals the way the sheets print them. Typesetting only: the stored
    name is whatever was typed, and this is the one place that decides. */
-.name {
+.nameText {
   font-size: 0.86rem;
   font-weight: 600;
   letter-spacing: 0.02em;
