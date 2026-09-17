@@ -4,7 +4,8 @@ import { backupTo, openDatabase } from './db.ts'
 import { loadFactory } from './factory.ts'
 import { limitsFromEnv } from './limits.ts'
 import { createStore } from './store.ts'
-import { authConfigFromEnv, describeAuth } from './identity.ts'
+import { authConfigFromEnv } from './identity.ts'
+import { describeAuth, dirAt, envTrouble } from './startup.ts'
 import { seedTags } from './tags.ts'
 
 /* Serves the built app plus the same API the dev plugin serves, for running the
@@ -26,6 +27,8 @@ const factory = loadFactory(db, seed)
 seedTags(db)
 console.log(`Factory bank: ${factory.loaded} presets, ${factory.retired} retired`)
 console.log(`Sign-in: ${describeAuth(authConfigFromEnv(process.env))}`)
+const envTroubleFound = envTrouble(dirAt(process.cwd()), process.env)
+if (envTroubleFound) console.warn(envTroubleFound)
 
 /* Trash is a grace period, not a place things stay. */
 const limits = limitsFromEnv(process.env)
