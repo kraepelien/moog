@@ -152,6 +152,13 @@ export function clearedSessionCookie(request: Request): string {
   return `${SESSION_COOKIE}=; ${attributes(request)}; Max-Age=0`
 }
 
+/* Listed in MOOG_ADMINS. That grants the admin role and protects it from being
+   taken away in the app; it does not make the account immune to having a single
+   privilege revoked. */
+export function isEnvAdmin(email: string | null, config: AuthConfig): boolean {
+  return email !== null && config.admins.includes(email.toLowerCase())
+}
+
 export async function whoAmI(
   request: Request,
   config: AuthConfig,

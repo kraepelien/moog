@@ -94,7 +94,9 @@ export async function dispatch(
 
     if (!entry.open && viewer === null) return json({ error: 'sign in' }, 401)
     if (entry.needs !== undefined && !(viewer?.can(entry.needs) ?? false)) {
-      return json({ error: 'not allowed' }, 403)
+      /* Named, because the client turns this into what it tells the person and
+         "you are not allowed" without saying what is not useful to anybody. */
+      return json({ error: `This account does not hold ${entry.needs}.` }, 403)
     }
 
     const context = { request, url, params, viewer, services }

@@ -1,0 +1,19 @@
+.person {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.name {
+  font-weight: 600;
+}
+
+.email {
+  font-size: 0.75rem;
+}
+
+.holds {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}

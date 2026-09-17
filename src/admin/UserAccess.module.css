@@ -1,0 +1,88 @@
+.who {
+  font-size: 0.85rem;
+}
+
+.label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mui-palette-text-secondary, #9a9aa4);
+}
+
+.roles {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.role {
+  min-width: 0;
+  padding: 2px 12px;
+  border-radius: 999px;
+  text-transform: lowercase;
+  font-weight: 600;
+}
+
+.note {
+  font-size: 0.78rem;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid;
+  border-color: inherit;
+  flex-wrap: wrap;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.about {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.name {
+  font-weight: 600;
+}
+
+.what {
+  font-size: 0.82rem;
+}
+
+.source {
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* One group, so the three read as one answer rather than three switches. */
+.choices {
+  display: flex;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.choice {
+  min-width: 82px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}

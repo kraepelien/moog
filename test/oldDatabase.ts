@@ -29,6 +29,14 @@ const UNDO: Record<number, (db: Database) => void> = {
   },
   3: (db) => db.run(`alter table users drop column roles`),
   4: (db) => db.run(`drop table arrangements`),
+  5: (db) => db.run(`drop table user_privileges`),
+  /* Not an exact inverse: this gives `member` to every row, including any that
+     never had it. Fine for a fixture, which is only ever making a database for
+     the next step to migrate, and wrong to rely on for anything else. */
+  6: (db) => {
+    db.run(`update users set roles = 'member' where roles = ''`)
+    db.run(`update users set roles = roles || ',member' where roles != '' and roles != 'member'`)
+  },
 }
 
 export function windBackTo(db: Database, version: number): void {

@@ -1,7 +1,6 @@
 import {
-  grants,
-  privilegesOf,
-  ROLE,
+  effectiveRoles,
+  resolve,
   type Privilege,
   type Role,
 } from '@access/privileges.ts'
@@ -15,44 +14,50 @@ import type { UserRow } from '@server/repositories/users.ts'
 
 export interface Viewer {
   readonly user: UserRow
+  /* Resolved, so `member` is in here even though it is never stored. The
+     account screen shows this; only the repository and the admin page see the
+     column. */
   readonly roles: readonly Role[]
   readonly privileges: readonly Privilege[]
+  readonly envAdmin: boolean
   can(privilege: Privilege): boolean
 }
 
 export function createAccess(repositories: Repositories, config: AuthConfig) {
   const { users } = repositories
 
+  const listed = (user: UserRow): boolean =>
+    user.email !== null && config.admins.includes(user.email.toLowerCase())
+
   const viewerOf = (user: UserRow): Viewer => {
-    const roles = users.rolesOf(user)
+    /* Added in memory, never written. Persisting it left the role behind after
+       an address was taken out of MOOG_ADMINS, so the column claimed an admin
+       the environment no longer named — and with overrides in play, deleting
+       the revoke that masked it would have handed admin back. */
+    const envAdmin = listed(user)
+    const roles = effectiveRoles(users.rolesOf(user), envAdmin)
+    const privileges = resolve(roles, users.overridesOf(user.id))
+
     return {
       user,
       roles,
-      privileges: privilegesOf(roles),
-      can: (privilege) => grants(roles, privilege),
+      privileges,
+      envAdmin,
+      can: (privilege) => privileges.includes(privilege),
     }
   }
 
   return {
-    /* Reconciled per request rather than only at sign-in, because that is what
-       MOOG_ADMINS already did: adding a line to `.env` and restarting made
-       somebody an admin without them signing in again, and a grant that only
-       landed at the next sign-in would look like the variable was ignored.
-       Adding only — see `users.grant`. */
     async viewerFor(request: Request): Promise<Viewer | null> {
       const uid = await whoAmI(request, config)
       if (uid === null) return null
 
       const found = users.find(uid)
-      if (!found) return null
-
-      const listed = found.email !== null && config.admins.includes(found.email.toLowerCase())
-      if (!listed) return viewerOf(found)
-
-      return viewerOf(users.grant(uid, ROLE.admin) ?? found)
+      return found === null ? null : viewerOf(found)
     },
 
     viewerOf,
+    isEnvAdmin: listed,
   }
 }
 

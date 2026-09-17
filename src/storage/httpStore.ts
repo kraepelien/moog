@@ -1,5 +1,6 @@
 import { migrateToCurrent } from '@patch/migrate.ts'
 import type { Patch } from '@patch/schema.ts'
+import type { AdminUser } from '@admin/users.ts'
 import type { LibraryEntry } from '@components/library/entry.ts'
 import type { TagInUse } from '@admin/tags.ts'
 import type {
@@ -10,6 +11,7 @@ import type {
 import {
   StoreError,
   type AdminStore,
+  type UserStore,
   type ArrangementStore,
   type LibraryStore,
   type PatchStore,
@@ -66,8 +68,12 @@ export async function requestWith(
   if (response.status === 401) {
     throw new StoreError('unauthenticated', 'Sign in to do that.')
   }
+  /* The server says why, and the reasons differ: somebody else's patch, a
+     factory preset, or a privilege this account does not hold. A single
+     invented sentence here was wrong for two of the three. */
   if (response.status === 403) {
-    throw new StoreError('forbidden', 'That belongs to somebody else.')
+    const said = readError(await response.text().catch(() => ''))
+    throw new StoreError('forbidden', said ?? 'This account is not allowed to do that.')
   }
   if (!response.ok) {
     const detail = await response.text().catch(() => '')
@@ -101,7 +107,7 @@ function toPatch(raw: unknown): Patch | null {
 
 export function createHttpStore(
   doFetch: Fetch = (path, init) => fetch(path, init),
-): PatchStore & PresetStore & LibraryStore & TagStore & AdminStore & ArrangementStore {
+): PatchStore & PresetStore & LibraryStore & TagStore & AdminStore & ArrangementStore & UserStore {
   const request = (path: string, init?: RequestInit) => requestWith(doFetch, path, init)
 
   return {
@@ -209,6 +215,35 @@ export function createHttpStore(
 
     async deleteArrangement(id: string): Promise<void> {
       await request(`/arrangements/${encodeURIComponent(id)}`, { method: 'DELETE' })
+    },
+
+    async listUsers(): Promise<readonly AdminUser[]> {
+      return ((await request('/users')) ?? []) as AdminUser[]
+    },
+
+    async setUserRoles(uid: string, roles: readonly string[]): Promise<AdminUser> {
+      return (await request(`/users/${encodeURIComponent(uid)}/roles`, {
+        method: 'PUT',
+        body: JSON.stringify({ roles }),
+      })) as AdminUser
+    },
+
+    async setUserPrivilege(
+      uid: string,
+      privilege: string,
+      granted: boolean,
+    ): Promise<AdminUser> {
+      return (await request(
+        `/users/${encodeURIComponent(uid)}/privileges/${encodeURIComponent(privilege)}`,
+        { method: 'PUT', body: JSON.stringify({ granted }) },
+      )) as AdminUser
+    },
+
+    async clearUserPrivilege(uid: string, privilege: string): Promise<AdminUser> {
+      return (await request(
+        `/users/${encodeURIComponent(uid)}/privileges/${encodeURIComponent(privilege)}`,
+        { method: 'DELETE' },
+      )) as AdminUser
     },
   }
 }

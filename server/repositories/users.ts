@@ -1,16 +1,28 @@
 import type { Database } from 'bun:sqlite'
-import { formatRoles, parseRoles, ROLE, type Role } from '@access/privileges.ts'
+import {
+  formatRoles,
+  isPrivilege,
+  parseRoles,
+  ROLE,
+  type Privilege,
+  type Role,
+} from '@access/privileges.ts'
+import type { UserStats } from '@admin/users.ts'
 
-/* A row per account. With sign-in off there is one, `local`, so that a patch
-   has an owner to point at before there is anyone to be. */
+/* A row per account, the roles it holds, and the per-privilege answers that
+   beat them. Rows in, rows out: whether a write is allowed is the users
+   service's question. */
 
 export interface UserRow {
   readonly id: number
   readonly uid: string
+  readonly provider: string
   readonly email: string | null
   readonly display_name: string | null
   readonly avatar_url: string | null
   readonly roles: string
+  readonly created_at: string
+  readonly last_seen_at: string
 }
 
 export interface NewUser {
@@ -23,12 +35,62 @@ export interface NewUser {
   readonly roles?: readonly Role[]
 }
 
+/* An override as stored. `granted` false is a revoke, which is a row rather
+   than an absence — the absence is what "inherited" means. */
+export interface Override {
+  readonly privilege: string
+  readonly granted: boolean
+  readonly at: string
+}
+
+export interface Overridden {
+  readonly granted: Privilege[]
+  readonly revoked: Privilege[]
+  /* Names this build does not know, kept so the page can show them and so
+     nothing here quietly deletes a row it did not understand. */
+  readonly unknown: string[]
+}
+
+const STATS = `
+  (select count(*) from patches p
+    where p.owner_id = u.id and p.deleted_at is null) as patches,
+  (select count(*) from arrangements a where a.owner_id = u.id) as arrangements,
+  (select count(*) from ratings r where r.user_id = u.id) as ratings`
+
+interface ListRow extends UserRow {
+  patches: number
+  arrangements: number
+  ratings: number
+}
+
 export function createUsers(db: Database) {
   const byUid = db.query<UserRow, [string]>(`select * from users where uid = ?`)
 
   const repository = {
     find(uid: string): UserRow | null {
       return byUid.get(uid) ?? null
+    },
+
+    findById(id: number): UserRow | null {
+      return db.query<UserRow, [number]>(`select * from users where id = ?`).get(id) ?? null
+    },
+
+    /* Everybody, with the counts the admin page shows. One query with
+       correlated subqueries, like the library's. */
+    list(): (UserRow & UserStats)[] {
+      return db
+        .query<ListRow, []>(
+          `select u.*, ${STATS} from users u order by u.display_name collate nocase, u.uid`,
+        )
+        .all()
+    },
+
+    findWithStats(uid: string): (UserRow & UserStats) | null {
+      return (
+        db
+          .query<ListRow, [string]>(`select u.*, ${STATS} from users u where u.uid = ?`)
+          .get(uid) ?? null
+      )
     },
 
     /* Profile fields are refreshed from the provider on every sign-in; roles
@@ -52,7 +114,7 @@ export function createUsers(db: Database) {
           user.email ?? null,
           user.displayName ?? null,
           user.avatarUrl ?? null,
-          formatRoles(user.roles ?? [ROLE.member]),
+          formatRoles(user.roles ?? []),
           now,
           now,
         ],
@@ -64,27 +126,94 @@ export function createUsers(db: Database) {
       return parseRoles(user.roles)
     },
 
-    /* Adding only. What the environment says is a grant rather than the whole
-       truth: a list that also revoked would fight every grant made in the app,
-       and one typo in `.env` would demote everybody at the next restart. */
+    setRoles(uid: string, roles: readonly Role[]): UserRow | null {
+      if (!repository.find(uid)) return null
+      db.run(`update users set roles = ? where uid = ?`, [formatRoles(roles), uid])
+      return repository.find(uid)
+    },
+
     grant(uid: string, role: Role): UserRow | null {
       const user = repository.find(uid)
       if (!user) return null
-
-      const held = parseRoles(user.roles)
-      if (held.includes(role)) return user
-
-      db.run(`update users set roles = ? where uid = ?`, [formatRoles([...held, role]), uid])
-      return repository.find(uid)
+      return repository.setRoles(uid, [...parseRoles(user.roles), role])
     },
 
     revoke(uid: string, role: Role): UserRow | null {
       const user = repository.find(uid)
       if (!user) return null
+      return repository.setRoles(
+        uid,
+        parseRoles(user.roles).filter((held) => held !== role),
+      )
+    },
 
-      const kept = parseRoles(user.roles).filter((held) => held !== role)
-      db.run(`update users set roles = ? where uid = ?`, [formatRoles(kept), uid])
-      return repository.find(uid)
+    overridesOf(userId: number): Overridden {
+      const rows = db
+        .query<{ privilege: string; granted: number }, [number]>(
+          `select privilege, granted from user_privileges where user_id = ?`,
+        )
+        .all(userId)
+
+      const granted: Privilege[] = []
+      const revoked: Privilege[] = []
+      const unknown: string[] = []
+
+      for (const row of rows) {
+        if (!isPrivilege(row.privilege)) {
+          unknown.push(row.privilege)
+          continue
+        }
+        ;(row.granted ? granted : revoked).push(row.privilege)
+      }
+      return { granted, revoked, unknown }
+    },
+
+    /* `null` removes the row, which is what returning a privilege to inherited
+       means. One privilege at a time, so a name this build does not know is
+       left exactly as it was. */
+    setOverride(
+      userId: number,
+      privilege: string,
+      granted: boolean | null,
+      by: number | null,
+    ): void {
+      if (granted === null) {
+        db.run(`delete from user_privileges where user_id = ? and privilege = ?`, [
+          userId,
+          privilege,
+        ])
+        return
+      }
+      db.run(
+        `insert into user_privileges (user_id, privilege, granted, at, by_user_id)
+         values (?, ?, ?, ?, ?)
+         on conflict(user_id, privilege) do update set
+           granted = excluded.granted, at = excluded.at, by_user_id = excluded.by_user_id`,
+        [userId, privilege, granted ? 1 : 0, new Date().toISOString(), by],
+      )
+    },
+
+    /* How many accounts would still hold a privilege — the question the floor
+       invariant asks before it allows a revoke. Counted in SQL rather than by
+       resolving every user in memory, because it runs inside the write's own
+       transaction. */
+    holdersOf(privilege: Privilege, presetRoles: readonly Role[]): number {
+      const pattern = presetRoles.map(() => `instr(',' || u.roles || ',', ?) > 0`).join(' or ')
+      const byRole = presetRoles.length > 0 ? pattern : '0'
+      return (
+        db
+          .query<{ n: number }, string[]>(
+            `select count(*) as n from users u
+              where (
+                      ${byRole}
+                      or exists (select 1 from user_privileges g
+                                  where g.user_id = u.id and g.privilege = ? and g.granted = 1)
+                    )
+                and not exists (select 1 from user_privileges r
+                                 where r.user_id = u.id and r.privilege = ? and r.granted = 0)`,
+          )
+          .get(...presetRoles.map((role) => `,${role},`), privilege, privilege)?.n ?? 0
+      )
     },
 
     /* The one everything belongs to until there is anyone to sign in. It holds
@@ -98,7 +227,7 @@ export function createUsers(db: Database) {
           provider: 'local',
           subject: uid,
           displayName: 'This install',
-          roles: [ROLE.admin, ROLE.member],
+          roles: [ROLE.admin],
         })
       )
     },
