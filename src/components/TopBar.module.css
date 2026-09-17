@@ -21,6 +21,12 @@
   min-height: 0;
 }
 
+/* Space between the labels rather than padding inside them, so the selected
+   tab's underline stays the width of its word. */
+.tabs :global(.MuiTabs-list) {
+  gap: 24px;
+}
+
 .tab {
   min-height: 0;
   padding: 8px 4px;
