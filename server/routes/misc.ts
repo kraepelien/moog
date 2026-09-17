@@ -1,4 +1,3 @@
-import { PRIVILEGE } from '@access/privileges.ts'
 import { badRequest, json, notFound, readBody } from '@server/http.ts'
 import { route, type Route } from './table.ts'
 
@@ -54,27 +53,6 @@ export const miscRoutes: readonly Route[] = [
       if (payload === null || typeof payload !== 'object') return badRequest('invalid body')
       services.repositories.settings.put(viewer.user.id, payload)
       return json(payload)
-    },
-  }),
-
-  /* Open, and asked for before anything is drawn: the colours have to be on
-     :root by the first paint or the app flashes its defaults at everybody,
-     signed in or not. Writing is an administrative act and says so. */
-  route({
-    method: 'GET',
-    path: '/skin',
-    open: true,
-    handle: ({ services }) => json(services.skin.get()),
-  }),
-
-  route({
-    method: 'PUT',
-    path: '/skin',
-    needs: PRIVILEGE.AdminLayout,
-    handle: async ({ request, services }) => {
-      const payload = await readBody(request)
-      if (payload === null || typeof payload !== 'object') return badRequest('invalid body')
-      return json(services.skin.put(payload))
     },
   }),
 

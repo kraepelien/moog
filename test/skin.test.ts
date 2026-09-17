@@ -13,10 +13,10 @@ import {
   toneForTag,
 } from '@/tones.ts'
 
-/* The colours an administrator sets, and the two rules that keep them safe:
-   only the keys the app declares, and only values that are really colours. Both
-   run on the server too — the service imports the same function — so a page
-   cannot offer something the routes would refuse. */
+/* The colours the layout page tries out, and the two rules that keep them safe:
+   only the keys the app declares, and only values that are really colours. They
+   run on whatever `deviceSkin` reads back, which anybody with a console open can
+   rewrite, and before the first render rather than after it. */
 
 describe('sifting a skin', () => {
   test('keeps a colour for a key the app knows', () => {

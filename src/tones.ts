@@ -3,8 +3,8 @@
    white and these are not sampled from anything, they are a UI palette.
 
    Every value here is a reference to a custom property `shellPalette.css`
-   declares, not a colour. That is what lets an administrator repaint the app
-   without a component being told: the skin is written onto :root and the
+   declares, not a colour. That is what lets the layout page repaint the app
+   without a component being told: the preview is written onto :root and the
    browser resolves these afresh. `DEFAULT_SKIN` below holds the actual hexes,
    once, for the page that edits them and for anything that has to reset. */
 
@@ -82,8 +82,8 @@ export const SHELL = {
 
 /* Every colour a skin may set, in the order the page that edits them draws
    them, with the custom property each one writes and what it is for. One list:
-   the admin page builds its fields from it and the server refuses a key that is
-   not on it, so neither can drift from the other. */
+   the admin page builds its fields from it, the export names them from it, and
+   a stored preview is sifted against it, so none of the three can drift. */
 export interface SkinSwatch {
   readonly key: string
   readonly property: string
@@ -135,14 +135,14 @@ export const DEFAULT_SKIN: Readonly<Record<string, string>> = {
   grey: '#9a9aa4',
 }
 
-/* A skin is partial: a key it leaves out is the default, so a stored skin never
-   has to be migrated when a colour is added to the list above. */
+/* A skin is partial: a key it leaves out is the default, so a preview kept from
+   an older build never has to be migrated when a colour is added above. */
 export type Skin = Readonly<Record<string, string>>
 
-/* Six or three digits, with the hash. Shared with the server, which refuses
-   anything else before it reaches the database — a colour arriving from a form
-   ends up in a style attribute, and `red; background: url(...)` is not a
-   colour. */
+/* Six or three digits, with the hash. A colour arriving from a form or out of
+   session storage ends up in a style attribute, and `red; background: url(...)`
+   is not a colour. Shared with the server, which holds tag colours to the same
+   rule. */
 const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i
 
 export function isHexColour(value: unknown): value is string {

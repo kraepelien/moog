@@ -2,10 +2,11 @@
    instrument's: the panel is black ink on white and was sampled off a
    photograph, and these are a UI palette nobody measured.
 
-   Custom properties rather than constants because an administrator sets them.
-   A saved skin is written onto :root at startup, so changing one repaints
-   everything that reads it with no component knowing a skin exists — which is
-   why tones.ts hands out `var()` references rather than the hexes below.
+   Custom properties rather than constants so the layout page can try a colour
+   out. A previewed skin is written onto :root at startup, so changing one
+   repaints everything that reads it with no component knowing a skin exists,
+   which is why tones.ts hands out `var()` references rather than the hexes
+   below. These hexes are what the app ships with; changing one is a commit.
 
    Only the inks are given. Every wash and every edge is a color-mix of one, so
    a skin is sixteen colours rather than forty-eight kept in step by hand. */

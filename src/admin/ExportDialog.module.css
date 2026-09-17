@@ -1,0 +1,16 @@
+/* Wrapped rather than scrolled sideways: the lines are prose as much as they
+   are instructions, and a horizontal scrollbar hides the end of every one. */
+.prompt {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--shell-edge);
+  border-radius: 4px;
+  background: var(--shell-field);
+  color: var(--shell-ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}

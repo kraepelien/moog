@@ -1,0 +1,32 @@
+/* Amber, which is this app's word for "not written down yet" — the same signal
+   the editor gives an unsaved patch. Drawn from the tone rather than given its
+   own colour so that previewing a new amber previews this too. */
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--shell-edge);
+  background: var(--tone-amber-field);
+  color: var(--tone-amber-ink);
+}
+
+.said {
+  flex: 1 1 18rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.actions button {
+  min-width: 0;
+  padding: 2px 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}

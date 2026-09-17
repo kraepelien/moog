@@ -7,7 +7,6 @@ import type {
   ArrangementSummary,
 } from '@components/midi/arrangement.ts'
 import type { Patch, Visibility } from '@patch/schema.ts'
-import type { Skin } from '@/tones.ts'
 
 export interface PatchSummary {
   readonly id: string
@@ -67,13 +66,6 @@ export interface TagStore {
   /* Rows rather than names: the save form offers the names and every chip in
      the app is drawn in whatever colour the row carries. */
   listTags(): Promise<readonly Tag[]>
-}
-
-/* The app's colours. Readable by anyone — they have to be on :root before the
-   first paint, signed in or not — and writable only by an administrator. */
-export interface SkinStore {
-  getSkin(): Promise<Skin>
-  putSkin(skin: Skin): Promise<Skin>
 }
 
 /* Refused with `forbidden` for anyone the server does not count as an admin,

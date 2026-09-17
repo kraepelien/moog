@@ -47,7 +47,7 @@ src/
   admin/      UsersPage.tsx (everyone with an account) · UserAccess.tsx (one person's privileges)
   components/midi/ the MIDI desk: a file, a sound per part, and saving the two together
   navigation/ routes.ts (the page table) · router.ts (the address)
-  storage/    types.ts (the adapter interface) · webStorage.ts (localStorage + in-memory backends)
+  storage/    types.ts (the adapter interface) · httpStore.ts (the API) · deviceSkin.ts (the colour preview)
   presets/    factory.ts (placeholder presets)
   transfer/   bundle.ts (JSON import/export)
   audio/      calibration.ts (every dial-to-physical number) · settings.ts (the panel read as
@@ -346,22 +346,31 @@ for it.
 
 A skin is **partial**: a key it leaves out is the stylesheet's value, so adding a colour to
 `SKIN_SWATCHES` never needs a migration, and choosing the default is *removing* the key rather than
-storing it. It is sifted by `cleanSkin` in both directions — on the way in, because a value that is
-not a hex is a way of writing CSS into everybody's page, and on the way out, so a skin saved by a
-newer build renders as this build's defaults instead of putting an unknown string in a style
-attribute. The same function runs in the browser and in the service, so the page cannot offer
-something the route would refuse.
+storing it. It is sifted by `cleanSkin` on the way in, because a value that is not a hex is a way of
+writing CSS into the page.
 
-It is stored in `app_settings`, which is keyed and global — unlike `settings`, which is a row per
-person. A skin is the building's paint, not somebody's preference, so `AdminLayout` is what it takes
-to change it and everybody sees the result. It is fetched and painted in `main.tsx` **before the
-first render**, ahead of the session, so the sign-in page wears it too and nobody watches the
-defaults flash past.
+### The hexes are the product; the page is a preview
 
-The Layout page has no preview pane, because the preview is the page: every field writes straight
-onto `:root`, so the bar, the cards, the chips and the text under the cursor all move as the picker
-moves. That is also why the draft lives in `Workspace` rather than on the page — leaving without
-saving has to take the paint back off, and the page that was painting it is gone by then.
+The colours the app ships with are the hexes in `shellPalette.css` and `DEFAULT_SKIN`, and changing
+one is a commit. There is no server-side skin: nothing an admin does in the browser repaints the app
+for anybody else, and there is no `/api/skin`.
+
+What the Layout page does is **try colours out**. `storage/deviceSkin.ts` keeps them in
+`sessionStorage` — on that browser, for that tab — and `main.tsx` reads them synchronously and paints
+them **before the first render**, so there is no round trip and no frame in which the defaults flash
+past. The adapter takes its `Storage` as a parameter rather than reaching for `window`, because Bun's
+runtime has none and that is what makes it testable.
+
+The page has no preview pane, because the preview is the app: every field writes straight onto
+`:root`, so the bar, the cards, the chips and the text under the cursor all move as the picker moves,
+and they stay moved when you walk to the library or the editor. `PreviewBanner` in the chrome is what
+says so — a repaint with no visible cause and no visible way out is the failure it exists to prevent.
+
+Its **Export** button turns the difference from the shipped defaults into a prompt (`exportPrompt.ts`)
+naming each changed colour, its custom property, and both files that hold the defaults. You paste it
+into a Claude Code session, which makes the change in source and opens a pull request. The prompt
+names both files because `test/skin.test.ts` fails if they disagree, and `test/exportPrompt.test.ts`
+reads them off disk so the wording cannot drift from the files it names.
 
 ## Patches
 

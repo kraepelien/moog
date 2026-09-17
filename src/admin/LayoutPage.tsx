@@ -11,7 +11,7 @@ import { skinValue } from '@/skin.ts'
 import { DEFAULT_SKIN, SKIN_SWATCHES, TONE_COLOURS, TONES, type Skin } from '@/tones.ts'
 import styles from './LayoutPage.module.css'
 
-/* Where the app's colours are chosen.
+/* Where the app's colours are tried out.
  *
  * There is no preview pane, because the preview is the page: every field writes
  * straight onto :root, so the bar, the cards, the chips and the text under the
@@ -19,35 +19,29 @@ import styles from './LayoutPage.module.css'
  * app would be a second thing to keep in step with the first, and would still
  * be lying about the one surface it could not contain — the one it is drawn on.
  *
- * That is also why leaving is a real question. The paint is on the document
- * before it is on the server, so a draft that is walked away from has to be
- * taken back off; `onDraft` is how the page above does it.
+ * Nothing here is saved anywhere, and there is no button that would. The paint
+ * follows you out of this page and around the app, which is what the banner in
+ * the chrome exists to say, and exporting is how a colour becomes the app's.
  */
 export function LayoutPage({
   skin,
-  draft,
-  onDraft,
-  onSave,
+  keeping,
+  onSkin,
 }: {
-  /* What the server holds. Revert goes back to this, and it is what says
-     whether there is anything to save. */
+  /* What the fields show, which is also what the document is painted with. */
   skin: Skin
-  /* What the fields are showing, which is also what the document is painted
-     with. Owned above so that leaving the page can put the paint back. */
-  draft: Skin
-  onDraft: (next: Skin) => void
-  onSave: (next: Skin) => void
+  /* Whether the browser is keeping the preview across a reload. */
+  keeping: boolean
+  onSkin: (next: Skin) => void
 }) {
-  const changed = JSON.stringify(draft) !== JSON.stringify(skin)
-
   const set = (key: string, hex: string) => {
     /* A colour equal to the stylesheet's is an absence rather than a choice, so
        it is dropped: a skin holds only what somebody decided, and a default
        that moves later reaches everyone who never said otherwise. */
-    const next = { ...draft }
+    const next = { ...skin }
     if (hex === DEFAULT_SKIN[key]) delete next[key]
     else next[key] = hex
-    onDraft(next)
+    onSkin(next)
   }
 
   const groups = ['Shell', 'Tones'] as const
@@ -62,37 +56,29 @@ export function LayoutPage({
           <Box className={styles.actions}>
             <Button
               size="small"
-              disabled={!changed}
-              onClick={() => onDraft(skin)}
-              sx={{ color: TONE_COLOURS.grey.ink, backgroundColor: TONE_COLOURS.grey.field }}
-            >
-              Revert
-            </Button>
-            <Button
-              size="small"
-              disabled={Object.keys(draft).length === 0}
-              onClick={() => onDraft({})}
+              disabled={Object.keys(skin).length === 0}
+              onClick={() => onSkin({})}
               sx={{ color: TONE_COLOURS.pink.ink, backgroundColor: TONE_COLOURS.pink.field }}
             >
               Defaults
-            </Button>
-            <Button
-              size="small"
-              disabled={!changed}
-              onClick={() => onSave(draft)}
-              sx={{ color: TONE_COLOURS.green.ink, backgroundColor: TONE_COLOURS.green.field }}
-            >
-              Save
             </Button>
           </Box>
         </Box>
 
         <Alert severity="info" className={styles.note}>
-          The page repaints as you pick, so what you see is what it will look
-          like — but nobody else sees any of it until you press Save. These
-          colours belong to the installation rather than to your account, so
-          saving repaints the app for everyone.
+          The page repaints as you pick, so what you see is what it will look like, everywhere in
+          the app and not only here. The colours are kept on this browser and nobody else sees any
+          of them. Exporting is how one becomes a colour the app ships with.
         </Alert>
+
+        {/* The one thing that can go wrong here, and it goes wrong silently:
+            the colours are simply not there at the next reload. */}
+        {!keeping && (
+          <Alert severity="warning" className={styles.note}>
+            This browser is not keeping the preview, so it goes as soon as the page reloads. Export
+            before you leave.
+          </Alert>
+        )}
 
         {groups.map((group) => (
           <Box key={group} className={styles.group}>
@@ -105,7 +91,7 @@ export function LayoutPage({
                   key={swatch.key}
                   label={swatch.label}
                   hint={swatch.hint}
-                  value={skinValue(draft, swatch.key)}
+                  value={skinValue(skin, swatch.key)}
                   onChange={(hex) => set(swatch.key, hex)}
                 />
               ))}
