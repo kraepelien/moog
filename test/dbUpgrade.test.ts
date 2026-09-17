@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { ROLE } from '@access/privileges.ts'
+import { effectiveRoles, PRIVILEGE, resolve, ROLE } from '@access/privileges.ts'
 import { openDatabase } from '@server/db.ts'
 import { createRepositories } from '@server/repositories/index.ts'
 import { syncInstruments } from '@server/factory.ts'
@@ -39,11 +39,28 @@ function databaseWithoutRoles() {
 }
 
 describe('upgrading a database written before roles', () => {
-  test('gives everybody who could sign in the member role', () => {
+  /* Access rather than the column: `member` is applied to everyone at
+     resolution now, so an ordinary account holding nothing is exactly right. */
+  test('leaves an ordinary account holding the baseline and nothing more', () => {
     const db = openDatabase(databaseWithoutRoles())
     const users = createRepositories(db).users
 
-    expect(users.rolesOf(users.find('u-1')!)).toEqual([ROLE.member])
+    const found = users.find('u-1')!
+    expect(users.rolesOf(found)).toEqual([])
+    expect(resolve(effectiveRoles(users.rolesOf(found)))).toEqual([PRIVILEGE.StoreMidi])
+    db.close()
+  })
+
+  /* The step that strips it runs over rows the earlier step wrote as 'member',
+     so this is what proves the two steps agree. */
+  test('stops storing member, which everybody is anyway', () => {
+    const db = openDatabase(databaseWithoutRoles())
+
+    const stored = db
+      .query<{ roles: string }, []>(`select roles from users`)
+      .all()
+      .map((row) => row.roles)
+    expect(stored.some((roles) => roles.split(',').includes(ROLE.member))).toBe(false)
     db.close()
   })
 

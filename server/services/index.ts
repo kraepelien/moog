@@ -6,6 +6,7 @@ import { createAccess } from './access.ts'
 import { createArrangementService } from './arrangements.ts'
 import { createPatchService, type Identity } from './patches.ts'
 import { createTagService } from './tags.ts'
+import { createUserService } from './users.ts'
 
 /* A service exists where there are rules to keep in one place — who may write a
    patch, what a tag may be called. A route with no rules of its own reads its
@@ -33,6 +34,7 @@ export function createServices({
     patches: createPatchService(repositories, limits, identity),
     tags: createTagService(repositories),
     arrangements: createArrangementService(repositories, limits, identity),
+    users: createUserService(repositories, config),
   }
 }
 

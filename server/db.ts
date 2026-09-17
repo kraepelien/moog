@@ -131,6 +131,43 @@ const SCHEMA: Step[] = [
       create index arrangements_owner on arrangements (owner_id);
     `)
   },
+
+  /* One person's answer for one privilege, beating whatever their roles give.
+     A table rather than a column on `users`: this is a per-(user, privilege)
+     decision with two states, which is the shape `ratings` already has, and it
+     lets one row be written without sending the rest back — a whole-set write
+     would delete any row naming a privilege the writing build does not know. */
+  (db) => {
+    db.run(`
+      create table user_privileges (
+        user_id    integer not null references users(id) on delete cascade,
+        privilege  text not null,
+        granted    integer not null check (granted in (0, 1)),
+        at         text not null,
+        by_user_id integer references users(id) on delete set null,
+        primary key (user_id, privilege)
+      );
+    `)
+  },
+
+  /* `member` is applied to everyone at resolution now, so storing it says
+     nothing. Left in the column it would show in the admin page for accounts
+     written before this and not for accounts written after, which reads as two
+     kinds of member. Written in TypeScript rather than SQL because the column
+     is a comma-separated set and the orderings are not worth enumerating. */
+  (db) => {
+    const rows = db.query<{ id: number; roles: string }, []>(`select id, roles from users`).all()
+    const update = db.prepare(`update users set roles = ? where id = ?`)
+    for (const row of rows) {
+      const kept = row.roles
+        .split(',')
+        .map((name) => name.trim())
+        .filter((name) => name !== '' && name !== 'member')
+      if (kept.length !== row.roles.split(',').filter(Boolean).length) {
+        update.run(kept.join(','), row.id)
+      }
+    }
+  },
 ]
 
 export const DB_VERSION = SCHEMA.length

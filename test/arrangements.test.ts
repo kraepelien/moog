@@ -87,11 +87,17 @@ const anArrangement = (parts: Record<string, { patchId: string; name: string }> 
 })
 
 describe('the privilege', () => {
+  /* Every signed-in account is a member and members may store MIDI, so the only
+     way to be without it is to have had it taken away. */
   test('is the door: without it every route refuses', async () => {
-    const { person } = await world()
-    /* No roles at all, which is what an account the member role was taken from
-       looks like. */
-    const nobody = await person('u-nobody', [])
+    const { person, repositories } = await world()
+    const nobody = await person('u-nobody')
+    repositories.users.setOverride(
+      repositories.users.find('u-nobody')!.id,
+      PRIVILEGE.StoreMidi,
+      false,
+      null,
+    )
 
     expect((await nobody.call('GET', '/api/arrangements'))!.status).toBe(403)
     expect((await nobody.call('POST', '/api/arrangements', anArrangement()))!.status).toBe(403)

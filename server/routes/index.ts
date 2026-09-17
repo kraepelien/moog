@@ -3,6 +3,7 @@ import { miscRoutes } from './misc.ts'
 import { patchRoutes } from './patches.ts'
 import type { Route } from './table.ts'
 import { tagRoutes } from './tags.ts'
+import { userRoutes } from './users.ts'
 
 /* Everything under /api/ except sign-in, which is not a table route: it sets
    cookies, talks to Google and has to be reachable by somebody who has no
@@ -12,4 +13,5 @@ export const allRoutes: readonly Route[] = [
   ...tagRoutes,
   ...patchRoutes,
   ...arrangementRoutes,
+  ...userRoutes,
 ]
