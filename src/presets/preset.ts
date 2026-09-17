@@ -25,8 +25,11 @@ export function copyOf(
       values: options.values ?? source.values,
       tags: source.tags,
       instrument: source.instrument,
-      /* Visibility and `approximate` are deliberately not copied: a copy is not
-         published, and its values may no longer be the reconstruction. */
+      /* Private whatever a saved patch defaults to and whatever the source was:
+         republishing somebody else's work under your own name is a choice they
+         did not make. `approximate` is likewise not copied — the values may no
+         longer be the reconstruction. */
+      visibility: 'private',
       derivedFrom: {
         id: source.id,
         name: source.name,

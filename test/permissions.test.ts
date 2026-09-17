@@ -8,6 +8,7 @@ import { syncInstruments } from '../server/factory.ts'
 import { authConfigFromEnv, sessionCookie } from '../server/identity.ts'
 import { createStore } from '../server/store.ts'
 import { ensureUser } from '../server/users.ts'
+import { copyOf } from '../src/presets/preset.ts'
 import { createPatch, type Patch } from '../src/patch/schema.ts'
 
 /* Two people and a factory bank. Someone else's private patch answers 404
@@ -99,10 +100,12 @@ describe('a factory preset', () => {
     expect(store.listPresets()[0]).toEqual(before)
   })
 
+  /* Posted the way the editor posts it: the server keeps whatever visibility it
+     is sent, and it is `copyOf` that holds a copy back from being published. */
   test('is copied instead, and the copy is mine and private', async () => {
     const { mine, store } = await world()
     const response = (await mine.call('POST', '/api/patches', {
-      ...createPatch({ name: 'My Sub Bass' }),
+      ...copyOf(store.listPresets()[0]!, { name: 'My Sub Bass', owner: null }),
       from: 'sub-bass',
     }))!
     expect(response.status).toBe(201)
