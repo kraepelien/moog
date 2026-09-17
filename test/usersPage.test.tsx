@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { AccessProvider } from '../src/access/AccessProvider.tsx'
-import { PRIVILEGE, ROLE, type Privilege, type Role } from '../src/access/privileges.ts'
-import { UsersPage } from '../src/admin/UsersPage.tsx'
-import type { Decision } from '../src/admin/UserAccess.tsx'
-import type { AdminUser } from '../src/admin/users.ts'
+import { AccessProvider } from '@access/AccessProvider.tsx'
+import { PRIVILEGE, ROLE, type Privilege, type Role } from '@access/privileges.ts'
+import { UsersPage } from '@admin/UsersPage.tsx'
+import type { Decision } from '@admin/UserAccess.tsx'
+import type { AdminUser } from '@admin/users.ts'
 
 afterEach(cleanup)
 

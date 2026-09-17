@@ -9,11 +9,11 @@ import {
   PRIVILEGE,
   type Privilege,
 
-} from '../../src/access/privileges.ts'
-import type { AdminUser } from '../../src/admin/users.ts'
-import { isEnvAdmin, type AuthConfig } from '../identity.ts'
-import type { Repositories } from '../repositories/index.ts'
-import type { UserRow } from '../repositories/users.ts'
+} from '@access/privileges.ts'
+import type { AdminUser } from '@admin/users.ts'
+import { isEnvAdmin, type AuthConfig } from '@server/identity.ts'
+import type { Repositories } from '@server/repositories/index.ts'
+import type { UserRow } from '@server/repositories/users.ts'
 import type { Viewer } from './access.ts'
 import type { Refusal } from './refusal.ts'
 

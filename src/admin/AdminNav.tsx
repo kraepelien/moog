@@ -1,8 +1,8 @@
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import { usePrivileges } from '../access/context.ts'
-import { ADMIN_ROUTES, type RouteDef } from '../navigation/routes.ts'
-import { TONE_COLOURS } from '../tones.ts'
+import { usePrivileges } from '@access/context.ts'
+import { ADMIN_ROUTES, type RouteDef } from '@navigation/routes.ts'
+import { TONE_COLOURS } from '@/tones.ts'
 import styles from './AdminNav.module.css'
 
 /* The administration pages are separate routes with separate privileges, so

@@ -15,9 +15,9 @@ import {
   type Privilege,
   type Role,
   type Source,
-} from '../access/privileges.ts'
+} from '@access/privileges.ts'
 import { displayName, type AdminUser } from './users.ts'
-import { TONE_COLOURS, type Tone } from '../tones.ts'
+import { TONE_COLOURS, type Tone } from '@/tones.ts'
 import styles from './UserAccess.module.css'
 
 /* What one account may do, and why.

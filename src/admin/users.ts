@@ -1,4 +1,4 @@
-import type { Privilege, Role } from '../access/privileges.ts'
+import type { Privilege, Role } from '@access/privileges.ts'
 
 /* An account as the administration page sees it: who they are, what they hold,
    and enough of a count to tell a real user from an empty one. Shared with the
