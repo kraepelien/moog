@@ -17,6 +17,7 @@ import {
   PRIVILEGES,
   ROLE,
   ROLES,
+  ROLE_LADDER,
 } from '@access/privileges.ts'
 
 describe('reading roles off a row', () => {
@@ -193,6 +194,63 @@ describe('the catalogue', () => {
 
   test('has a preset for every role', () => {
     for (const role of ROLES) expect(Array.isArray(presetFor(role))).toBe(true)
+  })
+})
+
+/* The rungs. A role holds what the rungs below it hold, so unlocking a feature
+   for members is one line and reaches testers and admins with it — which
+   matters because the presets are code: it takes a deploy either way, and the
+   deploy should not also need each higher role edited to match. */
+describe('a role inheriting from the ones below it', () => {
+  test('gives an admin everything a member has', () => {
+    for (const privilege of presetFor(ROLE.member)) {
+      expect(presetFor(ROLE.admin)).toContain(privilege)
+    }
+  })
+
+  test('gives a tester everything a member has', () => {
+    for (const privilege of presetFor(ROLE.member)) {
+      expect(presetFor(ROLE.tester)).toContain(privilege)
+    }
+  })
+
+  /* Stated over the whole ladder rather than the pairs that exist today, so a
+     rung inserted later is held to it too. */
+  test('holds for every step of the ladder', () => {
+    ROLE_LADDER.forEach((role, rung) => {
+      if (rung === 0) return
+      const below = presetFor(ROLE_LADDER[rung - 1]!)
+      for (const privilege of below) expect(presetFor(role)).toContain(privilege)
+    })
+  })
+
+  /* A role off the ladder would silently grant nothing, which is the confusing
+     way to find out it was forgotten. */
+  test('places every role there is', () => {
+    for (const role of ROLES) expect(ROLE_LADDER).toContain(role)
+  })
+
+  /* Inheritance is not a way around an override: the whole point of a revoke is
+     that it comes last. */
+  test('is still beaten by a revoke', () => {
+    expect(
+      resolve([ROLE.member, ROLE.admin], { revoked: [PRIVILEGE.StoreMidi] }),
+    ).not.toContain(PRIVILEGE.StoreMidi)
+  })
+
+  /* The ladder replaced a table that listed StoreMidi against both member and
+     admin. Nobody's access changes; what changes is that the next privilege
+     given to members cannot be forgotten on the rung above. */
+  test('leaves what everybody holds today exactly as it was', () => {
+    expect(resolve([ROLE.member])).toEqual([PRIVILEGE.StoreMidi])
+    expect(resolve([ROLE.member, ROLE.tester])).toEqual([PRIVILEGE.StoreMidi])
+    expect(resolve([ROLE.member, ROLE.admin])).toEqual([
+      PRIVILEGE.AccessAdmin,
+      PRIVILEGE.AdminUsers,
+      PRIVILEGE.AdminTags,
+      PRIVILEGE.AdminPatches,
+      PRIVILEGE.StoreMidi,
+    ])
   })
 })
 
