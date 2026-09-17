@@ -589,10 +589,22 @@ write, since otherwise the page would be lying about the person pressing the but
 ### Administering people
 
 `/admin/users` lists everyone with an account, searchable, with what each has made. Opening one
-shows every privilege with a plain description and three states — *granted*, *default*, *revoked* —
-because "nobody has said" is a different thing from "no". Each click writes on its own: there is no
-Save, because one click puts it back, and no whole-set write, because that would delete an override
-naming a privilege this build has never heard of.
+shows every privilege with a plain description and a checkbox.
+
+**The box says whether they have it; how solid it is says where that came from.** Full strength
+means somebody decided it about this account and there is a row to prove it. Faded means nothing is
+stored and a role is answering. Fading the weaker state rather than recolouring it is how the
+library's filter chips already read, and for the same reason: the two have to be told apart at a
+glance down a column.
+
+Ticking or clearing writes a row saying yes or no. Going back to the roles' answer is *deleting*
+that row, which is a rarer thing to want, so it is a **Use default** button that appears only where
+there is something to clear rather than a third state to aim at in every row. Which came from where
+is an attribute on the row, and the stylesheet fades from it — so the state is in the DOM rather
+than inferred from a colour.
+
+Each change writes on its own: there is no Save, because one click puts it back, and no whole-set
+write, because that would delete an override naming a privilege this build has never heard of.
 
 It is its own route with its own privilege rather than nesting behind `AccessAdmin`, so the two can
 be held apart — which is what the rules above assume.

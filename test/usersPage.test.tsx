@@ -50,6 +50,14 @@ function show(people: readonly AdminUser[] = PEOPLE) {
   return { decided, roled }
 }
 
+const box = (privilege: string) => screen.getByRole('checkbox', { name: privilege })
+
+/* Faded means "a role is answering, and nothing is stored here". The row says
+   which it is in an attribute and the stylesheet fades from that, so this reads
+   the state rather than asking what colour anything ended up. */
+const faded = (privilege: string): boolean =>
+  box(privilege).closest('li')!.getAttribute('data-stored') === 'no'
+
 const search = () => screen.getByLabelText('Search people') as HTMLInputElement
 const type = (text: string) => fireEvent.change(search(), { target: { value: text } })
 const open = (name: string) =>
@@ -113,37 +121,88 @@ describe('the editor', () => {
     expect(screen.getByText(/Save a MIDI file together with the sound/)).toBeTruthy()
   })
 
-  /* Three states, because "nobody has said" is not the same as "no". */
-  test('shows which of the three each privilege is on', () => {
+  /* The box says whether they have it; nothing else has to be read to know. */
+  test('ticks what the account holds and leaves the rest clear', () => {
     show()
     open('Ada')
 
-    const pressed = (label: string) =>
-      screen.getByRole('button', { name: label }).getAttribute('aria-pressed')
+    /* Everybody is a member, so this one is held — by a role. */
+    expect((box(PRIVILEGE.StoreMidi) as HTMLInputElement).checked).toBe(true)
+    expect((box(PRIVILEGE.AdminTags) as HTMLInputElement).checked).toBe(false)
+  })
 
-    /* Everybody is a member, so this one comes from a role. */
-    expect(pressed('Default StoreMidi')).toBe('true')
-    expect(pressed('Granted StoreMidi')).toBe('false')
-    expect(pressed('Default AdminTags')).toBe('true')
+  /* Faded is the whole signal for "no row exists, a role is answering", so the
+     two have to be told apart without reading the line underneath. */
+  test('fades a tick that only a role is giving, and not one of its own', () => {
+    show([
+      user({
+        uid: 'ada',
+        name: 'Ada',
+        granted: [PRIVILEGE.AccessAdmin],
+        privileges: [PRIVILEGE.StoreMidi, PRIVILEGE.AccessAdmin],
+      }),
+    ])
+    open('Ada')
+
+    expect(faded(PRIVILEGE.StoreMidi)).toBe(true)
+    expect(faded(PRIVILEGE.AccessAdmin)).toBe(false)
   })
 
   test('reads an explicit answer off the account rather than the preset', () => {
     show([user({ uid: 'ada', name: 'Ada', revoked: [PRIVILEGE.StoreMidi], privileges: [] })])
     open('Ada')
 
-    expect(
-      screen.getByRole('button', { name: 'Revoked StoreMidi' }).getAttribute('aria-pressed'),
-    ).toBe('true')
+    expect((box(PRIVILEGE.StoreMidi) as HTMLInputElement).checked).toBe(false)
+    expect(faded(PRIVILEGE.StoreMidi)).toBe(false)
     expect(screen.getAllByText(/revoked for this account/)[0]).toBeTruthy()
   })
 
-  test('hands back which way a privilege was moved', () => {
+  test('hands back a grant when a clear box is ticked', () => {
     const { decided } = show()
     open('Ada')
-    fireEvent.click(screen.getByRole('button', { name: 'Revoked AdminTags' }))
+    fireEvent.click(box(PRIVILEGE.AdminTags))
 
     expect(decided).toEqual([
-      { uid: 'ada', privilege: PRIVILEGE.AdminTags, decision: 'revoked' },
+      { uid: 'ada', privilege: PRIVILEGE.AdminTags, decision: 'granted' },
+    ])
+  })
+
+  test('hands back a revoke when a ticked box is cleared', () => {
+    const { decided } = show()
+    open('Ada')
+    fireEvent.click(box(PRIVILEGE.StoreMidi))
+
+    expect(decided).toEqual([
+      { uid: 'ada', privilege: PRIVILEGE.StoreMidi, decision: 'revoked' },
+    ])
+  })
+
+  /* Going back to the roles' answer is deleting the row, and is offered only
+     where there is one — otherwise every row would carry a button that does
+     nothing. */
+  test('offers a way back to the default only where something is stored', () => {
+    show([user({ uid: 'ada', name: 'Ada', revoked: [PRIVILEGE.StoreMidi], privileges: [] })])
+    open('Ada')
+
+    expect(
+      screen.getByRole('button', { name: `Use the default for ${PRIVILEGE.StoreMidi}` }),
+    ).toBeTruthy()
+    expect(
+      screen.queryByRole('button', { name: `Use the default for ${PRIVILEGE.AdminTags}` }),
+    ).toBeNull()
+  })
+
+  test('hands back an inherit when the default is asked for', () => {
+    const { decided } = show([
+      user({ uid: 'ada', name: 'Ada', revoked: [PRIVILEGE.StoreMidi], privileges: [] }),
+    ])
+    open('Ada')
+    fireEvent.click(
+      screen.getByRole('button', { name: `Use the default for ${PRIVILEGE.StoreMidi}` }),
+    )
+
+    expect(decided).toEqual([
+      { uid: 'ada', privilege: PRIVILEGE.StoreMidi, decision: 'inherited' },
     ])
   })
 
