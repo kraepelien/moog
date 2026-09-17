@@ -11,8 +11,14 @@ import { SHELL } from './tones.ts'
 
    Every colour is a custom property rather than a value, so a skin an
    administrator saves repaints MUI's own chrome along with everything else and
-   the theme never has to be rebuilt. */
+   the theme never has to be rebuilt. `nativeColor` is what lets that hold: MUI
+   mixes some palette colours rather than printing them (a chip's delete icon
+   out of the body ink, a switch's track), and that arithmetic cannot run on
+   `var(--shell-ink)`, so a Chip threw on render and took the page down with it.
+   With it the mixing is left to the browser as `oklch(from ...)`, and the
+   properties a contrast colour needs are declared alongside the palette. */
 export const theme = createTheme({
+  cssVariables: { nativeColor: true },
   typography: {
     fontFamily: "'Google Sans Flex Variable', system-ui, sans-serif",
   },
