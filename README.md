@@ -237,11 +237,30 @@ Three short fields that let a list be drawn without fetching each patch are the
 opposite trade. `approximate` stays out, because it is a claim about values the
 list does not carry.
 
-**Chip colour is assigned, not meaningful.** Tags are plain strings an admin can
-add to and retire, so a hand-kept colour map would leave new tags grey and dead
-entries behind. `toneForTag` hashes the tag instead, which gives it one colour
-everywhere it appears without anyone choosing it. The colour is there to tell
-chips apart at a glance, nothing more.
+**A tag's colour is assigned, not meaningful.** Tags are plain strings an admin
+can add to and retire, so a hand-kept colour map would leave new tags grey and
+dead entries behind. `toneForTag` hashes the tag instead, which gives it one
+colour everywhere it appears without anyone choosing it. The colour is there to
+tell chips apart at a glance, nothing more.
+
+**The Other row is the opposite**, because it is a closed set of three the code
+owns and the colour is the distinction: Factory red, User blue, Custom purple.
+Red is kept out of the tag rotation, but only because adding a sixth tone
+repoints the hash and recolours every tag already in use. A tag can still come
+out blue or purple; what tells it from a bank is the column it sits in, which is
+why the row is a grid of fixed cells rather than one run of chips.
+
+**A bank is not a field on the patch.** `origin` is the store a patch came from,
+`factory` or `user`, and it says the same thing to everybody. The bank is
+`bankOf`: a preset is Factory, and a saved patch is User to whoever saved it and
+Custom to everyone else — so two people open the same library and one row reads
+differently to each of them. That is the distinction worth browsing by, and it
+is free, because the server already sends `mine` per viewer to draw your own
+rating in blue. Blue means you in both places.
+
+Public sits in that row without being a bank: a patch is one of the three and may
+*also* be published, so it toggles a flag of its own and takes amber, the tone the
+three banks leave free.
 
 Within a filter row the chips are an OR and the rows are an AND, so "bass or
 lead, on a Model D" is sayable. An empty row filters nothing rather than matching
@@ -264,7 +283,8 @@ a second opening of the *same* patch forget what an abandoned first one typed.
 
 **There is no factory chip**: which bank a patch belongs to is the server's to
 decide and the write routes for it do not exist, so the row shows the one that
-applies and offers only Public.
+applies and offers only Public. Nor a Custom one — you are saving into your own
+name, so the locked chip is always User.
 
 ### Categories are a list an admin keeps
 

@@ -7,6 +7,7 @@ import InputAdornment from '@mui/material/InputAdornment'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { FilterRow, type FilterChoice } from './FilterRow.tsx'
+import { BANK_TONES } from './entry.ts'
 import { SHELL, TONE_COLOURS, toneForTag } from '../../tones.ts'
 import { patchName, type Patch, type Visibility } from '../../patch/schema.ts'
 import styles from './SavePatchDialog.module.css'
@@ -94,11 +95,12 @@ export function SavePatchDialog({
     tone: toneForTag(tag),
   }))
 
-  /* The bank is the server's, so there is no factory chip to press: what is
-     settable here is whether anyone else may see it. */
+  /* The bank is the server's, so there is no factory chip to press, and you are
+     saving into your own name, so the locked one is User and never Custom. What
+     is settable here is whether anyone else may see it. */
   const others: FilterChoice[] = [
-    { value: 'user', label: 'User', tone: 'violet', locked: true },
-    { value: 'public', label: 'Public', tone: 'blue' },
+    { value: 'user', label: 'User', tone: BANK_TONES.user, locked: true },
+    { value: 'public', label: 'Public', tone: 'amber' },
   ]
 
   return (

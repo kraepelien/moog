@@ -3,6 +3,7 @@ import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
 import { StarRating } from './StarRating.tsx'
 import { ToneChip } from './ToneChip.tsx'
+import { BANK_TONES, type Bank } from './entry.ts'
 import { instrumentName } from '../../instruments/instruments.ts'
 import { TONE_COLOURS, toneForTag, type Tone } from '../../tones.ts'
 import styles from './PatchHeader.module.css'
@@ -24,7 +25,7 @@ export function PatchHeader({
   name,
   tags,
   instrument,
-  origin,
+  bank,
   approximate,
   rating,
   average,
@@ -35,7 +36,7 @@ export function PatchHeader({
   name: string
   tags: readonly string[]
   instrument: string | null
-  origin: 'factory' | 'user' | null
+  bank: Bank | null
   approximate?: boolean
   rating: number | null
   average: number | null
@@ -56,9 +57,7 @@ export function PatchHeader({
           <ToneChip key={tag} label={tag} tone={toneForTag(tag)} />
         ))}
         {instrument !== null && <ToneChip label={instrumentName(instrument)} tone="green" />}
-        {origin !== null && (
-          <ToneChip label={origin} tone={origin === 'factory' ? 'pink' : 'violet'} />
-        )}
+        {bank !== null && <ToneChip label={bank} tone={BANK_TONES[bank]} />}
         {approximate && <ToneChip label="approximate" tone="grey" />}
       </Box>
 
