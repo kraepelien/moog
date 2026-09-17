@@ -111,6 +111,46 @@ describe('opening a patch', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Open Fuzz Lead in the editor' }))
     expect(opened).toEqual(['fuzz-lead'])
   })
+
+  /* The row is a button and the chips sit inside it, so a press has to stop at
+     the chip: filtering on something you can see must not also open the patch
+     you happened to read it off. */
+  test('pressing a tag on a row filters by it and leaves the editor alone', () => {
+    const { opened } = renderLibrary()
+    fireEvent.click(screen.getByRole('button', { name: 'Show only lead patches' }))
+    expect(rowNames()).toEqual(['Fuzz Lead'])
+    expect(opened).toEqual([])
+  })
+
+  test('pressing the same tag again puts the rest back', () => {
+    renderLibrary()
+    fireEvent.click(screen.getByRole('button', { name: 'Show only lead patches' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Show only lead patches' }))
+    expect(rowNames()).toHaveLength(BANK.length)
+  })
+
+  test('pressing where a row came from filters by that bank', () => {
+    const { opened } = renderLibrary()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Show only user patches' })[0]!)
+    expect(rowNames()).toEqual(['My Patch'])
+    expect(opened).toEqual([])
+  })
+
+  /* Published is a flag beside the banks rather than one of them, so the chip
+     saying so has to reach a different field than the one next to it. */
+  test('pressing the public chip keeps only what is published', () => {
+    renderLibrary()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Show only public patches' })[0]!)
+    expect(rowNames()).toEqual(['Sub Bass', 'Fuzz Lead'])
+  })
+
+  /* Only one instrument exists, so the second here is a patch from a later build
+     whose synth the chip names by id. It still has to filter. */
+  test('pressing a synth on a row filters by it', () => {
+    renderLibrary([...BANK, entry({ id: 'other', name: 'Other Synth', instrument: 'prophet-5' })])
+    fireEvent.click(screen.getAllByRole('button', { name: 'Show only prophet-5 patches' })[0]!)
+    expect(rowNames()).toEqual(['Other Synth'])
+  })
 })
 
 describe('paging', () => {

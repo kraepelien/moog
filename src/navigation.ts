@@ -4,14 +4,20 @@ import { useCallback, useSyncExternalStore } from 'react'
    and works with the back button. The moment a page takes a parameter this
    should become a real router rather than grow another special case. */
 
+/* The pages with a tab, in the order the bar shows them. */
 export const VIEWS = ['editor', 'library'] as const
-export type View = (typeof VIEWS)[number]
+
+/* Administration is a page without a tab: it is reached from the account menu
+   and only exists for an admin, so a tab everybody could see would be a door
+   most people find locked. */
+export const PAGES = [...VIEWS, 'admin'] as const
+export type View = (typeof PAGES)[number]
 
 const DEFAULT: View = 'editor'
 
 function read(): View {
   const hash = window.location.hash.replace(/^#\/?/, '')
-  return (VIEWS as readonly string[]).includes(hash) ? (hash as View) : DEFAULT
+  return (PAGES as readonly string[]).includes(hash) ? (hash as View) : DEFAULT
 }
 
 function subscribe(onChange: () => void): () => void {

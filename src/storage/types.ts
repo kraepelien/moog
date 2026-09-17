@@ -1,3 +1,4 @@
+import type { TagInUse } from '../admin/tags.ts'
 import type { LibraryEntry } from '../components/library/entry.ts'
 import type { Patch, Visibility } from '../patch/schema.ts'
 
@@ -57,6 +58,14 @@ export interface PatchStore {
    so this list says what may be offered, never what a patch means. */
 export interface TagStore {
   listTags(): Promise<readonly string[]>
+}
+
+/* Refused with `forbidden` for anyone the server does not count as an admin,
+   so the page hiding these is a convenience and never the check. */
+export interface AdminStore {
+  listTagsInUse(): Promise<readonly TagInUse[]>
+  addTag(name: string): Promise<void>
+  removeTag(id: number): Promise<void>
 }
 
 export interface PresetStore {

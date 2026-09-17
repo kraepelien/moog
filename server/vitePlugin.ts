@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { createApi } from './api.ts'
 import { openDatabase } from './db.ts'
 import { loadFactory } from './factory.ts'
+import { authConfigFromEnv, describeAuth } from './identity.ts'
 import { seedTags } from './tags.ts'
 
 /* The same API the standalone server serves, from inside `bun run dev`, so dev
@@ -67,7 +68,13 @@ export function patchApi(options: PatchApiOptions): Plugin {
       seedTags(db)
       server.config.logger.info(`  ➜  Factory bank: ${factory.loaded} presets`)
 
-      const handle = createApi({ db })
+      /* Without this, a .env the server cannot see looks exactly like no .env at
+         all: sign-in is skipped, everything belongs to the local user, and the
+         only symptom is a login screen that never appears. */
+      const config = authConfigFromEnv(process.env)
+      server.config.logger.info(`  ➜  Sign-in: ${describeAuth(config)}`)
+
+      const handle = createApi({ db, config })
       /* Every request, because the handler decides what is its own — filtering
          by prefix here is what made dev and production disagree. */
       server.middlewares.use((req, res, next) => {

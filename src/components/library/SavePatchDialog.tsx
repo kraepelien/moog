@@ -20,6 +20,30 @@ function ClearGlyph() {
   )
 }
 
+/* What pressing the button will do to the store. The form cannot work this out
+   for itself — only the editor knows whether the server has this draft and
+   whether it is mine — but it has to say which one it is, because "save" over
+   somebody else's patch and "save" over your own are different acts. */
+export type SaveOutcome = 'overwrite' | 'duplicate' | 'new'
+
+const OUTCOMES: Record<SaveOutcome, { action: string; note: (source: string | null) => string }> = {
+  overwrite: {
+    action: 'Save',
+    note: () => 'This writes over the patch you opened.',
+  },
+  duplicate: {
+    action: 'Duplicate',
+    note: (source) =>
+      source === null
+        ? 'This is saved as a patch of your own; what it was copied from is left as it is.'
+        : `This is saved as a patch of your own. “${source}” is left as it is.`,
+  },
+  new: {
+    action: 'Save',
+    note: () => 'This has not been saved before, so it is saved as a new patch.',
+  },
+}
+
 /* What the dialog hands back. Not a Patch: it is a form, and what saving a patch
    means — created or written over — belongs to whoever owns the store. */
 export interface PatchFields {
@@ -33,12 +57,14 @@ export interface PatchFields {
 export function SavePatchDialog({
   open,
   patch,
+  outcome,
   tagChoices,
   onCancel,
   onSave,
 }: {
   open: boolean
   patch: Patch
+  outcome: SaveOutcome
   /* The tags already in use, since there is nowhere here to invent one. */
   tagChoices: readonly string[]
   onCancel: () => void
@@ -59,7 +85,12 @@ export function SavePatchDialog({
     if (open) setFields(read(patch))
   }
 
-  const categories: FilterChoice[] = tagChoices.map((tag) => ({
+  /* What the patch already wears is offered even when the list no longer does:
+     an admin retiring a tag leaves the patches wearing it, and a chip that is
+     not drawn is one nobody can take off. */
+  const worn = [...new Set([...tagChoices, ...patch.tags])].sort((a, b) => a.localeCompare(b))
+
+  const categories: FilterChoice[] = worn.map((tag) => ({
     value: tag,
     label: tag,
     tone: toneForTag(tag),
@@ -95,7 +126,7 @@ export function SavePatchDialog({
                 '&:hover': { backgroundColor: TONE_COLOURS.green.ink },
               }}
             >
-              Save
+              {OUTCOMES[outcome].action}
             </Button>
             <Button
               className={styles.action}
@@ -110,6 +141,10 @@ export function SavePatchDialog({
             </Button>
           </Box>
         </Box>
+
+        <Typography color="text.secondary" className={styles.note}>
+          {OUTCOMES[outcome].note(patch.derivedFrom?.name ?? null)}
+        </Typography>
 
         <TextField
           fullWidth
