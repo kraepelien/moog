@@ -178,6 +178,7 @@ export function TopBar({
           <Tooltip title="Account and file actions">
             <IconButton
               color="inherit"
+              className={styles.account}
               aria-label="Account and file actions"
               onClick={(event) => setMenuAt(event.currentTarget)}
             >
