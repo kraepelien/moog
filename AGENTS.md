@@ -70,8 +70,15 @@ remapping every saved patch.
 - **One privilege is written at a time, never the set.** A whole-set write deletes override rows
   naming privileges the writing build does not know, and a silently deleted revoke is somebody
   getting access back. `resolve()` in `src/access/privileges.ts` is the only place the order
-  preset → grant → revoke exists; the reasons a particular revoke may not be *written* live in
-  `server/services/users.ts`, so the resolution order stays a rule without exceptions.
+  preset → grant → revoke → prerequisite exists; the reasons a particular revoke may not be
+  *written* live in `server/services/users.ts`, so the resolution order stays a rule without
+  exceptions.
+- **A new `Admin*` privilege needs an entry in `REQUIRES`.** Everything administrative is
+  conditional on `AccessAdmin`, applied last so no grant steps over it, which is what makes
+  revoking it de-administer somebody everywhere rather than only hiding pages. Declared beside the
+  privileges rather than as a second `needs` on each route, because a route that forgot the second
+  entry is the hole it closes — and routes are not the only place a privilege is asked about.
+  `test/privileges.test.ts` fails if an `Admin*` name has no prerequisite.
 - **A route declares what it needs**, in `server/routes/table.ts`'s entries. The guard runs there
   for every route at once, so a handler never checks for itself — and a route that forgot to ask
   cannot exist. The client's `<Can>` and `<RouteGuard>` choose what to draw and are never the check.

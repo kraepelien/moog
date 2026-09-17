@@ -10,6 +10,7 @@ import {
   isPrivilege,
   parseRoles,
   presetFor,
+  requiredBy,
   resolve,
   sourceOf,
   PRIVILEGE,
@@ -79,7 +80,9 @@ describe('resolving what somebody may do', () => {
   })
 
   test('adds what was granted to this account alone', () => {
-    expect(resolve([], { granted: [PRIVILEGE.AdminTags] })).toContain(PRIVILEGE.AdminTags)
+    expect(
+      resolve([], { granted: [PRIVILEGE.AccessAdmin, PRIVILEGE.AdminTags] }),
+    ).toContain(PRIVILEGE.AdminTags)
   })
 
   /* The whole point of a revoke: one privilege off, everything else intact. */
@@ -101,6 +104,52 @@ describe('resolving what somebody may do', () => {
 
   test('answers in the catalogue order, so two equal sets are equal lists', () => {
     expect(resolve([ROLE.admin])).toEqual(resolve([ROLE.admin, ROLE.member]))
+  })
+})
+
+/* AccessAdmin is a boundary, not a door: without it the administration
+   privileges do not apply at all, so revoking it de-administers somebody
+   everywhere rather than hiding pages whose routes would still have answered. */
+describe('what AccessAdmin is conditional on', () => {
+  test('drops every administration privilege the admin preset gives', () => {
+    const held = resolve([ROLE.member, ROLE.admin], { revoked: [PRIVILEGE.AccessAdmin] })
+
+    expect(held).toEqual([PRIVILEGE.StoreMidi])
+    expect(held).not.toContain(PRIVILEGE.AdminTags)
+    expect(held).not.toContain(PRIVILEGE.AdminUsers)
+    expect(held).not.toContain(PRIVILEGE.AdminPatches)
+  })
+
+  /* A boundary one grant could step over would not be a boundary. */
+  test('is not something an explicit grant can get around', () => {
+    expect(resolve([], { granted: [PRIVILEGE.AdminUsers] })).not.toContain(PRIVILEGE.AdminUsers)
+    expect(
+      resolve([ROLE.admin], {
+        revoked: [PRIVILEGE.AccessAdmin],
+        granted: [PRIVILEGE.AdminUsers],
+      }),
+    ).not.toContain(PRIVILEGE.AdminUsers)
+  })
+
+  test('leaves what does not depend on it alone', () => {
+    expect(resolve([ROLE.admin], { revoked: [PRIVILEGE.AccessAdmin] })).toContain(
+      PRIVILEGE.StoreMidi,
+    )
+  })
+
+  test('says which privilege each one waits on', () => {
+    expect(requiredBy(PRIVILEGE.AdminTags)).toBe(PRIVILEGE.AccessAdmin)
+    expect(requiredBy(PRIVILEGE.StoreMidi)).toBeNull()
+    expect(requiredBy(PRIVILEGE.AccessAdmin)).toBeNull()
+  })
+
+  /* Every Admin* privilege, so adding one without a prerequisite is caught
+     rather than quietly becoming reachable without being an administrator. */
+  test('covers every administration privilege there is', () => {
+    for (const privilege of PRIVILEGES) {
+      if (privilege === PRIVILEGE.AccessAdmin || !privilege.startsWith('Admin')) continue
+      expect(requiredBy(privilege)).toBe(PRIVILEGE.AccessAdmin)
+    }
   })
 })
 

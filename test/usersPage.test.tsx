@@ -180,6 +180,21 @@ describe('the editor', () => {
     expect(screen.getByText(/a role already gives it/)).toBeTruthy()
   })
 
+  /* A row reading "granted" while the account cannot do it is the confusing
+     case, so the boundary is said out loud rather than left to be worked out. */
+  test('says when a grant does nothing because AccessAdmin is not held', () => {
+    show([
+      user({
+        uid: 'ada',
+        name: 'Ada',
+        granted: [PRIVILEGE.AdminTags],
+        privileges: [PRIVILEGE.StoreMidi],
+      }),
+    ])
+    open('Ada')
+    expect(screen.getByText(/does nothing without AccessAdmin/)).toBeTruthy()
+  })
+
   /* Kept and shown rather than hidden: it is somebody's decision, and a build
      that hid it would look like it had lost it. */
   test('reports an override naming something this build does not know', () => {

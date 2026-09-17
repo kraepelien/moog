@@ -197,23 +197,27 @@ export function createUsers(db: Database) {
        invariant asks before it allows a revoke. Counted in SQL rather than by
        resolving every user in memory, because it runs inside the write's own
        transaction. */
-    holdersOf(privilege: Privilege, presetRoles: readonly Role[]): number {
-      const pattern = presetRoles.map(() => `instr(',' || u.roles || ',', ?) > 0`).join(' or ')
-      const byRole = presetRoles.length > 0 ? pattern : '0'
-      return (
-        db
-          .query<{ n: number }, string[]>(
-            `select count(*) as n from users u
-              where (
-                      ${byRole}
-                      or exists (select 1 from user_privileges g
-                                  where g.user_id = u.id and g.privilege = ? and g.granted = 1)
-                    )
-                and not exists (select 1 from user_privileges r
-                                 where r.user_id = u.id and r.privilege = ? and r.granted = 0)`,
-          )
-          .get(...presetRoles.map((role) => `,${role},`), privilege, privilege)?.n ?? 0
-      )
+    /* Everybody's overrides in one query, for the rare question that has to be
+       asked about every account at once. Returning them rather than answering
+       "who holds X" in SQL: the answer depends on the presets and on one
+       privilege being conditional on another, and a second copy of those rules
+       written in SQL is a copy that drifts. */
+    overridesAll(): Map<number, Overridden> {
+      const rows = db
+        .query<{ user_id: number; privilege: string; granted: number }, []>(
+          `select user_id, privilege, granted from user_privileges`,
+        )
+        .all()
+
+      const byUser = new Map<number, Overridden>()
+      for (const row of rows) {
+        const held =
+          byUser.get(row.user_id) ?? { granted: [], revoked: [], unknown: [] }
+        if (!isPrivilege(row.privilege)) held.unknown.push(row.privilege)
+        else (row.granted ? held.granted : held.revoked).push(row.privilege)
+        byUser.set(row.user_id, held)
+      }
+      return byUser
     },
 
     /* The one everything belongs to until there is anyone to sign in. It holds
