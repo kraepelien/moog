@@ -139,14 +139,10 @@ describe('editing', () => {
     expect(screen.queryByRole('button', { name: 'Minimoog Model D' })).toBeNull()
   })
 
-  /* A patch nobody has claimed is exact says so in the same row, and only
-     there: an ordinary patch must not wear a chip about it. */
-  test('an approximation says so, and an exact patch says nothing', () => {
-    const { view } = renderDialog(patchWith({ approximate: true }))
-    expect(screen.getByText('approximate')).toBeTruthy()
-
-    view.unmount()
-    renderDialog()
+  /* Every patch in the factory bank is a reconstruction and no other patch is
+     one, so the bank chip says it and this form does not say it again. */
+  test('an approximation is not chipped a second time', () => {
+    renderDialog(patchWith({ approximate: true }))
     expect(screen.queryByText('approximate')).toBeNull()
   })
 })
