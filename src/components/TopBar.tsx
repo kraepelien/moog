@@ -8,8 +8,8 @@ import MenuItem from '@mui/material/MenuItem'
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
 import Toolbar from '@mui/material/Toolbar'
-import { usePrivileges } from '../access/context.ts'
-import { TABS, type RouteDef } from '../navigation/routes.ts'
+import { usePrivileges } from '@access/context.ts'
+import { TABS, type RouteDef } from '@navigation/routes.ts'
 import styles from './TopBar.module.css'
 
 /* Inline rather than an icon package, for a shape that is a head and a pair of

@@ -1,5 +1,5 @@
 import type { Database } from 'bun:sqlite'
-import { DB_VERSION } from '../server/db.ts'
+import { DB_VERSION } from '@server/db.ts'
 
 /* An old database, for testing a migration against.
 

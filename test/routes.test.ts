@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { PRIVILEGE } from '../src/access/privileges.ts'
+import { PRIVILEGE } from '@access/privileges.ts'
 import {
   DEFAULT_ROUTE,
   matchRoute,
@@ -7,7 +7,7 @@ import {
   resolve,
   ROUTES,
   TABS,
-} from '../src/navigation/routes.ts'
+} from '@navigation/routes.ts'
 
 describe('resolving an address', () => {
   test('finds the page it names', () => {

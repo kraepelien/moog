@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { cleanup, render, screen } from '@testing-library/react'
-import { MidiHelp } from '../src/components/MidiHelp.tsx'
+import { MidiHelp } from '@components/MidiHelp.tsx'
 
 afterEach(() => {
   cleanup()

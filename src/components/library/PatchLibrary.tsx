@@ -15,8 +15,8 @@ import {
   type LibraryFilters,
   type Origin,
 } from './entry.ts'
-import { instrumentName } from '../../instruments/instruments.ts'
-import { toneForTag } from '../../tones.ts'
+import { instrumentName } from '@instruments/instruments.ts'
+import { toneForTag } from '@/tones.ts'
 import styles from './PatchLibrary.module.css'
 
 /* A page is long because the list is one line per patch and scrolling is cheaper

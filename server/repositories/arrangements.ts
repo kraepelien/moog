@@ -5,7 +5,7 @@ import {
   toBase64,
   type Arrangement,
   type ArrangementSummary,
-} from '../../src/components/midi/arrangement.ts'
+} from '@components/midi/arrangement.ts'
 
 /* Rows for a MIDI file and the sounds put on its parts. The file is a blob
    because it is bytes and nothing here reads inside it; everything the list

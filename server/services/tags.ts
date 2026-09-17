@@ -1,7 +1,7 @@
 import type { Database } from 'bun:sqlite'
-import { tagNameProblem } from '../../src/admin/tags.ts'
-import { createTags, type Tag } from '../repositories/tags.ts'
-import type { Repositories } from '../repositories/index.ts'
+import { tagNameProblem } from '@admin/tags.ts'
+import { createTags, type Tag } from '@server/repositories/tags.ts'
+import type { Repositories } from '@server/repositories/index.ts'
 import type { Refusal } from './refusal.ts'
 
 /* Unlike instruments, the tag list is **seeded once rather than synced**.

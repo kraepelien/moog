@@ -1,6 +1,6 @@
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
-import type { DiscretePosition } from '../../controls/discrete.ts'
+import type { DiscretePosition } from '@controls/discrete.ts'
 
 /* A knob with named positions gets a list to pick from rather than a box to type
    in. Typing was the wrong shape for it: there is nothing to say that choosing

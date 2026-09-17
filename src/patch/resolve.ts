@@ -1,6 +1,6 @@
-import { isRecalled } from '../controls/recall.ts'
-import type { Registry } from '../controls/registry.ts'
-import type { ControlValue } from '../controls/types.ts'
+import { isRecalled } from '@controls/recall.ts'
+import type { Registry } from '@controls/registry.ts'
+import type { ControlValue } from '@controls/types.ts'
 import type { Patch } from './schema.ts'
 
 export interface CoercionNote {

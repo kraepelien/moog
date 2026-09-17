@@ -1,7 +1,7 @@
-import { isRating } from '../../src/components/library/entry.ts'
-import { badRequest, json, readBody } from '../http.ts'
-import { isSafeName } from '../repositories/patches.ts'
-import { isRefusal, type Refusal } from '../services/refusal.ts'
+import { isRating } from '@components/library/entry.ts'
+import { badRequest, json, readBody } from '@server/http.ts'
+import { isSafeName } from '@server/repositories/patches.ts'
+import { isRefusal, type Refusal } from '@server/services/refusal.ts'
 import { route, type Route, type RouteContext } from './table.ts'
 
 /* Reading a patch is open to any signed-in viewer and refused per patch by the

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { authConfigFromEnv } from '../server/identity.ts'
+import { authConfigFromEnv } from '@server/identity.ts'
 
 /* The suite is meant to test the code rather than the machine it runs on. This
    is what catches the day that stops being true: it fails on a developer's

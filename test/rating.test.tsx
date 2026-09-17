@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { PatchHeader } from '../src/components/library/PatchHeader.tsx'
-import { PatchRow } from '../src/components/library/PatchRow.tsx'
-import type { LibraryEntry } from '../src/components/library/entry.ts'
+import { PatchHeader } from '@components/library/PatchHeader.tsx'
+import { PatchRow } from '@components/library/PatchRow.tsx'
+import type { LibraryEntry } from '@components/library/entry.ts'
 
 /* One set of stars carries two numbers — everyone's average until I rate, mine
    afterwards — and the difference between them is a colour, which no test can

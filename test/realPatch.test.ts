@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'bun:test'
-import { panelRegistry } from '../src/controls/panel.ts'
-import { isRecalled } from '../src/controls/recall.ts'
-import { defaultValues } from '../src/controls/registry.ts'
-import { mergeValues, resolvePatch } from '../src/patch/resolve.ts'
-import { PATCH_SCHEMA_VERSION, createPatch } from '../src/patch/schema.ts'
+import { panelRegistry } from '@controls/panel.ts'
+import { isRecalled } from '@controls/recall.ts'
+import { defaultValues } from '@controls/registry.ts'
+import { mergeValues, resolvePatch } from '@patch/resolve.ts'
+import { PATCH_SCHEMA_VERSION, createPatch } from '@patch/schema.ts'
 import { testApi } from './apiFixture.ts'
-import { createBundle, parseBundle, serializeBundle } from '../src/transfer/bundle.ts'
+import { createBundle, parseBundle, serializeBundle } from '@transfer/bundle.ts'
 
 /* The storage and transfer layers were built before any control existed and were
    covered only by fixtures defining two invented control types. These drive a

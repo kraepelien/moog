@@ -39,6 +39,13 @@ COPY --from=build /app/server ./server
 # require and the healthcheck never passes.
 COPY --from=build /app/src ./src
 
+# Those crossing imports are written as aliases (@patch/schema.ts), and Bun maps
+# them by reading `paths` out of the tsconfig as it boots. The alias map is a
+# runtime dependency of the server, not build tooling: without it every crossing
+# import is an unresolved bare specifier and the container crashloops.
+COPY --from=build /app/tsconfig.json ./tsconfig.json
+COPY --from=build /app/tsconfig.paths.json ./tsconfig.paths.json
+
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
 

@@ -6,9 +6,9 @@ import {
   quantise,
   scaleMarks,
   type ContinuousKnobDef,
-} from '../src/controls/continuousKnob.ts'
-import { panelRegistry } from '../src/controls/panel.ts'
-import { createRegistry } from '../src/controls/registry.ts'
+} from '@controls/continuousKnob.ts'
+import { panelRegistry } from '@controls/panel.ts'
+import { createRegistry } from '@controls/registry.ts'
 
 const volume: ContinuousKnobDef = {
   id: 'vol',

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import { createHttpStore, requestWith } from '../src/storage/httpStore.ts'
-import { StoreError } from '../src/storage/types.ts'
-import { createPatch } from '../src/patch/schema.ts'
+import { createHttpStore, requestWith } from '@storage/httpStore.ts'
+import { StoreError } from '@storage/types.ts'
+import { createPatch } from '@patch/schema.ts'
 import { fixedIdentity } from './fixtures.ts'
 
 /* What the browser makes of the server's answers. */

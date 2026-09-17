@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test'
-import { panelRegistry } from '../src/controls/panel.ts'
-import { createRegistry } from '../src/controls/registry.ts'
-import { isToggleSwitch, toggleSwitchType, type ToggleSwitchDef } from '../src/controls/toggleSwitch.ts'
-import { stepBy } from '../src/controls/discrete.ts'
+import { panelRegistry } from '@controls/panel.ts'
+import { createRegistry } from '@controls/registry.ts'
+import { isToggleSwitch, toggleSwitchType, type ToggleSwitchDef } from '@controls/toggleSwitch.ts'
+import { stepBy } from '@controls/discrete.ts'
 
 const source: ToggleSwitchDef = {
   id: 'modSource',

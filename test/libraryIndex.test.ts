@@ -2,12 +2,12 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { openDatabase } from '../server/db.ts'
-import { syncInstruments } from '../server/factory.ts'
-import { createLibrary } from '../server/repositories/library.ts'
-import { createRepositories } from '../server/repositories/index.ts'
-import { createUsers } from '../server/repositories/users.ts'
-import { createPatch, type Patch, type Visibility } from '../src/patch/schema.ts'
+import { openDatabase } from '@server/db.ts'
+import { syncInstruments } from '@server/factory.ts'
+import { createLibrary } from '@server/repositories/library.ts'
+import { createRepositories } from '@server/repositories/index.ts'
+import { createUsers } from '@server/repositories/users.ts'
+import { createPatch, type Patch, type Visibility } from '@patch/schema.ts'
 
 /* One row per patch the viewer may see, with my rating and everyone's average
    on it. The average is the part that cannot be assembled in the browser: it

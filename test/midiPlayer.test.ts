@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import { createMidiPlayer, type Clock, type PlayerVoice } from '../src/audio/midiPlayer.ts'
-import type { Synth, SynthState } from '../src/audio/engine.ts'
-import { LOWEST_MIDI } from '../src/audio/notes.ts'
+import { createMidiPlayer, type Clock, type PlayerVoice } from '@audio/midiPlayer.ts'
+import type { Synth, SynthState } from '@audio/engine.ts'
+import { LOWEST_MIDI } from '@audio/notes.ts'
 
 /* Driven with a clock that only moves when the test says so, so a minute of
    music is a handful of ticks and nothing waits. */

@@ -1,12 +1,12 @@
-import { migrateToCurrent } from '../patch/migrate.ts'
-import type { Patch } from '../patch/schema.ts'
-import type { LibraryEntry } from '../components/library/entry.ts'
-import type { TagInUse } from '../admin/tags.ts'
+import { migrateToCurrent } from '@patch/migrate.ts'
+import type { Patch } from '@patch/schema.ts'
+import type { LibraryEntry } from '@components/library/entry.ts'
+import type { TagInUse } from '@admin/tags.ts'
 import type {
   Arrangement,
   ArrangementInput,
   ArrangementSummary,
-} from '../components/midi/arrangement.ts'
+} from '@components/midi/arrangement.ts'
 import {
   StoreError,
   type AdminStore,

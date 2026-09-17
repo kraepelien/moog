@@ -1,4 +1,4 @@
-import { badRequest, json, notFound, readBody } from '../http.ts'
+import { badRequest, json, notFound, readBody } from '@server/http.ts'
 import { route, type Route } from './table.ts'
 
 /* The routes with no rules of their own: each one reads its repository and

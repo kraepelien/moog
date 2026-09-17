@@ -1,4 +1,4 @@
-import { err, ok, type Result } from '../result.ts'
+import { err, ok, type Result } from '@/result.ts'
 import { PATCH_SCHEMA_VERSION, parsePatch, type Patch } from './schema.ts'
 
 /* Keyed by the version it upgrades FROM. A v1 patch reaching a v3 build runs

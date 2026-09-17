@@ -1,14 +1,14 @@
 import { describe, expect, test } from 'bun:test'
-import { panelRegistry } from '../src/controls/panel.ts'
-import { createRegistry } from '../src/controls/registry.ts'
-import { isStepKnob, stepBy, stepKnobType, positionIndex } from '../src/controls/stepKnob.ts'
-import type { StepKnobDef } from '../src/controls/stepKnob.ts'
-import { DETENT_ANGLES } from '../src/components/knob/artwork.ts'
+import { panelRegistry } from '@controls/panel.ts'
+import { createRegistry } from '@controls/registry.ts'
+import { isStepKnob, stepBy, stepKnobType, positionIndex } from '@controls/stepKnob.ts'
+import type { StepKnobDef } from '@controls/stepKnob.ts'
+import { DETENT_ANGLES } from '@components/knob/artwork.ts'
 import {
   osc12WaveformOrder,
   osc3WaveformOrder,
   waveformGlyphs,
-} from '../src/components/knob/waveforms.ts'
+} from '@components/knob/waveforms.ts'
 
 const def: StepKnobDef = {
   id: 'testRange',

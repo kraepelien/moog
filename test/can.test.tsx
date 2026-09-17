@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { cleanup, render, screen } from '@testing-library/react'
-import { Can, RouteGuard } from '../src/access/Can.tsx'
-import { AccessProvider } from '../src/access/AccessProvider.tsx'
-import { PRIVILEGE } from '../src/access/privileges.ts'
+import { Can, RouteGuard } from '@access/Can.tsx'
+import { AccessProvider } from '@access/AccessProvider.tsx'
+import { PRIVILEGE } from '@access/privileges.ts'
 
 afterEach(cleanup)
 

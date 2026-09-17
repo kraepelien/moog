@@ -7,15 +7,15 @@ import {
   waitFor,
   waitForElementToBeRemoved,
 } from '@testing-library/react'
-import { PlayMidi } from '../src/components/midi/PlayMidi.tsx'
-import { audibleParts, forgetMidiSession, type MidiSession } from '../src/components/midi/session.ts'
-import { readMidiFile } from '../src/audio/midiFile.ts'
-import type { LibraryEntry } from '../src/components/library/entry.ts'
-import type { Arrangement } from '../src/components/midi/arrangement.ts'
-import type { Desk } from '../src/components/midi/desk.ts'
-import { AccessProvider } from '../src/access/AccessProvider.tsx'
-import { PRIVILEGE } from '../src/access/privileges.ts'
-import { createPatch, type Patch } from '../src/patch/schema.ts'
+import { PlayMidi } from '@components/midi/PlayMidi.tsx'
+import { audibleParts, forgetMidiSession, type MidiSession } from '@components/midi/session.ts'
+import { readMidiFile } from '@audio/midiFile.ts'
+import type { LibraryEntry } from '@components/library/entry.ts'
+import type { Arrangement } from '@components/midi/arrangement.ts'
+import type { Desk } from '@components/midi/desk.ts'
+import { AccessProvider } from '@access/AccessProvider.tsx'
+import { PRIVILEGE } from '@access/privileges.ts'
+import { createPatch, type Patch } from '@patch/schema.ts'
 
 /* The page is driven the way a person drives it, and then unmounted, because
    what is being tested is what survives the unmount: leaving the tab used to

@@ -1,5 +1,5 @@
 import type { Database } from 'bun:sqlite'
-import { formatRoles, parseRoles, ROLE, type Role } from '../../src/access/privileges.ts'
+import { formatRoles, parseRoles, ROLE, type Role } from '@access/privileges.ts'
 
 /* A row per account. With sign-in off there is one, `local`, so that a patch
    has an owner to point at before there is anyone to be. */

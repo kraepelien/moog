@@ -1,7 +1,7 @@
-import type { Privilege } from '../../src/access/privileges.ts'
-import { json, methodNotAllowed, notFound } from '../http.ts'
-import type { Viewer } from '../services/access.ts'
-import type { Services } from '../services/index.ts'
+import type { Privilege } from '@access/privileges.ts'
+import { json, methodNotAllowed, notFound } from '@server/http.ts'
+import type { Viewer } from '@server/services/access.ts'
+import type { Services } from '@server/services/index.ts'
 
 /* The routes, and the guard in front of them.
 

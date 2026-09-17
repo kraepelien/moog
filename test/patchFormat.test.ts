@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import lock from './patch-format.lock.json'
-import { panelRegistry } from '../src/controls/panel.ts'
-import { PATCH_SCHEMA_VERSION, patchSchema } from '../src/patch/schema.ts'
-import { BUNDLE_FORMAT, BUNDLE_FORMAT_VERSION } from '../src/transfer/bundle.ts'
+import { panelRegistry } from '@controls/panel.ts'
+import { PATCH_SCHEMA_VERSION, patchSchema } from '@patch/schema.ts'
+import { BUNDLE_FORMAT, BUNDLE_FORMAT_VERSION } from '@transfer/bundle.ts'
 
 /* The names in a saved patch are a published interface. A control id or a
    position id that changes does not fail anywhere: the old id becomes unknown
@@ -144,7 +144,7 @@ describe('the envelope around a patch', () => {
     /* Raising the version without one makes every existing patch unreadable,
        since a version with no route forward is refused rather than guessed. */
     if (PATCH_SCHEMA_VERSION > lock.patchSchemaVersion) {
-      const { migrations } = require('../src/patch/migrate.ts')
+      const { migrations } = require('@patch/migrate.ts')
       for (let from = lock.patchSchemaVersion; from < PATCH_SCHEMA_VERSION; from++) {
         expect([from, typeof migrations[from]]).toEqual([from, 'function'])
       }

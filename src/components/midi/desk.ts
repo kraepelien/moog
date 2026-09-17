@@ -1,5 +1,5 @@
-import { MidiFileError, readMidiFile } from '../../audio/midiFile.ts'
-import type { Patch } from '../../patch/schema.ts'
+import { MidiFileError, readMidiFile } from '@audio/midiFile.ts'
+import type { Patch } from '@patch/schema.ts'
 import {
   asChannel,
   fromBase64,

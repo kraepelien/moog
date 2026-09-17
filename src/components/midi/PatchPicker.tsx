@@ -2,9 +2,9 @@ import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
 import Typography from '@mui/material/Typography'
-import { PatchLibrary } from '../library/PatchLibrary.tsx'
-import type { LibraryEntry } from '../library/entry.ts'
-import { TONE_COLOURS } from '../../tones.ts'
+import { PatchLibrary } from '@components/library/PatchLibrary.tsx'
+import type { LibraryEntry } from '@components/library/entry.ts'
+import { TONE_COLOURS } from '@/tones.ts'
 import styles from './PatchPicker.module.css'
 
 /* The library again, as a way of choosing rather than a way of opening. It is

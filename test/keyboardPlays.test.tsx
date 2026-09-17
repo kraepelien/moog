@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { Keyboard } from '../src/components/keyboard/Keyboard.tsx'
-import { createSynth, type Synth } from '../src/audio/engine.ts'
-import { KEY_COUNT, noteName } from '../src/audio/notes.ts'
-import { defaultValues } from '../src/controls/registry.ts'
-import { panelRegistry } from '../src/controls/panel.ts'
+import { Keyboard } from '@components/keyboard/Keyboard.tsx'
+import { createSynth, type Synth } from '@audio/engine.ts'
+import { KEY_COUNT, noteName } from '@audio/notes.ts'
+import { defaultValues } from '@controls/registry.ts'
+import { panelRegistry } from '@controls/panel.ts'
 import { fakeContext } from './fakeAudio.ts'
 
 /* Driven the way a person drives it, because a keyboard that draws correctly

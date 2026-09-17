@@ -9,7 +9,7 @@ import {
   sessionCookie,
   signToken,
   whoAmI,
-} from '../server/identity.ts'
+} from '@server/identity.ts'
 
 const SECRET = 'a-test-secret'
 const NOW = Date.UTC(2026, 8, 16, 12, 0, 0)

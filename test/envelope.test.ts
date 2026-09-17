@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { IDLE, levelAt, stageAt, type Running } from '../src/audio/envelope.ts'
-import type { EnvelopeSettings } from '../src/audio/settings.ts'
+import { IDLE, levelAt, stageAt, type Running } from '@audio/envelope.ts'
+import type { EnvelopeSettings } from '@audio/settings.ts'
 
 const shape: EnvelopeSettings = {
   attackSeconds: 1,

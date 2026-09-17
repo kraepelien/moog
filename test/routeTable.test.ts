@@ -2,11 +2,11 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { createApi } from '../server/api.ts'
-import { openDatabase } from '../server/db.ts'
-import { syncInstruments } from '../server/factory.ts'
-import { authConfigFromEnv } from '../server/identity.ts'
-import { seedTags } from '../server/services/tags.ts'
+import { createApi } from '@server/api.ts'
+import { openDatabase } from '@server/db.ts'
+import { syncInstruments } from '@server/factory.ts'
+import { authConfigFromEnv } from '@server/identity.ts'
+import { seedTags } from '@server/services/tags.ts'
 
 /* The dispatcher's own answers, apart from any one route: what it does with an
    address nothing declares, with the right address at the wrong method, and

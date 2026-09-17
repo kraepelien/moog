@@ -4,7 +4,7 @@ import {
   wheelDecimals,
   wheelFraction,
   type WheelDef,
-} from '../../controls/wheel.ts'
+} from '@controls/wheel.ts'
 import {
   FACE,
   FRAME,
@@ -18,7 +18,7 @@ import {
   ribTops,
   surfaceShift,
 } from './wheelArtwork.ts'
-import { ValueEntry } from '../knob/ValueEntry.tsx'
+import { ValueEntry } from '@components/knob/ValueEntry.tsx'
 import styles from './Wheel.module.css'
 
 export interface WheelProps {

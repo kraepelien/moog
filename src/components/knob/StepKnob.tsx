@@ -1,5 +1,5 @@
 import { memo, useCallback, useId, useRef, useState } from 'react'
-import { positionIndex, stepBy, type StepKnobDef } from '../../controls/stepKnob.ts'
+import { positionIndex, stepBy, type StepKnobDef } from '@controls/stepKnob.ts'
 import { CENTRE, DETENT_ANGLES, LABEL_RADIUS, TICKS, VIEWBOX } from './artwork.ts'
 import { capRadiusAt } from './dialArtwork.ts'
 import { KnobBody } from './KnobBody.tsx'

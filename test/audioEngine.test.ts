@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import { createSynth, type Synth } from '../src/audio/engine.ts'
-import { settingsFrom } from '../src/audio/settings.ts'
-import { defaultValues } from '../src/controls/registry.ts'
-import { panelRegistry } from '../src/controls/panel.ts'
-import type { ControlValue } from '../src/controls/types.ts'
+import { createSynth, type Synth } from '@audio/engine.ts'
+import { settingsFrom } from '@audio/settings.ts'
+import { defaultValues } from '@controls/registry.ts'
+import { panelRegistry } from '@controls/panel.ts'
+import type { ControlValue } from '@controls/types.ts'
 import { FakeContext, fakeContext, type FakeParam } from './fakeAudio.ts'
 
 /* What the engine does, seen from the calls it makes. Nothing here can hear

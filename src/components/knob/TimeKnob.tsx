@@ -10,7 +10,7 @@ import {
   scaleLabel,
   stepFractionOf,
   type TimeKnobDef,
-} from '../../controls/timeKnob.ts'
+} from '@controls/timeKnob.ts'
 import { CENTRE, LABEL_RADIUS, TICK_INNER, TICK_OUTER, VIEWBOX } from './dialArtwork.ts'
 import { KnobBody } from './KnobBody.tsx'
 import { angleForFraction, pointAt } from './dialGeometry.ts'

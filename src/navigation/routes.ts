@@ -1,4 +1,4 @@
-import { PRIVILEGE, type Privilege } from '../access/privileges.ts'
+import { PRIVILEGE, type Privilege } from '@access/privileges.ts'
 
 /* The pages, and what each one needs. One table, so a page that should be
    behind a privilege is behind it by being written down here rather than by

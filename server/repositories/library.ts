@@ -1,6 +1,6 @@
 import type { Database } from 'bun:sqlite'
-import type { LibraryEntry } from '../../src/components/library/entry.ts'
-import type { Visibility } from '../../src/patch/schema.ts'
+import type { LibraryEntry } from '@components/library/entry.ts'
+import type { Visibility } from '@patch/schema.ts'
 
 /* One row per patch the viewer may see, assembled here because only the server
    can see everyone's ratings: my stars come from my row, the average from all

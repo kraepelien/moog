@@ -1,6 +1,6 @@
-import { createRegistry, type Registry } from '../src/controls/registry.ts'
-import type { ControlDef, ControlType, DecodeResult } from '../src/controls/types.ts'
-import type { PatchIdentity } from '../src/patch/schema.ts'
+import { createRegistry, type Registry } from '@controls/registry.ts'
+import type { ControlDef, ControlType, DecodeResult } from '@controls/types.ts'
+import type { PatchIdentity } from '@patch/schema.ts'
 
 /* Fake control types, defined here rather than in src/ because no real control
    has been specified yet. They exist to prove the registry, resolver and importer

@@ -2,9 +2,9 @@ import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
 import { stopMidi, useMidiSession } from './session.ts'
-import { useRoute } from '../../navigation/router.ts'
-import { pathFor } from '../../navigation/routes.ts'
-import { TONE_COLOURS } from '../../tones.ts'
+import { useRoute } from '@navigation/router.ts'
+import { pathFor } from '@navigation/routes.ts'
+import { TONE_COLOURS } from '@/tones.ts'
 import styles from './NowPlaying.module.css'
 
 /* A file kept playing after its page was left needs a way back and a way off it

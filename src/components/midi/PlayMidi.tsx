@@ -23,13 +23,13 @@ import {
   toggleSolo,
   useMidiSession,
 } from './session.ts'
-import { Can } from '../../access/Can.tsx'
-import { PRIVILEGE } from '../../access/privileges.ts'
-import { ToneChip } from '../library/ToneChip.tsx'
-import type { LibraryEntry } from '../library/entry.ts'
-import { MidiFileError, readMidiFile, type MidiChannel } from '../../audio/midiFile.ts'
-import type { Patch } from '../../patch/schema.ts'
-import { TONE_COLOURS, type Tone } from '../../tones.ts'
+import { Can } from '@access/Can.tsx'
+import { PRIVILEGE } from '@access/privileges.ts'
+import { ToneChip } from '@components/library/ToneChip.tsx'
+import type { LibraryEntry } from '@components/library/entry.ts'
+import { MidiFileError, readMidiFile, type MidiChannel } from '@audio/midiFile.ts'
+import type { Patch } from '@patch/schema.ts'
+import { TONE_COLOURS, type Tone } from '@/tones.ts'
 import styles from './PlayMidi.module.css'
 
 /* A file, its parts, and a sound for each.

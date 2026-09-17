@@ -1,5 +1,5 @@
 import type { Database } from 'bun:sqlite'
-import type { TagInUse } from '../../src/admin/tags.ts'
+import type { TagInUse } from '@admin/tags.ts'
 
 /* The list of categories an admin keeps. A patch stores the tag's name as a
    plain string and points at nothing, so retiring a row here leaves every patch

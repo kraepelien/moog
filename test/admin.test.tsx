@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { AdminPage } from '../src/admin/AdminPage.tsx'
-import type { TagInUse } from '../src/admin/tags.ts'
+import { AdminPage } from '@admin/AdminPage.tsx'
+import type { TagInUse } from '@admin/tags.ts'
 
 afterEach(cleanup)
 

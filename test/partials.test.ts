@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import { PARTIAL_COUNT, WAVE_IDS, partialsFor, type WaveId } from '../src/audio/partials.ts'
-import { panelRegistry } from '../src/controls/panel.ts'
-import { isStepKnob } from '../src/controls/stepKnob.ts'
+import { PARTIAL_COUNT, WAVE_IDS, partialsFor, type WaveId } from '@audio/partials.ts'
+import { panelRegistry } from '@controls/panel.ts'
+import { isStepKnob } from '@controls/stepKnob.ts'
 
 /* Properties of each shape rather than its coefficients: the series are the
    textbook ones, so a test that restated them would only be checking the

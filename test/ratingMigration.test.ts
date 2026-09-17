@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { openDatabase } from '../server/db.ts'
+import { openDatabase } from '@server/db.ts'
 import { windBackTo } from './oldDatabase.ts'
 
 /* Half stars arrived after people had already rated things, and a check

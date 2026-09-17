@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { migrations, runMigrations, type Migration } from '../src/patch/migrate.ts'
-import { PATCH_SCHEMA_VERSION } from '../src/patch/schema.ts'
+import { migrations, runMigrations, type Migration } from '@patch/migrate.ts'
+import { PATCH_SCHEMA_VERSION } from '@patch/schema.ts'
 
 /* There is one schema version, so the real table is empty and the chain has
    never run. These drive it with a table of their own, because the first
