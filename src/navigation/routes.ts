@@ -22,12 +22,13 @@ export interface RouteDef {
 }
 
 export const ROUTES: readonly RouteDef[] = [
-  { name: 'editor', path: '/editor', title: 'Patch editor', tab: true },
   { name: 'library', path: '/library', title: 'Patch library', tab: true },
+  { name: 'editor', path: '/editor', title: 'Patch editor', tab: true },
   { name: 'midi', path: '/midi', title: 'Play MIDI', tab: true },
   { name: 'admin', path: '/admin', title: 'Tags', needs: PRIVILEGE.AccessAdmin },
   /* Its own privilege rather than nesting behind AccessAdmin, so the two can be
      held apart — which is what the rules protecting this page assume. */
+  { name: 'layout', path: '/admin/layout', title: 'Layout', needs: PRIVILEGE.AdminLayout },
   { name: 'users', path: '/admin/users', title: 'People', needs: PRIVILEGE.AdminUsers },
 ]
 
@@ -36,7 +37,9 @@ export const ADMIN_ROUTES: readonly RouteDef[] = ROUTES.filter((route) =>
   route.path.startsWith('/admin'),
 )
 
-export const DEFAULT_ROUTE: RouteDef = ROUTES[0]!
+/* Named rather than taken from the head of the list: the tabs are in the order
+   they are read in, and an address naming no page still lands on the editor. */
+export const DEFAULT_ROUTE: RouteDef = ROUTES.find((entry) => entry.name === 'editor')!
 
 export const TABS: readonly RouteDef[] = ROUTES.filter((entry) => entry.tab === true)
 

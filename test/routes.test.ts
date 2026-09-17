@@ -67,7 +67,7 @@ describe('the table itself', () => {
 
   /* A tab everybody could see would be a door most people find locked. */
   test('keeps administration out of the tab bar', () => {
-    expect(TABS.map((tab) => tab.name)).toEqual(['editor', 'library', 'midi'])
+    expect(TABS.map((tab) => tab.name)).toEqual(['library', 'editor', 'midi'])
   })
 
   test('names every page once', () => {
