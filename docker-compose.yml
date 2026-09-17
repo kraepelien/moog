@@ -22,22 +22,10 @@ services:
     # both the container and a person can work on the same files.
     user: "${MOOG_UID:-1027}:${MOOG_GID:-65536}"
 
-    # Everything but PORT comes from the .env beside this file, which
-    # deploy.sh appends to rather than rewrites, so a secret added by hand
-    # survives every deploy. With MOOG_OAUTH_CLIENT_ID empty the app runs as a
-    # single local user and gates nothing.
-    environment:
-      PORT: 8080
-      MOOG_OAUTH_CLIENT_ID: ${MOOG_OAUTH_CLIENT_ID:-}
-      MOOG_OAUTH_CLIENT_SECRET: ${MOOG_OAUTH_CLIENT_SECRET:-}
-      MOOG_SESSION_SECRET: ${MOOG_SESSION_SECRET:-}
-      MOOG_PUBLIC_ORIGIN: ${MOOG_PUBLIC_ORIGIN:-}
-      MOOG_ADMINS: ${MOOG_ADMINS:-}
-      MOOG_MAX_PATCHES: ${MOOG_MAX_PATCHES:-}
-      MOOG_MAX_PATCH_BYTES: ${MOOG_MAX_PATCH_BYTES:-}
-      MOOG_TRASH_DAYS: ${MOOG_TRASH_DAYS:-}
-      MOOG_WRITES_PER_MINUTE: ${MOOG_WRITES_PER_MINUTE:-}
-      MOOG_SIGN_INS_PER_MINUTE: ${MOOG_SIGN_INS_PER_MINUTE:-}
+    # Every key of the .env beside this file, so a setting added there needs no
+    # change here. A key the image already sets (PORT, MOOG_DATA, MOOG_PRESETS,
+    # MOOG_DIST) wins over its value, so keep container paths out of the .env.
+    env_file: .env
 
     # Published so Traefik can reach it by host and port, the way its dynamic
     # configuration expects. Change it here and in traefik/dynamic/moog.yml
