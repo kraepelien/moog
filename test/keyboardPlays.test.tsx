@@ -111,12 +111,13 @@ describe('the drawn keyboard', () => {
     fireEvent.keyDown(document.body, { key: 'z' })
     expect(noteName(instrument.snapshot().sounding!)).toBe('C3')
     fireEvent.keyDown(document.body, { key: 'q' })
-    /* Two keys held, and the lower one is the one that sounds. */
+    /* Two keys held, and the one pressed last is the one that sounds. */
     expect(instrument.snapshot().held).toHaveLength(2)
-    expect(noteName(instrument.snapshot().sounding!)).toBe('C3')
-    fireEvent.keyUp(document.body, { key: 'z' })
     expect(noteName(instrument.snapshot().sounding!)).toBe('C4')
     fireEvent.keyUp(document.body, { key: 'q' })
+    /* Handed back to what is still down rather than falling silent. */
+    expect(noteName(instrument.snapshot().sounding!)).toBe('C3')
+    fireEvent.keyUp(document.body, { key: 'z' })
     expect(instrument.snapshot().held).toEqual([])
   })
 
