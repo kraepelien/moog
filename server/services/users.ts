@@ -2,10 +2,8 @@ import {
   effectiveRoles,
   isPrivilege,
   isRole,
-  presetFor,
   resolve,
   ROLE,
-  ROLES,
   PRIVILEGE,
   type Privilege,
 
@@ -25,13 +23,11 @@ import type { Refusal } from './refusal.ts'
  * somebody may not write a particular revoke live here, where they can explain
  * themselves. */
 
-/* Taking either of these away is what strands somebody: one hides the page, the
-   other takes away the ability to put it back. */
+/* Taking either of these away is what strands somebody. AccessAdmin because
+   every administration privilege is conditional on it, so losing it loses the
+   lot; AdminUsers because it is the one that can put them back. */
 const DOORS: readonly Privilege[] = [PRIVILEGE.AccessAdmin, PRIVILEGE.AdminUsers]
 
-/* Roles whose preset includes AdminUsers, for the floor count. Derived rather
-   than written down, so adding it to another preset cannot be forgotten. */
-const ADMIN_USER_ROLES = ROLES.filter((role) => presetFor(role).includes(PRIVILEGE.AdminUsers))
 
 export function createUserService(repositories: Repositories, config: AuthConfig) {
   const { users, db } = repositories
@@ -156,6 +152,23 @@ export function createUserService(repositories: Repositories, config: AuthConfig
     return null
   }
 
+  /* Resolved per account rather than counted in SQL. Who holds a privilege
+     depends on the presets and on one privilege being conditional on another,
+     and a second copy of those rules in SQL is a copy that drifts — this asks
+     the same `resolve` every request asks. The table is small and this runs
+     only on a write. */
+  function holdersOf(privilege: Privilege): number {
+    const overrides = users.overridesAll()
+    return users
+      .list()
+      .filter((row) =>
+        resolve(
+          effectiveRoles(users.rolesOf(row), listed(row)),
+          overrides.get(row.id) ?? {},
+        ).includes(privilege),
+      ).length
+  }
+
   /* The floor: never leave nobody holding AdminUsers. Counted again *inside*
      the write's transaction, because a self-check cannot stop two
      administrators revoking each other at the same moment — both requests pass
@@ -167,7 +180,7 @@ export function createUserService(repositories: Repositories, config: AuthConfig
     try {
       db.transaction(() => {
         write()
-        if (users.holdersOf(PRIVILEGE.AdminUsers, ADMIN_USER_ROLES) > 0) return
+        if (holdersOf(PRIVILEGE.AdminUsers) > 0) return
 
         refusal = {
           error:

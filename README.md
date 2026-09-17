@@ -468,6 +468,17 @@ never lose the admin role in the app — but a revoke still takes one privilege 
 what lets an admin see what everybody else sees. Being listed is protected where a revoke is
 *written*, not here, so this stays a rule rather than a rule with an exception.
 
+**`AccessAdmin` is a boundary, not a door.** Every other administrative privilege is conditional on
+it — `REQUIRES` in the same file — and the condition is applied last, after grants and revokes, so
+no single grant steps over it. Revoking it de-administers somebody *everywhere*: the pages stop
+being drawn, the admin routes start refusing, and editing somebody else's patch stops working, all
+from the one list every check already reads. The stored `admin` role is left alone, so putting the
+privilege back restores the lot.
+
+That condition lives beside the privileges rather than as a second entry on each admin route,
+because a route that forgot the second entry is exactly the hole it closes — and the routes are not
+the only place these are asked about.
+
 With sign-in off there is one local user and it **holds** the admin role, rather than the check
 making an exception for the mode.
 
@@ -532,10 +543,7 @@ Save, because one click puts it back, and no whole-set write, because that would
 naming a privilege this build has never heard of.
 
 It is its own route with its own privilege rather than nesting behind `AccessAdmin`, so the two can
-be held apart — which is what the rules above assume. Worth knowing when revoking `AccessAdmin`:
-it is the **door, not the lock**. The admin routes declare `AdminTags` and friends, never
-`AccessAdmin`, so taking it away hides the pages without taking back what the account may do behind
-them.
+be held apart — which is what the rules above assume.
 
 ### Arrangements are the first thing a privilege gates
 

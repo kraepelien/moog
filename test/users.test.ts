@@ -135,11 +135,14 @@ describe('changing one privilege', () => {
     const boss = await person('u-boss', [ROLE.admin])
     await person('u-punter')
 
+    /* AccessAdmin first: the administration privileges are conditional on it,
+       so handing one over without it grants nothing. */
+    await boss('PUT', '/api/users/u-punter/privileges/AccessAdmin', { granted: true })
     const after = await body<AdminUser>(
       await boss('PUT', '/api/users/u-punter/privileges/AdminTags', { granted: true }),
     )
     expect(after.privileges).toContain(PRIVILEGE.AdminTags)
-    expect(after.granted).toEqual([PRIVILEGE.AdminTags])
+    expect(after.granted).toEqual([PRIVILEGE.AccessAdmin, PRIVILEGE.AdminTags])
   })
 
   test('revokes one from an admin and leaves the others', async () => {
@@ -205,6 +208,46 @@ describe('an override row naming a privilege this build does not know', () => {
     )
     expect(after.unknown).toEqual(['AdminEverything'])
     expect(repositories.users.overridesOf(row.id).unknown).toEqual(['AdminEverything'])
+  })
+})
+
+/* The point of the boundary: taking AccessAdmin away has to close the routes
+   behind it, not only hide the pages. Before this, every admin API stayed open
+   to somebody who had just had it revoked. */
+describe('AccessAdmin as a boundary', () => {
+  test('closes the admin routes, not just the pages', async () => {
+    const { person } = await world()
+    const boss = await person('u-boss', [ROLE.admin])
+    const other = await person('u-other', [ROLE.admin])
+
+    expect((await other('GET', '/api/tags/in-use'))!.status).toBe(200)
+    expect((await other('GET', '/api/users'))!.status).toBe(200)
+
+    await boss('PUT', '/api/users/u-other/privileges/AccessAdmin', { granted: false })
+
+    expect((await other('GET', '/api/tags/in-use'))!.status).toBe(403)
+    expect((await other('GET', '/api/users'))!.status).toBe(403)
+  })
+
+  test('leaves what does not depend on it alone', async () => {
+    const { person } = await world()
+    const boss = await person('u-boss', [ROLE.admin])
+    const other = await person('u-other', [ROLE.admin])
+
+    await boss('PUT', '/api/users/u-other/privileges/AccessAdmin', { granted: false })
+
+    expect((await other('GET', '/api/arrangements'))!.status).toBe(200)
+  })
+
+  test('is reported on the session, so the browser stops drawing the doors', async () => {
+    const { person } = await world()
+    const boss = await person('u-boss', [ROLE.admin])
+    const other = await person('u-other', [ROLE.admin])
+
+    await boss('PUT', '/api/users/u-other/privileges/AccessAdmin', { granted: false })
+
+    const said = await body<{ privileges: string[] }>(await other('GET', '/api/session'))
+    expect(said.privileges).toEqual([PRIVILEGE.StoreMidi])
   })
 })
 

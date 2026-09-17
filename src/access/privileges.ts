@@ -44,7 +44,7 @@ export const PRIVILEGES: readonly Privilege[] = Object.values(PRIVILEGE)
    A Record, so a privilege added without a description fails to typecheck. */
 export const DESCRIPTION: Record<Privilege, string> = {
   AccessAdmin:
-    'Open the administration area. This is the door only — it does not by itself allow anything inside, and taking it away hides the pages without taking back what the account may do there.',
+    'Be an administrator at all. Every other administrative privilege is conditional on this one, so taking it away takes back everything behind it as well as hiding the pages.',
   AdminUsers:
     'See everyone with an account, and grant or revoke what they may do. Whoever holds this can change their own access and everybody else’s.',
   AdminTags:
@@ -86,6 +86,26 @@ const PRESETS: Record<Role, readonly Privilege[]> = {
 
 export function presetFor(role: Role): readonly Privilege[] {
   return PRESETS[role]
+}
+
+/* What a privilege is conditional on. `AccessAdmin` is a boundary rather than a
+   door: without it the administration privileges do not apply at all, so taking
+   it away de-administers somebody everywhere at once instead of hiding pages
+   whose routes would still have answered.
+
+   Written here rather than as a second entry on every admin route, because a
+   route that forgot the second entry is exactly the hole this closes — and
+   because the routes are not the only place these are asked about. Editing
+   somebody else's patch is checked in the patches service, and the browser
+   draws from the same resolved list. */
+export const REQUIRES: Partial<Record<Privilege, Privilege>> = {
+  [PRIVILEGE.AdminUsers]: PRIVILEGE.AccessAdmin,
+  [PRIVILEGE.AdminTags]: PRIVILEGE.AccessAdmin,
+  [PRIVILEGE.AdminPatches]: PRIVILEGE.AccessAdmin,
+}
+
+export function requiredBy(privilege: Privilege): Privilege | null {
+  return REQUIRES[privilege] ?? null
 }
 
 export function isRole(value: unknown): value is Role {
@@ -145,6 +165,21 @@ export function resolve(roles: readonly Role[], overrides: Overrides = {}): Priv
   for (const role of roles) for (const privilege of PRESETS[role]) held.add(privilege)
   for (const privilege of overrides.granted ?? []) held.add(privilege)
   for (const privilege of overrides.revoked ?? []) held.delete(privilege)
+
+  /* Last, and repeatedly, so that a privilege whose prerequisite has just been
+     dropped goes with it. An explicit grant does not survive this: a boundary
+     that one grant could step over would not be a boundary. */
+  for (let settling = true; settling; ) {
+    settling = false
+    for (const privilege of held) {
+      const needs = REQUIRES[privilege]
+      if (needs !== undefined && !held.has(needs)) {
+        held.delete(privilege)
+        settling = true
+      }
+    }
+  }
+
   /* Filtered rather than spread, so the order is the catalogue's and two equal
      sets are equal lists. */
   return PRIVILEGES.filter((privilege) => held.has(privilege))

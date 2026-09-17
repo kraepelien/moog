@@ -9,6 +9,7 @@ import {
   DESCRIPTION,
   effectiveRoles,
   fromPreset,
+  requiredBy,
   sourceOf,
   PRIVILEGES,
   PRIVILEGE,
@@ -164,6 +165,15 @@ export function UserAccess({
             /* A grant that says nothing today, and would only start meaning
                something once the role that covers it goes away. */
             const redundant = source === 'granted' && fromPreset(roles, privilege)
+            /* Something gives it and the account still does not have it, because
+               what it is conditional on is missing. Only said where there is a
+               contradiction to explain: where nothing grants it either, the
+               prerequisite is not the reason it is absent. */
+            const waiting = requiredBy(privilege)
+            const inert =
+              (source === 'granted' || source === 'preset') &&
+              waiting !== null &&
+              !user.privileges.includes(privilege)
 
             return (
               <Box component="li" key={privilege} className={styles.row}>
@@ -177,6 +187,7 @@ export function UserAccess({
                   <Typography component="span" color="text.secondary" className={styles.source}>
                     {SAYS[source]}
                     {redundant ? ' — and a role already gives it, so this says nothing yet' : ''}
+                    {inert ? ` — but does nothing without ${waiting}` : ''}
                   </Typography>
                 </Box>
 
@@ -204,8 +215,8 @@ export function UserAccess({
         )}
 
         <Alert severity="info" sx={{ mt: 2 }}>
-          {PRIVILEGE.AccessAdmin} is the door, not the lock. Taking it away hides the administration
-          pages from somebody without taking back what they may do behind them.
+          Every administration privilege is conditional on {PRIVILEGE.AccessAdmin}. Taking that one
+          away takes back the rest as well as hiding the pages, and no single grant gets around it.
         </Alert>
       </Paper>
     </Stack>
