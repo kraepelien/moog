@@ -1,0 +1,15 @@
+{
+  "why": "Every privilege name this build has ever shipped. Override rows in user_privileges store these names, so a rename orphans them — and an orphaned revoke stops applying while the gate lives on under the new name, which quietly hands access back. Hand-written and only ever added to: when the test fails, restore the old name rather than edit this file.",
+  "privileges": [
+    "AccessAdmin",
+    "AdminPatches",
+    "AdminTags",
+    "AdminUsers",
+    "StoreMidi"
+  ],
+  "roles": [
+    "admin",
+    "member",
+    "tester"
+  ]
+}
