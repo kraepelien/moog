@@ -32,6 +32,13 @@ ARG GID=65536
 
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/server ./server
+
+# The server runs as TypeScript, not a bundle, so its imports are resolved at
+# startup — and several of them cross into src/ for the patch schema, the
+# instrument list and the tag rules. Without this the process exits on the first
+# require and the healthcheck never passes.
+COPY --from=build /app/src ./src
+
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
 
