@@ -304,7 +304,7 @@ export function App() {
                 onSelect: () =>
                   void run('', async () => {
                     const copy = await store.create(
-                      { ...draft, name: `${draft.name} copy` },
+                      { ...draft, name: `${draft.name} COPY` },
                       draft.id,
                     )
                     adopt(copy, `Saved as “${copy.name}”`, { stored: true })

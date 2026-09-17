@@ -39,7 +39,7 @@ describe('patch lifecycle', () => {
 
     draft = await store.create(draft)
     const list = await store.list()
-    expect(list.map((s) => s.name)).toEqual(['Round Trip'])
+    expect(list.map((s) => s.name)).toEqual(['ROUND TRIP'])
     expect((await store.get(draft.id))!.values.testVolume).toBe(8)
 
     // Export, then import into a different machine's empty store.
@@ -55,7 +55,7 @@ describe('patch lifecycle', () => {
     for (const patch of parsed.value.patches) created.push(await otherStore.create(patch))
 
     const imported = (await otherStore.get(created[0]!.id))!
-    expect(imported.name).toBe('Round Trip')
+    expect(imported.name).toBe('ROUND TRIP')
     expect(imported.id).not.toBe(draft.id)
 
     // Resolve against a registry that has gained a control the file predates and

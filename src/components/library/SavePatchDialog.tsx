@@ -9,7 +9,7 @@ import Typography from '@mui/material/Typography'
 import { FilterRow, type FilterChoice } from './FilterRow.tsx'
 import { INSTRUMENTS } from '../../instruments/instruments.ts'
 import { SHELL, TONE_COLOURS, toneForTag } from '../../tones.ts'
-import type { Patch, Visibility } from '../../patch/schema.ts'
+import { patchName, type Patch, type Visibility } from '../../patch/schema.ts'
 import styles from './SavePatchDialog.module.css'
 
 function ClearGlyph() {
@@ -116,7 +116,9 @@ export function SavePatchDialog({
           size="small"
           value={fields.name}
           placeholder="Patch name"
-          onChange={(event) => setFields({ ...fields, name: event.target.value })}
+          /* Uppercased as it is typed, not only drawn that way: the field
+             showed capitals while handing back whatever was typed. */
+          onChange={(event) => setFields({ ...fields, name: patchName(event.target.value) })}
           className={styles.name}
           sx={{ '& .MuiOutlinedInput-root': { backgroundColor: SHELL.field } }}
           slotProps={{
