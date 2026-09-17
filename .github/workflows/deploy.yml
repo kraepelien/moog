@@ -53,15 +53,50 @@ jobs:
             type=sha,prefix=,format=short
             type=raw,value=latest,enable={{is_default_branch}}
 
+      # Built into the runner's own daemon first so the next step can start it.
+      # The push below is the same build again and comes back off this cache.
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          tags: moog:smoke
+          # The id the container runs as has to match whoever owns the share, or
+          # every file it writes comes back unreadable from the NAS. The defaults
+          # are the Synology account this deploys to; the variables only need
+          # setting for a different host.
+          build-args: |
+            UID=${{ vars.MOOG_UID || '1027' }}
+            GID=${{ vars.MOOG_GID || '65536' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # `bun run build` proves the tree compiles; nothing before this proves the
+      # image it goes into can boot. The server runs unbundled, so a file left
+      # out of the runtime stage fails here and nowhere earlier — which is how
+      # every image between the SQLite store and #34 reached the NAS dead. No
+      # volume: the image makes its own /data, so this also fails if that stops
+      # being true.
+      - name: Smoke-test the image
+        run: |
+          docker run -d --name moog-smoke -p 8080:8080 moog:smoke
+          for _ in $(seq 1 30); do
+            if curl -fsS -m 5 http://127.0.0.1:8080/api/health; then
+              exit 0
+            fi
+            if [ "$(docker inspect --format '{{.State.Status}}' moog-smoke)" != running ]; then
+              break
+            fi
+            sleep 2
+          done
+          echo "::error::the image never served /api/health"
+          docker logs moog-smoke
+          exit 1
+
       - uses: docker/build-push-action@v7
         with:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          # The id the container runs as has to match whoever owns the share, or
-          # every file it writes comes back unreadable from the NAS. The defaults
-          # are the Synology account this deploys to; the variables only need
-          # setting for a different host.
           build-args: |
             UID=${{ vars.MOOG_UID || '1027' }}
             GID=${{ vars.MOOG_GID || '65536' }}

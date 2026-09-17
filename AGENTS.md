@@ -96,6 +96,11 @@ rather than leaving a control quietly doing nothing.
   `pointerdown` on a knob throws before a drag can be exercised.
 - **Floating point does not accumulate.** Continuous values are re-rounded to the control's `step`
   on every change, because adding 0.01 a hundred times does not give 1.
+- **The server ships unbundled, so the image has to contain everything it imports.** `CMD` runs Bun
+  against `server/serve.ts` and the imports resolve as it boots, several of them crossing into
+  `src/` for the patch schema, the instruments and the tag rules. Leaving one out is a crashloop, not
+  a build error. `test/image.test.ts` walks that graph against the Dockerfile's runtime stage, and
+  the deploy workflow starts the built image and calls `/api/health` before pushing it.
 - **SVG text does not inherit `font-family`** the way HTML does; `svg { font-family: inherit }` is
   what carries the face into dials and switch legends.
 
