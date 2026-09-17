@@ -125,3 +125,110 @@ describe('a file that is not one', () => {
     expect(() => readMidiFile(smpte)).toThrow(/SMPTE/)
   })
 })
+
+/* A meta event carrying text: 0x03 names the track, 0x04 names the instrument
+   it was written for. */
+const named = (type: number, text: string): number[] => [
+  0x00,
+  0xff,
+  type,
+  text.length,
+  ...[...text].map((c) => c.charCodeAt(0)),
+]
+
+const note = (channel: number, key: number): number[] => [
+  0x00,
+  0x90 | channel,
+  key,
+  100,
+  TICKS,
+  0x80 | channel,
+  key,
+  0,
+]
+
+describe('the parts a file is in', () => {
+  test('a channel becomes a part, named by the track that wrote it', () => {
+    const { channels } = readMidiFile(
+      file([
+        [...tempo120],
+        [...named(0x03, 'Bass'), ...note(2, 40)],
+        [...named(0x03, 'Lead'), ...note(0, 72)],
+      ]),
+    )
+
+    expect(channels.map((part) => [part.channel, part.name])).toEqual([
+      [1, 'Lead'],
+      [3, 'Bass'],
+    ])
+  })
+
+  /* Channels are counted from one on every sequencer ever made, while the file
+     writes them from zero. Showing the file's number would leave every part off
+     by one against the thing it was written in. */
+  test('channels are numbered as a person counts them', () => {
+    const { channels } = readMidiFile(file([[...note(9, 40)]]))
+    expect(channels[0]!.channel).toBe(10)
+  })
+
+  /* The title, the author and their email are tracks too, and none of them is
+     something you can pick a sound for. */
+  test('a track that strikes no note is not a part', () => {
+    const { channels } = readMidiFile(
+      file([
+        [...named(0x03, 'Mega Man 1')],
+        [...named(0x03, 'By: Someone')],
+        [...named(0x03, 'Lead'), ...note(0, 72)],
+      ]),
+    )
+    expect(channels).toHaveLength(1)
+    expect(channels[0]!.name).toBe('Lead')
+  })
+
+  test('an instrument name is used when there is no track name', () => {
+    const { channels } = readMidiFile(file([[...named(0x04, 'Sq. Wave'), ...note(0, 72)]]))
+    expect(channels[0]!.name).toBe('Sq. Wave')
+  })
+
+  test('a file that names nothing says so rather than inventing a name', () => {
+    const { channels } = readMidiFile(file([[...note(0, 72)]]))
+    expect(channels[0]!.name).toBeNull()
+  })
+
+  test('notes are counted, and a note on at no velocity is not one', () => {
+    const { channels } = readMidiFile(
+      file([[0x00, 0x90, 60, 100, 0x00, 0x90, 62, 100, TICKS, 0x90, 60, 0]]),
+    )
+    expect(channels[0]!.notes).toBe(2)
+  })
+
+  test('a part carries only its own channel', () => {
+    const { channels } = readMidiFile(file([[...note(0, 72)], [...note(3, 40)]]))
+    for (const part of channels) {
+      for (const message of part.messages) {
+        expect((message.data[0]! & 0x0f) + 1).toBe(part.channel)
+      }
+    }
+  })
+})
+
+describe('the tempo it says it is', () => {
+  test('reports the tempo the file opens at', () => {
+    expect(readMidiFile(file([[...tempo120, ...note(0, 60)]])).bpm).toBe(120)
+  })
+
+  /* The specification's own default, for a file that never says. */
+  test('a file that states no tempo is 120', () => {
+    expect(readMidiFile(file([[...note(0, 60)]])).bpm).toBe(120)
+  })
+
+  test('counts the changes after the opening one, so a steady file reads zero', () => {
+    const steady = readMidiFile(file([[...tempo120, ...note(0, 60)]]))
+    expect(steady.tempoChanges).toBe(0)
+
+    const changing = readMidiFile(
+      file([[...tempo120, ...note(0, 60), 0x00, 0xff, 0x51, 0x03, 0x03, 0xd0, 0x90]]),
+    )
+    expect(changing.tempoChanges).toBe(1)
+  })
+})
