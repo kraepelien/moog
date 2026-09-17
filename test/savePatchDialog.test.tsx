@@ -131,12 +131,23 @@ describe('editing', () => {
     expect(screen.getByText('User')).toBeTruthy()
   })
 
-  /* The editor a patch was made in is the instrument it is for, so the form does
-     not ask again — and must not offer a way to answer wrongly. */
-  test('the synth is not something this form asks about', () => {
+  /* The editor a patch was made in is the instrument it is for, so the form says
+     which one and does not ask — and must not offer a way to answer wrongly. */
+  test('the synth is shown and is not a button', () => {
     renderDialog()
-    expect(screen.queryByText('Synth')).toBeNull()
-    expect(screen.queryByText('Minimoog Model D')).toBeNull()
+    expect(screen.getByText('Minimoog Model D')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Minimoog Model D' })).toBeNull()
+  })
+
+  /* A patch nobody has claimed is exact says so in the same row, and only
+     there: an ordinary patch must not wear a chip about it. */
+  test('an approximation says so, and an exact patch says nothing', () => {
+    const { view } = renderDialog(patchWith({ approximate: true }))
+    expect(screen.getByText('approximate')).toBeTruthy()
+
+    view.unmount()
+    renderDialog()
+    expect(screen.queryByText('approximate')).toBeNull()
   })
 })
 
@@ -214,5 +225,42 @@ describe('saying what saving will do', () => {
     renderDialog(patchWith(), true, 'new')
     expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy()
     expect(screen.getByText(/has not been saved before/)).toBeTruthy()
+  })
+})
+
+/* The stars are here rather than over the panel: the editor is where a patch is
+   played, and this is the one place it is looked at. */
+describe('the stars', () => {
+  function renderRated(onRate?: (stars: number) => void) {
+    render(
+      <SavePatchDialog
+        open
+        patch={patchWith()}
+        outcome="overwrite"
+        tagChoices={[]}
+        rating={null}
+        average={3.5}
+        ratingCount={2}
+        onCancel={() => {}}
+        onRate={onRate}
+        onSave={() => {}}
+      />,
+    )
+  }
+
+  test('can be pressed on a patch the server holds', () => {
+    const rated: number[] = []
+    renderRated((stars) => rated.push(stars))
+
+    expect(screen.getByText('3.5 (2)')).toBeDefined()
+    fireEvent.click(screen.getByRole('radio', { name: '5 Stars' }))
+    expect(rated).toEqual([5])
+  })
+
+  test('are shown but not offered on a draft that has never been saved', () => {
+    renderRated(undefined)
+
+    expect(screen.getByLabelText('Average rating for Sub Bass')).toBeDefined()
+    expect(screen.queryAllByRole('radio')).toEqual([])
   })
 })

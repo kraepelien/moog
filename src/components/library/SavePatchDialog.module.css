@@ -74,3 +74,8 @@
   border-color: inherit;
   border-radius: 6px;
 }
+
+.average {
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
