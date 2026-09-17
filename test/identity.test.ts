@@ -3,14 +3,13 @@ import {
   SESSION_COOKIE,
   authConfigFromEnv,
   clearedSessionCookie,
-  isAdmin,
   isSecureRequest,
   readCookie,
   readToken,
   sessionCookie,
   signToken,
   whoAmI,
-} from '../server/identity.ts'
+} from '@server/identity.ts'
 
 const SECRET = 'a-test-secret'
 const NOW = Date.UTC(2026, 8, 16, 12, 0, 0)
@@ -121,19 +120,6 @@ describe('with sign-in switched off', () => {
     const cookie = await sessionCookie('google-abc', on, new Request('https://x/'), NOW)
     const request = new Request('https://x/', { headers: { cookie: cookie.split(';')[0]! } })
     expect(await whoAmI(request, on, NOW)).toBe('google-abc')
-  })
-})
-
-describe('who is an admin', () => {
-  test('is whoever the env says, compared without case', () => {
-    const on = config({ mode: 'oauth', admins: ['peter@example.com'] })
-    expect(isAdmin('Peter@Example.com', on)).toBe(true)
-    expect(isAdmin('someone@example.com', on)).toBe(false)
-    expect(isAdmin(null, on)).toBe(false)
-  })
-
-  test('is everyone while there is nobody to sign in as', () => {
-    expect(isAdmin(null, authConfigFromEnv({}))).toBe(true)
   })
 })
 

@@ -1,5 +1,5 @@
 import { useEffect, useSyncExternalStore } from 'react'
-import type { ControlValue } from '../controls/types.ts'
+import type { ControlValue } from '@controls/types.ts'
 import type { Synth, SynthState } from './engine.ts'
 import { settingsFrom } from './settings.ts'
 

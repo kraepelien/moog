@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import Rating from '@mui/material/Rating'
 import { MAX_STARS, RATING_STEP } from './entry.ts'
-import { SHELL, TONE_COLOURS } from '../../tones.ts'
+import { SHELL, TONE_COLOURS } from '@/tones.ts'
 
 /* One set of stars showing two numbers, which is the whole design: amber is
    everyone's average, blue is what I gave it. Two widgets side by side would

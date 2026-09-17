@@ -1,7 +1,7 @@
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { ToneChip } from './ToneChip.tsx'
-import type { Tone } from '../../tones.ts'
+import type { Tone } from '@/tones.ts'
 import styles from './FilterRow.module.css'
 
 export interface FilterChoice {

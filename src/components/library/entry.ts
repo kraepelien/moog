@@ -1,5 +1,5 @@
-import type { Visibility } from '../../patch/schema.ts'
-import type { Tone } from '../../tones.ts'
+import type { Visibility } from '@patch/schema.ts'
+import type { Tone } from '@/tones.ts'
 
 /* What one line of the library needs, and all the server sends for it: values
    are not here, because browsing never loads panel data. Assembled server-side

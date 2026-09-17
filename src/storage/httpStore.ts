@@ -1,10 +1,16 @@
-import { migrateToCurrent } from '../patch/migrate.ts'
-import type { Patch } from '../patch/schema.ts'
-import type { LibraryEntry } from '../components/library/entry.ts'
-import type { TagInUse } from '../admin/tags.ts'
+import { migrateToCurrent } from '@patch/migrate.ts'
+import type { Patch } from '@patch/schema.ts'
+import type { LibraryEntry } from '@components/library/entry.ts'
+import type { TagInUse } from '@admin/tags.ts'
+import type {
+  Arrangement,
+  ArrangementInput,
+  ArrangementSummary,
+} from '@components/midi/arrangement.ts'
 import {
   StoreError,
   type AdminStore,
+  type ArrangementStore,
   type LibraryStore,
   type PatchStore,
   type PatchSummary,
@@ -95,7 +101,7 @@ function toPatch(raw: unknown): Patch | null {
 
 export function createHttpStore(
   doFetch: Fetch = (path, init) => fetch(path, init),
-): PatchStore & PresetStore & LibraryStore & TagStore & AdminStore {
+): PatchStore & PresetStore & LibraryStore & TagStore & AdminStore & ArrangementStore {
   const request = (path: string, init?: RequestInit) => requestWith(doFetch, path, init)
 
   return {
@@ -163,7 +169,7 @@ export function createHttpStore(
     },
 
     async listTagsInUse(): Promise<readonly TagInUse[]> {
-      return ((await request('/tags?use=1')) ?? []) as TagInUse[]
+      return ((await request('/tags/in-use')) ?? []) as TagInUse[]
     },
 
     async addTag(name: string): Promise<void> {
@@ -179,5 +185,30 @@ export function createHttpStore(
       return raw.map(toPatch).filter((patch): patch is Patch => patch !== null)
     },
 
+    async listArrangements(): Promise<readonly ArrangementSummary[]> {
+      return ((await request('/arrangements')) ?? []) as ArrangementSummary[]
+    },
+
+    async getArrangement(id: string): Promise<Arrangement | null> {
+      return (await request(`/arrangements/${encodeURIComponent(id)}`)) as Arrangement | null
+    },
+
+    async createArrangement(arrangement: ArrangementInput): Promise<Arrangement> {
+      return (await request('/arrangements', {
+        method: 'POST',
+        body: JSON.stringify(arrangement),
+      })) as Arrangement
+    },
+
+    async saveArrangement(id: string, arrangement: ArrangementInput): Promise<Arrangement> {
+      return (await request(`/arrangements/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        body: JSON.stringify(arrangement),
+      })) as Arrangement
+    },
+
+    async deleteArrangement(id: string): Promise<void> {
+      await request(`/arrangements/${encodeURIComponent(id)}`, { method: 'DELETE' })
+    },
   }
 }

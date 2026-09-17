@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { loadFactory } from '../server/factory.ts'
-import { createStore } from '../server/store.ts'
-import { PATCH_SCHEMA_VERSION, createPatch, parsePatch, type Patch } from '../src/patch/schema.ts'
-import { copyOf } from '../src/presets/preset.ts'
+import { loadFactory } from '@server/factory.ts'
+import { createRepositories } from '@server/repositories/index.ts'
+import { PATCH_SCHEMA_VERSION, createPatch, parsePatch, type Patch } from '@patch/schema.ts'
+import { copyOf } from '@presets/preset.ts'
 import { testApi, type TestApi } from './apiFixture.ts'
 import { fixedIdentity } from './fixtures.ts'
 
@@ -135,16 +135,16 @@ describe('a factory row', () => {
        preset keeps its row across restarts and across installs. */
     const bank = aBank(join(api.root, 'bank'), { one: aPreset('one', 'First') })
     loadFactory(api.db, bank)
-    const first = createStore(api.db).listPresets()[0]!
+    const first = createRepositories(api.db).patches.listPresets()[0]!
 
     loadFactory(api.db, bank)
-    const again = createStore(api.db).listPresets()[0]!
+    const again = createRepositories(api.db).patches.listPresets()[0]!
     expect(again.id).toBe(first.id)
   })
 
   test('has no owner, which is what makes it the bank', () => {
     loadFactory(api.db, SEED)
-    const found = createStore(api.db).locate('sub-bass')
+    const found = createRepositories(api.db).patches.locate('sub-bass')
     expect(found?.ownerId).toBeNull()
     expect(found?.slug).toBe('sub-bass')
   })

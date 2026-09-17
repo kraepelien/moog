@@ -4,8 +4,8 @@ import Typography from '@mui/material/Typography'
 import { StarRating } from './StarRating.tsx'
 import { ToneChip } from './ToneChip.tsx'
 import { BANK_TONES, type Bank } from './entry.ts'
-import { instrumentName } from '../../instruments/instruments.ts'
-import { TONE_COLOURS, toneForTag, type Tone } from '../../tones.ts'
+import { instrumentName } from '@instruments/instruments.ts'
+import { TONE_COLOURS, toneForTag, type Tone } from '@/tones.ts'
 import styles from './PatchHeader.module.css'
 
 export interface HeaderAction {

@@ -1,6 +1,11 @@
-import type { TagInUse } from '../admin/tags.ts'
-import type { LibraryEntry } from '../components/library/entry.ts'
-import type { Patch, Visibility } from '../patch/schema.ts'
+import type { TagInUse } from '@admin/tags.ts'
+import type { LibraryEntry } from '@components/library/entry.ts'
+import type {
+  Arrangement,
+  ArrangementInput,
+  ArrangementSummary,
+} from '@components/midi/arrangement.ts'
+import type { Patch, Visibility } from '@patch/schema.ts'
 
 export interface PatchSummary {
   readonly id: string
@@ -70,6 +75,17 @@ export interface AdminStore {
 
 export interface PresetStore {
   listPresets(): Promise<readonly Patch[]>
+}
+
+/* A MIDI file and the sounds put on its parts. Refused with `forbidden` for
+   anyone the server does not grant StoreMidi, so the page hiding the buttons is
+   a convenience and never the check. */
+export interface ArrangementStore {
+  listArrangements(): Promise<readonly ArrangementSummary[]>
+  getArrangement(id: string): Promise<Arrangement | null>
+  createArrangement(arrangement: ArrangementInput): Promise<Arrangement>
+  saveArrangement(id: string, arrangement: ArrangementInput): Promise<Arrangement>
+  deleteArrangement(id: string): Promise<void>
 }
 
 /* The library in one call: the rows a viewer may see, with their own rating and

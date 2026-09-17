@@ -2,14 +2,14 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { createApi } from '../server/api.ts'
-import { openDatabase } from '../server/db.ts'
-import { syncInstruments } from '../server/factory.ts'
-import { authConfigFromEnv, sessionCookie } from '../server/identity.ts'
-import { callerKey, createRateLimiter, type Limits, limitsFromEnv } from '../server/limits.ts'
-import { createStore } from '../server/store.ts'
-import { ensureUser } from '../server/users.ts'
-import { createPatch, type Patch } from '../src/patch/schema.ts'
+import { createApi } from '@server/api.ts'
+import { openDatabase } from '@server/db.ts'
+import { syncInstruments } from '@server/factory.ts'
+import { authConfigFromEnv, sessionCookie } from '@server/identity.ts'
+import { callerKey, createRateLimiter, type Limits, limitsFromEnv } from '@server/limits.ts'
+import { createRepositories } from '@server/repositories/index.ts'
+import { createUsers } from '@server/repositories/users.ts'
+import { createPatch, type Patch } from '@patch/schema.ts'
 
 const roots: string[] = []
 const SECRET = 'limits-secret'
@@ -30,7 +30,7 @@ async function world(over: Partial<Limits> = {}) {
   const handle = createApi({ db, config, limits })
 
   const person = async (uid: string, email: string) => {
-    ensureUser(db, { uid, provider: 'test', subject: uid, email, displayName: uid })
+    createUsers(db).ensure({ uid, provider: 'test', subject: uid, email, displayName: uid })
     const cookie = (await sessionCookie(uid, config, new Request('https://x/'), Date.now())).split(
       ';',
     )[0]!
@@ -44,7 +44,7 @@ async function world(over: Partial<Limits> = {}) {
       )
   }
 
-  return { db, store: createStore(db), limits, person }
+  return { db, store: createRepositories(db), limits, person }
 }
 
 afterEach(() => {
@@ -119,7 +119,7 @@ describe('how big one patch may be', () => {
       values: huge(),
     }))!
     expect(response.status).toBe(413)
-    expect(store.getPatch(small.id)!.values).toEqual(small.values)
+    expect(store.patches.get(small.id)!.values).toEqual(small.values)
   })
 
   test('leaves a patch of the whole panel far below the line', async () => {
@@ -212,7 +212,7 @@ describe('taking something out of the shared library', () => {
 
     expect((await boss('POST', `/api/patches/${patch.id}/unpublish`))!.status).toBe(200)
 
-    const after = store.getPatch(patch.id)!
+    const after = store.patches.get(patch.id)!
     expect(after.visibility).toBe('private')
     expect(after.name).toBe('LOUD')
     expect(after.values).toEqual(patch.values)
@@ -228,7 +228,7 @@ describe('taking something out of the shared library', () => {
     )!.json()) as Patch
 
     expect((await stranger('POST', `/api/patches/${patch.id}/unpublish`))!.status).toBe(403)
-    expect(store.getPatch(patch.id)!.visibility).toBe('public')
+    expect(store.patches.get(patch.id)!.visibility).toBe('public')
   })
 
   test('is something the owner can do to their own', async () => {
@@ -243,7 +243,7 @@ describe('taking something out of the shared library', () => {
 
   test('cannot reach a factory preset', async () => {
     const { store, person } = await world()
-    store.putPreset('sub-bass', { ...createPatch({ name: 'Sub Bass' }), id: 'sub-bass' })
+    store.patches.putPreset('sub-bass', { ...createPatch({ name: 'Sub Bass' }), id: 'sub-bass' })
     const boss = await person('u-boss', 'boss@example.com')
 
     expect((await boss('POST', '/api/patches/sub-bass/unpublish'))!.status).toBe(403)
@@ -262,9 +262,9 @@ describe('the trash', () => {
 
     db.run(`update patches set deleted_at = ? where uid = ?`, ['2020-01-01T00:00:00.000Z', old.id])
 
-    expect(store.purgeTrash('2021-01-01T00:00:00.000Z')).toBe(1)
-    expect(store.locate(old.id)).toBeNull()
-    expect(store.locate(recent.id)).not.toBeNull()
+    expect(store.patches.purgeTrash('2021-01-01T00:00:00.000Z')).toBe(1)
+    expect(store.patches.locate(old.id)).toBeNull()
+    expect(store.patches.locate(recent.id)).not.toBeNull()
   })
 
   test('never takes anything still in use', async () => {
@@ -272,6 +272,6 @@ describe('the trash', () => {
     const call = await person('u1', 'u1@example.com')
     await call('POST', '/api/patches', aPatch('Kept'))
 
-    expect(store.purgeTrash(new Date().toISOString())).toBe(0)
+    expect(store.patches.purgeTrash(new Date().toISOString())).toBe(0)
   })
 })

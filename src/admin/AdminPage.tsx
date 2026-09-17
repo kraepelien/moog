@@ -14,8 +14,8 @@ import TableRow from '@mui/material/TableRow'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { MAX_TAG_LENGTH, type TagInUse, tagNameProblem } from './tags.ts'
-import { ToneChip } from '../components/library/ToneChip.tsx'
-import { toneForTag } from '../tones.ts'
+import { ToneChip } from '@components/library/ToneChip.tsx'
+import { toneForTag } from '@/tones.ts'
 
 function BinGlyph() {
   return (

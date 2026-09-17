@@ -7,15 +7,15 @@ import {
   sessionCookie,
   signToken,
   type AuthConfig,
-} from '../identity.ts'
+} from '@server/identity.ts'
 import {
   exchangeCode,
   pkcePair,
   providerById,
   safeReturnTo,
   userIdFor,
-} from '../oauth.ts'
-import { ensureUser } from '../users.ts'
+} from '@server/oauth.ts'
+import { createUsers } from '@server/repositories/users.ts'
 
 /* Everything under /api/, which is the only prefix the dev bridge forwards:
    an auth route anywhere else would work deployed and fall through to the app
@@ -128,7 +128,9 @@ export async function handleAuth(
     if (!profile) return redirect('/#/signed-out?error=exchange')
 
     const uid = await userIdFor(provider.id, profile.subject)
-    ensureUser(options.db, {
+    /* A member, always. Whether they are also an admin is decided per request
+       from MOOG_ADMINS and from what has been granted, not here. */
+    createUsers(options.db).ensure({
       uid,
       provider: provider.id,
       subject: profile.subject,

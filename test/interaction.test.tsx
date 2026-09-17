@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
-import { Panel } from '../src/components/Panel.tsx'
-import { panelRegistry } from '../src/controls/panel.ts'
-import { defaultValues } from '../src/controls/registry.ts'
-import type { ControlValue } from '../src/controls/types.ts'
+import { Panel } from '@components/Panel.tsx'
+import { panelRegistry } from '@controls/panel.ts'
+import { defaultValues } from '@controls/registry.ts'
+import type { ControlValue } from '@controls/types.ts'
 
 /* Everything else in this suite tests logic. These render the panel and use it,
    because the failures that actually reached the browser — a control detached

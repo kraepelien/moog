@@ -4,8 +4,8 @@ import Typography from '@mui/material/Typography'
 import { StarRating } from './StarRating.tsx'
 import { ToneChip } from './ToneChip.tsx'
 import { bankOf, BANK_TONES, type LibraryEntry, type RowFilter } from './entry.ts'
-import { instrumentName } from '../../instruments/instruments.ts'
-import { toneForTag } from '../../tones.ts'
+import { instrumentName } from '@instruments/instruments.ts'
+import { toneForTag } from '@/tones.ts'
 import styles from './PatchRow.module.css'
 
 /* The whole row is the button, not a Select link inside it: the row is what a

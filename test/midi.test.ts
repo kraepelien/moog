@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { acrossRange, keyForNote, readMidi, unitOfBend } from '../src/audio/midi.ts'
-import { KEY_COUNT, LOWEST_MIDI, noteName } from '../src/audio/notes.ts'
+import { acrossRange, keyForNote, readMidi, unitOfBend } from '@audio/midi.ts'
+import { KEY_COUNT, LOWEST_MIDI, noteName } from '@audio/notes.ts'
 
 describe('note messages', () => {
   test('play the key that sounds the note', () => {

@@ -1,11 +1,11 @@
 import { useSyncExternalStore } from 'react'
-import type { MidiChannel, MidiFile } from '../../audio/midiFile.ts'
-import { createMidiPlayer, type MidiPlayer, type PlayerVoice } from '../../audio/midiPlayer.ts'
-import { settingsFrom } from '../../audio/settings.ts'
-import { silenceVoices, voiceFor } from '../../audio/voices.ts'
-import { panelRegistry } from '../../controls/panel.ts'
-import { resolvePatch } from '../../patch/resolve.ts'
-import type { Patch } from '../../patch/schema.ts'
+import type { MidiChannel, MidiFile } from '@audio/midiFile.ts'
+import { createMidiPlayer, type MidiPlayer, type PlayerVoice } from '@audio/midiPlayer.ts'
+import { settingsFrom } from '@audio/settings.ts'
+import { silenceVoices, voiceFor } from '@audio/voices.ts'
+import { panelRegistry } from '@controls/panel.ts'
+import { resolvePatch } from '@patch/resolve.ts'
+import type { Patch } from '@patch/schema.ts'
 
 /* What is loaded to be played, kept outside React.
  *
@@ -25,6 +25,15 @@ export interface Chosen {
 export interface MidiSession {
   readonly file: MidiFile | null
   readonly fileName: string
+  /* The bytes as they arrived. Kept beside the parsed file because saving has
+     to store what was uploaded and nothing here can write a MIDI file back
+     out — the parser is one way. */
+  readonly bytes: Uint8Array | null
+  /* What the arrangement is called, and the id the server has it under once it
+     has one. Saving writes over that id and creates without it, which is the
+     rule the patch editor already follows. */
+  readonly name: string
+  readonly storedId: string | null
   readonly trouble: string | null
   readonly chosen: Readonly<Record<number, Chosen>>
   /* What was typed rather than a number: the field belongs to the person until
@@ -42,6 +51,9 @@ export interface MidiSession {
 const EMPTY: MidiSession = {
   file: null,
   fileName: '',
+  bytes: null,
+  name: '',
+  storedId: null,
   trouble: null,
   chosen: {},
   bpm: '',
@@ -127,11 +139,18 @@ export function stopMidi(): void {
   set({ playing: false })
 }
 
-export function holdMidiFile(file: MidiFile, fileName: string): void {
+export function holdMidiFile(file: MidiFile, fileName: string, bytes: Uint8Array): void {
   stopMidi()
   set({
     file,
     fileName,
+    bytes,
+    /* Named after the file until somebody says otherwise, which is the name
+       they would have typed anyway. */
+    name: fileName,
+    /* A fresh upload is not the arrangement that was open, even if one was:
+       saving it has to create rather than write over what it replaced. */
+    storedId: null,
     chosen: {},
     soloed: new Set(),
     muted: new Set(),
@@ -142,7 +161,52 @@ export function holdMidiFile(file: MidiFile, fileName: string): void {
 
 export function holdMidiTrouble(fileName: string, trouble: string): void {
   stopMidi()
-  set({ file: null, fileName, chosen: {}, soloed: new Set(), muted: new Set(), trouble })
+  set({
+    file: null,
+    fileName,
+    bytes: null,
+    name: '',
+    storedId: null,
+    chosen: {},
+    soloed: new Set(),
+    muted: new Set(),
+    trouble,
+  })
+}
+
+/* A saved arrangement put back on the desk. The sounds are fetched by whoever
+   calls this, because a part points at a patch and only the page has a store to
+   look one up in — a part whose patch has gone is simply left undressed. */
+export function holdArrangement(
+  arrangement: { id: string; name: string; fileName: string; bpm: string },
+  file: MidiFile,
+  bytes: Uint8Array,
+  sounds: Readonly<Record<number, Chosen>>,
+  soloed: readonly number[],
+  muted: readonly number[],
+): void {
+  stopMidi()
+  set({
+    file,
+    fileName: arrangement.fileName,
+    bytes,
+    name: arrangement.name,
+    storedId: arrangement.id,
+    chosen: { ...sounds },
+    soloed: new Set(soloed),
+    muted: new Set(muted),
+    bpm: arrangement.bpm || String(file.bpm),
+    trouble: null,
+  })
+}
+
+/* After a save: the same desk, now with somewhere to be written back to. */
+export function markArrangementStored(id: string, name: string): void {
+  set({ storedId: id, name })
+}
+
+export function renameArrangement(name: string): void {
+  set({ name })
 }
 
 export function chooseSound(channel: number, choice: Chosen): void {

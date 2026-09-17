@@ -1,12 +1,12 @@
 import { describe, expect, test } from 'bun:test'
-import { PATCH_SCHEMA_VERSION, createPatch } from '../src/patch/schema.ts'
+import { PATCH_SCHEMA_VERSION, createPatch } from '@patch/schema.ts'
 import {
   BUNDLE_FORMAT,
   BUNDLE_FORMAT_VERSION,
   createBundle,
   parseBundle,
   serializeBundle,
-} from '../src/transfer/bundle.ts'
+} from '@transfer/bundle.ts'
 import { fixedIdentity } from './fixtures.ts'
 
 function roundTrip(text: string) {

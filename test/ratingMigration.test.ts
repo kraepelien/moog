@@ -2,16 +2,16 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { openDatabase, DB_VERSION } from '../server/db.ts'
+import { openDatabase } from '@server/db.ts'
+import { windBackTo } from './oldDatabase.ts'
 
 /* Half stars arrived after people had already rated things, and a check
    constraint cannot be loosened in place: the step rebuilds the table, which is
    the one kind of migration that can lose rows. So an old database is put back
    together here and reopened, rather than trusting that the copy is right.
 
-   The old table is written out by hand because SCHEMA is keyed by the version it
-   upgrades from and has no way back; `DB_VERSION - 1` is what makes this test
-   move with the chain instead of pinning a number. */
+   Winding the database back lives in `oldDatabase.ts`, because reopening runs
+   every step above the version set, not only the one under test. */
 
 const roots: string[] = []
 
@@ -21,15 +21,7 @@ function databaseAsItWasBeforeHalfStars(): string {
   const path = join(root, 'moog.db')
 
   const db = openDatabase(path)
-  db.run(`drop table ratings`)
-  db.run(`
-    create table ratings (
-      user_id integer not null references users(id) on delete cascade,
-      patch_id integer not null references patches(id) on delete cascade,
-      stars integer not null check (stars between 1 and 5),
-      updated_at text not null,
-      primary key (user_id, patch_id)
-    )`)
+  windBackTo(db, 1)
   db.run(`insert into users (id, uid, provider, subject, created_at, last_seen_at)
           values (1, 'u1', 'test', '1', '2026-01-01', '2026-01-01'),
                  (2, 'u2', 'test', '2', '2026-01-01', '2026-01-01')`)
@@ -39,7 +31,6 @@ function databaseAsItWasBeforeHalfStars(): string {
           values (1, 'p1', 1, 'Rated', 'public', 1, '{}', '2026-01-01', '2026-01-01')`)
   db.run(`insert into ratings (user_id, patch_id, stars, updated_at)
           values (1, 1, 4, '2026-01-01'), (2, 1, 5, '2026-01-02')`)
-  db.run(`update meta set value = ? where key = 'db_version'`, [String(DB_VERSION - 1)])
   db.close()
 
   return path

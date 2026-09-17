@@ -43,18 +43,30 @@ src/
   components/ Panel.tsx renders whatever the registry holds
   components/library/ the patch library: search, filter chips, rows, the patch header
   patch/      schema.ts (Patch + structural parse) · migrate.ts (version chain) · resolve.ts (load policy)
+  access/     privileges.ts (the vocabulary, shared with the server) · Can.tsx (the guards)
+  components/midi/ the MIDI desk: a file, a sound per part, and saving the two together
+  navigation/ routes.ts (the page table) · router.ts (the address)
   storage/    types.ts (the adapter interface) · webStorage.ts (localStorage + in-memory backends)
   presets/    factory.ts (placeholder presets)
   transfer/   bundle.ts (JSON import/export)
   audio/      calibration.ts (every dial-to-physical number) · settings.ts (the panel read as
               an instrument) · engine.ts (the Web Audio graph)
+server/
+  repositories/ the SQL, one module per table group; rows in, rows out
+  services/     the rules — who may write a patch, what a tag may be called
+  routes/       table.ts (the dispatcher and its guard) · one module per resource
+  api.ts        wiring: origin, viewer, rate limit, dispatch
 test/         fixtures.ts defines fake control types; nothing here ships
 reference/    manual scans, recovered geometry, the hand-drawn knob SVG
 tools/        artwork measurement script · audio-check.html (what the engine sounds like) ·
               midi-check.html and midi-send.html (see MIDI.md)
 ```
 
-`@/` is an alias for `src/` (set in both `vite.config.ts` and `tsconfig.app.json`).
+Each of those directories has an import alias — `@patch/schema.ts`, `@controls/registry.ts`,
+`@server/store.ts` — with `@/` for the few files directly in `src/`, and siblings left relative.
+`tsconfig.paths.json` holds the map, and holds it once: the tsconfigs extend it, `vite.config.ts`
+reads it, `test/image.test.ts` walks it. Specifiers keep their `.ts`, which `server/` requires and
+the rest follow. `AGENTS.md` has the reasons, and they are sharper than they look.
 
 ## Controls are data
 
@@ -289,7 +301,7 @@ name, so the locked chip is always User.
 ### Categories are a list an admin keeps
 
 The `tags` table holds the vocabulary the save form offers, seeded with twelve
-in `server/tags.ts`. A patch still stores the name as a plain string pointing at
+in `server/services/tags.ts`. A patch still stores the name as a plain string pointing at
 nothing, so retiring a row leaves every patch already wearing it exactly as it
 was, and an exported patch still means something on a machine that has never
 heard of the table.
@@ -421,6 +433,108 @@ object says when its ports change.
 `/tools/audio-check.html`, and it renders the engine through an `OfflineAudioContext` and prints
 what came out. Read `a4` against `a440Switch` first: the same pitch reached two ways, so if they
 disagree the keyboard is in the wrong octave.
+
+## Who may do what
+
+Two vocabularies, deliberately unlike each other, both in `src/access/privileges.ts` so that the
+server and the browser cannot disagree about what a name means.
+
+A **privilege** is a thing the code can do — `AccessAdmin`, `AdminTags`, `AdminPatches`,
+`StoreMidi`. Privileges exist only in code. Nothing stores one, so adding a privilege is this file
+plus the route that asks for it: never a migration, never a row somewhere to keep in step.
+
+A **role** is stored against a user, in `users.roles`, as a comma-separated column. That makes a
+role name a published interface in the same way a control id is — renaming one leaves every row
+naming something nobody grants. Add roles; do not rename them. An unknown name in the column is
+dropped rather than rejected, so a database written by a newer build does not stop an older one
+answering.
+
+`member` is what an ordinary account can do. `admin` is granted the member set outright rather than
+inheriting it, so there is one table to read when asking why somebody can do something.
+
+**`MOOG_ADMINS` grants and never revokes.** It is reconciled on every request, not only at sign-in,
+because that is what it already did: a line in `.env` and a restart made somebody an admin without
+them signing in again. A list that also revoked would fight every grant made in the app, and one
+typo would demote everybody at the next restart.
+
+With sign-in off there is one local user and it **holds** the admin role, rather than the check
+making an exception for the mode. That is what keeps `off` from being a second code path.
+
+### Where the check happens
+
+The server decides; the browser only draws. Every route declares what it needs in the table, and
+`dispatch` checks it before the handler runs, so a route that forgets to ask cannot exist — asking
+is not the handler's job. 401 when there is nobody to refuse, 403 when there is.
+
+On the client, `/api/session` carries the privilege list and two guards read it:
+
+```tsx
+<Can privilege={PRIVILEGE.StoreMidi}><Button …/></Can>
+```
+
+`Can` hides a control, and renders nothing by default: a button that is not for you is best simply
+absent, and the route behind it refuses regardless. `RouteGuard` stands in front of a whole page and
+says no out loud, because a page is reachable by typing its address and an empty page whose every
+button is refused reads as broken rather than shut.
+
+A privilege the browser cannot name is dropped when the list is read, so a server one version ahead
+can never widen what this build draws.
+
+### Arrangements are the first thing a privilege gates
+
+`StoreMidi` is what lets somebody keep a MIDI file together with the sound put on each of its
+parts. Save and Open appear on the Play MIDI page for whoever holds it, and every
+`/api/arrangements` route declares it — there is no half of that resource that is open.
+
+**A part points at a patch by id rather than carrying a copy.** Editing a patch then changes what
+the arrangement plays, which is what somebody who tweaked a bass and pressed play expects. The cost
+is that a deleted patch leaves a part silent, so the name chosen at the time is stored beside the id
+purely so the page can say which sound has gone rather than loading a part quietly undressed.
+
+A part naming a patch its owner may not see is **dropped on save rather than refused**: the sounds
+are references, and refusing the whole save would make one missing sound cost the other fifteen.
+That check is the same question the library answers — mine, published, or from the bank — so saving
+an arrangement cannot become a way to keep hold of a patch that was visible for a moment.
+
+Ownership is not a route check. An arrangement belongs to exactly one person and every query is
+scoped to them, so a stranger's id is simply not found and there is nothing to confirm the existence
+of.
+
+Saving writes over the arrangement that was opened and creates otherwise, because only the server
+mints an id — the same rule the patch editor follows, and what stops every save becoming another
+copy.
+
+## Pages
+
+`src/navigation/routes.ts` is one table of pages, each with the privilege it needs. The address
+lives in the fragment — it already survives a reload and works with the back button, and moving to
+real paths would drag every OAuth return URL with it for a cosmetic gain on an app that sits behind
+a sign-in. Only `read` in `router.ts` knows, so that change stays one function wide.
+
+The matcher captures `:name` segments although no page takes one yet: that is what makes adding a
+page like `/patch/:id` a row in the table rather than a rewrite.
+
+## The server
+
+Three layers, and a rule for which one a thing belongs in.
+
+**Repositories** are the SQL. Rows in, rows out, one module per table group. Whether a viewer may
+see a row is not their question — a repository that also refused would be a second place for the
+rules to live.
+
+**Services** hold the rules, and exist only where there are rules: who may write a patch, what a tag
+may be called. A route with no rules of its own reads its repository directly rather than going
+through a service that would only forward the call, which is why there is no library or settings
+service.
+
+**Routes** are a table of `{ method, path, needs, handle }`. A table rather than a run of
+`if (resource === …)`, so what a route needs is declared next to the route instead of being the
+first few lines of its handler.
+
+`api.ts` is wiring: it decides the order of the three things that happen in front of every route —
+where the request came from, who is asking, and how often they have asked — and then dispatches.
+Sign-in is not a table route: it sets cookies, talks to Google and has to be reachable by somebody
+with no session yet, so it runs before a viewer is even looked up.
 
 ## Storage
 

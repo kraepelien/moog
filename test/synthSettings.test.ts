@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import { defaultValues } from '../src/controls/registry.ts'
-import { panelRegistry } from '../src/controls/panel.ts'
-import type { ControlValue } from '../src/controls/types.ts'
+import { defaultValues } from '@controls/registry.ts'
+import { panelRegistry } from '@controls/panel.ts'
+import type { ControlValue } from '@controls/types.ts'
 import {
   SILENT,
   contourSettings,
@@ -11,7 +11,7 @@ import {
   modulationSettings,
   oscillatorSettings,
   settingsFrom,
-} from '../src/audio/settings.ts'
+} from '@audio/settings.ts'
 
 /* What the instrument does, not the arithmetic that gets it there: a test that
    restated the multiplication would pass whatever the multiplication was. */

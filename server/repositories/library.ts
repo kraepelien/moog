@@ -1,6 +1,6 @@
 import type { Database } from 'bun:sqlite'
-import type { LibraryEntry } from '../src/components/library/entry.ts'
-import type { Visibility } from '../src/patch/schema.ts'
+import type { LibraryEntry } from '@components/library/entry.ts'
+import type { Visibility } from '@patch/schema.ts'
 
 /* One row per patch the viewer may see, assembled here because only the server
    can see everyone's ratings: my stars come from my row, the average from all
@@ -49,29 +49,30 @@ const SQL = `
      and ($instrument is null or i.slug = $instrument)
    order by p.name collate nocase`
 
-export function buildLibrary(
-  db: Database,
-  viewer: number | null,
-  instrument: string | null = null,
-): LibraryEntry[] {
-  return db
-    .query<Row, { $viewer: number | null; $instrument: string | null }>(SQL)
-    .all({ $viewer: viewer, $instrument: instrument })
-    .map((row) => ({
-      id: row.id,
-      name: row.name,
-      origin: row.slug === null ? ('user' as const) : ('factory' as const),
-      mine: row.ownerMine === 1,
-      ownerName: row.ownerName,
-      tags: JSON.parse(row.tags) as string[],
-      instrument: row.instrument,
-      visibility: row.visibility as Visibility,
-      approximate: row.approximate === 1,
-      rating: row.myRating,
-      /* Rounded to a half star, which is as fine as the stars can draw. */
-      averageRating:
-        row.averageRating === null ? null : Math.round(row.averageRating * 2) / 2,
-      ratingCount: row.ratingCount,
-      updatedAt: row.updatedAt,
-    }))
+export function createLibrary(db: Database) {
+  return {
+    entriesFor(viewer: number | null, instrument: string | null = null): LibraryEntry[] {
+      return db
+        .query<Row, { $viewer: number | null; $instrument: string | null }>(SQL)
+        .all({ $viewer: viewer, $instrument: instrument })
+        .map((row) => ({
+          id: row.id,
+          name: row.name,
+          origin: row.slug === null ? ('user' as const) : ('factory' as const),
+          mine: row.ownerMine === 1,
+          ownerName: row.ownerName,
+          tags: JSON.parse(row.tags) as string[],
+          instrument: row.instrument,
+          visibility: row.visibility as Visibility,
+          approximate: row.approximate === 1,
+          rating: row.myRating,
+          /* Rounded to a half star, which is as fine as the stars can draw. */
+          averageRating: row.averageRating === null ? null : Math.round(row.averageRating * 2) / 2,
+          ratingCount: row.ratingCount,
+          updatedAt: row.updatedAt,
+        }))
+    },
+  }
 }
+
+export type Library = ReturnType<typeof createLibrary>

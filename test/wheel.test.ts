@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { panelRegistry } from '../src/controls/panel.ts'
-import { createRegistry } from '../src/controls/registry.ts'
+import { panelRegistry } from '@controls/panel.ts'
+import { createRegistry } from '@controls/registry.ts'
 import {
   isSprung,
   isWheel,
@@ -9,7 +9,7 @@ import {
   wheelFraction,
   wheelType,
   type WheelDef,
-} from '../src/controls/wheel.ts'
+} from '@controls/wheel.ts'
 import {
   FACE,
   MARKER_BOTTOM,
@@ -20,7 +20,7 @@ import {
   markerY,
   ribTops,
   surfaceShift,
-} from '../src/components/wheel/wheelArtwork.ts'
+} from '@components/wheel/wheelArtwork.ts'
 
 const pitch = panelRegistry.control('pitchWheel') as WheelDef
 const mod = panelRegistry.control('modWheel') as WheelDef

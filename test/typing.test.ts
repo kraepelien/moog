@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { BASE_KEY, keyForTypedKey, offsetForTypedKey } from '../src/audio/typing.ts'
-import { KEY_COUNT, noteName } from '../src/audio/notes.ts'
+import { BASE_KEY, keyForTypedKey, offsetForTypedKey } from '@audio/typing.ts'
+import { KEY_COUNT, noteName } from '@audio/notes.ts'
 
 const played = (typed: string, octaves = 0) => keyForTypedKey(typed, octaves, KEY_COUNT)
 

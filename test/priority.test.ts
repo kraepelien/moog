@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { sounding, trigger } from '../src/audio/priority.ts'
+import { sounding, trigger } from '@audio/priority.ts'
 
 describe('one voice, many keys', () => {
   test('sounds the lowest key held', () => {

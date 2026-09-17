@@ -11,7 +11,7 @@
    those are is a question about music, not about drawing, so it is answered in
    src/audio/notes.ts and only read here. */
 
-import { KEY_COUNT, isSharp } from '../../audio/notes.ts'
+import { KEY_COUNT, isSharp } from '@audio/notes.ts'
 
 export const WHITE_WIDTH = 34
 export const WHITE_LENGTH = 212

@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'bun:test'
-import { panelRegistry } from '../src/controls/panel.ts'
-import { defaultValues } from '../src/controls/registry.ts'
-import { mergeValues, resolvePatch } from '../src/patch/resolve.ts'
-import { createPatch, type Patch } from '../src/patch/schema.ts'
-import { copyOf } from '../src/presets/preset.ts'
+import { panelRegistry } from '@controls/panel.ts'
+import { defaultValues } from '@controls/registry.ts'
+import { mergeValues, resolvePatch } from '@patch/resolve.ts'
+import { createPatch, type Patch } from '@patch/schema.ts'
+import { copyOf } from '@presets/preset.ts'
 import { testApi } from './apiFixture.ts'
-import { createBundle, parseBundle, serializeBundle } from '../src/transfer/bundle.ts'
+import { createBundle, parseBundle, serializeBundle } from '@transfer/bundle.ts'
 import { fixedIdentity, testRegistry } from './fixtures.ts'
 
 /* Drives one patch through every seam the app has: draft, edit, persist, reload,

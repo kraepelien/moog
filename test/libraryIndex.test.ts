@@ -2,12 +2,12 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { openDatabase } from '../server/db.ts'
-import { syncInstruments } from '../server/factory.ts'
-import { buildLibrary } from '../server/library.ts'
-import { createStore } from '../server/store.ts'
-import { ensureUser } from '../server/users.ts'
-import { createPatch, type Patch, type Visibility } from '../src/patch/schema.ts'
+import { openDatabase } from '@server/db.ts'
+import { syncInstruments } from '@server/factory.ts'
+import { createLibrary } from '@server/repositories/library.ts'
+import { createRepositories } from '@server/repositories/index.ts'
+import { createUsers } from '@server/repositories/users.ts'
+import { createPatch, type Patch, type Visibility } from '@patch/schema.ts'
 
 /* One row per patch the viewer may see, with my rating and everyone's average
    on it. The average is the part that cannot be assembled in the browser: it
@@ -20,14 +20,14 @@ function library() {
   roots.push(root)
   const db = openDatabase(join(root, 'moog.db'))
   syncInstruments(db)
-  const store = createStore(db)
+  const store = createRepositories(db)
 
   const person = (uid: string) =>
-    ensureUser(db, { uid, provider: 'test', subject: uid, displayName: uid.toUpperCase() })
+    createUsers(db).ensure({ uid, provider: 'test', subject: uid, displayName: uid.toUpperCase() })
 
   const patch = (name: string, owner: number, visibility: Visibility = 'private'): Patch => {
     const made = createPatch({ name, visibility, tags: ['Bass'] })
-    store.putPatch(made.id, made, owner)
+    store.patches.put(made.id, made, owner)
     return made
   }
 
@@ -47,9 +47,9 @@ describe('what a viewer is shown', () => {
     patch('Mine', me.id)
     patch('Theirs, shared', them.id, 'public')
     patch('Theirs, secret', them.id, 'private')
-    store.putPreset('sub-bass', { ...createPatch({ name: 'Sub Bass', visibility: 'public' }), id: 'sub-bass' })
+    store.patches.putPreset('sub-bass', { ...createPatch({ name: 'Sub Bass', visibility: 'public' }), id: 'sub-bass' })
 
-    expect(buildLibrary(db, me.id).map((row) => row.name).sort()).toEqual([
+    expect(createLibrary(db).entriesFor(me.id).map((row) => row.name).sort()).toEqual([
       'MINE',
       'SUB BASS',
       'THEIRS, SHARED',
@@ -63,7 +63,7 @@ describe('what a viewer is shown', () => {
     patch('Mine', me.id)
     patch('Theirs', them.id, 'public')
 
-    const rows = buildLibrary(db, me.id)
+    const rows = createLibrary(db).entriesFor(me.id)
     expect(rows.find((row) => row.name === 'MINE')).toMatchObject({ mine: true, origin: 'user' })
     expect(rows.find((row) => row.name === 'THEIRS')).toMatchObject({
       mine: false,
@@ -74,12 +74,12 @@ describe('what a viewer is shown', () => {
   test('a factory row has no owner and says where it came from', () => {
     const { db, store, person } = library()
     const me = person('me')
-    store.putPreset('sub-bass', {
+    store.patches.putPreset('sub-bass', {
       ...createPatch({ name: 'Sub Bass', visibility: 'public', approximate: true }),
       id: 'sub-bass',
     })
 
-    expect(buildLibrary(db, me.id)[0]).toMatchObject({
+    expect(createLibrary(db).entriesFor(me.id)[0]).toMatchObject({
       id: 'sub-bass',
       origin: 'factory',
       mine: false,
@@ -92,9 +92,9 @@ describe('what a viewer is shown', () => {
     const { db, store, person, patch } = library()
     const me = person('me')
     const gone = patch('Gone', me.id)
-    store.deletePatch(gone.id)
+    store.patches.delete(gone.id)
 
-    expect(buildLibrary(db, me.id)).toEqual([])
+    expect(createLibrary(db).entriesFor(me.id)).toEqual([])
   })
 
   test('only the instrument asked for', () => {
@@ -102,15 +102,15 @@ describe('what a viewer is shown', () => {
     const me = person('me')
     patch('Model D', me.id)
 
-    expect(buildLibrary(db, me.id, 'minimoog-model-d')).toHaveLength(1)
-    expect(buildLibrary(db, me.id, 'prophet-5')).toEqual([])
+    expect(createLibrary(db).entriesFor(me.id, 'minimoog-model-d')).toHaveLength(1)
+    expect(createLibrary(db).entriesFor(me.id, 'prophet-5')).toEqual([])
   })
 
   test('nothing of anyone else when signed out', () => {
     /* Nobody has a viewer id, so only what everyone may see is left. */
     const { db, person, patch } = library()
     patch('Private', person('them').id)
-    expect(buildLibrary(db, null)).toEqual([])
+    expect(createLibrary(db).entriesFor(null)).toEqual([])
   })
 })
 
@@ -122,11 +122,11 @@ describe('the ratings on a row', () => {
     const third = person('third')
     const shared = patch('Shared', me.id, 'public')
 
-    store.setRating(me.id, shared.id, 5)
-    store.setRating(them.id, shared.id, 4)
-    store.setRating(third.id, shared.id, 3)
+    store.ratings.set(me.id, shared.id, 5)
+    store.ratings.set(them.id, shared.id, 4)
+    store.ratings.set(third.id, shared.id, 3)
 
-    const row = buildLibrary(db, me.id)[0]!
+    const row = createLibrary(db).entriesFor(me.id)[0]!
     expect(row.rating).toBe(5)
     expect(row.averageRating).toBe(4)
     expect(row.ratingCount).toBe(3)
@@ -137,9 +137,9 @@ describe('the ratings on a row', () => {
     const me = person('me')
     const them = person('them')
     const shared = patch('Shared', me.id, 'public')
-    store.setRating(them.id, shared.id, 2)
+    store.ratings.set(them.id, shared.id, 2)
 
-    const row = buildLibrary(db, me.id)[0]!
+    const row = createLibrary(db).entriesFor(me.id)[0]!
     expect(row.rating).toBeNull()
     expect(row.averageRating).toBe(2)
   })
@@ -149,7 +149,7 @@ describe('the ratings on a row', () => {
     const me = person('me')
     patch('Unrated', me.id)
 
-    const row = buildLibrary(db, me.id)[0]!
+    const row = createLibrary(db).entriesFor(me.id)[0]!
     expect(row.rating).toBeNull()
     expect(row.averageRating).toBeNull()
     expect(row.ratingCount).toBe(0)
@@ -160,19 +160,19 @@ describe('the ratings on a row', () => {
     const me = person('me')
     const them = person('them')
     const shared = patch('Shared', me.id, 'public')
-    store.setRating(me.id, shared.id, 5)
-    store.setRating(them.id, shared.id, 2)
+    store.ratings.set(me.id, shared.id, 5)
+    store.ratings.set(them.id, shared.id, 2)
 
-    expect(buildLibrary(db, me.id)[0]!.averageRating).toBe(3.5)
+    expect(createLibrary(db).entriesFor(me.id)[0]!.averageRating).toBe(3.5)
   })
 
   test('carry a half star as it was given', () => {
     const { db, store, person, patch } = library()
     const me = person('me')
     const mine = patch('Half', me.id)
-    store.setRating(me.id, mine.id, 2.5)
+    store.ratings.set(me.id, mine.id, 2.5)
 
-    const row = buildLibrary(db, me.id)[0]!
+    const row = createLibrary(db).entriesFor(me.id)[0]!
     expect(row.rating).toBe(2.5)
     expect(row.averageRating).toBe(2.5)
   })
@@ -183,9 +183,9 @@ describe('the ratings on a row', () => {
     const me = person('me')
     const them = person('them')
     const shared = patch('Shared', them.id, 'public')
-    store.setRating(them.id, shared.id, 1)
+    store.ratings.set(them.id, shared.id, 1)
 
-    const row = buildLibrary(db, me.id)[0]!
+    const row = createLibrary(db).entriesFor(me.id)[0]!
     expect(row.rating).toBeNull()
     expect(JSON.stringify(row)).not.toContain('"stars"')
   })

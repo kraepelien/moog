@@ -1,9 +1,9 @@
 import type { Database } from 'bun:sqlite'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { INSTRUMENTS } from '../src/instruments/instruments.ts'
-import { parsePatch } from '../src/patch/schema.ts'
-import { createStore } from './store.ts'
+import { INSTRUMENTS } from '@instruments/instruments.ts'
+import { parsePatch } from '@patch/schema.ts'
+import { createPatches } from './repositories/patches.ts'
 
 /* The bank in the repo is the truth about factory content, and it is reloaded
    on every start. That replaces the seed manifest, which existed only because
@@ -25,7 +25,7 @@ export function syncInstruments(db: Database): void {
 
 export function loadFactory(db: Database, bank: string): FactoryLoad {
   syncInstruments(db)
-  const store = createStore(db)
+  const patches = createPatches(db)
 
   let files: string[]
   try {
@@ -42,7 +42,7 @@ export function loadFactory(db: Database, bank: string): FactoryLoad {
       /* Loudly, at startup: a bank file that will not parse is a mistake in the
          repo, not something a user can fix by reloading. */
       if (!parsed.ok) throw new Error(`${file}: ${parsed.error}`)
-      store.putPreset(slug, parsed.value)
+      patches.putPreset(slug, parsed.value)
       slugs.push(slug)
     }
   })()

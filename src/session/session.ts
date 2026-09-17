@@ -6,11 +6,21 @@ import { useCallback, useEffect, useState } from 'react'
 export interface Session {
   readonly mode: 'off' | 'oauth'
   readonly signedIn: boolean
-  readonly admin: boolean
+  /* What this account may do, as the server sees it. Roles come along for the
+     account screen to show; nothing decides from them, because which role
+     grants what is the server's to know. */
+  readonly roles: readonly string[]
+  readonly privileges: readonly string[]
   readonly user: { uid: string; name: string | null; avatar: string | null } | null
 }
 
-export const SIGNED_OUT: Session = { mode: 'oauth', signedIn: false, admin: false, user: null }
+export const SIGNED_OUT: Session = {
+  mode: 'oauth',
+  signedIn: false,
+  roles: [],
+  privileges: [],
+  user: null,
+}
 
 export function signInHref(returnTo: string): string {
   return `/api/auth/google/start?returnTo=${encodeURIComponent(returnTo)}`

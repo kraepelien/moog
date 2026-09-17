@@ -17,14 +17,33 @@ const runtimeStage = dockerfile.split(/^FROM .*$/m).at(-1) ?? ''
 
 const copied = [...runtimeStage.matchAll(/^COPY --from=\S+ \/app\/(\S+)/gm)].map((m) => m[1] ?? '')
 
+/* The aliases the server imports through, read from the file the compilers and
+   Vite read, so a new one cannot be added without this walk following it. */
+const { compilerOptions } = JSON.parse(readFileSync(join(ROOT, 'tsconfig.paths.json'), 'utf8')) as {
+  compilerOptions: { paths: Record<string, string[]> }
+}
+
+const aliases = Object.entries(compilerOptions.paths).map(([pattern, [target]]) => ({
+  prefix: pattern.replace('/*', ''),
+  directory: target.replace('./', '').replace('/*', ''),
+}))
+
 function importsIn(file: string): string[] {
   const source = readFileSync(join(ROOT, file), 'utf8')
   const found = [...source.matchAll(/\bfrom\s+'([^']+)'|\bimport\s+'([^']+)'/g)]
-  return found.map((m) => m[1] ?? m[2] ?? '').filter((specifier) => specifier.startsWith('.'))
+  return found.map((m) => m[1] ?? m[2] ?? '')
 }
 
-/* Every relative specifier in this repo carries its extension, so resolution is
-   a join: Bun's extension search never runs, and neither does ours. */
+/* A file in this repo, or null for a package, which arrives with node_modules
+   rather than as a path of ours. Aliased and relative specifiers alike carry
+   their extension, so resolution is a join: Bun's extension search never runs,
+   and neither does ours. */
+function locate(file: string, specifier: string): string | null {
+  if (specifier.startsWith('.')) return relative(ROOT, resolve(ROOT, dirname(file), specifier))
+  const alias = aliases.find((a) => specifier.startsWith(`${a.prefix}/`))
+  return alias ? `${alias.directory}${specifier.slice(alias.prefix.length)}` : null
+}
+
 function walk(entry: string) {
   const reached = new Set<string>()
   const unresolved: string[] = []
@@ -34,7 +53,8 @@ function walk(entry: string) {
     if (reached.has(file)) continue
     reached.add(file)
     for (const specifier of importsIn(file)) {
-      const target = relative(ROOT, resolve(ROOT, dirname(file), specifier))
+      const target = locate(file, specifier)
+      if (target === null) continue
       if (existsSync(join(ROOT, target))) queue.push(target)
       else unresolved.push(`${file} → ${specifier}`)
     }
@@ -62,6 +82,18 @@ describe('the runtime image', () => {
 
   test('is checked against a graph that resolved whole', () => {
     expect(graph.unresolved).toEqual([])
+  })
+
+  test('copies the alias map the server resolves those imports through', () => {
+    /* Bun maps `@patch/schema.ts` by reading `paths` out of the tsconfig as it
+       boots, so the map is a runtime dependency like any imported file — and an
+       invisible one, since nothing imports it. Without it every crossing import
+       is an unresolved bare specifier and the container crashloops. */
+    const aliased = graph.reached.filter((file) =>
+      importsIn(file).some((specifier) => aliases.some((a) => specifier.startsWith(`${a.prefix}/`))),
+    )
+    expect(aliased.length).toBeGreaterThan(0)
+    expect(['tsconfig.json', 'tsconfig.paths.json'].filter((file) => !isCopied(file))).toEqual([])
   })
 
   test('copies only paths that exist, so a typo fails here rather than on the NAS', () => {

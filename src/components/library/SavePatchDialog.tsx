@@ -8,8 +8,8 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { FilterRow, type FilterChoice } from './FilterRow.tsx'
 import { BANK_TONES } from './entry.ts'
-import { SHELL, TONE_COLOURS, toneForTag } from '../../tones.ts'
-import { patchName, type Patch, type Visibility } from '../../patch/schema.ts'
+import { SHELL, TONE_COLOURS, toneForTag } from '@/tones.ts'
+import { patchName, type Patch, type Visibility } from '@patch/schema.ts'
 import styles from './SavePatchDialog.module.css'
 
 function ClearGlyph() {

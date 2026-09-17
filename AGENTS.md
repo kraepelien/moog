@@ -58,8 +58,22 @@ remapping every saved patch.
   rotates by `angle - bakedAngle`; nothing is re-pathed.
 - **Do not estimate geometry by eye.** `tools/measure-artwork.py` recovers it from the scans and
   `reference/measurements.md` holds what it found, including one deliberate deviation from the print.
-- **Ids reaching the filesystem are pattern-checked** in `server/store.ts` before they become
-  filenames. The pattern, not the path join, is what keeps an id of `../../etc/passwd` in its folder.
+- **Ids reaching the filesystem are pattern-checked** in `server/repositories/patches.ts` before
+  they become filenames. The pattern, not the path join, is what keeps an id of `../../etc/passwd`
+  in its folder.
+- **A privilege is code; a role is data.** Adding a privilege is `src/access/privileges.ts` plus the
+  route that asks for it, and never a migration. A *role* name is stored in `users.roles`, which
+  makes it a published interface like a control id: add roles, never rename one.
+- **A route declares what it needs**, in `server/routes/table.ts`'s entries. The guard runs there
+  for every route at once, so a handler never checks for itself — and a route that forgot to ask
+  cannot exist. The client's `<Can>` and `<RouteGuard>` choose what to draw and are never the check.
+- **SQL lives in a repository, rules live in a service.** A repository that also refused would be a
+  second place for the rules to live. A route with no rules of its own talks to its repository
+  rather than to a service that would only forward the call.
+- **A schema step is append-only, and `test/oldDatabase.ts` undoes it.** Migration tests make an old
+  database by opening a current one and winding it back, and reopening re-runs *every* step above
+  the version set — so a new step in `server/db.ts` needs its undo added there, or those tests fail
+  with `already exists`.
 
 ## The sound is derived, and says so
 
@@ -75,6 +89,34 @@ stopped. Both are pinned by tests that assert an absence, so read them before re
 What cannot be modelled is listed in `SILENT` in `src/audio/settings.ts` with its reason, shown in
 the checklist, and proved silent by moving each control through its whole travel. Add to that list
 rather than leaving a control quietly doing nothing.
+
+## Imports
+
+Anything crossing out of its own directory goes through an alias — `@patch/schema.ts`,
+`@controls/registry.ts`, `@server/store.ts`, and `@/tones.ts` for the few files sitting directly in
+`src/`. Siblings stay relative (`./types.ts`). The map is `tsconfig.paths.json`, and it is the only
+copy: the three tsconfigs extend it, `vite.config.ts` reads it, and `test/image.test.ts` walks it.
+Add a top-level directory and you add one line there, nowhere else.
+
+**Every specifier carries its `.ts`.** Not a style choice: `server/` and `vite.config.ts` compile
+under `tsconfig.node.json` with `"module": "nodenext"`, which requires an explicit extension and
+rejects `./store` with TS2835 — for aliased specifiers too, so `@server/store` fails the same way.
+`src/` is `moduleResolution: bundler` and would accept either, and one rule that holds everywhere
+beats two.
+
+Three resolvers have to agree on the map, and only two of them fail loudly:
+
+- **Bun reads `paths` from the root `tsconfig.json` only.** It does not follow project references,
+  which is why the map is in a file all three configs extend rather than in `tsconfig.app.json`.
+  This is also why the runtime image copies both tsconfigs: the server is not bundled, so Bun maps
+  `@patch/schema.ts` as it boots, and without them it is an unresolved bare specifier and a
+  crashloop. Pinned by `test/image.test.ts`.
+- **Vite's config loader does not apply `resolve.alias`.** `vite.config.ts` imports
+  `server/vitePlugin.ts`, so the whole server graph is loaded as config, and under the default
+  bundling loader every aliased import in `server/` resolved to nothing — 14 `UNRESOLVED_IMPORT`
+  warnings, externalised, and working only because Bun happened to resolve them afterwards. Hence
+  `--configLoader native` on every `vite` invocation in `package.json`: Bun loads the config
+  directly and applies `paths` itself. Drop the flag and the warnings come back.
 
 ## Gotchas that have already cost time
 

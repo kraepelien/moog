@@ -2,14 +2,15 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { createApi } from '../server/api.ts'
-import { authConfigFromEnv } from '../server/identity.ts'
-import { limitsFromEnv } from '../server/limits.ts'
-import { backupTo, openDatabase } from '../server/db.ts'
-import { syncInstruments } from '../server/factory.ts'
-import { createStore, isSafeName } from '../server/store.ts'
-import { ensureLocalUser } from '../server/users.ts'
-import { createPatch, type Patch } from '../src/patch/schema.ts'
+import { createApi } from '@server/api.ts'
+import { authConfigFromEnv } from '@server/identity.ts'
+import { limitsFromEnv } from '@server/limits.ts'
+import { backupTo, openDatabase } from '@server/db.ts'
+import { syncInstruments } from '@server/factory.ts'
+import { createRepositories } from '@server/repositories/index.ts'
+import { isSafeName } from '@server/repositories/patches.ts'
+import { createUsers } from '@server/repositories/users.ts'
+import { createPatch, type Patch } from '@patch/schema.ts'
 import { fixedIdentity } from './fixtures.ts'
 
 /* The request handler and the store beneath it, driven directly: malformed and
@@ -27,7 +28,7 @@ function freshDb() {
 
 /* Writing straight to the store skips the route that resolves a viewer, so
    these supply the owner the route would have. */
-const owned = (db: ReturnType<typeof freshDb>) => ensureLocalUser(db, 'local').id
+const owned = (db: ReturnType<typeof freshDb>) => createUsers(db).ensureLocal('local').id
 
 afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
@@ -57,55 +58,55 @@ describe('an id arriving from a URL', () => {
 
   test('is refused by the store before it reaches a statement', () => {
     const db = freshDb()
-    const store = createStore(db)
-    expect(store.getPatch('../escape')).toBeNull()
-    expect(() => store.putPatch('../escape', aPatch('X'), owned(db))).toThrow(/Unsafe/)
-    expect(() => store.deletePatch('../escape')).toThrow(/Unsafe/)
+    const store = createRepositories(db)
+    expect(store.patches.get('../escape')).toBeNull()
+    expect(() => store.patches.put('../escape', aPatch('X'), owned(db))).toThrow(/Unsafe/)
+    expect(() => store.patches.delete('../escape')).toThrow(/Unsafe/)
   })
 })
 
 describe('writing a patch', () => {
   test('twice at once leaves one row, not two', () => {
     const db = freshDb()
-    const store = createStore(db)
+    const store = createRepositories(db)
     const owner = owned(db)
     const patch = aPatch('Contended')
-    for (let i = 0; i < 25; i++) store.putPatch(patch.id, { ...patch, name: `Take ${i}` }, owner)
+    for (let i = 0; i < 25; i++) store.patches.put(patch.id, { ...patch, name: `Take ${i}` }, owner)
 
-    const all = store.listPatches(owner)
+    const all = store.patches.listOwnedBy(owner)
     expect(all).toHaveLength(1)
     expect(all[0]!.name).toBe('Take 24')
   })
 
   test('for an instrument nothing knows is refused, not filed under the default', () => {
     const db = freshDb()
-    const store = createStore(db)
+    const store = createRepositories(db)
     expect(() =>
-      store.putPatch('x1', { ...aPatch('Alien'), instrument: 'prophet-5' }, owned(db)),
+      store.patches.put('x1', { ...aPatch('Alien'), instrument: 'prophet-5' }, owned(db)),
     ).toThrow(/Unknown instrument/)
   })
 
   test('keeps a control id this build has never heard of', () => {
     /* The format's promise: an older build must not strip a newer one's data. */
     const db = freshDb()
-    const store = createStore(db)
+    const store = createRepositories(db)
     const patch = { ...aPatch('Future'), values: { osc1Volume: 5, fromLater: 'kept' } }
-    store.putPatch(patch.id, patch, owned(db))
-    expect(store.getPatch(patch.id)?.values).toEqual({ osc1Volume: 5, fromLater: 'kept' })
+    store.patches.put(patch.id, patch, owned(db))
+    expect(store.patches.get(patch.id)?.values).toEqual({ osc1Volume: 5, fromLater: 'kept' })
   })
 
   test('a deleted patch is gone from every listing but still a row', () => {
     /* Soft, so a copy or a rating that points at it still has something to
        point at. */
     const db = freshDb()
-    const store = createStore(db)
+    const store = createRepositories(db)
     const owner = owned(db)
     const patch = aPatch('Gone')
-    store.putPatch(patch.id, patch, owner)
-    store.deletePatch(patch.id)
+    store.patches.put(patch.id, patch, owner)
+    store.patches.delete(patch.id)
 
-    expect(store.listPatches(owner)).toEqual([])
-    expect(store.getPatch(patch.id)).toBeNull()
+    expect(store.patches.listOwnedBy(owner)).toEqual([])
+    expect(store.patches.get(patch.id)).toBeNull()
     expect(db.query<{ n: number }, []>(`select count(*) as n from patches`).get()?.n).toBe(1)
   })
 })
@@ -221,7 +222,7 @@ describe('the daily backup', () => {
     const path = join(root, 'backups', 'moog-today.db')
 
     backupTo(db, path)
-    createStore(db).createPatch(aPatch('Saved After The First Copy'), owned(db), 'later')
+    createRepositories(db).patches.create(aPatch('Saved After The First Copy'), owned(db), 'later')
 
     /* A restart on the same day used to die here, and the container came back
        up into the same failure. */

@@ -1,7 +1,7 @@
 import IconButton from '@mui/material/IconButton'
 import InputAdornment from '@mui/material/InputAdornment'
 import TextField from '@mui/material/TextField'
-import { SHELL } from '../../tones.ts'
+import { SHELL } from '@/tones.ts'
 
 function SearchGlyph() {
   return (

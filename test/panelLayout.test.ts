@@ -4,7 +4,7 @@ import {
   PANEL_ROW,
   layoutFor,
   withCaptionRows,
-} from '../src/components/panelLayout.ts'
+} from '@components/panelLayout.ts'
 
 /* `grid-template-areas` needs every name to be one filled rectangle. A name that
    is not gets the whole template thrown away by the browser, which drops the

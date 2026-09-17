@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { mergeValues, reportHasWarnings, resolvePatch } from '../src/patch/resolve.ts'
-import { createPatch } from '../src/patch/schema.ts'
+import { mergeValues, reportHasWarnings, resolvePatch } from '@patch/resolve.ts'
+import { createPatch } from '@patch/schema.ts'
 import { fixedIdentity, testRegistry } from './fixtures.ts'
 
 const registry = testRegistry()

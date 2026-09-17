@@ -1,17 +1,17 @@
-import { SILENT } from '../audio/settings.ts'
-import { isPlaceholder } from '../controls/placeholder.ts'
-import type { Registry } from '../controls/registry.ts'
-import { isContinuousKnob } from '../controls/continuousKnob.ts'
-import { isStepKnob } from '../controls/stepKnob.ts'
-import { isTimeKnob } from '../controls/timeKnob.ts'
-import { isWheel } from '../controls/wheel.ts'
-import { isToggleSwitch } from '../controls/toggleSwitch.ts'
+import { SILENT } from '@audio/settings.ts'
+import { isPlaceholder } from '@controls/placeholder.ts'
+import type { Registry } from '@controls/registry.ts'
+import { isContinuousKnob } from '@controls/continuousKnob.ts'
+import { isStepKnob } from '@controls/stepKnob.ts'
+import { isTimeKnob } from '@controls/timeKnob.ts'
+import { isWheel } from '@controls/wheel.ts'
+import { isToggleSwitch } from '@controls/toggleSwitch.ts'
 import {
   isDecoration,
   type ControlValue,
   type DecorationDef,
   type PanelItem,
-} from '../controls/types.ts'
+} from '@controls/types.ts'
 import { ContinuousKnob } from './knob/ContinuousKnob.tsx'
 import { OverloadLamp } from './OverloadLamp.tsx'
 import { StepKnob } from './knob/StepKnob.tsx'

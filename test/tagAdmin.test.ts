@@ -2,14 +2,14 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { createApi } from '../server/api.ts'
-import { openDatabase } from '../server/db.ts'
-import { syncInstruments } from '../server/factory.ts'
-import { authConfigFromEnv, sessionCookie } from '../server/identity.ts'
-import { seedTags } from '../server/tags.ts'
-import { ensureUser } from '../server/users.ts'
-import type { TagInUse } from '../src/admin/tags.ts'
-import { createPatch, type Patch } from '../src/patch/schema.ts'
+import { createApi } from '@server/api.ts'
+import { openDatabase } from '@server/db.ts'
+import { syncInstruments } from '@server/factory.ts'
+import { authConfigFromEnv, sessionCookie } from '@server/identity.ts'
+import { seedTags } from '@server/services/tags.ts'
+import { createUsers } from '@server/repositories/users.ts'
+import type { TagInUse } from '@admin/tags.ts'
+import { createPatch, type Patch } from '@patch/schema.ts'
 
 /* The routes behind the admin page. What the seeding is for is pinned in
    tags.test.ts; what matters here is that only an admin may edit the list, and
@@ -35,7 +35,7 @@ async function world() {
   const handle = createApi({ db, config })
 
   const person = async (uid: string, email: string) => {
-    ensureUser(db, { uid, provider: 'test', subject: uid, email, displayName: uid })
+    createUsers(db).ensure({ uid, provider: 'test', subject: uid, email, displayName: uid })
     const cookie = (await sessionCookie(uid, config, new Request('https://x/'), Date.now())).split(
       ';',
     )[0]!
@@ -74,8 +74,8 @@ describe('reading the list', () => {
 
   test('with the counts is not, because they are over everybody', async () => {
     const { boss, punter } = await world()
-    expect((await punter('GET', '/api/tags?use=1'))!.status).toBe(403)
-    expect((await boss('GET', '/api/tags?use=1'))!.status).toBe(200)
+    expect((await punter('GET', '/api/tags/in-use'))!.status).toBe(403)
+    expect((await boss('GET', '/api/tags/in-use'))!.status).toBe(200)
   })
 })
 
@@ -125,7 +125,7 @@ describe('removing one', () => {
       })
     )!.json()) as Patch
 
-    const use = (await (await boss('GET', '/api/tags?use=1'))!.json()) as TagInUse[]
+    const use = (await (await boss('GET', '/api/tags/in-use'))!.json()) as TagInUse[]
     const bass = use.find((tag) => tag.name === 'Bass')!
     expect(bass.patches).toBe(1)
 
@@ -163,12 +163,12 @@ describe('the counts', () => {
       id: undefined,
     })
 
-    const before = (await (await boss('GET', '/api/tags?use=1'))!.json()) as TagInUse[]
+    const before = (await (await boss('GET', '/api/tags/in-use'))!.json()) as TagInUse[]
     expect(before.find((tag) => tag.name === 'Lead')!.patches).toBe(2)
 
     await punter('DELETE', `/api/patches/${mine.id}`)
 
-    const after = (await (await boss('GET', '/api/tags?use=1'))!.json()) as TagInUse[]
+    const after = (await (await boss('GET', '/api/tags/in-use'))!.json()) as TagInUse[]
     expect(after.find((tag) => tag.name === 'Lead')!.patches).toBe(1)
     expect(after.find((tag) => tag.name === 'Bass')!.patches).toBe(0)
   })

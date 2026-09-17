@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
-import { useConfirm } from '../src/components/useConfirm.tsx'
+import { useConfirm } from '@components/useConfirm.tsx'
 
 /* The ripple animates state after the click has been asserted on, which React
    reports as an update outside act(). It is decoration, so it is off here

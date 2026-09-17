@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import type { ControlValue } from '../controls/types.ts'
-import { DEFAULT_INSTRUMENT } from '../instruments/instruments.ts'
-import { err, ok, type Result } from '../result.ts'
+import type { ControlValue } from '@controls/types.ts'
+import { DEFAULT_INSTRUMENT } from '@instruments/instruments.ts'
+import { err, ok, type Result } from '@/result.ts'
 
 /* Bump this with a migration in migrate.ts, never on its own: a patch on disk
    keeps the version it was written with. */

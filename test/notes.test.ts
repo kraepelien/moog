@@ -7,7 +7,7 @@ import {
   isSharp,
   midiForKey,
   noteName,
-} from '../src/audio/notes.ts'
+} from '@audio/notes.ts'
 
 describe('what the keys sound', () => {
   test('runs 44 keys from F to C', () => {

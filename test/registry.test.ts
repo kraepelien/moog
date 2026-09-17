@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test'
-import { panelRegistry } from '../src/controls/panel.ts'
-import { isRecalled } from '../src/controls/recall.ts'
-import { createRegistry, defaultValues } from '../src/controls/registry.ts'
-import { isDecoration } from '../src/controls/types.ts'
+import { panelRegistry } from '@controls/panel.ts'
+import { isRecalled } from '@controls/recall.ts'
+import { createRegistry, defaultValues } from '@controls/registry.ts'
+import { isDecoration } from '@controls/types.ts'
 import { rangeDef, testEnumType, testNumberType, testRegistry, volumeDef } from './fixtures.ts'
 
 describe('registry', () => {

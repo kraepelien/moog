@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import { migrateToCurrent } from '../patch/migrate.ts'
-import { type Patch, type PatchIdentity, systemIdentity } from '../patch/schema.ts'
-import { err, ok, type Result } from '../result.ts'
+import { migrateToCurrent } from '@patch/migrate.ts'
+import { type Patch, type PatchIdentity, systemIdentity } from '@patch/schema.ts'
+import { err, ok, type Result } from '@/result.ts'
 
 export const BUNDLE_FORMAT = 'minimoog-patch-bundle'
 

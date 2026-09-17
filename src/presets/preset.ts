@@ -1,5 +1,5 @@
-import type { ControlValue } from '../controls/types.ts'
-import { createPatch, type Patch, type PatchIdentity, systemIdentity } from '../patch/schema.ts'
+import type { ControlValue } from '@controls/types.ts'
+import { createPatch, type Patch, type PatchIdentity, systemIdentity } from '@patch/schema.ts'
 
 /* A factory preset is a patch kept in the repo rather than saved by anyone, so
    copying is the only thing here: you can never save over one.

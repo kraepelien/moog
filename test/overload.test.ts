@@ -1,14 +1,14 @@
 import { describe, expect, test } from 'bun:test'
-import { panelRegistry } from '../src/controls/panel.ts'
-import { defaultValues } from '../src/controls/registry.ts'
+import { panelRegistry } from '@controls/panel.ts'
+import { defaultValues } from '@controls/registry.ts'
 import {
   OVERLOAD_THRESHOLD,
   overloadDrive,
   overloadGlow,
   overloadRiseMs,
   programmeLevel,
-} from '../src/controls/overload.ts'
-import type { ControlValue } from '../src/controls/types.ts'
+} from '@controls/overload.ts'
+import type { ControlValue } from '@controls/types.ts'
 
 /* Pins the behaviour the lamp reproduces, not the arithmetic behind it. */
 

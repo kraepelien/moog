@@ -5,7 +5,7 @@ import {
   quantise,
   scaleMarks,
   type ContinuousKnobDef,
-} from '../../controls/continuousKnob.ts'
+} from '@controls/continuousKnob.ts'
 import {
   CENTRE,
   LABEL_RADIUS,
