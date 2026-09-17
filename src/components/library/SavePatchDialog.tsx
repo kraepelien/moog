@@ -121,15 +121,14 @@ export function SavePatchDialog({
     { value: 'public', label: 'Public', tone: 'amber' },
   ]
 
-  /* Facts, not questions: the patch belongs to the editor it was made in, and
-     whether it is an approximation was settled when it was written. Locked for
-     the same reason the bank is — a form that draws them has to be a form that
-     cannot answer them wrongly. */
+  /* A fact, not a question: the patch belongs to the editor it was made in.
+     Locked for the same reason the bank is — a form that draws a fact has to be
+     a form that cannot answer it wrongly.
+
+     Nothing here about `approximate`. It is true of the whole factory bank and
+     of nothing else, so the bank chip is already carrying it. */
   const synth: FilterChoice[] = [
     { value: 'instrument', label: instrumentName(patch.instrument), tone: 'green', locked: true },
-    ...(patch.approximate
-      ? [{ value: 'approximate', label: 'approximate', tone: 'grey' as const, locked: true }]
-      : []),
   ]
 
   return (
