@@ -17,7 +17,11 @@ import { TopBar, type TopBarAction } from './components/TopBar.tsx'
 import surface from './components/controlSurface.module.css'
 import { PatchLibrary } from './components/library/PatchLibrary.tsx'
 import { PatchHeader } from './components/library/PatchHeader.tsx'
-import { SavePatchDialog, type PatchFields } from './components/library/SavePatchDialog.tsx'
+import {
+  SavePatchDialog,
+  type PatchFields,
+  type SaveOutcome,
+} from './components/library/SavePatchDialog.tsx'
 import type { LibraryEntry } from './components/library/entry.ts'
 import { Panel, PanelChecklist } from './components/Panel.tsx'
 import { useConfirm } from './components/useConfirm.tsx'
@@ -88,8 +92,9 @@ export function App() {
   /* What the draft looked like when it was last saved or loaded. Comparing
      against it is what tells the user there is something unsaved. */
   const [clean, setClean] = useState('')
-  /* Whether the server has this draft yet. A new one is created, an existing
-     one written over, and only the server ever mints an id. */
+  /* Whether the server has this draft *and* will let me write it back. A patch
+     of my own is written over; anything else — a factory preset, somebody
+     else's — is created afresh, and only the server ever mints an id. */
   const [stored, setStored] = useState(false)
   /* What the draft was copied from, until it has been saved once. */
   const [copiedFrom, setCopiedFrom] = useState<string | null>(null)
@@ -256,10 +261,15 @@ export function App() {
         const patch = await fetchEntry(entry)
         if (!patch) return
         const factory = entry.origin === 'factory'
+        const writable = !factory && entry.mine
         adopt(
-          factory ? copyOf(patch, { owner: null }) : patch,
+          writable
+            ? patch
+            : copyOf(patch, {
+                owner: factory ? null : { id: null, name: entry.ownerName },
+              }),
           `Opened “${patch.name}”`,
-          factory ? { from: entry.id } : { stored: true },
+          writable ? { stored: true } : { from: entry.id },
         )
         goToView('editor')
       }),
@@ -275,6 +285,11 @@ export function App() {
   if (!draft) return <Typography sx={{ p: 2 }}>Loading…</Typography>
 
   const resolved = resolvePatch(panelRegistry, draft)
+
+  /* Only a draft the server already holds as mine is written over. Everything
+     else is created: a copy when it came from somewhere, a first save when it
+     did not. */
+  const outcome: SaveOutcome = stored ? 'overwrite' : copiedFrom ? 'duplicate' : 'new'
 
   const menu: TopBarAction[] = [
     { label: 'Import a file…', onSelect: () => importing.current?.click() },
@@ -341,27 +356,15 @@ export function App() {
             rating={null}
             actions={[
               {
-                label: 'Save',
+                /* One button, named after what it will do: pressing Save on a
+                   patch that is not yours cannot write over it, so it says
+                   Duplicate rather than reporting a refusal afterwards. */
+                label: outcome === 'duplicate' ? 'Duplicate' : 'Save',
                 tone: 'green',
                 /* Not disabled on a clean panel: the form is also how a patch
                    is named, tagged and published, none of which the panel
                    marks as an edit. */
                 onSelect: () => setSaving(true),
-              },
-              {
-                label: 'Save as',
-                tone: 'green',
-                /* There is nothing to branch from until the draft is somewhere. */
-                disabled: !stored,
-                onSelect: () =>
-                  void run('', async () => {
-                    const copy = await store.create(
-                      { ...draft, name: `${draft.name} copy` },
-                      draft.id,
-                    )
-                    adopt(copy, `Saved as “${copy.name}”`, { stored: true })
-                    await refresh()
-                  }),
               },
               {
                 label: 'Delete',
@@ -535,10 +538,11 @@ export function App() {
       <SavePatchDialog
         open={saving}
         patch={draft}
+        outcome={outcome}
         tagChoices={tags}
         onCancel={() => setSaving(false)}
         onSave={(fields: PatchFields) =>
-          void run('Saved', async () => {
+          void run(outcome === 'duplicate' ? 'Saved a copy' : 'Saved', async () => {
             setSaving(false)
             const edited = { ...draft, ...fields, tags: [...fields.tags] }
             /* Only the server mints an id, so a draft it has never seen is

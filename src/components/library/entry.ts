@@ -70,6 +70,28 @@ export function matchesFilters(entry: LibraryEntry, filters: LibraryFilters): bo
   return true
 }
 
+/* What one chip on a row stands for. The rows draw the same chips the filter
+   rows do, so pressing one reaches the same field — and only the filters know
+   that "public" is a flag beside the origins rather than one of them. */
+export type RowFilter =
+  | { readonly kind: 'tag'; readonly value: string }
+  | { readonly kind: 'instrument'; readonly value: string }
+  | { readonly kind: 'origin'; readonly value: Origin }
+  | { readonly kind: 'public' }
+
+export function withFilter(filters: LibraryFilters, pressed: RowFilter): LibraryFilters {
+  switch (pressed.kind) {
+    case 'tag':
+      return { ...filters, tags: toggled(filters.tags, pressed.value) }
+    case 'instrument':
+      return { ...filters, instruments: toggled(filters.instruments, pressed.value) }
+    case 'origin':
+      return { ...filters, origins: toggled(filters.origins, pressed.value) }
+    case 'public':
+      return { ...filters, publicOnly: !filters.publicOnly }
+  }
+}
+
 export function toggled<T>(list: readonly T[], value: T): readonly T[] {
   return list.includes(value) ? list.filter((item) => item !== value) : [...list, value]
 }
