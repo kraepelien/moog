@@ -3,7 +3,7 @@ import ButtonBase from '@mui/material/ButtonBase'
 import Typography from '@mui/material/Typography'
 import { StarRating } from './StarRating.tsx'
 import { ToneChip } from './ToneChip.tsx'
-import type { LibraryEntry, RowFilter } from './entry.ts'
+import { bankOf, BANK_TONES, type LibraryEntry, type RowFilter } from './entry.ts'
 import { instrumentName } from '@instruments/instruments.ts'
 import { toneForTag } from '@/tones.ts'
 import styles from './PatchRow.module.css'
@@ -40,6 +40,8 @@ export function PatchRow({
           },
         }
 
+  const bank = bankOf(entry)
+
   return (
     <ButtonBase
       component="li"
@@ -73,14 +75,14 @@ export function PatchRow({
         />
       </Box>
 
-      <Box className={styles.origin}>
+      <Box className={styles.bank}>
         <ToneChip
-          label={entry.origin}
-          tone={entry.origin === 'factory' ? 'pink' : 'violet'}
-          {...filtering({ kind: 'origin', value: entry.origin }, entry.origin)}
+          label={bank}
+          tone={BANK_TONES[bank]}
+          {...filtering({ kind: 'bank', value: bank }, bank)}
         />
         {entry.visibility === 'public' && (
-          <ToneChip label="public" tone="blue" {...filtering({ kind: 'public' }, 'public')} />
+          <ToneChip label="public" tone="amber" {...filtering({ kind: 'public' }, 'public')} />
         )}
       </Box>
 

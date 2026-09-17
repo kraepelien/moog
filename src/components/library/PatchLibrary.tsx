@@ -10,10 +10,11 @@ import { SearchField } from './SearchField.tsx'
 import {
   matchesFilters,
   withFilter,
+  BANK_TONES,
   NO_FILTERS,
+  type Bank,
   type LibraryEntry,
   type LibraryFilters,
-  type Origin,
 } from './entry.ts'
 import { instrumentName } from '@instruments/instruments.ts'
 import { toneForTag } from '@/tones.ts'
@@ -45,10 +46,14 @@ function choicesFrom(entries: readonly LibraryEntry[]): {
   }
 }
 
-const ORIGIN_CHOICES: readonly FilterChoice[] = [
-  { value: 'factory', label: 'Factory', tone: 'pink' },
-  { value: 'user', label: 'User', tone: 'violet' },
-  { value: 'public', label: 'Public', tone: 'blue' },
+/* Public sits in this row but is not a bank: a patch is Factory, User or Custom
+   and may also be published, which is why it toggles its own flag and takes the
+   one tone the three banks leave free. */
+const BANK_CHOICES: readonly FilterChoice[] = [
+  { value: 'factory', label: 'Factory', tone: BANK_TONES.factory },
+  { value: 'user', label: 'User', tone: BANK_TONES.user },
+  { value: 'custom', label: 'Custom', tone: BANK_TONES.custom },
+  { value: 'public', label: 'Public', tone: 'amber' },
 ]
 
 export function PatchLibrary({
@@ -111,15 +116,15 @@ export function PatchLibrary({
           />
           <FilterRow
             label="Other"
-            choices={ORIGIN_CHOICES}
-            selected={[...filters.origins, ...(filters.publicOnly ? ['public'] : [])]}
+            choices={BANK_CHOICES}
+            selected={[...filters.banks, ...(filters.publicOnly ? ['public'] : [])]}
             onToggle={(value) =>
               change(
                 withFilter(
                   filters,
                   value === 'public'
                     ? { kind: 'public' }
-                    : { kind: 'origin', value: value as Origin },
+                    : { kind: 'bank', value: value as Bank },
                 ),
               )
             }

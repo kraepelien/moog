@@ -412,7 +412,7 @@ function Workspace({
             name={draft.name}
             tags={draft.tags}
             instrument={draft.instrument}
-            origin={null}
+            bank={null}
             approximate={draft.approximate}
             rating={rated?.rating ?? null}
             average={rated?.averageRating ?? null}

@@ -1,4 +1,5 @@
 import type { Visibility } from '@patch/schema.ts'
+import type { Tone } from '@/tones.ts'
 
 /* What one line of the library needs, and all the server sends for it: values
    are not here, because browsing never loads panel data. Assembled server-side
@@ -42,11 +43,32 @@ export function isRating(stars: unknown): stars is number {
 export const ORIGINS = ['factory', 'user'] as const
 export type Origin = (typeof ORIGINS)[number]
 
+/* What the library calls a patch, which is not what the store calls it. A user
+   patch is User to whoever owns it and Custom to everyone else, so two people
+   reading the same row see different words — the origin is a fact about the
+   patch, the bank is a fact about the patch and who is looking. */
+export const BANKS = ['factory', 'user', 'custom'] as const
+export type Bank = (typeof BANKS)[number]
+
+export function bankOf(entry: Pick<LibraryEntry, 'origin' | 'mine'>): Bank {
+  if (entry.origin === 'factory') return 'factory'
+  return entry.mine ? 'user' : 'custom'
+}
+
+/* Assigned rather than hashed like a tag, because this is a closed set of three
+   the code owns and the colours are the distinction: blue is you, here and on
+   the stars of your own rating. */
+export const BANK_TONES: Record<Bank, Tone> = {
+  factory: 'red',
+  user: 'blue',
+  custom: 'violet',
+}
+
 export interface LibraryFilters {
   readonly text: string
   readonly tags: readonly string[]
   readonly instruments: readonly string[]
-  readonly origins: readonly Origin[]
+  readonly banks: readonly Bank[]
   readonly publicOnly: boolean
 }
 
@@ -54,7 +76,7 @@ export const NO_FILTERS: LibraryFilters = {
   text: '',
   tags: [],
   instruments: [],
-  origins: [],
+  banks: [],
   publicOnly: false,
 }
 
@@ -78,7 +100,7 @@ export function matchesFilters(entry: LibraryEntry, filters: LibraryFilters): bo
     return false
   }
 
-  if (filters.origins.length > 0 && !filters.origins.includes(entry.origin)) return false
+  if (filters.banks.length > 0 && !filters.banks.includes(bankOf(entry))) return false
 
   if (filters.publicOnly && entry.visibility !== 'public') return false
 
@@ -87,11 +109,11 @@ export function matchesFilters(entry: LibraryEntry, filters: LibraryFilters): bo
 
 /* What one chip on a row stands for. The rows draw the same chips the filter
    rows do, so pressing one reaches the same field — and only the filters know
-   that "public" is a flag beside the origins rather than one of them. */
+   that "public" is a flag beside the banks rather than one of them. */
 export type RowFilter =
   | { readonly kind: 'tag'; readonly value: string }
   | { readonly kind: 'instrument'; readonly value: string }
-  | { readonly kind: 'origin'; readonly value: Origin }
+  | { readonly kind: 'bank'; readonly value: Bank }
   | { readonly kind: 'public' }
 
 export function withFilter(filters: LibraryFilters, pressed: RowFilter): LibraryFilters {
@@ -100,8 +122,8 @@ export function withFilter(filters: LibraryFilters, pressed: RowFilter): Library
       return { ...filters, tags: toggled(filters.tags, pressed.value) }
     case 'instrument':
       return { ...filters, instruments: toggled(filters.instruments, pressed.value) }
-    case 'origin':
-      return { ...filters, origins: toggled(filters.origins, pressed.value) }
+    case 'bank':
+      return { ...filters, banks: toggled(filters.banks, pressed.value) }
     case 'public':
       return { ...filters, publicOnly: !filters.publicOnly }
   }

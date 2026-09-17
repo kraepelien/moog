@@ -31,7 +31,15 @@ function entry(overrides: Partial<LibraryEntry> & { id: string }): LibraryEntry 
 const BANK: readonly LibraryEntry[] = [
   entry({ id: 'sub-bass', name: 'Sub Bass', tags: ['bass'] }),
   entry({ id: 'fuzz-lead', name: 'Fuzz Lead', tags: ['lead'] }),
-  entry({ id: 'my-patch', name: 'My Patch', origin: 'user', tags: ['bass'], visibility: 'private' }),
+  entry({
+    id: 'my-patch',
+    name: 'My Patch',
+    origin: 'user',
+    mine: true,
+    tags: ['bass'],
+    visibility: 'private',
+  }),
+  entry({ id: 'borrowed-pad', name: 'Borrowed Pad', origin: 'user', ownerName: 'Wendy' }),
 ]
 
 function renderLibrary(entries: readonly LibraryEntry[] = BANK) {
@@ -91,8 +99,30 @@ describe('finding a patch', () => {
 
   test('the Other row tells factory content from your own', () => {
     renderLibrary()
+    fireEvent.click(screen.getByRole('button', { name: 'Factory' }))
+    expect(rowNames()).toEqual(['Sub Bass', 'Fuzz Lead'])
+  })
+
+  test('the Other row tells your own from everyone else\u2019s', () => {
+    renderLibrary()
     fireEvent.click(screen.getByRole('button', { name: 'User' }))
     expect(rowNames()).toEqual(['My Patch'])
+
+    fireEvent.click(screen.getByRole('button', { name: 'Custom' }))
+    expect(rowNames()).toEqual(['My Patch', 'Borrowed Pad'])
+  })
+
+  /* The bank is not a field on the patch: the same saved patch is User to whoever
+     saved it and Custom to everyone else, which is why the server sends `mine`
+     per viewer rather than the library deciding it once. */
+  test('one patch reads as User to its owner and Custom to anyone else', () => {
+    renderLibrary([entry({ id: 'shared', name: 'Shared', origin: 'user', mine: true })])
+    expect(screen.getByRole('button', { name: 'Show only user patches' })).toBeDefined()
+
+    cleanup()
+
+    renderLibrary([entry({ id: 'shared', name: 'Shared', origin: 'user', mine: false })])
+    expect(screen.getByRole('button', { name: 'Show only custom patches' })).toBeDefined()
   })
 
   test('a search matching nothing says so rather than showing an empty card', () => {
@@ -141,7 +171,7 @@ describe('opening a patch', () => {
   test('pressing the public chip keeps only what is published', () => {
     renderLibrary()
     fireEvent.click(screen.getAllByRole('button', { name: 'Show only public patches' })[0]!)
-    expect(rowNames()).toEqual(['Sub Bass', 'Fuzz Lead'])
+    expect(rowNames()).toEqual(['Sub Bass', 'Fuzz Lead', 'Borrowed Pad'])
   })
 
   /* Only one instrument exists, so the second here is a patch from a later build

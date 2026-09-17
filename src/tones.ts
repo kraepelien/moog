@@ -5,7 +5,7 @@
    In TypeScript rather than CSS custom properties because MUI's theme and the
    tag-to-tone assignment both need the values as data. */
 
-export const TONES = ['pink', 'amber', 'green', 'blue', 'violet', 'grey'] as const
+export const TONES = ['red', 'pink', 'amber', 'green', 'blue', 'violet', 'grey'] as const
 export type Tone = (typeof TONES)[number]
 
 export interface ToneColour {
@@ -18,6 +18,7 @@ export interface ToneColour {
 /* Coloured text on a wash of the same hue rather than a solid fill: at this size
    a filled chip reads as a button, and the row already has real buttons in it. */
 export const TONE_COLOURS: Record<Tone, ToneColour> = {
+  red: { ink: '#f2594b', field: 'rgb(242 89 75 / 12%)', strong: 'rgb(242 89 75 / 26%)' },
   pink: { ink: '#ff6f9c', field: 'rgb(255 111 156 / 12%)', strong: 'rgb(255 111 156 / 26%)' },
   amber: { ink: '#e8c257', field: 'rgb(232 194 87 / 12%)', strong: 'rgb(232 194 87 / 26%)' },
   green: { ink: '#69dd94', field: 'rgb(105 221 148 / 12%)', strong: 'rgb(105 221 148 / 26%)' },
@@ -29,7 +30,10 @@ export const TONE_COLOURS: Record<Tone, ToneColour> = {
 /* Tags are plain strings an admin can add to and retire, so a hand-kept colour
    map would leave new ones uncoloured and dead entries behind. Hashing instead
    means a tag keeps one colour everywhere it appears without anyone choosing it,
-   and the colour carries no meaning — it is there to tell chips apart. */
+   and the colour carries no meaning — it is there to tell chips apart.
+
+   Red stays out of the rotation rather than joining it: a sixth tone repoints
+   the modulo, and every tag already in use changes colour. */
 const TAG_TONES: readonly Tone[] = ['pink', 'amber', 'green', 'blue', 'violet']
 
 export function toneForTag(tag: string): Tone {
