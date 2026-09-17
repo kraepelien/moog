@@ -189,9 +189,9 @@ export function App() {
         const agreed = await ask({
           title: `Remove ${tag.name} from the list?`,
           body:
-            tag.patches > 0
-              ? `${tag.patches} patch${tag.patches === 1 ? '' : 'es'} wear this tag and will keep it. It only stops being offered when a patch is saved.`
-              : 'Nothing is wearing it.',
+            tag.patches === 0
+              ? 'Nothing is wearing it.'
+              : `${tag.patches === 1 ? 'One patch wears' : `${tag.patches} patches wear`} this tag and will keep it. It only stops being offered when a patch is saved.`,
           confirm: 'Remove',
           destructive: true,
         })
