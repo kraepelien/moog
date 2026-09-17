@@ -485,6 +485,15 @@ An **override** is one person's answer for one privilege, and beats the preset e
 resolution, so no row can end up with no privileges at all and unlocking a basic feature reaches
 everybody without touching the database. `admin` and `tester` are the assignable ones.
 
+**The roles are a ladder** — `member`, then `tester`, then `admin` — and each rung holds what the
+rungs below it hold. `ROLE_LADDER` states that order, and each role lists only what it *adds*.
+Re-listing an inherited privilege is how the two drift: the admin preset used to repeat `StoreMidi`,
+and the day a second privilege was given to members it would not have been repeated there.
+
+The presets are code, so unlocking a feature takes a deploy either way. What the ladder buys is that
+the deploy is **one line**: give it to `member` and testers and admins have it too, with no per-user
+writes and no matching edit on the rungs above.
+
 ### The rule
 
 ```

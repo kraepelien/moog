@@ -13,7 +13,7 @@
 
    A **role** is a preset: a named set of privileges, stored against a user. It
    is stored rather than stamped out as individual grants because that is what
-   keeps a preset live — changing PRESETS below reaches everyone who holds the
+   keeps a preset live — changing a rung below reaches everyone who holds the
    role, with no write. Role names are stored too; add roles, never rename one.
 
    An **override** is one person's answer for one privilege, and beats the
@@ -70,22 +70,44 @@ export const ROLES: readonly Role[] = Object.values(ROLE)
    all and unlocking a basic feature reaches everyone with no write. */
 export const ASSIGNABLE_ROLES: readonly Role[] = [ROLE.tester, ROLE.admin]
 
-const PRESETS: Record<Role, readonly Privilege[]> = {
+/* The rungs, lowest first. A role holds everything the rungs below it hold, so
+   a privilege given to members reaches testers and admins without being listed
+   three times — and one line unlocks a feature for everyone above it.
+
+   Written out rather than taken from `ROLES`, whose order is only the order the
+   keys happen to be declared in. This is a designed order and says so. */
+export const ROLE_LADDER: readonly Role[] = [ROLE.member, ROLE.tester, ROLE.admin]
+
+/* What each rung *adds*, never what it ends up with. Re-listing an inherited
+   privilege is how the two drift: the admin preset used to repeat StoreMidi,
+   and the day a second one was given to members it would not have been
+   repeated. */
+const ADDS: Record<Role, readonly Privilege[]> = {
   member: [PRIVILEGE.StoreMidi],
   /* Nothing yet. It exists so a beta privilege can be handed to a group in one
-     line rather than to each person by hand. */
+     line rather than to each person by hand — and, being a rung, reaches
+     admins at the same time. */
   tester: [],
   admin: [
     PRIVILEGE.AccessAdmin,
     PRIVILEGE.AdminUsers,
     PRIVILEGE.AdminTags,
     PRIVILEGE.AdminPatches,
-    PRIVILEGE.StoreMidi,
   ],
 }
 
+/* Everything up to and including this rung. An unknown role is nothing rather
+   than a throw: it can only arrive from a column a newer build wrote, and the
+   rest of this file drops those too. */
 export function presetFor(role: Role): readonly Privilege[] {
-  return PRESETS[role]
+  const rung = ROLE_LADDER.indexOf(role)
+  if (rung < 0) return []
+
+  const held = new Set<Privilege>()
+  for (const below of ROLE_LADDER.slice(0, rung + 1)) {
+    for (const privilege of ADDS[below]) held.add(privilege)
+  }
+  return PRIVILEGES.filter((privilege) => held.has(privilege))
 }
 
 /* What a privilege is conditional on. `AccessAdmin` is a boundary rather than a
@@ -161,8 +183,10 @@ export interface Overrides {
    environment is protected at the point a revoke is *written*, not here, so
    this stays a rule rather than a rule with an exception. */
 export function resolve(roles: readonly Role[], overrides: Overrides = {}): Privilege[] {
-  const held = new Set<Privilege>(PRESETS[ROLE.member])
-  for (const role of roles) for (const privilege of PRESETS[role]) held.add(privilege)
+  /* Member first and unconditionally: it is not stored, so it does not arrive
+     in `roles`, and every signed-in account is one. */
+  const held = new Set<Privilege>(presetFor(ROLE.member))
+  for (const role of roles) for (const privilege of presetFor(role)) held.add(privilege)
   for (const privilege of overrides.granted ?? []) held.add(privilege)
   for (const privilege of overrides.revoked ?? []) held.delete(privilege)
 
@@ -199,6 +223,7 @@ export function sourceOf(
 }
 
 export function fromPreset(roles: readonly Role[], privilege: Privilege): boolean {
-  if (PRESETS[ROLE.member].includes(privilege)) return true
-  return roles.some((role) => PRESETS[role].includes(privilege))
+  /* Member is checked whatever was passed, because everybody is one. */
+  if (presetFor(ROLE.member).includes(privilege)) return true
+  return roles.some((role) => presetFor(role).includes(privilege))
 }
