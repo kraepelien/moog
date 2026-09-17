@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "sync-strike",
-  "name": "Sync-Strike",
+  "name": "SYNC-STRIKE",
   "notes": "",
   "values": {
     "osc1Waveform": "sawtooth",

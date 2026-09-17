@@ -214,7 +214,7 @@ describe('taking something out of the shared library', () => {
 
     const after = store.getPatch(patch.id)!
     expect(after.visibility).toBe('private')
-    expect(after.name).toBe('Loud')
+    expect(after.name).toBe('LOUD')
     expect(after.values).toEqual(patch.values)
   })
 

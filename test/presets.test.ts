@@ -50,6 +50,15 @@ describe('the bank shipped in the repo', () => {
     }
   })
 
+  /* The loader would capitalise a mixed-case name on its way into the database
+     anyway, which would leave the repo saying one thing and the app another. */
+  test('every name is already in capitals in the file', () => {
+    for (const file of files()) {
+      const preset = JSON.parse(readFileSync(join(SEED, file), 'utf8'))
+      expect([file, preset.name]).toEqual([file, String(preset.name).toUpperCase()])
+    }
+  })
+
   test('the whole bank is public, and says its values are a reconstruction', () => {
     for (const file of files()) {
       const preset = JSON.parse(readFileSync(join(SEED, file), 'utf8'))
@@ -84,7 +93,7 @@ describe('loading the bank into the database', () => {
 
     const presets = await api.store.listPresets()
     expect(presets).toHaveLength(1)
-    expect(presets[0]!.name).toBe('Second')
+    expect(presets[0]!.name).toBe('SECOND')
     expect(presets[0]!.values).toEqual({ glide: 9 })
   })
 
@@ -146,7 +155,7 @@ describe('copying a preset, which is the only way to save one', () => {
     const patch = copyOf(aPreset('my-sound', 'My Sound'), { owner: null }, fixedIdentity())
     expect(patch.schemaVersion).toBe(PATCH_SCHEMA_VERSION)
     expect(patch.id).not.toBe('my-sound')
-    expect(patch.name).toBe('My Sound')
+    expect(patch.name).toBe('MY SOUND')
   })
 
   test('twice gives two independent patches', () => {
@@ -161,7 +170,7 @@ describe('copying a preset, which is the only way to save one', () => {
 
   test('the copy records what it came from', () => {
     const copy = copyOf(aPreset('sub-bass', 'Sub Bass'), { owner: null }, fixedIdentity())
-    expect(copy.derivedFrom).toMatchObject({ id: 'sub-bass', name: 'Sub Bass', kind: 'factory' })
+    expect(copy.derivedFrom).toMatchObject({ id: 'sub-bass', name: 'SUB BASS', kind: 'factory' })
   })
 
   test('a copy of a copy names its immediate parent, not the original', () => {

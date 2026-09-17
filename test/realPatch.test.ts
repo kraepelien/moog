@@ -71,7 +71,7 @@ describe('a patch of every real control survives export and import', () => {
     for (const [id, want] of Object.entries(values)) {
       expect([id, imported.values[id]]).toEqual([id, want])
     }
-    expect(imported.name).toBe('Round Trip')
+    expect(imported.name).toBe('ROUND TRIP')
     expect(imported.notes).toBe('all controls')
     /* Importing your own export adds a patch rather than overwriting it. */
     expect(imported.id).not.toBe(patch.id)

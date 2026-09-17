@@ -1,10 +1,11 @@
 import { memo } from 'react'
 import {
   BODY,
+  BODY_WIDTH,
   CAP_RADIUS,
   CENTRE,
   EXPORT_CENTRE,
-  FIT_TRANSFORM,
+  fitTransform,
   INDICATOR_AT,
   INDICATOR_RADIUS,
 } from './dialArtwork.ts'
@@ -15,13 +16,23 @@ import styles from './ContinuousKnob.module.css'
    fits the export's own coordinates onto the dial, so neither has to be
    expressed in the other's units.
 
-   Memoized on one primitive so turning one knob does not repaint the others —
-   the body alone is a few hundred path nodes. */
-export const KnobBody = memo(function KnobBody({ angle }: { angle: number }) {
+   Memoized on primitives so turning one knob does not repaint the others — the
+   body alone is a few hundred path nodes. */
+export const KnobBody = memo(function KnobBody({
+  angle,
+  centre = CENTRE,
+  width = BODY_WIDTH,
+}: {
+  angle: number
+  /* Given by a dial drawn around a different point or at a different size — the
+     oscillator selectors are both. */
+  centre?: { x: number; y: number }
+  width?: number
+}) {
   const { x: CX, y: CY } = EXPORT_CENTRE
   return (
-    <g transform={`rotate(${angle} ${CENTRE.x} ${CENTRE.y})`}>
-      <g transform={FIT_TRANSFORM}>
+    <g transform={`rotate(${angle} ${centre.x} ${centre.y})`}>
+      <g transform={fitTransform(centre, width)}>
         <path d={BODY} className={styles.body} />
         <circle cx={CX} cy={CY} r={CAP_RADIUS} className={styles.cap} />
         <circle cx={CX} cy={CY - INDICATOR_AT} r={INDICATOR_RADIUS} className={styles.indicator} />
