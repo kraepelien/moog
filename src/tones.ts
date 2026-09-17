@@ -118,13 +118,13 @@ export const SKIN_KEYS: readonly string[] = SKIN_SWATCHES.map((swatch) => swatch
    `test/tones.test.ts` fails if the two ever disagree. */
 export const DEFAULT_SKIN: Readonly<Record<string, string>> = {
   page: '#000000',
-  card: '#0e0e11',
-  field: '#161619',
-  edge: '#212124',
+  card: '#101012',
+  field: '#19191e',
+  edge: '#1d1d24',
   ink: '#e9e9ec',
   inkDim: '#8b8b95',
   star: '#f2b01e',
-  bar: '#000000',
+  bar: '#101012',
   barInk: '#e9e9ec',
   red: '#f2594b',
   pink: '#ff6f9c',
