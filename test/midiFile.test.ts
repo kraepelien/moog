@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { MidiFileError, readMidiFile } from '../src/audio/midiFile.ts'
-import { readMidi } from '../src/audio/midi.ts'
+import { MidiFileError, readMidiFile } from '@audio/midiFile.ts'
+import { readMidi } from '@audio/midi.ts'
 
 /* Files are built here by hand rather than committed as fixtures: a few bytes
    that say exactly what is being tested beat a binary nobody can read in a

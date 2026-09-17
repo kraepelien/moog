@@ -4,11 +4,11 @@ import {
   readChannels,
   readParts,
   type Arrangement,
-} from '../../src/components/midi/arrangement.ts'
-import type { Limits } from '../limits.ts'
-import { isSafeName, type Located } from '../repositories/patches.ts'
-import type { ArrangementWrite } from '../repositories/arrangements.ts'
-import type { Repositories } from '../repositories/index.ts'
+} from '@components/midi/arrangement.ts'
+import type { Limits } from '@server/limits.ts'
+import { isSafeName, type Located } from '@server/repositories/patches.ts'
+import type { ArrangementWrite } from '@server/repositories/arrangements.ts'
+import type { Repositories } from '@server/repositories/index.ts'
 import type { Viewer } from './access.ts'
 import type { Identity } from './patches.ts'
 import type { Refusal } from './refusal.ts'

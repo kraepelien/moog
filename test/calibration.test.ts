@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { calibration, cal, type Entry } from '../src/audio/calibration.ts'
+import { calibration, cal, type Entry } from '@audio/calibration.ts'
 
 const entries = Object.entries(calibration) as [string, Entry][]
 

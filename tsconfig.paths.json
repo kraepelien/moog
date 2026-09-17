@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "@access/*": ["./src/access/*"],
+      "@admin/*": ["./src/admin/*"],
+      "@audio/*": ["./src/audio/*"],
+      "@components/*": ["./src/components/*"],
+      "@controls/*": ["./src/controls/*"],
+      "@instruments/*": ["./src/instruments/*"],
+      "@navigation/*": ["./src/navigation/*"],
+      "@patch/*": ["./src/patch/*"],
+      "@presets/*": ["./src/presets/*"],
+      "@session/*": ["./src/session/*"],
+      "@storage/*": ["./src/storage/*"],
+      "@transfer/*": ["./src/transfer/*"],
+      "@server/*": ["./server/*"],
+      "@/*": ["./src/*"]
+    }
+  }
+}

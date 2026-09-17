@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { overloadGlow, overloadRiseMs } from '../controls/overload.ts'
-import type { ControlValue } from '../controls/types.ts'
+import { overloadGlow, overloadRiseMs } from '@controls/overload.ts'
+import type { ControlValue } from '@controls/types.ts'
 import styles from './OverloadLamp.module.css'
 
 /* The one control that draws what the instrument would be doing rather than a

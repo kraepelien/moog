@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { migrateToCurrent, migrations } from '../src/patch/migrate.ts'
-import { PATCH_SCHEMA_VERSION, createPatch, parsePatch } from '../src/patch/schema.ts'
+import { migrateToCurrent, migrations } from '@patch/migrate.ts'
+import { PATCH_SCHEMA_VERSION, createPatch, parsePatch } from '@patch/schema.ts'
 import { fixedIdentity } from './fixtures.ts'
 
 /* The bug this pins: crypto.randomUUID exists only in a secure context, so it is

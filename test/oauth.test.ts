@@ -2,12 +2,12 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { createApi } from '../server/api.ts'
-import { openDatabase } from '../server/db.ts'
-import { syncInstruments } from '../server/factory.ts'
-import { authConfigFromEnv, SESSION_COOKIE } from '../server/identity.ts'
-import { safeReturnTo, userIdFor } from '../server/oauth.ts'
-import { createUsers } from '../server/repositories/users.ts'
+import { createApi } from '@server/api.ts'
+import { openDatabase } from '@server/db.ts'
+import { syncInstruments } from '@server/factory.ts'
+import { authConfigFromEnv, SESSION_COOKIE } from '@server/identity.ts'
+import { safeReturnTo, userIdFor } from '@server/oauth.ts'
+import { createUsers } from '@server/repositories/users.ts'
 
 /* The whole dance with a fake token endpoint: no network, and the client
    secret never leaves the server even here. */

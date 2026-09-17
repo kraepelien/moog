@@ -7,7 +7,7 @@ import {
   privilegesOf,
   PRIVILEGE,
   ROLE,
-} from '../src/access/privileges.ts'
+} from '@access/privileges.ts'
 
 describe('reading roles off a row', () => {
   test('takes the names it knows and drops the rest', () => {

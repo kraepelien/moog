@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { authConfigFromEnv, isLoopback, originOf } from '../server/identity.ts'
+import { authConfigFromEnv, isLoopback, originOf } from '@server/identity.ts'
 
 /* Which origin the server answers as decides where a sign-in comes back to. A
    deployment must use the one that was registered, because a forged Host must

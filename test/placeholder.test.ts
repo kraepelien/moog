@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test'
-import { panelRegistry } from '../src/controls/panel.ts'
-import { isRecalled } from '../src/controls/recall.ts'
-import { placeholderType } from '../src/controls/placeholder.ts'
-import { mergeValues, resolvePatch } from '../src/patch/resolve.ts'
-import { createPatch } from '../src/patch/schema.ts'
+import { panelRegistry } from '@controls/panel.ts'
+import { isRecalled } from '@controls/recall.ts'
+import { placeholderType } from '@controls/placeholder.ts'
+import { mergeValues, resolvePatch } from '@patch/resolve.ts'
+import { createPatch } from '@patch/schema.ts'
 import { fixedIdentity } from './fixtures.ts'
 
 describe('placeholder control type', () => {

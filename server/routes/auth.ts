@@ -7,15 +7,15 @@ import {
   sessionCookie,
   signToken,
   type AuthConfig,
-} from '../identity.ts'
+} from '@server/identity.ts'
 import {
   exchangeCode,
   pkcePair,
   providerById,
   safeReturnTo,
   userIdFor,
-} from '../oauth.ts'
-import { createUsers } from '../repositories/users.ts'
+} from '@server/oauth.ts'
+import { createUsers } from '@server/repositories/users.ts'
 
 /* Everything under /api/, which is the only prefix the dev bridge forwards:
    an auth route anywhere else would work deployed and fall through to the app

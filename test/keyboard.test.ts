@@ -4,8 +4,8 @@ import {
   WHITE_WIDTH,
   keyboardKeys,
   naturalCount,
-} from '../src/components/keyboard/keyboardArtwork.ts'
-import { KEY_COUNT } from '../src/audio/notes.ts'
+} from '@components/keyboard/keyboardArtwork.ts'
+import { KEY_COUNT } from '@audio/notes.ts'
 
 describe('the keyboard', () => {
   test('is 26 naturals and 18 sharps', () => {

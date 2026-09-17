@@ -1,8 +1,8 @@
 import type { Database } from 'bun:sqlite'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { INSTRUMENTS } from '../src/instruments/instruments.ts'
-import { parsePatch } from '../src/patch/schema.ts'
+import { INSTRUMENTS } from '@instruments/instruments.ts'
+import { parsePatch } from '@patch/schema.ts'
 import { createPatches } from './repositories/patches.ts'
 
 /* The bank in the repo is the truth about factory content, and it is reloaded

@@ -1,5 +1,5 @@
 import { useCallback, useId } from 'react'
-import { positionIndex, type ToggleSwitchDef } from '../../controls/toggleSwitch.ts'
+import { positionIndex, type ToggleSwitchDef } from '@controls/toggleSwitch.ts'
 import styles from './ToggleSwitch.module.css'
 
 /* Geometry read off reference/artwork/BUTTON.svg, which draws the rocker at

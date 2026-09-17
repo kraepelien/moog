@@ -14,7 +14,7 @@
  * invents a unit.
  */
 
-import type { ControlValue } from '../controls/types.ts'
+import type { ControlValue } from '@controls/types.ts'
 import { cal } from './calibration.ts'
 import { WAVE_IDS, type WaveId } from './partials.ts'
 

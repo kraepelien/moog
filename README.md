@@ -62,7 +62,11 @@ tools/        artwork measurement script · audio-check.html (what the engine so
               midi-check.html and midi-send.html (see MIDI.md)
 ```
 
-`@/` is an alias for `src/` (set in both `vite.config.ts` and `tsconfig.app.json`).
+Each of those directories has an import alias — `@patch/schema.ts`, `@controls/registry.ts`,
+`@server/store.ts` — with `@/` for the few files directly in `src/`, and siblings left relative.
+`tsconfig.paths.json` holds the map, and holds it once: the tsconfigs extend it, `vite.config.ts`
+reads it, `test/image.test.ts` walks it. Specifiers keep their `.ts`, which `server/` requires and
+the rest follow. `AGENTS.md` has the reasons, and they are sharper than they look.
 
 ## Controls are data
 

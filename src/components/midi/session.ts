@@ -1,11 +1,11 @@
 import { useSyncExternalStore } from 'react'
-import type { MidiChannel, MidiFile } from '../../audio/midiFile.ts'
-import { createMidiPlayer, type MidiPlayer, type PlayerVoice } from '../../audio/midiPlayer.ts'
-import { settingsFrom } from '../../audio/settings.ts'
-import { silenceVoices, voiceFor } from '../../audio/voices.ts'
-import { panelRegistry } from '../../controls/panel.ts'
-import { resolvePatch } from '../../patch/resolve.ts'
-import type { Patch } from '../../patch/schema.ts'
+import type { MidiChannel, MidiFile } from '@audio/midiFile.ts'
+import { createMidiPlayer, type MidiPlayer, type PlayerVoice } from '@audio/midiPlayer.ts'
+import { settingsFrom } from '@audio/settings.ts'
+import { silenceVoices, voiceFor } from '@audio/voices.ts'
+import { panelRegistry } from '@controls/panel.ts'
+import { resolvePatch } from '@patch/resolve.ts'
+import type { Patch } from '@patch/schema.ts'
 
 /* What is loaded to be played, kept outside React.
  *

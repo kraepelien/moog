@@ -1,6 +1,6 @@
 import type { Database } from 'bun:sqlite'
-import { DEFAULT_INSTRUMENT } from '../../src/instruments/instruments.ts'
-import { PATCH_SCHEMA_VERSION, type Patch } from '../../src/patch/schema.ts'
+import { DEFAULT_INSTRUMENT } from '@instruments/instruments.ts'
+import { PATCH_SCHEMA_VERSION, type Patch } from '@patch/schema.ts'
 
 /* Patches and factory presets are rows in one table, told apart by whether they
    came from the repo — a factory row is the one with a slug. Everything the

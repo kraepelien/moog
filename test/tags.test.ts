@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { openDatabase } from '../server/db.ts'
-import { createTags } from '../server/repositories/tags.ts'
-import { INITIAL_TAGS, seedTags } from '../server/services/tags.ts'
+import { openDatabase } from '@server/db.ts'
+import { createTags } from '@server/repositories/tags.ts'
+import { INITIAL_TAGS, seedTags } from '@server/services/tags.ts'
 import { testApi, type TestApi } from './apiFixture.ts'
 
 /* What these pin is the difference between the tag list and the instrument

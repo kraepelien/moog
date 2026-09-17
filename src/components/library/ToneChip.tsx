@@ -1,5 +1,5 @@
 import Chip from '@mui/material/Chip'
-import { TONE_COLOURS, type Tone } from '../../tones.ts'
+import { TONE_COLOURS, type Tone } from '@/tones.ts'
 import styles from './ToneChip.module.css'
 
 /* One chip, in one of the library's tones. Everything the library labels goes

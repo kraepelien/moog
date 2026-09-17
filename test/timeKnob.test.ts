@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { panelRegistry } from '../src/controls/panel.ts'
-import { createRegistry } from '../src/controls/registry.ts'
+import { panelRegistry } from '@controls/panel.ts'
+import { createRegistry } from '@controls/registry.ts'
 import {
   formatMs,
   fractionForMs,
@@ -12,7 +12,7 @@ import {
   scaleLabel,
   timeKnobType,
   type TimeKnobDef,
-} from '../src/controls/timeKnob.ts'
+} from '@controls/timeKnob.ts'
 
 const attack = panelRegistry.control('filterAttackTime') as TimeKnobDef
 

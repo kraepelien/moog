@@ -4,10 +4,10 @@ import {
   ROLE,
   type Privilege,
   type Role,
-} from '../../src/access/privileges.ts'
-import { whoAmI, type AuthConfig } from '../identity.ts'
-import type { Repositories } from '../repositories/index.ts'
-import type { UserRow } from '../repositories/users.ts'
+} from '@access/privileges.ts'
+import { whoAmI, type AuthConfig } from '@server/identity.ts'
+import type { Repositories } from '@server/repositories/index.ts'
+import type { UserRow } from '@server/repositories/users.ts'
 
 /* Who is asking and what that lets them do. The single place a request turns
    into a set of privileges, so a route asks `can(...)` and never reasons about

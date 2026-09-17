@@ -1,6 +1,6 @@
-import { PRIVILEGE } from '../../src/access/privileges.ts'
-import { json, readBody } from '../http.ts'
-import { isRefusal } from '../services/refusal.ts'
+import { PRIVILEGE } from '@access/privileges.ts'
+import { json, readBody } from '@server/http.ts'
+import { isRefusal } from '@server/services/refusal.ts'
 import { route, type Route } from './table.ts'
 
 /* Readable by anyone, because the save form needs the list before it knows who

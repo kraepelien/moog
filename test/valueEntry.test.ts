@@ -7,11 +7,11 @@ import {
   quantise,
   scaleMarks,
   type ContinuousKnobDef,
-} from '../src/controls/continuousKnob.ts'
-import { panelRegistry } from '../src/controls/panel.ts'
-import type { StepKnobDef } from '../src/controls/stepKnob.ts'
-import { parseTimeInput } from '../src/controls/timeKnob.ts'
-import { isWheel } from '../src/controls/wheel.ts'
+} from '@controls/continuousKnob.ts'
+import { panelRegistry } from '@controls/panel.ts'
+import type { StepKnobDef } from '@controls/stepKnob.ts'
+import { parseTimeInput } from '@controls/timeKnob.ts'
+import { isWheel } from '@controls/wheel.ts'
 
 describe('every continuous control stores finer than it shows', () => {
   const knobs = panelRegistry.controls.filter(isContinuousKnob)

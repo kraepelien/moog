@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { PatchLibrary, PER_PAGE } from '../src/components/library/PatchLibrary.tsx'
-import type { LibraryEntry } from '../src/components/library/entry.ts'
+import { PatchLibrary, PER_PAGE } from '@components/library/PatchLibrary.tsx'
+import type { LibraryEntry } from '@components/library/entry.ts'
 
 /* The library is driven here rather than called: what it has to get right is
    that a chip narrows the list, that a row opens the patch it is drawn from, and

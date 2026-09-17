@@ -1,11 +1,11 @@
-import type { TagInUse } from '../admin/tags.ts'
-import type { LibraryEntry } from '../components/library/entry.ts'
+import type { TagInUse } from '@admin/tags.ts'
+import type { LibraryEntry } from '@components/library/entry.ts'
 import type {
   Arrangement,
   ArrangementInput,
   ArrangementSummary,
-} from '../components/midi/arrangement.ts'
-import type { Patch, Visibility } from '../patch/schema.ts'
+} from '@components/midi/arrangement.ts'
+import type { Patch, Visibility } from '@patch/schema.ts'
 
 export interface PatchSummary {
   readonly id: string

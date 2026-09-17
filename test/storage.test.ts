@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { createPatch, type Patch } from '../src/patch/schema.ts'
-import { StoreError } from '../src/storage/types.ts'
+import { createPatch, type Patch } from '@patch/schema.ts'
+import { StoreError } from '@storage/types.ts'
 import { testApi, type TestApi } from './apiFixture.ts'
 import { fixedIdentity } from './fixtures.ts'
 
@@ -102,7 +102,7 @@ describe('an id arriving from a URL is checked before it is used', () => {
 
 describe('when the server is not answering', () => {
   test('the failure says so rather than surfacing as a parse error', async () => {
-    const { createHttpStore } = await import('../src/storage/httpStore.ts')
+    const { createHttpStore } = await import('@storage/httpStore.ts')
     const offline = createHttpStore(() => Promise.reject(new Error('connection refused')))
     await expect(offline.list()).rejects.toMatchObject({
       name: 'StoreError',

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { authConfigFromEnv } from '../server/identity.ts'
-import { describeAuth, envTrouble, type Dir } from '../server/startup.ts'
+import { authConfigFromEnv } from '@server/identity.ts'
+import { describeAuth, envTrouble, type Dir } from '@server/startup.ts'
 
 /* Every case here cost real time to diagnose, and each one is silent: a server
    with no credentials behaves exactly like one whose credentials never arrived.

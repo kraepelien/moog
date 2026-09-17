@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { Readable } from 'node:stream'
-import { send, toRequest } from '../server/vitePlugin.ts'
+import { send, toRequest } from '@server/vitePlugin.ts'
 
 /* Everything this bridge gets wrong is visible only in dev, which is the worst
    way round. */

@@ -4,8 +4,8 @@ import {
   SavePatchDialog,
   type PatchFields,
   type SaveOutcome,
-} from '../src/components/library/SavePatchDialog.tsx'
-import { createPatch, type Patch } from '../src/patch/schema.ts'
+} from '@components/library/SavePatchDialog.tsx'
+import { createPatch, type Patch } from '@patch/schema.ts'
 import { fixedIdentity } from './fixtures.ts'
 
 /* Driven rather than called: the form's job is to start from the patch, collect
