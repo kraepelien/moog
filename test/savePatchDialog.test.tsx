@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { SavePatchDialog, type PatchFields } from '../src/components/library/SavePatchDialog.tsx'
+import {
+  SavePatchDialog,
+  type PatchFields,
+  type SaveOutcome,
+} from '../src/components/library/SavePatchDialog.tsx'
 import { createPatch, type Patch } from '../src/patch/schema.ts'
 import { fixedIdentity } from './fixtures.ts'
 
@@ -14,13 +18,14 @@ function patchWith(fields: Partial<Patch> = {}): Patch {
   return { ...createPatch({ name: 'Sub Bass' }, fixedIdentity('p')), ...fields }
 }
 
-function renderDialog(patch: Patch = patchWith(), open = true) {
+function renderDialog(patch: Patch = patchWith(), open = true, outcome: SaveOutcome = 'overwrite') {
   const saved: PatchFields[] = []
   let cancelled = 0
   const view = render(
     <SavePatchDialog
       open={open}
       patch={patch}
+      outcome={outcome}
       tagChoices={['bass', 'lead']}
       onCancel={() => (cancelled += 1)}
       onSave={(fields) => saved.push(fields)}
@@ -123,6 +128,7 @@ describe('leaving without saving', () => {
       <SavePatchDialog
         open={false}
         patch={patch}
+        outcome="overwrite"
         tagChoices={['bass', 'lead']}
         onCancel={() => {}}
         onSave={() => {}}
@@ -132,6 +138,7 @@ describe('leaving without saving', () => {
       <SavePatchDialog
         open
         patch={patch}
+        outcome="overwrite"
         tagChoices={['bass', 'lead']}
         onCancel={() => {}}
         onSave={() => {}}
@@ -139,5 +146,41 @@ describe('leaving without saving', () => {
     )
 
     expect(screen.getByLabelText<HTMLInputElement>('Patch name').value).toBe('Sub Bass')
+  })
+})
+
+/* The same press creates or overwrites depending on whose patch is open, and
+   the server is the only thing that knows which — by the time it refuses, the
+   form has been filled in. So the form says which it will be, before it. */
+describe('saying what saving will do', () => {
+  test('a patch of my own is written over, and says so', () => {
+    renderDialog()
+    expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy()
+    expect(screen.getByText(/writes over the patch you opened/)).toBeTruthy()
+  })
+
+  test('a copy is called Duplicate and names what it was copied from', () => {
+    const copied = patchWith({
+      derivedFrom: {
+        id: 'sub-bass',
+        name: 'Sub Bass',
+        kind: 'factory',
+        ownerId: null,
+        ownerName: null,
+        at: '2026-01-01T00:00:00.000Z',
+      },
+    })
+    const { saved } = renderDialog(copied, true, 'duplicate')
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
+    expect(screen.getByText(/“Sub Bass” is left as it is/)).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Duplicate' }))
+    expect(saved).toHaveLength(1)
+  })
+
+  test('a draft that has never been saved is neither', () => {
+    renderDialog(patchWith(), true, 'new')
+    expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy()
+    expect(screen.getByText(/has not been saved before/)).toBeTruthy()
   })
 })

@@ -11,7 +11,10 @@ export function copyOf(
   options: {
     name?: string
     values?: Readonly<Record<string, ControlValue>>
-    owner?: { id: string; name: string | null } | null
+    /* `null` is a factory preset, which has no maker. A maker the library knows
+       only by name — a public patch of someone else's — carries a null id: the
+       server fills in the real one when the copy is created. */
+    owner?: { id: string | null; name: string | null } | null
   } = {},
   identity: PatchIdentity = systemIdentity,
 ): Patch {
