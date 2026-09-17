@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { Readable } from 'node:stream'
-import { send, toRequest } from '@server/vitePlugin.ts'
+import { join, sep } from 'node:path'
+import type { ViteDevServer } from 'vite'
+import { send, toRequest, watchServerSources } from '@server/vitePlugin.ts'
 
 /* Everything this bridge gets wrong is visible only in dev, which is the worst
    way round. */
@@ -102,5 +104,50 @@ describe('a response crossing back', () => {
     expect(read().statusCode).toBe(418)
     expect(read().ended?.toString()).toBe('{"error":"nope"}')
     expect(headers.has('set-cookie')).toBe(false)
+  })
+})
+
+/* A file under `server/` changing is the one thing the dev server cannot act on
+   by itself, so the least it can do is say so. */
+describe('server sources changing under a running dev server', () => {
+  function fakeServer(root: string) {
+    const added: string[] = []
+    const warnings: string[] = []
+    let onChange = (_file: string) => {}
+    const server = {
+      config: { root, logger: { warn: (line: string) => warnings.push(line) } },
+      watcher: {
+        add: (path: string) => added.push(path),
+        on: (event: string, handler: (file: string) => void) => {
+          if (event === 'change') onChange = handler
+        },
+      },
+    } as unknown as ViteDevServer
+    return { server, added, warnings, change: (file: string) => onChange(file) }
+  }
+
+  test('watches the directory Vite has no reason to', () => {
+    const { server, added } = fakeServer('/repo')
+    watchServerSources(server)
+    expect(added).toEqual([join('/repo', 'server') + sep])
+  })
+
+  test('names the file and what to do about it', () => {
+    const { server, warnings, change } = fakeServer('/repo')
+    watchServerSources(server)
+    change(join('/repo', 'server', 'routes', 'misc.ts'))
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0]).toContain(join('server', 'routes', 'misc.ts'))
+    expect(warnings[0]).toContain('bun run dev')
+  })
+
+  /* The separator is part of the prefix: without it a sibling whose name merely
+     starts with `server` would warn too. */
+  test('stays quiet for everything else', () => {
+    const { server, warnings, change } = fakeServer('/repo')
+    watchServerSources(server)
+    change(join('/repo', 'src', 'App.tsx'))
+    change(join('/repo', 'server-notes.md'))
+    expect(warnings).toEqual([])
   })
 })

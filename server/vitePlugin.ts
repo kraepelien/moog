@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { Readable } from 'node:stream'
-import type { Plugin } from 'vite'
-import { join } from 'node:path'
+import type { Plugin, ViteDevServer } from 'vite'
+import { join, relative, sep } from 'node:path'
 import { createApi } from './api.ts'
 import { openDatabase } from './db.ts'
 import { loadFactory } from './factory.ts'
@@ -60,10 +60,34 @@ export async function send(res: ServerResponse, response: Response): Promise<voi
   res.end(Buffer.from(await response.arrayBuffer()))
 }
 
+/* Nothing under `server/` is ever reloaded. The API is built once, when the dev
+   server starts, and Bun holds the module graph across Vite's own restart, so
+   even `server.restart()` comes back with the routes it already had. Pulling a
+   branch that adds one therefore leaves it 404ing against a process that
+   predates it, and a route missing from a server the developer is looking at
+   reads as a broken build rather than as a process wanting a restart.
+
+   Vite says as much itself when a config dependency changes, which every file
+   here is. But `--configLoader native` hands the config to Bun, so Vite never
+   learns what it imported and says nothing. This is that message. */
+export function watchServerSources(server: ViteDevServer): void {
+  const sources = join(server.config.root, 'server') + sep
+  /* Added explicitly: Vite watches what it has loaded, and it has loaded none
+     of this. */
+  server.watcher.add(sources)
+  server.watcher.on('change', (file) => {
+    if (!file.startsWith(sources)) return
+    const name = relative(server.config.root, file)
+    server.config.logger.warn(`  ➜  ${name} changed. Restart \`bun run dev\` to serve it.`)
+  })
+}
+
 export function patchApi(options: PatchApiOptions): Plugin {
   return {
     name: 'moog-patch-api',
     async configureServer(server) {
+      watchServerSources(server)
+
       const db = openDatabase(join(options.root, 'moog.db'))
       const factory = loadFactory(db, options.seed)
       seedTags(db)
