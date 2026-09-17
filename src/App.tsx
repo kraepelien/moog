@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Accordion from '@mui/material/Accordion'
 import AccordionDetails from '@mui/material/AccordionDetails'
 import AccordionSummary from '@mui/material/AccordionSummary'
@@ -19,6 +19,7 @@ import surface from './components/controlSurface.module.css'
 import { PatchLibrary } from './components/library/PatchLibrary.tsx'
 import { NowPlaying } from './components/midi/NowPlaying.tsx'
 import { PlayMidi } from './components/midi/PlayMidi.tsx'
+import type { Desk } from './components/midi/desk.ts'
 import { PatchHeader } from './components/library/PatchHeader.tsx'
 import {
   SavePatchDialog,
@@ -275,6 +276,20 @@ function Workspace({
   )
 
 
+  /* The five calls the MIDI desk needs, named after what it does with them
+     rather than handed the whole store. */
+  const desk: Desk = useMemo(
+    () => ({
+      list: () => store.listArrangements(),
+      get: (id) => store.getArrangement(id),
+      create: (arrangement) => store.createArrangement(arrangement),
+      save: (id, arrangement) => store.saveArrangement(id, arrangement),
+      remove: (id) => store.deleteArrangement(id),
+      patch: (id) => store.get(id),
+    }),
+    [],
+  )
+
   /* A preset is already in hand; a saved patch has to be fetched, because its
      summary carries no values. */
   const fetchEntry = useCallback(
@@ -511,7 +526,14 @@ function Workspace({
           </>
         )}
 
-        {route.name === 'midi' && <PlayMidi entries={library} loadPatch={fetchEntry} />}
+        {route.name === 'midi' && (
+          <PlayMidi
+            entries={library}
+            loadPatch={fetchEntry}
+            desk={desk}
+            onReport={setStatus}
+          />
+        )}
 
         {route.name === 'library' && (
           <PatchLibrary

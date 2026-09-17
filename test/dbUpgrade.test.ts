@@ -6,6 +6,7 @@ import { ROLE } from '../src/access/privileges.ts'
 import { openDatabase } from '../server/db.ts'
 import { createRepositories } from '../server/repositories/index.ts'
 import { syncInstruments } from '../server/factory.ts'
+import { windBackTo } from './oldDatabase.ts'
 
 /* A database written before roles existed. What matters is that upgrading one
    changes nobody's access: the build before this gave the local user admin
@@ -29,10 +30,9 @@ function databaseWithoutRoles() {
   users.ensureLocal('local')
   users.ensure({ uid: 'u-1', provider: 'google', subject: '1', email: 'someone@example.com' })
 
-  /* Wound back to what the first schema left behind, which is the only way to
-     get a row this migration has not already seen. */
-  db.run(`alter table users drop column roles`)
-  db.run(`update meta set value = '1' where key = 'db_version'`)
+  /* Back to just before roles, which is the only way to get a row this
+     migration has not already seen. */
+  windBackTo(db, 2)
   db.close()
 
   return path

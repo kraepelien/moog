@@ -5,6 +5,10 @@
 export interface Limits {
   readonly maxPatches: number
   readonly maxPatchBytes: number
+  readonly maxArrangements: number
+  /* A MIDI file is the one thing here that arrives whole from outside, and a
+     song is kilobytes: a megabyte is already a file nobody meant to upload. */
+  readonly maxMidiBytes: number
   readonly trashDays: number
   readonly writesPerMinute: number
   readonly signInsPerMinute: number
@@ -18,6 +22,8 @@ export function limitsFromEnv(env: Record<string, string | undefined>): Limits {
   return {
     maxPatches: number('MOOG_MAX_PATCHES', 2000),
     maxPatchBytes: number('MOOG_MAX_PATCH_BYTES', 64 * 1024),
+    maxArrangements: number('MOOG_MAX_ARRANGEMENTS', 200),
+    maxMidiBytes: number('MOOG_MAX_MIDI_BYTES', 1024 * 1024),
     trashDays: number('MOOG_TRASH_DAYS', 30),
     writesPerMinute: number('MOOG_WRITES_PER_MINUTE', 120),
     signInsPerMinute: number('MOOG_SIGN_INS_PER_MINUTE', 10),

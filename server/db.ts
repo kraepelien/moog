@@ -105,6 +105,32 @@ const SCHEMA: Step[] = [
     db.run(`update users set roles = 'member'`)
     db.run(`update users set roles = 'admin,member' where provider = 'local'`)
   },
+
+  /* A MIDI file with a sound on each of its parts. The file is stored whole
+     because it is what was uploaded and nothing here can reconstruct it, but
+     the sounds are stored as patch *ids*: a part points at a patch rather than
+     copying it, so editing a patch changes what the arrangement plays and
+     deleting one leaves a part silent rather than leaving a stale copy that
+     nothing can find its way back from. */
+  (db) => {
+    db.run(`
+      create table arrangements (
+        id integer primary key,
+        uid text not null unique,
+        owner_id integer not null references users(id) on delete cascade,
+        name text not null,
+        file_name text not null,
+        midi blob not null,
+        bpm text not null,
+        parts text not null default '{}',
+        soloed text not null default '[]',
+        muted text not null default '[]',
+        created_at text not null,
+        updated_at text not null
+      );
+      create index arrangements_owner on arrangements (owner_id);
+    `)
+  },
 ]
 
 export const DB_VERSION = SCHEMA.length

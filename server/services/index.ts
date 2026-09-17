@@ -3,6 +3,7 @@ import type { AuthConfig } from '../identity.ts'
 import type { Limits } from '../limits.ts'
 import type { Repositories } from '../repositories/index.ts'
 import { createAccess } from './access.ts'
+import { createArrangementService } from './arrangements.ts'
 import { createPatchService, type Identity } from './patches.ts'
 import { createTagService } from './tags.ts'
 
@@ -31,6 +32,7 @@ export function createServices({
     access: createAccess(repositories, config),
     patches: createPatchService(repositories, limits, identity),
     tags: createTagService(repositories),
+    arrangements: createArrangementService(repositories, limits, identity),
   }
 }
 

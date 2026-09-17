@@ -1,4 +1,5 @@
 import type { Database } from 'bun:sqlite'
+import { createArrangements } from './arrangements.ts'
 import { createLibrary } from './library.ts'
 import { createPatches } from './patches.ts'
 import { createRatings } from './ratings.ts'
@@ -19,6 +20,7 @@ export function createRepositories(db: Database) {
     tags: createTags(db),
     users: createUsers(db),
     library: createLibrary(db),
+    arrangements: createArrangements(db),
   }
 }
 
