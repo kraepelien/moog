@@ -52,12 +52,17 @@
   letter-spacing: 0.02em;
 }
 
-/* The export's own strokes and fills, in the panel's ink. They are given in its
-   units and scaled by the fit transform with the shapes they outline. */
+/* The export's own strokes and fills, in the panel's two colours. They are given
+   in its units and scaled by the fit transform with the shapes they outline.
+
+   The body is stroked in the panel rather than the ink: the export draws a black
+   keyline over a white shape, which on a black panel paints nothing and simply
+   trims two units of white off the edge all round. Reproduced rather than
+   dropped, because the drawing is what decides how wide the white reads. */
 .body {
   fill: var(--moog-ink);
-  stroke: var(--moog-ink);
-  stroke-width: 2;
+  stroke: var(--moog-panel);
+  stroke-width: 4;
 }
 
 .cap {
