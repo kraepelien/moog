@@ -48,7 +48,7 @@ import { copyOf } from './presets/preset.ts'
 import { createHttpStore } from './storage/httpStore.ts'
 import { StoreError, type PatchSummary } from './storage/types.ts'
 import { createBundle, parseBundle, serializeBundle } from './transfer/bundle.ts'
-import { useRoute } from './navigation/router.ts'
+import { useLocation, useRoute } from './navigation/router.ts'
 import { pathFor } from './navigation/routes.ts'
 
 const store = createHttpStore()
@@ -94,9 +94,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export function App() {
   const { session, refresh } = useSession()
   const [{ route }] = useRoute()
+  const here = useLocation()
 
   if (!session) return <Typography sx={{ p: 2 }}>Loading…</Typography>
-  if (!session.signedIn) return <SignIn returnTo={`/#${route.path}`} />
+  if (!session.signedIn) {
+    /* A sign-in that failed comes back with a reason in the query, and this is
+       the page that can say it. */
+    const error = new URLSearchParams(here.split('?')[1] ?? '').get('error')
+    return <SignIn returnTo={route.path} error={error} />
+  }
 
   return (
     <AccessProvider privileges={session.privileges}>

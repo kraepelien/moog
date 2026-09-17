@@ -63,10 +63,14 @@ export function matchRoute(route: RouteDef, path: string): Match | null {
 }
 
 /* An address naming no page is the editor rather than an error page: the only
-   way to reach one is to type it, and there is nothing useful to say. */
+   way to reach one is to type it, and there is nothing useful to say.
+
+   The query is cut off first: it belongs to whoever reads it — a sign-in that
+   came back with `?error=` — and never to the match, which is about segments. */
 export function resolve(path: string): Match {
+  const segments = path.split(/[?#]/)[0]!
   for (const route of ROUTES) {
-    const found = matchRoute(route, path)
+    const found = matchRoute(route, segments)
     if (found) return found
   }
   return { route: DEFAULT_ROUTE, params: {} }
