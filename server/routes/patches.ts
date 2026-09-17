@@ -1,3 +1,4 @@
+import { isRating } from '../../src/components/library/entry.ts'
 import { migrateToCurrent } from '../../src/patch/migrate.ts'
 import { createPatch, type Patch } from '../../src/patch/schema.ts'
 import type { Limits } from '../limits.ts'
@@ -57,8 +58,8 @@ export async function handlePatches(
     if (method !== 'PUT') return json({ error: 'method not allowed' }, 405)
     const payload = (await body(request)) as { stars?: unknown } | null
     const stars = payload?.stars
-    if (typeof stars !== 'number' || !Number.isInteger(stars) || stars < 0 || stars > 5) {
-      return json({ error: 'stars must be a whole number from 0 to 5' }, 400)
+    if (!isRating(stars)) {
+      return json({ error: 'stars must be 0 to 5 in steps of a half' }, 400)
     }
     store.setRating(viewer.id, found.uid, stars)
     return json({ id: parts.name, stars })

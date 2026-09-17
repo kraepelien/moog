@@ -37,3 +37,17 @@
   font-weight: 600;
   letter-spacing: 0.08em;
 }
+
+/* The same pairing as a library row: the stars carry one of the two numbers and
+   this carries the other, so which is which never depends on remembering a
+   colour. */
+.rating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.average {
+  font-size: 0.75rem;
+  white-space: nowrap;
+}

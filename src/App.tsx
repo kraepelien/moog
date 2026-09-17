@@ -295,6 +295,13 @@ export function App() {
      did not. */
   const outcome: SaveOutcome = stored ? 'overwrite' : copiedFrom ? 'duplicate' : 'new'
 
+  /* The library row for what the editor is showing, which is where its ratings
+     live: a patch of mine is its own row, and a copy not saved yet still rates
+     what it was opened from — a factory preset is rated by the person who has
+     just played it, not by whoever keeps a copy. A first draft matches nothing
+     and cannot be rated until it has been saved. */
+  const rated = library.find((entry) => entry.id === (stored ? draft.id : copiedFrom)) ?? null
+
   const menu: TopBarAction[] = [
     { label: 'Import a file…', onSelect: () => importing.current?.click() },
     /* Discoverable from here because there is nowhere on the instrument it
@@ -362,7 +369,18 @@ export function App() {
             instrument={draft.instrument}
             origin={null}
             approximate={draft.approximate}
-            rating={null}
+            rating={rated?.rating ?? null}
+            average={rated?.averageRating ?? null}
+            ratingCount={rated?.ratingCount ?? 0}
+            onRate={
+              rated === null
+                ? undefined
+                : (stars) =>
+                    void run('', async () => {
+                      await store.rate(rated.id, stars)
+                      await refresh()
+                    })
+            }
             actions={[
               {
                 /* One button, named after what it will do: pressing Save on a

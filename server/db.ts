@@ -72,6 +72,27 @@ const SCHEMA: Step[] = [
       );
     `)
   },
+
+  /* Half stars. SQLite cannot loosen a check constraint in place, so the table
+     is rebuilt; the whole numbers already given carry over unchanged, a rating
+     of 4 being the same rating either way. The constraint lists the steps rather
+     than testing a remainder, because 0.5 has no exact double in binary and
+     `stars * 2 = cast(stars * 2 as int)` would turn on how SQLite rounds. */
+  (db) => {
+    db.run(`
+      create table ratings_half (
+        user_id integer not null references users(id) on delete cascade,
+        patch_id integer not null references patches(id) on delete cascade,
+        stars real not null check (stars in (0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)),
+        updated_at text not null,
+        primary key (user_id, patch_id)
+      );
+      insert into ratings_half (user_id, patch_id, stars, updated_at)
+        select user_id, patch_id, stars, updated_at from ratings;
+      drop table ratings;
+      alter table ratings_half rename to ratings;
+    `)
+  },
 ]
 
 export const DB_VERSION = SCHEMA.length

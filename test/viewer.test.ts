@@ -160,11 +160,19 @@ describe('a rating belongs to whoever gave it', () => {
     expect(store.ratingsOf(user.id)).toEqual({ 'sub-bass': 5 })
   })
 
-  test('anything but a whole number of stars is refused', async () => {
+  test('and may be given in half stars', async () => {
+    const { db, call } = server()
+    const patch = (await (await call('POST', '/api/patches', aPatch('Rated')))!.json()) as Patch
+
+    expect((await call('PUT', `/api/patches/${patch.id}/rating`, { stars: 3.5 }))!.status).toBe(200)
+    expect(db.query<{ stars: number }, []>(`select stars from ratings`).get()?.stars).toBe(3.5)
+  })
+
+  test('anything off the half step is refused', async () => {
     const { call } = server()
     const patch = (await (await call('POST', '/api/patches', aPatch('Rated')))!.json()) as Patch
 
-    for (const stars of [-1, 6, 2.5, 'five', null]) {
+    for (const stars of [-1, 6, 2.25, 0.3, 5.5, 'five', null]) {
       expect((await call('PUT', `/api/patches/${patch.id}/rating`, { stars }))!.status).toBe(400)
     }
   })
