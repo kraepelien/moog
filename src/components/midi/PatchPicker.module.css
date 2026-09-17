@@ -1,0 +1,30 @@
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cancel {
+  margin-left: auto;
+  min-width: 0;
+  padding: 3px 18px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+/* The library brings its own cards, so this only keeps them off the edges. */
+.body {
+  padding: 16px 20px 20px;
+}

@@ -1,0 +1,127 @@
+.page {
+  gap: 16px;
+}
+
+.card {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.tempo {
+  width: 7rem;
+}
+
+.note {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Pushed to the far end, as the patch header does. */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.action {
+  min-width: 0;
+  padding: 3px 18px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.trouble {
+  padding: 0 20px 18px;
+  font-size: 0.86rem;
+}
+
+.parts {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-color: inherit;
+}
+
+/* One grid so every part's columns agree without each cell being given a
+   width, as the library's rows are. */
+.part {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(6rem, 1fr) minmax(0, 12rem) minmax(0, 14rem) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  border-bottom: 1px solid;
+  border-color: inherit;
+}
+
+.parts > :last-child {
+  border-bottom: none;
+}
+
+/* At this width the counts have stopped being readable and the part and its
+   sound are what the line is for. */
+@media (max-width: 760px) {
+  .part {
+    grid-template-columns: 2.5rem 1fr auto;
+  }
+
+  .marks {
+    display: none;
+  }
+}
+
+.channel {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+}
+
+.name {
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.marks,
+.sound {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.silent {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.choose {
+  min-width: 0;
+  padding: 2px 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}

@@ -31,6 +31,7 @@ function PersonGlyph() {
 const TAB_LABELS: Record<(typeof VIEWS)[number], string> = {
   editor: 'Patch editor',
   library: 'Patch library',
+  midi: 'Play MIDI',
 }
 
 export interface TopBarAction {
