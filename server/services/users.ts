@@ -1,6 +1,7 @@
 import {
   effectiveRoles,
   isPrivilege,
+  isAssignable,
   isRole,
   resolve,
   ROLE,
@@ -86,13 +87,18 @@ export function createUserService(repositories: Repositories, config: AuthConfig
       const target = users.find(uid)
       if (!target) return { error: 'not found', status: 404 }
 
-      const wanted = given.filter(isRole).filter((role) => role !== ROLE.member)
+      const wanted = given.filter(isRole)
 
-      /* Refused rather than silently ignored: the toggle is drawn locked, so a
-         request to remove it did not come from the page. */
-      if (listed(target) && !wanted.includes(ROLE.admin)) {
+      /* Refused rather than quietly dropped: asking for one of these is asking
+         for something this page cannot do, and silence would look like it had
+         worked. */
+      const refused = wanted.filter((role) => !isAssignable(role))
+      if (refused.length > 0) {
         return {
-          error: `${target.email} is listed in MOOG_ADMINS, so the admin role cannot be taken away here. Remove the address and restart.`,
+          error:
+            refused.includes(ROLE.admin)
+              ? 'Being an administrator comes from MOOG_ADMINS, not from here. Add the address and restart, or grant the individual privileges.'
+              : 'Everybody signed in is a member; it is not a role to give.',
           status: 400,
         }
       }

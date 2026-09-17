@@ -168,6 +168,24 @@ const SCHEMA: Step[] = [
       }
     }
   },
+
+  /* `admin` now comes from MOOG_ADMINS and nowhere else, so a stored one is a
+     second source for a fact that has one. Resolution already ignores it; this
+     takes it out of the column too, so the admin page stops showing a role
+     nobody is being given. `tester` is the only thing left that is. */
+  (db) => {
+    const rows = db.query<{ id: number; roles: string }, []>(`select id, roles from users`).all()
+    const update = db.prepare(`update users set roles = ? where id = ?`)
+    for (const row of rows) {
+      const kept = row.roles
+        .split(',')
+        .map((name) => name.trim())
+        .filter((name) => name !== '' && name !== 'admin')
+      if (kept.length !== row.roles.split(',').filter(Boolean).length) {
+        update.run(kept.join(','), row.id)
+      }
+    }
+  },
 ]
 
 export const DB_VERSION = SCHEMA.length

@@ -155,13 +155,15 @@ describe('the editor', () => {
     expect(roled).toEqual([{ uid: 'ada', roles: [ROLE.tester] }])
   })
 
-  /* The server refuses it, so offering it would be a button that fails. */
-  test('will not offer to take the admin role off an environment admin', () => {
+  /* Being an administrator is not a decision this page makes, so it is not
+     drawn as something to press. Tester is the only role anybody is given. */
+  test('offers no admin toggle, and says where being one comes from', () => {
     show([user({ uid: 'root', name: 'Root', envAdmin: true })])
     open('Root')
 
-    const toggle = screen.getByRole('button', { name: 'Give the admin role' })
-    expect((toggle as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.queryByRole('button', { name: 'Give the admin role' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Remove the admin role' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Give the tester role' })).toBeTruthy()
     expect(
       screen.getAllByRole('alert').some((alert) => alert.textContent?.includes('MOOG_ADMINS')),
     ).toBe(true)
@@ -172,8 +174,15 @@ describe('the editor', () => {
       user({
         uid: 'grace',
         name: 'Grace',
-        roles: [ROLE.admin],
+        envAdmin: true,
         granted: [PRIVILEGE.AdminTags],
+        privileges: [
+          PRIVILEGE.AccessAdmin,
+          PRIVILEGE.AdminUsers,
+          PRIVILEGE.AdminTags,
+          PRIVILEGE.AdminPatches,
+          PRIVILEGE.StoreMidi,
+        ],
       }),
     ])
     open('Grace')

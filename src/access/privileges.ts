@@ -65,10 +65,22 @@ export type Role = (typeof ROLE)[keyof typeof ROLE]
 
 export const ROLES: readonly Role[] = Object.values(ROLE)
 
-/* `member` is not among these: it is what every signed-in account is, applied
-   at resolution and never stored, so no row can end up with no privileges at
-   all and unlocking a basic feature reaches everyone with no write. */
-export const ASSIGNABLE_ROLES: readonly Role[] = [ROLE.tester, ROLE.admin]
+/* The only role anybody is given. The other two are facts rather than
+   decisions, and neither is ever written to a row:
+
+   `member` is what every signed-in account is, applied at resolution, so no row
+   can end up with no privileges at all and unlocking a basic feature reaches
+   everyone with no write.
+
+   `admin` comes from `MOOG_ADMINS` and nowhere else. Storing it as well gave
+   one fact two sources, which is what let a column go on claiming an admin the
+   environment had stopped naming. Somebody who needs one administrative power
+   without being an administrator is given that privilege, not the role. */
+export const ASSIGNABLE_ROLES: readonly Role[] = [ROLE.tester]
+
+export function isAssignable(role: Role): boolean {
+  return ASSIGNABLE_ROLES.includes(role)
+}
 
 /* The rungs, lowest first. A role holds everything the rungs below it hold, so
    a privilege given to members reaches testers and admins without being listed
@@ -151,17 +163,21 @@ export function parseRoles(stored: string | null | undefined): Role[] {
   return ROLES.filter((role) => held.has(role))
 }
 
-/* Drops `member` defensively, so no write can reintroduce what resolution
-   already applies to everybody. */
+/* Only what is actually given. `member` and `admin` are worked out rather than
+   stored, so letting either into the column would put a second source next to
+   the one that decides. */
 export function formatRoles(roles: readonly Role[]): string {
-  return [...new Set(roles)].filter((role) => role !== ROLE.member).join(',')
+  return [...new Set(roles)].filter(isAssignable).join(',')
 }
 
 /* Who somebody counts as. `member` always, and `admin` for an address the
    environment lists — added here rather than written to the column, so removing
    the line takes the role away again. */
 export function effectiveRoles(stored: readonly Role[], envAdmin = false): Role[] {
-  const held = new Set<Role>([ROLE.member, ...stored])
+  /* Only the assignable ones are taken from the row. An `admin` left in a
+     column by an older build is ignored rather than honoured, so the
+     environment stays the only thing that makes one. */
+  const held = new Set<Role>([ROLE.member, ...stored.filter(isAssignable)])
   if (envAdmin) held.add(ROLE.admin)
   return ROLES.filter((role) => held.has(role))
 }

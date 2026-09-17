@@ -3,7 +3,6 @@ import {
   formatRoles,
   isPrivilege,
   parseRoles,
-  ROLE,
   type Privilege,
   type Role,
 } from '@access/privileges.ts'
@@ -35,14 +34,8 @@ export interface NewUser {
   readonly roles?: readonly Role[]
 }
 
-/* An override as stored. `granted` false is a revoke, which is a row rather
-   than an absence — the absence is what "inherited" means. */
-export interface Override {
-  readonly privilege: string
-  readonly granted: boolean
-  readonly at: string
-}
-
+/* `granted` false is a revoke, which is a row rather than an absence — the
+   absence is what "inherited" means. */
 export interface Overridden {
   readonly granted: Privilege[]
   readonly revoked: Privilege[]
@@ -193,10 +186,6 @@ export function createUsers(db: Database) {
       )
     },
 
-    /* How many accounts would still hold a privilege — the question the floor
-       invariant asks before it allows a revoke. Counted in SQL rather than by
-       resolving every user in memory, because it runs inside the write's own
-       transaction. */
     /* Everybody's overrides in one query, for the rare question that has to be
        asked about every account at once. Returning them rather than answering
        "who holds X" in SQL: the answer depends on the presets and on one
@@ -220,9 +209,9 @@ export function createUsers(db: Database) {
       return byUser
     },
 
-    /* The one everything belongs to until there is anyone to sign in. It holds
-       admin outright, which is what keeps `off` mode from being a special case
-       in the privilege check. */
+    /* The one everything belongs to until there is anyone to sign in. No roles:
+       being an administrator in `off` mode is worked out from the mode, like
+       every other way of being one. */
     ensureLocal(uid: string): UserRow {
       return (
         repository.find(uid) ??
@@ -231,7 +220,6 @@ export function createUsers(db: Database) {
           provider: 'local',
           subject: uid,
           displayName: 'This install',
-          roles: [ROLE.admin],
         })
       )
     },

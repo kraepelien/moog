@@ -64,11 +64,16 @@ describe('upgrading a database written before roles', () => {
     db.close()
   })
 
-  test('leaves the local user the admin it already was', () => {
+  /* The local user was stored as an admin by two earlier builds. It no longer
+     is by anybody — `off` mode makes one, so the column has nothing to say. */
+  test('takes the stored admin back out, from the local user and everybody else', () => {
     const db = openDatabase(databaseWithoutRoles())
-    const users = createRepositories(db).users
 
-    expect(users.rolesOf(users.find('local')!)).toContain(ROLE.admin)
+    const stored = db
+      .query<{ roles: string }, []>(`select roles from users`)
+      .all()
+      .map((row) => row.roles)
+    expect(stored.some((roles) => roles.split(',').includes(ROLE.admin))).toBe(false)
     db.close()
   })
 

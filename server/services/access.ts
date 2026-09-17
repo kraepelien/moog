@@ -4,7 +4,7 @@ import {
   type Privilege,
   type Role,
 } from '@access/privileges.ts'
-import { whoAmI, type AuthConfig } from '@server/identity.ts'
+import { isEnvAdmin, whoAmI, type AuthConfig } from '@server/identity.ts'
 import type { Repositories } from '@server/repositories/index.ts'
 import type { UserRow } from '@server/repositories/users.ts'
 
@@ -26,8 +26,7 @@ export interface Viewer {
 export function createAccess(repositories: Repositories, config: AuthConfig) {
   const { users } = repositories
 
-  const listed = (user: UserRow): boolean =>
-    user.email !== null && config.admins.includes(user.email.toLowerCase())
+  const listed = (user: UserRow): boolean => isEnvAdmin(user.email, config)
 
   const viewerOf = (user: UserRow): Viewer => {
     /* Added in memory, never written. Persisting it left the role behind after

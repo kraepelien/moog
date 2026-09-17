@@ -101,12 +101,24 @@ describe('what the environment grants', () => {
     expect((await session(late)).roles).toContain(ROLE.admin)
   })
 
-  test('never revokes, so a grant made in the app survives the list', async () => {
+  /* The column is not a second way to be one. A row left saying `admin` by an
+     older build is ignored, so taking an address out of MOOG_ADMINS really does
+     take it away. */
+  test('is the only thing that makes an admin, whatever a column says', async () => {
     const { person, repositories } = await world([])
     const granted = await person('u-granted', 'granted@example.com')
-    repositories.users.grant('u-granted', ROLE.admin)
+    repositories.users.setRoles('u-granted', [ROLE.admin])
 
-    expect((await session(granted)).roles).toContain(ROLE.admin)
+    expect((await session(granted)).roles).not.toContain(ROLE.admin)
+  })
+
+  /* A tester is a real flag, and that one is stored and honoured. */
+  test('leaves a stored tester alone, which is the one role anybody is given', async () => {
+    const { person, repositories } = await world([])
+    const tester = await person('u-tester', 'tester@example.com')
+    repositories.users.setRoles('u-tester', [ROLE.tester])
+
+    expect((await session(tester)).roles).toEqual([ROLE.member, ROLE.tester])
   })
 
   test('leaves somebody not listed a member', async () => {
@@ -147,7 +159,7 @@ describe('a profile coming back from the provider', () => {
   test('refreshes the name but never the roles', async () => {
     const { repositories } = await world([])
     repositories.users.ensure({ uid: 'u-1', provider: 'test', subject: '1', displayName: 'Old' })
-    repositories.users.grant('u-1', ROLE.admin)
+    repositories.users.setRoles('u-1', [ROLE.tester])
 
     const again = repositories.users.ensure({
       uid: 'u-1',
@@ -157,12 +169,15 @@ describe('a profile coming back from the provider', () => {
     })
 
     expect(again.display_name).toBe('New')
-    expect(repositories.users.rolesOf(again)).toContain(ROLE.admin)
+    expect(repositories.users.rolesOf(again)).toContain(ROLE.tester)
   })
 })
 
 describe('with sign-in off', () => {
-  test('the local user holds admin by holding the role, not by an exception', async () => {
+  /* There is no list to be on, so the mode is what says so — and it says so in
+     the same place the list does, rather than by storing a role against the one
+     user that exists. */
+  test('the local user is an admin because the mode makes one, not because a row says so', async () => {
     const root = mkdtempSync(join(tmpdir(), 'moog-access-off-'))
     roots.push(root)
     const db = openDatabase(join(root, 'moog.db'))
@@ -179,6 +194,6 @@ describe('with sign-in off', () => {
     expect(said.privileges).toContain(PRIVILEGE.AccessAdmin)
 
     const stored = createRepositories(db).users.find(config.localUser)!
-    expect(stored.roles).toContain(ROLE.admin)
+    expect(stored.roles).toBe('')
   })
 })

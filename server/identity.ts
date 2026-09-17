@@ -156,6 +156,11 @@ export function clearedSessionCookie(request: Request): string {
    taken away in the app; it does not make the account immune to having a single
    privilege revoked. */
 export function isEnvAdmin(email: string | null, config: AuthConfig): boolean {
+  /* With sign-in off there is one local user and no list to be on, and the
+     install has to be administrable by somebody. Derived here with the other
+     case rather than stored against that user, so `admin` has exactly one
+     source whichever mode this is in. */
+  if (config.mode === 'off') return true
   return email !== null && config.admins.includes(email.toLowerCase())
 }
 
