@@ -36,8 +36,14 @@ export default defineConfig({
       /* Worktrees live inside the project, so without this the dev server
          watches every other one: a build in a second worktree reloads the page
          in this one, naming a file that is not in this tree at all. Added to
-         Vite's own ignores rather than replacing them. */
-      ignored: ['**/.claude/worktrees/**'],
+         Vite's own ignores rather than replacing them.
+
+         Anchored at this tree's own root rather than left as a bare glob, which
+         a worktree's own path matches: started from inside one, the dev server
+         ignored the entire checkout it was serving and watched nothing of its
+         own, with no HMR and no sign anything was wrong beyond an app that
+         never updated. */
+      ignored: [fileURLToPath(new URL('./.claude/worktrees/**', import.meta.url))],
     },
   },
 })
