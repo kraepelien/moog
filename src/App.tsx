@@ -13,6 +13,7 @@ import Typography from '@mui/material/Typography'
 import { AdminPage } from './admin/AdminPage.tsx'
 import type { TagInUse } from './admin/tags.ts'
 import { FitToWidth } from './components/FitToWidth.tsx'
+import { MidiHelp } from './components/MidiHelp.tsx'
 import { TopBar, type TopBarAction } from './components/TopBar.tsx'
 import surface from './components/controlSurface.module.css'
 import { PatchLibrary } from './components/library/PatchLibrary.tsx'
@@ -108,6 +109,7 @@ export function App() {
   const { ask, dialog } = useConfirm()
   const { session, refresh: refreshSession } = useSession()
   const [view, goToView] = useView()
+  const [midiHelp, setMidiHelp] = useState(false)
   /* The menu cannot hold a file input, so it holds a button that clicks one. */
   const importing = useRef<HTMLInputElement>(null)
 
@@ -293,6 +295,9 @@ export function App() {
 
   const menu: TopBarAction[] = [
     { label: 'Import a file…', onSelect: () => importing.current?.click() },
+    /* Discoverable from here because there is nowhere on the instrument it
+       could go: a Model D has no MIDI socket to label. */
+    { label: 'Playing over MIDI…', onSelect: () => setMidiHelp(true) },
     {
       label: 'Export every patch',
       onSelect: () =>
@@ -514,6 +519,8 @@ export function App() {
         )}
         </Stack>
       </Box>
+
+      <MidiHelp open={midiHelp} onClose={() => setMidiHelp(false)} />
 
       {/* Out of the flow: the menu's Import clicks this. */}
       <input

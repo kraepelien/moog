@@ -383,7 +383,9 @@ instrument has, so nothing had to be invented about where a message goes.
 | CC 120 / 123 | everything released; a note left sounding after a panic is the worst failure a synthesiser has |
 | velocity | read only to tell a note on from a note off. The keyboard is not velocity sensitive, so how hard a key is struck is not information this instrument has anywhere to put |
 
-**[tools/MIDI.md](tools/MIDI.md) is the guide**: plugging a controller in, faking one with the IAC
+The app carries a short version of this: **Playing over MIDI…** in the menu behind the person icon,
+which leads with the step that looks like a fault. **[tools/MIDI.md](tools/MIDI.md) is the full
+guide**: plugging a controller in, faking one with the IAC
 Driver and the sender page, and playing a MIDI file so both hands are free for the panel. Start
 there rather than here.
 
