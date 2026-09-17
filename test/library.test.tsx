@@ -75,6 +75,15 @@ describe('the patch the editor is showing', () => {
     expect(screen.queryByRole('button', { name: /open in the editor/ })).toBeNull()
   })
 
+  /* The bug this pins: the whole line used to be the button, so a press aimed at
+     the stars and landing a few pixels under them left the library and loaded a
+     patch. Only the name opens one. */
+  test('is not opened by pressing the line beside the name', () => {
+    const { opened } = renderLibrary(BANK)
+    fireEvent.click(screen.getAllByRole('listitem')[0])
+    expect(opened).toEqual([])
+  })
+
   /* Marked, not disabled: pressing it again is how you throw away an edit and
      start from what was saved. */
   test('can still be opened again', () => {

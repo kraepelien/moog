@@ -8,9 +8,10 @@ import { instrumentName } from '@instruments/instruments.ts'
 import { tagColour, type TagPalette } from '@/tones.ts'
 import styles from './PatchRow.module.css'
 
-/* The whole row is the button, not a Select link inside it: the row is what a
-   person aims at, and a target the width of the list cannot be missed on a
-   phone. ButtonBase rather than a div with onClick so it is reachable by
+/* The name is the button and the rest of the line is not. A row-wide target
+   takes in the gap under the stars and the space around a chip, so a press that
+   lands beside what it aimed at leaves the list and loads a patch rather than
+   doing nothing. ButtonBase rather than a div with onClick so it is reachable by
    keyboard and announced as a button without any of that being written here. */
 export function PatchRow({
   entry,
@@ -21,7 +22,7 @@ export function PatchRow({
   onRate,
 }: {
   entry: LibraryEntry
-  /* The one the editor is showing. Pressing a row opens it and leaves the list,
+  /* The one the editor is showing. Pressing a name opens it and leaves the list,
      so coming back to a list of forty-four with no idea which one is loaded is
      the state this marks. */
   open?: boolean
@@ -33,38 +34,34 @@ export function PatchRow({
   onFilter?: (pressed: RowFilter) => void
   onRate?: (stars: number) => void
 }) {
-  /* The row underneath is a button too, so a press meant for a chip has to stop
-     before it opens the patch. The chip reads as its own word, which says
-     nothing about what pressing it does, so it is named here as well. */
+  /* The chip reads as its own word, which says nothing about what pressing it
+     does, so it is named here as well. */
   const filtering = (pressed: RowFilter, what: string) =>
     onFilter === undefined
       ? {}
       : {
           ariaLabel: `Show only ${what} patches`,
-          onClick: (event: React.MouseEvent) => {
-            event.stopPropagation()
-            onFilter(pressed)
-          },
+          onClick: () => onFilter(pressed),
         }
 
   const bank = bankOf(entry)
 
   return (
-    <ButtonBase
-      component="li"
-      className={styles.row}
-      data-open={open === true ? '' : undefined}
-      onClick={onOpen}
-      aria-current={open === true ? 'true' : undefined}
-      aria-label={
-        open === true
-          ? `${entry.name || 'This patch'}, open in the editor`
-          : `Open ${entry.name || 'this patch'} in the editor`
-      }
-    >
-      <Typography component="span" className={styles.name}>
-        {entry.name || '(unnamed)'}
-      </Typography>
+    <Box component="li" className={styles.row} data-open={open === true ? '' : undefined}>
+      <ButtonBase
+        className={styles.name}
+        onClick={onOpen}
+        aria-current={open === true ? 'true' : undefined}
+        aria-label={
+          open === true
+            ? `${entry.name || 'This patch'}, open in the editor`
+            : `Open ${entry.name || 'this patch'} in the editor`
+        }
+      >
+        <Typography component="span" className={styles.nameText}>
+          {entry.name || '(unnamed)'}
+        </Typography>
+      </ButtonBase>
 
       <Box className={styles.tags}>
         {entry.tags.map((tag) => (
@@ -111,6 +108,6 @@ export function PatchRow({
             `${(entry.averageRating ?? 0).toFixed(1)} (${entry.ratingCount})`}
         </Typography>
       </Box>
-    </ButtonBase>
+    </Box>
   )
 }
