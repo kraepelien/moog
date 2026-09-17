@@ -163,7 +163,7 @@ export function createHttpStore(
     },
 
     async listTagsInUse(): Promise<readonly TagInUse[]> {
-      return ((await request('/tags?use=1')) ?? []) as TagInUse[]
+      return ((await request('/tags/in-use')) ?? []) as TagInUse[]
     },
 
     async addTag(name: string): Promise<void> {

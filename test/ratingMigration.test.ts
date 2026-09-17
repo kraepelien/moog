@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { openDatabase, DB_VERSION } from '../server/db.ts'
+import { openDatabase } from '../server/db.ts'
 
 /* Half stars arrived after people had already rated things, and a check
    constraint cannot be loosened in place: the step rebuilds the table, which is
@@ -10,8 +10,10 @@ import { openDatabase, DB_VERSION } from '../server/db.ts'
    together here and reopened, rather than trusting that the copy is right.
 
    The old table is written out by hand because SCHEMA is keyed by the version it
-   upgrades from and has no way back; `DB_VERSION - 1` is what makes this test
-   move with the chain instead of pinning a number. */
+   upgrades from and has no way back. Reopening runs every step from the version
+   set here, so the fixture has to undo each one it will make run again — the
+   rebuilt ratings table, and the roles column added after it. A step added later
+   belongs here too, or it re-runs against a schema that already has it. */
 
 const roots: string[] = []
 
@@ -21,6 +23,7 @@ function databaseAsItWasBeforeHalfStars(): string {
   const path = join(root, 'moog.db')
 
   const db = openDatabase(path)
+  db.run(`alter table users drop column roles`)
   db.run(`drop table ratings`)
   db.run(`
     create table ratings (
@@ -39,7 +42,7 @@ function databaseAsItWasBeforeHalfStars(): string {
           values (1, 'p1', 1, 'Rated', 'public', 1, '{}', '2026-01-01', '2026-01-01')`)
   db.run(`insert into ratings (user_id, patch_id, stars, updated_at)
           values (1, 1, 4, '2026-01-01'), (2, 1, 5, '2026-01-02')`)
-  db.run(`update meta set value = ? where key = 'db_version'`, [String(DB_VERSION - 1)])
+  db.run(`update meta set value = '1' where key = 'db_version'`)
   db.close()
 
   return path

@@ -164,8 +164,3 @@ export async function whoAmI(
   const payload = await readToken<{ u?: unknown }>(token, config.secret, now)
   return typeof payload?.u === 'string' ? payload.u : null
 }
-
-export function isAdmin(email: string | null, config: AuthConfig): boolean {
-  if (config.mode === 'off') return true
-  return email !== null && config.admins.includes(email.toLowerCase())
-}

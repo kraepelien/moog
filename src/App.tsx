@@ -29,7 +29,11 @@ import type { LibraryEntry } from './components/library/entry.ts'
 import { Panel, PanelChecklist } from './components/Panel.tsx'
 import { useConfirm } from './components/useConfirm.tsx'
 import { SignIn } from './session/SignIn.tsx'
-import { signOut, useSession } from './session/session.ts'
+import { signOut, useSession, type Session } from './session/session.ts'
+import { AccessProvider } from './access/AccessProvider.tsx'
+import { useCan } from './access/context.ts'
+import { Can, RouteGuard } from './access/Can.tsx'
+import { PRIVILEGE } from './access/privileges.ts'
 import { panelRegistry } from './controls/panel.ts'
 import { isRecalled } from './controls/recall.ts'
 import type { ControlValue } from './controls/types.ts'
@@ -39,7 +43,8 @@ import { copyOf } from './presets/preset.ts'
 import { createHttpStore } from './storage/httpStore.ts'
 import { StoreError, type PatchSummary } from './storage/types.ts'
 import { createBundle, parseBundle, serializeBundle } from './transfer/bundle.ts'
-import { useView } from './navigation.ts'
+import { useRoute } from './navigation/router.ts'
+import { pathFor } from './navigation/routes.ts'
 
 const store = createHttpStore()
 
@@ -77,7 +82,31 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
+/* Nothing is drawn until the session is known, so a signed-out visitor never
+   sees an editor they cannot save from, and a signed-in one never sees the
+   door. The privileges are put in reach of every component at the same moment,
+   because until the session has arrived there is no honest answer to give. */
 export function App() {
+  const { session, refresh } = useSession()
+  const [{ route }] = useRoute()
+
+  if (!session) return <Typography sx={{ p: 2 }}>Loading…</Typography>
+  if (!session.signedIn) return <SignIn returnTo={`/#${route.path}`} />
+
+  return (
+    <AccessProvider privileges={session.privileges}>
+      <Workspace session={session} refreshSession={refresh} />
+    </AccessProvider>
+  )
+}
+
+function Workspace({
+  session,
+  refreshSession,
+}: {
+  session: Session
+  refreshSession: () => void
+}) {
   const [draft, setDraft] = useState<Patch | null>(null)
   const [saved, setSaved] = useState<readonly PatchSummary[]>([])
   const [presets, setPresets] = useState<readonly Patch[]>([])
@@ -109,8 +138,9 @@ export function App() {
      file records, so turning it must not mark the draft unsaved either. */
   const [played, setPlayed] = useState<Record<string, ControlValue>>({})
   const { ask, dialog } = useConfirm()
-  const { session, refresh: refreshSession } = useSession()
-  const [view, goToView] = useView()
+  const [{ route }, navigate] = useRoute()
+  const mayAdminTags = useCan(PRIVILEGE.AdminTags)
+  const mayAccessAdmin = useCan(PRIVILEGE.AccessAdmin)
   const [midiHelp, setMidiHelp] = useState(false)
   /* The menu cannot hold a file input, so it holds a button that clicks one. */
   const importing = useRef<HTMLInputElement>(null)
@@ -177,11 +207,11 @@ export function App() {
      patches, so the route refuses anyone else and every other page would be
      making a call it cannot use. */
   useEffect(() => {
-    if (view !== 'admin' || session?.admin !== true) return
+    if (route.name !== 'admin' || !mayAdminTags) return
     void (async () => {
       await run('', refreshTagUse)
     })()
-  }, [view, session?.admin, refreshTagUse, run])
+  }, [route.name, mayAdminTags, refreshTagUse, run])
 
   const addTag = useCallback(
     (name: string) =>
@@ -275,16 +305,10 @@ export function App() {
           `Opened “${patch.name}”`,
           writable ? { stored: true } : { from: entry.id },
         )
-        goToView('editor')
+        navigate(pathFor('editor'))
       }),
-    [adopt, fetchEntry, goToView, run],
+    [adopt, fetchEntry, navigate, run],
   )
-
-  /* Nothing is drawn until the session is known, so a signed-out visitor never
-     sees an editor they cannot save from, and a signed-in one never sees the
-     door. */
-  if (!session) return <Typography sx={{ p: 2 }}>Loading…</Typography>
-  if (!session.signedIn) return <SignIn returnTo={`/#/${view}`} />
 
   if (!draft) return <Typography sx={{ p: 2 }}>Loading…</Typography>
 
@@ -316,10 +340,16 @@ export function App() {
           downloadJson('all-patches.moogpatch.json', serializeBundle(createBundle(present)))
         }),
     },
-    /* Shown to an admin only, which the server decides: MOOG_ADMINS is read per
-       request, so adding somebody is a line in the .env and a restart. */
-    ...(session.admin
-      ? [{ label: 'Administration', separated: true, onSelect: () => goToView('admin') }]
+    /* Shown only to somebody the server says may open it. The page refuses on
+       its own too, so this is about not offering a locked door. */
+    ...(mayAccessAdmin
+      ? [
+          {
+            label: 'Administration',
+            separated: true,
+            onSelect: () => navigate(pathFor('admin')),
+          },
+        ]
       : []),
     ...(session?.mode === 'oauth'
       ? [
@@ -338,7 +368,7 @@ export function App() {
 
   return (
     <>
-      <TopBar view={view} onView={goToView} actions={menu}>
+      <TopBar route={route} onNavigate={navigate} actions={menu}>
         <NowPlaying />
       </TopBar>
       {/* The whole editor, not each control: a drag that starts a hair off a knob,
@@ -347,7 +377,7 @@ export function App() {
           library keeps its text selectable. */}
       <Box
         component="main"
-        className={view === 'editor' ? surface.noSelect : undefined}
+        className={route.name === 'editor' ? surface.noSelect : undefined}
         sx={{ p: 2 }}
       >
         <Stack spacing={2}>
@@ -358,7 +388,7 @@ export function App() {
           </Alert>
         )}
 
-        {view === 'editor' && (
+        {route.name === 'editor' && (
           <>
         {/* The panel does not name what it is showing, so the patch says so above
             it: the same bar the library's rows are drawn from. */}
@@ -481,9 +511,9 @@ export function App() {
           </>
         )}
 
-        {view === 'midi' && <PlayMidi entries={library} loadPatch={fetchEntry} />}
+        {route.name === 'midi' && <PlayMidi entries={library} loadPatch={fetchEntry} />}
 
-        {view === 'library' && (
+        {route.name === 'library' && (
           <PatchLibrary
             entries={library}
             onOpen={openEntry}
@@ -496,19 +526,27 @@ export function App() {
           />
         )}
 
-        {/* Reachable by typing the address, so it says no rather than drawing an
-            empty list every button on which is refused. */}
-        {view === 'admin' &&
-          (session.admin ? (
-            <AdminPage tags={tagUse} onAdd={addTag} onRemove={removeTag} />
-          ) : (
-            <Alert severity="warning">
-              <AlertTitle>Administration</AlertTitle>
-              This page is for administrators, and this account is not one.
-            </Alert>
-          ))}
+        {/* Reachable by typing the address, so the guard says no rather than
+            drawing an empty list every button on which is refused. Opening the
+            area and editing the tag list are separate privileges, so the panel
+            asks for its own on top of what the page needed. */}
+        {route.name === 'admin' && (
+          <RouteGuard privilege={route.needs} title={route.title}>
+            <Can
+              privilege={PRIVILEGE.AdminTags}
+              otherwise={
+                <Alert severity="info">
+                  <AlertTitle>Tags</AlertTitle>
+                  Editing the tag list is not part of what this account administers.
+                </Alert>
+              }
+            >
+              <AdminPage tags={tagUse} onAdd={addTag} onRemove={removeTag} />
+            </Can>
+          </RouteGuard>
+        )}
 
-        {view === 'editor' && report && reportHasWarnings(report) && (
+        {route.name === 'editor' && report && reportHasWarnings(report) && (
           <Alert severity="warning">
             <AlertTitle>The patch that was loaded did not fit the panel exactly</AlertTitle>
             <ul style={{ margin: 0, paddingInlineStart: '1.2em' }}>
@@ -529,7 +567,7 @@ export function App() {
           </Alert>
         )}
 
-        {view === 'editor' && (
+        {route.name === 'editor' && (
         <Accordion variant="outlined" disableGutters>
           <AccordionSummary>
             <Typography variant="h6" component="h2">

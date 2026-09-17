@@ -3,10 +3,10 @@ import { createApi } from './api.ts'
 import { backupTo, openDatabase } from './db.ts'
 import { loadFactory } from './factory.ts'
 import { limitsFromEnv } from './limits.ts'
-import { createStore } from './store.ts'
+import { createPatches } from './repositories/patches.ts'
 import { authConfigFromEnv } from './identity.ts'
 import { describeAuth, dirAt, envTrouble } from './startup.ts'
-import { seedTags } from './tags.ts'
+import { seedTags } from './services/tags.ts'
 
 /* Serves the built app plus the same API the dev plugin serves, for running the
    editor without a toolchain. `bun run serve` after `bun run build`. */
@@ -32,10 +32,10 @@ if (envTroubleFound) console.warn(envTroubleFound)
 
 /* Trash is a grace period, not a place things stay. */
 const limits = limitsFromEnv(process.env)
-const store = createStore(db)
+const patches = createPatches(db)
 const purge = () => {
   const before = new Date(Date.now() - limits.trashDays * 24 * 60 * 60 * 1000).toISOString()
-  const gone = store.purgeTrash(before)
+  const gone = patches.purgeTrash(before)
   if (gone > 0) console.log(`Purged ${gone} from the trash, deleted over ${limits.trashDays} days ago`)
 }
 purge()

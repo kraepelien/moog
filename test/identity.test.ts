@@ -3,7 +3,6 @@ import {
   SESSION_COOKIE,
   authConfigFromEnv,
   clearedSessionCookie,
-  isAdmin,
   isSecureRequest,
   readCookie,
   readToken,
@@ -121,19 +120,6 @@ describe('with sign-in switched off', () => {
     const cookie = await sessionCookie('google-abc', on, new Request('https://x/'), NOW)
     const request = new Request('https://x/', { headers: { cookie: cookie.split(';')[0]! } })
     expect(await whoAmI(request, on, NOW)).toBe('google-abc')
-  })
-})
-
-describe('who is an admin', () => {
-  test('is whoever the env says, compared without case', () => {
-    const on = config({ mode: 'oauth', admins: ['peter@example.com'] })
-    expect(isAdmin('Peter@Example.com', on)).toBe(true)
-    expect(isAdmin('someone@example.com', on)).toBe(false)
-    expect(isAdmin(null, on)).toBe(false)
-  })
-
-  test('is everyone while there is nobody to sign in as', () => {
-    expect(isAdmin(null, authConfigFromEnv({}))).toBe(true)
   })
 })
 

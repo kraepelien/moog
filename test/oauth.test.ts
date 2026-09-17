@@ -7,7 +7,7 @@ import { openDatabase } from '../server/db.ts'
 import { syncInstruments } from '../server/factory.ts'
 import { authConfigFromEnv, SESSION_COOKIE } from '../server/identity.ts'
 import { safeReturnTo, userIdFor } from '../server/oauth.ts'
-import { findUser } from '../server/users.ts'
+import { createUsers } from '../server/repositories/users.ts'
 
 /* The whole dance with a fake token endpoint: no network, and the client
    secret never leaves the server even here. */
@@ -114,7 +114,7 @@ describe('coming back from Google', () => {
     expect(cookieNamed(back, SESSION_COOKIE)).toContain('HttpOnly')
 
     const uid = await userIdFor('google', '1174')
-    expect(findUser(db, uid)).toMatchObject({ email: 'p@example.com', display_name: 'Peter' })
+    expect(createUsers(db).find(uid)).toMatchObject({ email: 'p@example.com', display_name: 'Peter' })
   })
 
   test('clears the flow cookie as it sets the session', async () => {

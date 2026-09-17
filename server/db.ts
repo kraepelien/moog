@@ -93,6 +93,18 @@ const SCHEMA: Step[] = [
       alter table ratings_half rename to ratings;
     `)
   },
+
+  (db) => {
+    db.run(`alter table users add column roles text not null default ''`)
+
+    /* Backfilled to what the build before this one already did, so switching
+       over changes nobody's access. Everybody who could sign in was a member in
+       all but name; the local user is the one the `off` mode handed admin to
+       unconditionally, and it keeps it by holding the role rather than by the
+       checker making an exception. */
+    db.run(`update users set roles = 'member'`)
+    db.run(`update users set roles = 'admin,member' where provider = 'local'`)
+  },
 ]
 
 export const DB_VERSION = SCHEMA.length

@@ -6,8 +6,8 @@ import { createApi } from '../server/api.ts'
 import { openDatabase } from '../server/db.ts'
 import { syncInstruments } from '../server/factory.ts'
 import { authConfigFromEnv, sessionCookie } from '../server/identity.ts'
-import { createStore } from '../server/store.ts'
-import { ensureUser } from '../server/users.ts'
+import { createRepositories } from '../server/repositories/index.ts'
+import { createUsers } from '../server/repositories/users.ts'
 import { copyOf } from '../src/presets/preset.ts'
 import { createPatch, type Patch } from '../src/patch/schema.ts'
 
@@ -22,7 +22,7 @@ async function world() {
   roots.push(root)
   const db = openDatabase(join(root, 'moog.db'))
   syncInstruments(db)
-  const store = createStore(db)
+  const store = createRepositories(db)
 
   const config = {
     ...authConfigFromEnv({ MOOG_SESSION_SECRET: SECRET }),
@@ -33,7 +33,7 @@ async function world() {
   const handle = createApi({ db, config })
 
   const person = async (uid: string, email: string) => {
-    const row = ensureUser(db, { uid, provider: 'test', subject: uid, email, displayName: uid })
+    const row = createUsers(db).ensure({ uid, provider: 'test', subject: uid, email, displayName: uid })
     const cookie = (
       await sessionCookie(uid, config, new Request('https://x/'), Date.now())
     ).split(';')[0]!
@@ -62,7 +62,7 @@ async function world() {
   const theirs = await person('u-theirs', 'theirs@example.com')
   const boss = await person('u-boss', 'boss@example.com')
 
-  store.putPreset('sub-bass', {
+  store.patches.putPreset('sub-bass', {
     ...createPatch({ name: 'Sub Bass', visibility: 'public', approximate: true }),
     id: 'sub-bass',
   })
@@ -91,13 +91,13 @@ describe('a factory preset', () => {
 
   test('cannot be written over, even by an admin', async () => {
     const { mine, boss, store } = await world()
-    const before = store.listPresets()[0]!
+    const before = store.patches.listPresets()[0]!
 
     expect((await mine.call('PUT', '/api/patches/sub-bass', before))!.status).toBe(403)
     expect((await boss.call('PUT', '/api/patches/sub-bass', before))!.status).toBe(403)
     expect((await boss.call('DELETE', '/api/patches/sub-bass'))!.status).toBe(403)
 
-    expect(store.listPresets()[0]).toEqual(before)
+    expect(store.patches.listPresets()[0]).toEqual(before)
   })
 
   /* Posted the way the editor posts it: the server keeps whatever visibility it
@@ -105,7 +105,7 @@ describe('a factory preset', () => {
   test('is copied instead, and the copy is mine and private', async () => {
     const { mine, store } = await world()
     const response = (await mine.call('POST', '/api/patches', {
-      ...copyOf(store.listPresets()[0]!, { name: 'My Sub Bass', owner: null }),
+      ...copyOf(store.patches.listPresets()[0]!, { name: 'My Sub Bass', owner: null }),
       from: 'sub-bass',
     }))!
     expect(response.status).toBe(201)
@@ -114,7 +114,7 @@ describe('a factory preset', () => {
     expect(copy.id).not.toBe('sub-bass')
     expect(copy.visibility).toBe('private')
     expect(copy.derivedFrom).toMatchObject({ id: 'sub-bass', name: 'SUB BASS', kind: 'factory' })
-    expect(store.locate(copy.id)?.ownerUid).toBe('u-mine')
+    expect(store.patches.locate(copy.id)?.ownerUid).toBe('u-mine')
   })
 
   test('is never listed as one of my patches', async () => {
@@ -160,11 +160,11 @@ describe('a patch of mine', () => {
   test('is readable but not writable by anybody else once it is public', async () => {
     const { mine, theirs, own, store } = await world()
     const patch = await own(mine, 'Shared', 'public')
-    const before = store.getPatch(patch.id)
+    const before = store.patches.get(patch.id)
 
     expect((await theirs.call('GET', `/api/patches/${patch.id}`))!.status).toBe(200)
     expect((await theirs.call('PUT', `/api/patches/${patch.id}`, { ...patch, name: 'Stolen' }))!.status).toBe(403)
-    expect(store.getPatch(patch.id)).toEqual(before)
+    expect(store.patches.get(patch.id)).toEqual(before)
   })
 
   test('cannot be handed to somebody else by editing the body', async () => {
@@ -173,7 +173,7 @@ describe('a patch of mine', () => {
     const patch = await own(mine, 'Mine', 'private')
 
     await mine.call('PUT', `/api/patches/${patch.id}`, { ...patch, id: 'something-else' })
-    expect(store.locate(patch.id)?.ownerUid).toBe('u-mine')
+    expect(store.patches.locate(patch.id)?.ownerUid).toBe('u-mine')
     expect(await (await theirs.call('GET', '/api/patches'))!.json()).toEqual([])
   })
 })
@@ -189,7 +189,7 @@ describe('somebody else copying my public patch', () => {
     }))!
     const copy = (await response.json()) as Patch
 
-    expect(store.locate(copy.id)?.ownerUid).toBe('u-theirs')
+    expect(store.patches.locate(copy.id)?.ownerUid).toBe('u-theirs')
     expect(copy.derivedFrom).toMatchObject({
       id: patch.id,
       name: 'SHARED',
