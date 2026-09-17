@@ -33,11 +33,15 @@ function PersonGlyph() {
   )
 }
 
+/* A dial turned off its stop, not a power button: a pointer rising from the
+   centre to the rim is the IEC power symbol at this size, so this one is set at
+   an angle, stops short of the rim and turns about a hub. */
 function KnobGlyph() {
   return (
     <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
       <circle cx="12" cy="12" r="7.5" stroke="currentColor" strokeWidth="1.6" fill="none" />
-      <path d="M12 12V5.4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M12 12 8.7 8.7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <circle cx="12" cy="12" r="1.15" fill="currentColor" />
     </svg>
   )
 }
