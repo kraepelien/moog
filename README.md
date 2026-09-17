@@ -44,6 +44,7 @@ src/
   components/library/ the patch library: search, filter chips, rows, the patch header
   patch/      schema.ts (Patch + structural parse) · migrate.ts (version chain) · resolve.ts (load policy)
   access/     privileges.ts (the vocabulary, shared with the server) · Can.tsx (the guards)
+  components/midi/ the MIDI desk: a file, a sound per part, and saving the two together
   navigation/ routes.ts (the page table) · router.ts (the address)
   storage/    types.ts (the adapter interface) · webStorage.ts (localStorage + in-memory backends)
   presets/    factory.ts (placeholder presets)
@@ -454,6 +455,30 @@ button is refused reads as broken rather than shut.
 
 A privilege the browser cannot name is dropped when the list is read, so a server one version ahead
 can never widen what this build draws.
+
+### Arrangements are the first thing a privilege gates
+
+`StoreMidi` is what lets somebody keep a MIDI file together with the sound put on each of its
+parts. Save and Open appear on the Play MIDI page for whoever holds it, and every
+`/api/arrangements` route declares it — there is no half of that resource that is open.
+
+**A part points at a patch by id rather than carrying a copy.** Editing a patch then changes what
+the arrangement plays, which is what somebody who tweaked a bass and pressed play expects. The cost
+is that a deleted patch leaves a part silent, so the name chosen at the time is stored beside the id
+purely so the page can say which sound has gone rather than loading a part quietly undressed.
+
+A part naming a patch its owner may not see is **dropped on save rather than refused**: the sounds
+are references, and refusing the whole save would make one missing sound cost the other fifteen.
+That check is the same question the library answers — mine, published, or from the bank — so saving
+an arrangement cannot become a way to keep hold of a patch that was visible for a moment.
+
+Ownership is not a route check. An arrangement belongs to exactly one person and every query is
+scoped to them, so a stranger's id is simply not found and there is nothing to confirm the existence
+of.
+
+Saving writes over the arrangement that was opened and creates otherwise, because only the server
+mints an id — the same rule the patch editor follows, and what stops every save becoming another
+copy.
 
 ## Pages
 

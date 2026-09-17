@@ -70,6 +70,10 @@ remapping every saved patch.
 - **SQL lives in a repository, rules live in a service.** A repository that also refused would be a
   second place for the rules to live. A route with no rules of its own talks to its repository
   rather than to a service that would only forward the call.
+- **A schema step is append-only, and `test/oldDatabase.ts` undoes it.** Migration tests make an old
+  database by opening a current one and winding it back, and reopening re-runs *every* step above
+  the version set — so a new step in `server/db.ts` needs its undo added there, or those tests fail
+  with `already exists`.
 
 ## The sound is derived, and says so
 
