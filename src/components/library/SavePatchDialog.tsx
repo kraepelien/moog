@@ -6,8 +6,11 @@ import IconButton from '@mui/material/IconButton'
 import InputAdornment from '@mui/material/InputAdornment'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
+import { FieldRow } from './FieldRow.tsx'
 import { FilterRow, type FilterChoice } from './FilterRow.tsx'
+import { StarRating } from './StarRating.tsx'
 import { BANK_TONES } from './entry.ts'
+import { instrumentName } from '@instruments/instruments.ts'
 import { SHELL, TONE_COLOURS, tagColour, type TagPalette } from '@/tones.ts'
 import type { Patch, Visibility } from '@patch/schema.ts'
 import styles from './SavePatchDialog.module.css'
@@ -59,7 +62,11 @@ export function SavePatchDialog({
   outcome,
   tagChoices,
   tagPalette = {},
+  rating = null,
+  average = null,
+  ratingCount = 0,
   onCancel,
+  onRate,
   onSave,
 }: {
   open: boolean
@@ -68,7 +75,16 @@ export function SavePatchDialog({
   /* The tags already in use, since there is nowhere here to invent one. */
   tagChoices: readonly string[]
   tagPalette?: TagPalette
+  /* Mine, and null when I have not rated it. */
+  rating?: number | null
+  average?: number | null
+  ratingCount?: number
   onCancel: () => void
+  /* Absent for a draft the server does not hold yet: there is nothing to hang a
+     rating on until it has been saved, so the stars are shown but not offered.
+     A rating is given here and not on the panel because this is the one place a
+     patch is looked at rather than played. */
+  onRate?: (stars: number) => void
   onSave: (fields: PatchFields) => void
 }) {
   const [fields, setFields] = useState<PatchFields>(() => read(patch))
@@ -103,6 +119,17 @@ export function SavePatchDialog({
   const others: FilterChoice[] = [
     { value: 'user', label: 'User', tone: BANK_TONES.user, locked: true },
     { value: 'public', label: 'Public', tone: 'amber' },
+  ]
+
+  /* Facts, not questions: the patch belongs to the editor it was made in, and
+     whether it is an approximation was settled when it was written. Locked for
+     the same reason the bank is — a form that draws them has to be a form that
+     cannot answer them wrongly. */
+  const synth: FilterChoice[] = [
+    { value: 'instrument', label: instrumentName(patch.instrument), tone: 'green', locked: true },
+    ...(patch.approximate
+      ? [{ value: 'approximate', label: 'approximate', tone: 'grey' as const, locked: true }]
+      : []),
   ]
 
   return (
@@ -171,6 +198,7 @@ export function SavePatchDialog({
         />
 
         <Box className={styles.chips}>
+          <FilterRow label="Synth" choices={synth} selected={[]} onToggle={() => {}} />
           <FilterRow
             label="Category"
             choices={categories}
@@ -184,9 +212,6 @@ export function SavePatchDialog({
               })
             }
           />
-          {/* No synth row: the patch belongs to the editor it was made in, so
-              the only instrument this form could offer is the one already
-              implied. The draft carries it and saving leaves it alone. */}
           <FilterRow
             label="Other"
             choices={others}
@@ -198,6 +223,21 @@ export function SavePatchDialog({
               })
             }
           />
+
+          <FieldRow label="Rating">
+            <StarRating
+              rating={rating}
+              average={average}
+              subject={patch.name || 'this patch'}
+              onRate={onRate}
+            />
+            {/* The stars carry one of the two numbers and this carries the
+                other, so which is which never depends on remembering a
+                colour. */}
+            <Typography component="span" color="text.secondary" className={styles.average}>
+              {ratingCount > 0 && `${(average ?? 0).toFixed(1)} (${ratingCount})`}
+            </Typography>
+          </FieldRow>
         </Box>
 
         <TextField

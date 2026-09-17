@@ -1,0 +1,22 @@
+/* Centred rather than on a baseline, because a row of stars has no text in it
+   to share one with. */
+.row {
+  align-items: center;
+  gap: 16px;
+}
+
+/* Fixed so the rows stacked under each other start their contents on one line. */
+.label {
+  flex: none;
+  width: 72px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.content {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}

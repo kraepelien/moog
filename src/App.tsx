@@ -460,9 +460,11 @@ function Workspace({
   const outcome: SaveOutcome = stored ? 'overwrite' : copiedFrom ? 'duplicate' : 'new'
 
   /* The library row for what the editor is showing: a patch of mine is its own
-     row, and a copy not saved yet still points at what it was opened from. It is
-     what the library marks so the list says which one is loaded. A first draft
-     matches nothing and is pointed at by nothing. */
+     row, and a copy not saved yet still points at what it was opened from — a
+     factory preset is rated by the person who has just played it, not by whoever
+     keeps a copy. It is where the stars in the save form live, and it is what
+     the library marks so the list says which one is loaded. A first draft
+     matches nothing and can be neither rated nor pointed at. */
   const openRow = library.find((entry) => entry.id === (stored ? draft.id : copiedFrom)) ?? null
 
   /* What can be done to the open patch, at the end of the bar rather than in a
@@ -761,7 +763,19 @@ function Workspace({
         outcome={outcome}
         tagChoices={tagNames}
         tagPalette={tagPalette}
+        rating={openRow?.rating ?? null}
+        average={openRow?.averageRating ?? null}
+        ratingCount={openRow?.ratingCount ?? 0}
         onCancel={() => setSaving(false)}
+        onRate={
+          openRow === null
+            ? undefined
+            : (stars) =>
+                void run(async () => {
+                  await store.rate(openRow.id, stars)
+                  await refresh()
+                })
+        }
         onSave={(fields: PatchFields) =>
           void run(async () => {
             setSaving(false)
