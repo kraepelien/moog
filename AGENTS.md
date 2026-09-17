@@ -58,8 +58,18 @@ remapping every saved patch.
   rotates by `angle - bakedAngle`; nothing is re-pathed.
 - **Do not estimate geometry by eye.** `tools/measure-artwork.py` recovers it from the scans and
   `reference/measurements.md` holds what it found, including one deliberate deviation from the print.
-- **Ids reaching the filesystem are pattern-checked** in `server/store.ts` before they become
-  filenames. The pattern, not the path join, is what keeps an id of `../../etc/passwd` in its folder.
+- **Ids reaching the filesystem are pattern-checked** in `server/repositories/patches.ts` before
+  they become filenames. The pattern, not the path join, is what keeps an id of `../../etc/passwd`
+  in its folder.
+- **A privilege is code; a role is data.** Adding a privilege is `src/access/privileges.ts` plus the
+  route that asks for it, and never a migration. A *role* name is stored in `users.roles`, which
+  makes it a published interface like a control id: add roles, never rename one.
+- **A route declares what it needs**, in `server/routes/table.ts`'s entries. The guard runs there
+  for every route at once, so a handler never checks for itself — and a route that forgot to ask
+  cannot exist. The client's `<Can>` and `<RouteGuard>` choose what to draw and are never the check.
+- **SQL lives in a repository, rules live in a service.** A repository that also refused would be a
+  second place for the rules to live. A route with no rules of its own talks to its repository
+  rather than to a service that would only forward the call.
 
 ## The sound is derived, and says so
 
