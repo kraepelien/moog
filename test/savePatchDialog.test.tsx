@@ -41,7 +41,7 @@ function save() {
 describe('the form starts from the patch', () => {
   test('the name is the one being saved', () => {
     renderDialog()
-    expect(screen.getByLabelText<HTMLInputElement>('Patch name').value).toBe('Sub Bass')
+    expect(screen.getByLabelText<HTMLInputElement>('Patch name').value).toBe('SUB BASS')
   })
 
   test('a tag the patch already wears is switched on', () => {
@@ -56,7 +56,18 @@ describe('editing', () => {
     const { saved } = renderDialog()
     fireEvent.change(screen.getByLabelText('Patch name'), { target: { value: 'Fat Bass' } })
     save()
-    expect(saved[0]!.name).toBe('Fat Bass')
+    expect(saved[0]!.name).toBe('FAT BASS')
+  })
+
+  /* The field drew capitals in CSS and handed back what was typed, so a name
+     entered here was the one place a patch kept a lower-case name. */
+  test('a name typed in lower case is capitals in the field and in what is saved', () => {
+    const { saved } = renderDialog()
+    fireEvent.change(screen.getByLabelText('Patch name'), { target: { value: 'fat bass' } })
+
+    expect(screen.getByLabelText<HTMLInputElement>('Patch name').value).toBe('FAT BASS')
+    save()
+    expect(saved[0]!.name).toBe('FAT BASS')
   })
 
   test('the notes are handed back', () => {
@@ -155,7 +166,7 @@ describe('leaving without saving', () => {
       />,
     )
 
-    expect(screen.getByLabelText<HTMLInputElement>('Patch name').value).toBe('Sub Bass')
+    expect(screen.getByLabelText<HTMLInputElement>('Patch name').value).toBe('SUB BASS')
   })
 })
 
