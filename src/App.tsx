@@ -10,6 +10,8 @@ import Paper from '@mui/material/Paper'
 import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
+import { AdminPage } from './admin/AdminPage.tsx'
+import type { TagInUse } from './admin/tags.ts'
 import { FitToWidth } from './components/FitToWidth.tsx'
 import { TopBar, type TopBarAction } from './components/TopBar.tsx'
 import surface from './components/controlSurface.module.css'
@@ -77,6 +79,9 @@ export function App() {
      tags patches happen to wear, or a bank nothing is tagged in yet could never
      be given its first one. */
   const [tags, setTags] = useState<readonly string[]>([])
+  /* The same list with its usage counts, which only an admin may ask for and
+     only the admin page shows. */
+  const [tagUse, setTagUse] = useState<readonly TagInUse[]>([])
   const [status, setStatus] = useState('')
   const [report, setReport] = useState<ResolveReport | null>(null)
   const [failed, setFailed] = useState(false)
@@ -154,6 +159,48 @@ export function App() {
       setStatus(error instanceof StoreError ? error.message : `Failed: ${String(error)}`)
     }
   }, [])
+
+  const refreshTagUse = useCallback(async () => {
+    setTagUse(await store.listTagsInUse())
+  }, [])
+
+  /* Asked for only on the page that shows it: the counts are over everybody's
+     patches, so the route refuses anyone else and every other page would be
+     making a call it cannot use. */
+  useEffect(() => {
+    if (view !== 'admin' || session?.admin !== true) return
+    void (async () => {
+      await run('', refreshTagUse)
+    })()
+  }, [view, session?.admin, refreshTagUse, run])
+
+  const addTag = useCallback(
+    (name: string) =>
+      void run(`Added ${name}`, async () => {
+        await store.addTag(name)
+        await Promise.all([refreshTagUse(), refresh()])
+      }),
+    [run, refreshTagUse, refresh],
+  )
+
+  const removeTag = useCallback(
+    (tag: TagInUse) =>
+      void run(`Removed ${tag.name}`, async () => {
+        const agreed = await ask({
+          title: `Remove ${tag.name} from the list?`,
+          body:
+            tag.patches === 0
+              ? 'Nothing is wearing it.'
+              : `${tag.patches === 1 ? 'One patch wears' : `${tag.patches} patches wear`} this tag and will keep it. It only stops being offered when a patch is saved.`,
+          confirm: 'Remove',
+          destructive: true,
+        })
+        if (!agreed) throw new Cancelled()
+        await store.removeTag(tag.id)
+        await Promise.all([refreshTagUse(), refresh()])
+      }),
+    [run, ask, refreshTagUse, refresh],
+  )
 
   const importFile = useCallback(
     (file: File) =>
@@ -240,6 +287,11 @@ export function App() {
           downloadJson('all-patches.moogpatch.json', serializeBundle(createBundle(present)))
         }),
     },
+    /* Shown to an admin only, which the server decides: MOOG_ADMINS is read per
+       request, so adding somebody is a line in the .env and a restart. */
+    ...(session.admin
+      ? [{ label: 'Administration', separated: true, onSelect: () => goToView('admin') }]
+      : []),
     ...(session?.mode === 'oauth'
       ? [
           {
@@ -411,6 +463,18 @@ export function App() {
             }
           />
         )}
+
+        {/* Reachable by typing the address, so it says no rather than drawing an
+            empty list every button on which is refused. */}
+        {view === 'admin' &&
+          (session.admin ? (
+            <AdminPage tags={tagUse} onAdd={addTag} onRemove={removeTag} />
+          ) : (
+            <Alert severity="warning">
+              <AlertTitle>Administration</AlertTitle>
+              This page is for administrators, and this account is not one.
+            </Alert>
+          ))}
 
         {view === 'editor' && report && reportHasWarnings(report) && (
           <Alert severity="warning">

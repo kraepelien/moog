@@ -1,8 +1,10 @@
 import { migrateToCurrent } from '../patch/migrate.ts'
 import type { Patch } from '../patch/schema.ts'
 import type { LibraryEntry } from '../components/library/entry.ts'
+import type { TagInUse } from '../admin/tags.ts'
 import {
   StoreError,
+  type AdminStore,
   type LibraryStore,
   type PatchStore,
   type PatchSummary,
@@ -21,6 +23,15 @@ export type Fetch = (path: string, init?: RequestInit) => Promise<Response>
 
 /* Exported for its own test: no store method passes a header yet, so the merge
    below would otherwise be checked by nothing. */
+function readError(body: string): string | null {
+  try {
+    const parsed = JSON.parse(body) as { error?: unknown }
+    return typeof parsed.error === 'string' && parsed.error.length > 0 ? parsed.error : null
+  } catch {
+    return null
+  }
+}
+
 export async function requestWith(
   doFetch: Fetch,
   path: string,
@@ -54,7 +65,13 @@ export async function requestWith(
   }
   if (!response.ok) {
     const detail = await response.text().catch(() => '')
-    throw new StoreError('io', `Storage request failed (${response.status}). ${detail}`.trim())
+    /* Routes refuse in a sentence meant for a person — a cap, a duplicate — and
+       wrapping it in the status code buries the only part worth reading. */
+    const said = readError(detail)
+    throw new StoreError(
+      'io',
+      said ?? `Storage request failed (${response.status}). ${detail}`.trim(),
+    )
   }
 
   /* A page fallback or a proxy's error page answering instead of the API;
@@ -78,7 +95,7 @@ function toPatch(raw: unknown): Patch | null {
 
 export function createHttpStore(
   doFetch: Fetch = (path, init) => fetch(path, init),
-): PatchStore & PresetStore & LibraryStore & TagStore {
+): PatchStore & PresetStore & LibraryStore & TagStore & AdminStore {
   const request = (path: string, init?: RequestInit) => requestWith(doFetch, path, init)
 
   return {
@@ -143,6 +160,18 @@ export function createHttpStore(
     async listTags(): Promise<readonly string[]> {
       const raw = (await request('/tags')) as { name?: unknown }[]
       return raw.map((row) => row.name).filter((name): name is string => typeof name === 'string')
+    },
+
+    async listTagsInUse(): Promise<readonly TagInUse[]> {
+      return ((await request('/tags?use=1')) ?? []) as TagInUse[]
+    },
+
+    async addTag(name: string): Promise<void> {
+      await request('/tags', { method: 'POST', body: JSON.stringify({ name }) })
+    },
+
+    async removeTag(id: number): Promise<void> {
+      await request(`/tags/${id}`, { method: 'DELETE' })
     },
 
     async listPresets(): Promise<readonly Patch[]> {

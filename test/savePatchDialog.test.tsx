@@ -73,6 +73,16 @@ describe('editing', () => {
     expect(saved[1]!.tags).toEqual([])
   })
 
+  /* An admin can retire a tag, and the patches wearing it keep it. */
+  test('a tag the list no longer offers is still shown, and can be taken off', () => {
+    const { saved } = renderDialog(patchWith({ tags: ['disco'] }))
+    const retired = screen.getByRole('button', { name: 'disco' })
+
+    fireEvent.click(retired)
+    save()
+    expect(saved[0]!.tags).toEqual([])
+  })
+
   test('Public turns visibility on and off', () => {
     const { saved } = renderDialog()
     const chip = screen.getByRole('button', { name: 'Public' })

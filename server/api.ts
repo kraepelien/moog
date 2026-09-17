@@ -6,7 +6,8 @@ import { callerKey, createRateLimiter, limitsFromEnv, type Limits } from './limi
 import { handleAuth } from './routes/auth.ts'
 import { handlePatches } from './routes/patches.ts'
 import { createStore, type Store } from './store.ts'
-import { listTags } from './tags.ts'
+import { addTag, listTags, listTagsInUse, removeTag } from './tags.ts'
+import { tagNameProblem } from '../src/admin/tags.ts'
 import { ensureLocalUser, findUser, type UserRow } from './users.ts'
 
 /* One request handler, shared by the Vite dev plugin and the standalone server,
@@ -152,11 +153,36 @@ export function createApi({
         }
       }
 
-      /* Readable by anyone, because the save form needs it before it knows
-         who is looking. Writing is the admin page's, which does not exist
-         yet. */
+      /* Readable by anyone, because the save form needs it before it knows who
+         is looking. Editing the list is the admin page's, and the counts go
+         with it: they are over everybody's patches, private ones included. */
       if (resource === 'tags') {
-        if (method === 'GET') return json(listTags(db))
+        if (method === 'GET' && !url.searchParams.has('use')) return json(listTags(db))
+
+        if (!viewer) return json({ error: 'sign in' }, 401)
+        if (!isAdmin(viewer.email, config)) return json({ error: 'not an admin' }, 403)
+
+        if (method === 'GET') return json(listTagsInUse(db))
+
+        if (method === 'POST') {
+          const payload = (await body(request)) as { name?: unknown } | null
+          if (typeof payload?.name !== 'string') return json({ error: 'invalid body' }, 400)
+
+          const added = addTag(db, payload.name)
+          if (added === 'invalid') {
+            return json({ error: tagNameProblem(payload.name) ?? 'invalid name' }, 400)
+          }
+          if (added === 'taken') return json({ error: 'that tag is already on the list' }, 409)
+          return json(added, 201)
+        }
+
+        if (method === 'DELETE' && name) {
+          const id = Number(name)
+          if (!Number.isInteger(id)) return json({ error: 'invalid id' }, 400)
+          if (!removeTag(db, id)) return notFound()
+          return json({ removed: id })
+        }
+
         return json({ error: 'method not allowed' }, 405)
       }
 
