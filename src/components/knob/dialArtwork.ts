@@ -40,15 +40,30 @@ const EXPORT = {
 /* The width the exports this replaces were drawn at — measured, 60.6 and 60.5
    units across — which is the size the panel is laid out around. Fitting by
    width is how these drawings have always been compared. */
-const BODY_WIDTH = 60
+export const BODY_WIDTH = 60
 
-const FIT = BODY_WIDTH / EXPORT.width
+const fit = (width: number) => width / EXPORT.width
 
 /* On the group that turns, so the stroke widths in the stylesheet are the
-   export's own and are scaled by the same fit as the shapes they outline. */
-export const FIT_TRANSFORM =
-  `translate(${CENTRE.x} ${CENTRE.y}) scale(${FIT}) ` +
-  `translate(${-EXPORT.centre.x} ${-EXPORT.centre.y})`
+   export's own and are scaled by the same fit as the shapes they outline.
+
+   Taking a centre and a width rather than reading the dial's: the selector
+   knobs on the oscillator bank are the same drawing on a wider dial of their
+   own, and a second copy of this arithmetic is how the two would drift. */
+export function fitTransform(
+  centre: { x: number; y: number } = CENTRE,
+  width: number = BODY_WIDTH,
+): string {
+  return (
+    `translate(${centre.x} ${centre.y}) scale(${fit(width)}) ` +
+    `translate(${-EXPORT.centre.x} ${-EXPORT.centre.y})`
+  )
+}
+
+/* The cap in the dial's units, for whoever prints a reading inside it. */
+export function capRadiusAt(width: number = BODY_WIDTH): number {
+  return EXPORT.capRadius * fit(width)
+}
 
 /* In the export's own units, since they are drawn inside the fitted group. */
 export const EXPORT_CENTRE = EXPORT.centre
