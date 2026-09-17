@@ -34,6 +34,26 @@
   display: block;
 }
 
+/* The mark and the account button are not tabs, and at the strip's own gap they
+   read as the first and last of them: five glyphs in a row, two of which do not
+   navigate. This is what says where the tab strip starts and stops. It comes
+   after `.mark` rather than beside `.nav` because a media query wins nothing on
+   specificity, and `margin: 0` above would otherwise take it straight back off.
+
+   And only once the bar can spare the room. The strip is clipped rather than
+   wrapped when it runs out, so any narrower than this the 24px would be bought
+   by hiding a tab outright, and a tab that is not drawn is a page with no way
+   to it. */
+@media (min-width: 900px) {
+  .mark {
+    margin-inline-end: 12px;
+  }
+
+  .account {
+    margin-inline-start: 12px;
+  }
+}
+
 /* The bar is dense, so the tab strip has to give up MUI's default height or it
    sets the bar's instead. */
 .tabs {
