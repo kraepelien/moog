@@ -11,16 +11,19 @@ import {
   dressedParts,
   holdMidiFile,
   holdMidiTrouble,
+  isAudible,
   playMidi,
   setTempo,
   stopMidi,
+  toggleMute,
+  toggleSolo,
   useMidiSession,
 } from './session.ts'
 import { ToneChip } from '../library/ToneChip.tsx'
 import type { LibraryEntry } from '../library/entry.ts'
 import { MidiFileError, readMidiFile, type MidiChannel } from '../../audio/midiFile.ts'
 import type { Patch } from '../../patch/schema.ts'
-import { TONE_COLOURS } from '../../tones.ts'
+import { TONE_COLOURS, type Tone } from '../../tones.ts'
 import styles from './PlayMidi.module.css'
 
 /* A file, its parts, and a sound for each.
@@ -45,6 +48,43 @@ function partName(part: MidiChannel): string {
   return part.name ?? `Channel ${part.channel}`
 }
 
+/* One of the desk's two switches, lit or unlit. Filled when it is on, because a
+   row of these is read at a glance and a tinted outline is not a state anyone
+   can see from across the room. */
+function Flag({
+  letter,
+  title,
+  tone,
+  ink,
+  on,
+  onPress,
+}: {
+  letter: string
+  title: string
+  tone: Tone
+  /* Text for the lit state, dark enough to read on the colour. */
+  ink: string
+  on: boolean
+  onPress: () => void
+}) {
+  const colour = TONE_COLOURS[tone]
+  return (
+    <Button
+      className={styles.flag}
+      aria-label={title}
+      aria-pressed={on}
+      onClick={onPress}
+      sx={{
+        color: on ? ink : colour.ink,
+        backgroundColor: on ? colour.ink : colour.field,
+        '&:hover': { backgroundColor: on ? colour.ink : colour.strong },
+      }}
+    >
+      {letter}
+    </Button>
+  )
+}
+
 export function PlayMidi({
   entries,
   loadPatch,
@@ -55,7 +95,7 @@ export function PlayMidi({
   loadPatch: (entry: LibraryEntry) => Promise<Patch | null>
 }) {
   const session = useMidiSession()
-  const { file, fileName, trouble, chosen, bpm, playing } = session
+  const { file, fileName, trouble, chosen, bpm, soloed, muted, playing } = session
   const [picking, setPicking] = useState<MidiChannel | null>(null)
 
   const opening = useRef<HTMLInputElement>(null)
@@ -169,11 +209,38 @@ export function PlayMidi({
           <Box component="ul" className={styles.parts}>
             {file.channels.map((part) => {
               const held = chosen[part.channel]
+              /* Dimmed for a part that has a sound and will not be heard, which
+                 is the only way to see why a part nobody muted has gone quiet
+                 under somebody else's solo. */
+              const quiet = held !== undefined && !isAudible(session, part.channel)
               return (
-                <Box component="li" key={part.channel} className={styles.part}>
+                <Box
+                  component="li"
+                  key={part.channel}
+                  className={`${styles.part}${quiet ? ` ${styles.quiet}` : ''}`}
+                >
                   <Typography component="span" color="text.secondary" className={styles.channel}>
                     {String(part.channel).padStart(2, '0')}
                   </Typography>
+
+                  <Box className={styles.flags}>
+                    <Flag
+                      letter="S"
+                      title={`Solo ${partName(part)}`}
+                      tone="amber"
+                      ink="#191203"
+                      on={soloed.has(part.channel)}
+                      onPress={() => toggleSolo(part.channel)}
+                    />
+                    <Flag
+                      letter="M"
+                      title={`Mute ${partName(part)}`}
+                      tone="pink"
+                      ink="#1b0509"
+                      on={muted.has(part.channel)}
+                      onPress={() => toggleMute(part.channel)}
+                    />
+                  </Box>
 
                   <Typography component="span" className={styles.name}>
                     {partName(part)}

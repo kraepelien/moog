@@ -30,6 +30,12 @@ export interface MidiSession {
   /* What was typed rather than a number: the field belongs to the person until
      it parses, and a half-typed tempo has not parsed yet. */
   readonly bpm: string
+  /* The desk's two switches, per channel, held as what has been pressed rather
+     than as what can be heard — which parts sound is worked out from both at
+     once, and a part silenced by somebody else's solo has had nothing pressed
+     on it. */
+  readonly soloed: ReadonlySet<number>
+  readonly muted: ReadonlySet<number>
   readonly playing: boolean
 }
 
@@ -39,6 +45,8 @@ const EMPTY: MidiSession = {
   trouble: null,
   chosen: {},
   bpm: '',
+  soloed: new Set(),
+  muted: new Set(),
   playing: false,
 }
 
@@ -74,6 +82,44 @@ export function dressedParts(session: MidiSession): readonly MidiChannel[] {
   return (session.file?.channels ?? []).filter((part) => session.chosen[part.channel] !== undefined)
 }
 
+/* What will actually be heard, as a desk decides it: mute wins over solo, on
+   the same part and everywhere else, so a part that is both is silent. One solo
+   anywhere quietens every part that is not soloed, which is the whole point of
+   the button — it is pressed to hear one thing, not to make one thing louder. */
+export function audibleParts(session: MidiSession): readonly MidiChannel[] {
+  const soloing = session.soloed.size > 0
+  return dressedParts(session).filter(
+    (part) =>
+      !session.muted.has(part.channel) && (!soloing || session.soloed.has(part.channel)),
+  )
+}
+
+export function isAudible(session: MidiSession, channel: number): boolean {
+  return audibleParts(session).some((part) => part.channel === channel)
+}
+
+function toggled(held: ReadonlySet<number>, channel: number): ReadonlySet<number> {
+  const next = new Set(held)
+  if (!next.delete(channel)) next.add(channel)
+  return next
+}
+
+/* The player is told rather than rebuilt: these are pressed while a file is
+   playing, and rebuilding would start it again from the top. */
+function retell(): void {
+  player?.hear(new Set(audibleParts(held).map((part) => part.channel)))
+}
+
+export function toggleSolo(channel: number): void {
+  set({ soloed: toggled(held.soloed, channel) })
+  retell()
+}
+
+export function toggleMute(channel: number): void {
+  set({ muted: toggled(held.muted, channel) })
+  retell()
+}
+
 export function stopMidi(): void {
   player?.stop()
   player = null
@@ -87,6 +133,8 @@ export function holdMidiFile(file: MidiFile, fileName: string): void {
     file,
     fileName,
     chosen: {},
+    soloed: new Set(),
+    muted: new Set(),
     bpm: String(file.bpm),
     trouble: file.channels.length === 0 ? 'That file has no notes in it.' : null,
   })
@@ -94,7 +142,7 @@ export function holdMidiFile(file: MidiFile, fileName: string): void {
 
 export function holdMidiTrouble(fileName: string, trouble: string): void {
   stopMidi()
-  set({ file: null, fileName, chosen: {}, trouble })
+  set({ file: null, fileName, chosen: {}, soloed: new Set(), muted: new Set(), trouble })
 }
 
 export function chooseSound(channel: number, choice: Chosen): void {
@@ -130,6 +178,10 @@ export function playMidi(): void {
   const made = createMidiPlayer(voices)
   player = made
   made.subscribe(() => set({ playing: made.snapshot().playing }))
+  /* Every dressed part is given a voice and the quiet ones are held back rather
+     than left out, so pressing solo mid-file brings a part in instead of asking
+     for a player that does not have it. */
+  retell()
   made.play(rateFor(held))
   set({ playing: true })
 }

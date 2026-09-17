@@ -55,6 +55,12 @@ export interface MidiPlayer {
      dividing the tempo it should be by the one it claims. */
   play(rate?: number): void
   stop(): void
+  /* Which channels are to be heard, everything until said otherwise. A channel
+     taken out is silenced where it stands rather than at its next note off,
+     because solo and mute are pressed mid-file and a held note would otherwise
+     go on sounding under the press. Its notes keep being counted off, so
+     putting it back does not resume in the middle of a chord it never heard. */
+  hear(channels: ReadonlySet<number>): void
   snapshot(): PlayerState
   subscribe(listener: () => void): () => void
 }
@@ -104,11 +110,19 @@ export function createMidiPlayer(
     for (const voice of voices) voice.instrument.allOff()
   }
 
+  /* Null rather than a set of every channel, so a player nobody has spoken to
+     plays the whole file. */
+  let heard: ReadonlySet<number> | null = null
+  const audible = (channel: number) => heard === null || heard.has(channel)
+
   const deliver = (cue: Cue) => {
     const event = readMidi(cue.data)
     if (!event) return
-    if (event.kind === 'noteOn') cue.voice.instrument.noteOn(event.key)
-    else if (event.kind === 'noteOff') cue.voice.instrument.noteOff(event.key)
+    /* Only the notes are held back. A note off reaching a channel that has just
+       been muted is what stops it sounding again when it is heard once more. */
+    if (event.kind === 'noteOn') {
+      if (audible(cue.voice.channel)) cue.voice.instrument.noteOn(event.key)
+    } else if (event.kind === 'noteOff') cue.voice.instrument.noteOff(event.key)
     else if (event.kind === 'allOff') cue.voice.instrument.allOff()
     /* bend and mod move panel controls, which a file is not playing. */
   }
@@ -141,6 +155,13 @@ export function createMidiPlayer(
       startedAt = clock.now()
       set({ playing: true, at: 0 })
       tick()
+    },
+
+    hear(channels) {
+      for (const voice of voices) {
+        if (audible(voice.channel) && !channels.has(voice.channel)) voice.instrument.allOff()
+      }
+      heard = channels
     },
 
     stop() {
