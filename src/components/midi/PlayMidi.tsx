@@ -95,7 +95,7 @@ export function PlayMidi({
   entries,
   loadPatch,
   desk,
-  onReport,
+  onProblem,
 }: {
   entries: readonly LibraryEntry[]
   /* The library holds summaries; playing needs the values, so the page that has
@@ -105,7 +105,9 @@ export function PlayMidi({
      below are hidden without it and the routes refuse without it, so this is
      handed down unconditionally rather than being a privilege in two places. */
   desk: Desk
-  onReport: (message: string) => void
+  /* Only what went wrong. There is no notification surface for a success any
+     more, and “it worked” was the half of this that nobody read. */
+  onProblem: (message: string) => void
 }) {
   const session = useMidiSession()
   const { file, fileName, name, storedId, trouble, chosen, bpm, soloed, muted, playing } = session
@@ -141,13 +143,12 @@ export function PlayMidi({
             ? await desk.save(storedId, input)
             : await desk.create(input)
           markArrangementStored(stored.id, stored.name)
-          onReport(`Saved “${stored.name}”`)
         } catch (error) {
-          onReport(error instanceof Error ? error.message : 'That did not save.')
+          onProblem(error instanceof Error ? error.message : 'That did not save.')
         }
       })()
     },
-    [desk, onReport, session, storedId],
+    [desk, onProblem, session, storedId],
   )
 
   const reopen = useCallback(
@@ -156,29 +157,30 @@ export function PlayMidi({
       void (async () => {
         try {
           const { missing } = await openArrangement(desk, arrangement.id)
-          onReport(
-            missing.length === 0
-              ? `Opened “${arrangement.name}”`
-              : `Opened “${arrangement.name}” — ${missing.join(', ')} ${missing.length === 1 ? 'is' : 'are'} gone, so those parts are silent`,
-          )
+          /* A part whose sound has been deleted plays nothing, and the file
+             otherwise opens looking complete, so this one is worth saying. */
+          if (missing.length > 0) {
+            onProblem(
+              `“${arrangement.name}” opened, but ${missing.join(', ')} ${missing.length === 1 ? 'is' : 'are'} gone, so those parts are silent`,
+            )
+          }
         } catch (error) {
-          onReport(error instanceof Error ? error.message : 'That did not open.')
+          onProblem(error instanceof Error ? error.message : 'That did not open.')
         }
       })()
     },
-    [desk, onReport],
+    [desk, onProblem],
   )
 
   const discard = useCallback(
     async (arrangement: ArrangementSummary) => {
       try {
         await desk.remove(arrangement.id)
-        onReport(`Deleted “${arrangement.name}”`)
       } catch (error) {
-        onReport(error instanceof Error ? error.message : 'That did not delete.')
+        onProblem(error instanceof Error ? error.message : 'That did not delete.')
       }
     },
-    [desk, onReport],
+    [desk, onProblem],
   )
 
   const choose = useCallback(

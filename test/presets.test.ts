@@ -50,12 +50,23 @@ describe('the bank shipped in the repo', () => {
     }
   })
 
-  /* The loader would capitalise a mixed-case name on its way into the database
-     anyway, which would leave the repo saying one thing and the app another. */
-  test('every name is already in capitals in the file', () => {
+  /* Capitals are the panel's typesetting and belong to the stylesheet, so a
+     bank file keeps the name as it is written. A loader that capitalised on the
+     way in would leave the repo saying one thing and the database another. */
+  test('every name reaches the database as it is written in the file', () => {
+    for (const file of files()) {
+      const raw = JSON.parse(readFileSync(join(SEED, file), 'utf8'))
+      const parsed = parsePatch(raw)
+      expect([file, parsed.ok && parsed.value.name]).toEqual([file, raw.name])
+    }
+  })
+
+  /* The whole bank is categorised, which is what makes the library's Category
+     row worth drawing on a fresh install. */
+  test('every preset wears a category', () => {
     for (const file of files()) {
       const preset = JSON.parse(readFileSync(join(SEED, file), 'utf8'))
-      expect([file, preset.name]).toEqual([file, String(preset.name).toUpperCase()])
+      expect([file, preset.tags.length > 0]).toEqual([file, true])
     }
   })
 
@@ -93,7 +104,7 @@ describe('loading the bank into the database', () => {
 
     const presets = await api.store.listPresets()
     expect(presets).toHaveLength(1)
-    expect(presets[0]!.name).toBe('SECOND')
+    expect(presets[0]!.name).toBe('Second')
     expect(presets[0]!.values).toEqual({ glide: 9 })
   })
 
@@ -155,7 +166,7 @@ describe('copying a preset, which is the only way to save one', () => {
     const patch = copyOf(aPreset('my-sound', 'My Sound'), { owner: null }, fixedIdentity())
     expect(patch.schemaVersion).toBe(PATCH_SCHEMA_VERSION)
     expect(patch.id).not.toBe('my-sound')
-    expect(patch.name).toBe('MY SOUND')
+    expect(patch.name).toBe('My Sound')
   })
 
   test('twice gives two independent patches', () => {
@@ -170,7 +181,7 @@ describe('copying a preset, which is the only way to save one', () => {
 
   test('the copy records what it came from', () => {
     const copy = copyOf(aPreset('sub-bass', 'Sub Bass'), { owner: null }, fixedIdentity())
-    expect(copy.derivedFrom).toMatchObject({ id: 'sub-bass', name: 'SUB BASS', kind: 'factory' })
+    expect(copy.derivedFrom).toMatchObject({ id: 'sub-bass', name: 'Sub Bass', kind: 'factory' })
   })
 
   test('a copy of a copy names its immediate parent, not the original', () => {

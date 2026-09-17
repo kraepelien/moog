@@ -186,6 +186,28 @@ const SCHEMA: Step[] = [
       }
     }
   },
+
+  /* A colour an administrator picks for a category, and the one place the app's
+     own palette is kept.
+
+     The colour is on the tag rather than in the settings blob because it
+     belongs to the row: deleting the tag takes it with it, where a blob would
+     keep a colour for a name nothing wears. Null is the normal state and means
+     the hash picks, which is what every tag written before this had.
+
+     `app_settings` is keyed and global, unlike `settings`, which is one row per
+     person: a skin is the building's paint, not somebody's preference. */
+  (db) => {
+    db.run(`
+      alter table tags add column colour text;
+
+      create table app_settings (
+        key text primary key,
+        json text not null,
+        updated_at text not null
+      );
+    `)
+  },
 ]
 
 export const DB_VERSION = SCHEMA.length

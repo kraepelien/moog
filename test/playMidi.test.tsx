@@ -114,18 +114,18 @@ function fakeDesk(): FakeDesk {
 }
 
 let desk: FakeDesk
-let reported: string[]
+let problems: string[]
 
 function show(privileges: readonly string[] = [PRIVILEGE.StoreMidi]) {
   desk = fakeDesk()
-  reported = []
+  problems = []
   const { container } = render(
     <AccessProvider privileges={privileges}>
       <PlayMidi
         entries={[ENTRY]}
         loadPatch={async () => createPatch({ name: 'Sub Bass' })}
         desk={desk}
-        onReport={(message) => reported.push(message)}
+        onProblem={(message) => problems.push(message)}
       />
     </AccessProvider>,
   )
@@ -440,7 +440,7 @@ describe('keeping an arrangement', () => {
     await openSaved('Night Drive')
 
     await waitFor(() => expect(screen.getByText('silent')).toBeDefined())
-    expect(reported.join(' ')).toContain('Sub Bass')
+    expect(problems.join(' ')).toContain('Sub Bass')
   })
 
   test('drops one that is deleted from the list', async () => {

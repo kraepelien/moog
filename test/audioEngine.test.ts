@@ -102,9 +102,10 @@ describe('three oscillators set the same way', () => {
   })
 
   test('leave Oscillator-1 where the panel put it, since it is the reference', () => {
-    start()
-    /* It carries no frequency knob because the other two are tuned against it,
-       so it is the one that is right by definition. */
+    /* At 8ft, where the range adds nothing, so nought means the knobs and not a
+       cancellation. It carries no frequency knob because the other two are tuned
+       against it, so it is the one that is right by definition. */
+    start({ osc1Range: 'ft8' })
     const first = voices()[0]! as unknown as { detune: FakeParam }
     expect(first.detune.value).toBe(0)
   })
@@ -247,7 +248,9 @@ describe('turning a knob while a note sounds', () => {
   test('eases rather than jumping, so a knob is not a click', () => {
     start()
     const before = context.calls.length
-    synth.apply(panel({ cutoffFrequency: 4 }))
+    /* Downwards: the top of the dial's travel is past Nyquist and clamps, so a
+       step taken up there would move nothing and prove nothing. */
+    synth.apply(panel({ cutoffFrequency: 0 }))
     const made = context.calls.slice(before)
     expect(made.length).toBeGreaterThan(0)
     expect(made.every((call) => call.method === 'setTargetAtTime')).toBe(true)

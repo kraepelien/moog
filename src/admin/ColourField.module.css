@@ -1,0 +1,41 @@
+.field {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+/* The native picker draws its own inset border and padding, which at this size
+   leaves a swatch smaller than the well around it. Stripped back so the square
+   is the colour and nothing else. */
+.swatch {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  margin-top: 4px;
+  padding: 0;
+  border: 1px solid;
+  border-color: inherit;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+}
+
+.swatch::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.swatch::-webkit-color-swatch,
+.swatch::-moz-color-swatch {
+  border: none;
+  border-radius: 5px;
+}
+
+.text {
+  min-width: 0;
+  width: 9rem;
+}
+
+.text input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+}

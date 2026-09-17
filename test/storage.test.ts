@@ -43,7 +43,7 @@ describe('patches are rows', () => {
     await api.store.save({ ...older, updatedAt: '2020-01-01T00:00:00.000Z' })
 
     const list = await api.store.list()
-    expect(list.map((entry) => entry.name)).toEqual(['NEWER', 'OLDER'])
+    expect(list.map((entry) => entry.name)).toEqual(['Newer', 'Older'])
     expect(list[0]).not.toHaveProperty('values')
   })
 
@@ -59,7 +59,7 @@ describe('patches are rows', () => {
     await api.store.create(patch)
     const [summary] = await api.store.list()
     expect(summary).toMatchObject({
-      name: 'TAGGED',
+      name: 'Tagged',
       tags: ['bass', 'lead'],
       instrument: patch.instrument,
       visibility: 'public',
@@ -85,7 +85,7 @@ describe('patches are rows', () => {
     const patch = await api.store.create(make('First', '2026-01-01T00:00:00.000Z'))
     await api.store.save({ ...patch, name: 'Second' })
     const list = await api.store.list()
-    expect(list.map((entry) => entry.name)).toEqual(['SECOND'])
+    expect(list.map((entry) => entry.name)).toEqual(['Second'])
   })
 })
 

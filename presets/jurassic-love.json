@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "jurassic-love",
-  "name": "JURASSIC LOVE",
+  "name": "Jurassic Love",
   "notes": "",
   "values": {
     "osc1Range": "ft32",
@@ -20,9 +20,16 @@
     "amountOfContour": 4,
     "filterSustainLevel": 9,
     "loudnessSustainLevel": 9,
-    "lfoRate": 7
+    "lfoRate": 7,
+    "osc3Waveform": "triangle",
+    "noiseVolume": 0,
+    "filterModulation": "on",
+    "keyboardControl1": "on",
+    "keyboardControl2": "on"
   },
-  "tags": [],
+  "tags": [
+    "Lead"
+  ],
   "instrument": "minimoog-model-d",
   "visibility": "public",
   "approximate": true,

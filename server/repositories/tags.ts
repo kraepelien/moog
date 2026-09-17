@@ -9,6 +9,10 @@ import type { TagInUse } from '@admin/tags.ts'
 export interface Tag {
   readonly id: number
   readonly name: string
+  /* Null is the normal state: nobody has chosen, so every surface hashes the
+     name into one of the five tag tones. A hex here overrides that everywhere
+     the tag is drawn. */
+  readonly colour: string | null
 }
 
 export function createTags(db: Database) {
@@ -16,7 +20,9 @@ export function createTags(db: Database) {
     /* Ordered by name rather than by id, so the admin page's additions fall in
        among the first twelve instead of piling up after them. */
     list(): Tag[] {
-      return db.query<Tag, []>(`select id, name from tags order by name collate nocase`).all()
+      return db
+        .query<Tag, []>(`select id, name, colour from tags order by name collate nocase`)
+        .all()
     },
 
     /* The same list with the count the admin page needs to ask its question
@@ -27,7 +33,7 @@ export function createTags(db: Database) {
     listInUse(): TagInUse[] {
       return db
         .query<TagInUse, []>(
-          `select t.id, t.name,
+          `select t.id, t.name, t.colour,
                   (select count(*) from patches p
                     where p.deleted_at is null
                       and exists (select 1 from json_each(p.tags) worn
@@ -43,14 +49,14 @@ export function createTags(db: Database) {
     findByName(name: string): Tag | null {
       return (
         db
-          .query<Tag, [string]>(`select id, name from tags where name = ? collate nocase`)
+          .query<Tag, [string]>(`select id, name, colour from tags where name = ? collate nocase`)
           .get(name) ?? null
       )
     },
 
     insert(name: string): Tag {
       db.run(`insert into tags (name, created_at) values (?, ?)`, [name, new Date().toISOString()])
-      return db.query<Tag, [string]>(`select id, name from tags where name = ?`).get(name)!
+      return db.query<Tag, [string]>(`select id, name, colour from tags where name = ?`).get(name)!
     },
 
     insertMany(names: readonly string[]): number {
@@ -60,6 +66,14 @@ export function createTags(db: Database) {
         for (const name of names) insert.run(name, at)
       })()
       return names.length
+    },
+
+    /* Null clears it, which puts the tag back on the hash. */
+    setColour(id: number, colour: string | null): Tag | null {
+      db.run(`update tags set colour = ? where id = ?`, [colour, id])
+      return (
+        db.query<Tag, [number]>(`select id, name, colour from tags where id = ?`).get(id) ?? null
+      )
     },
 
     delete(id: number): boolean {

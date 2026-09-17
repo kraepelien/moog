@@ -1,0 +1,56 @@
+.page {
+  padding: 16px 20px 20px;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.actions button {
+  min-width: 0;
+  padding: 2px 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.note {
+  margin-bottom: 16px;
+}
+
+.group + .group {
+  margin-top: 20px;
+}
+
+.groupName {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* As many columns as fit. Sixteen fields in one column is a scroll, and in a
+   fixed four is a squeeze on a laptop. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 4px 16px;
+  margin-top: 8px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}

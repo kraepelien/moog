@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "rez-hit",
-  "name": "REZ HIT",
+  "name": "Rez Hit",
   "notes": "",
   "values": {
     "osc1Waveform": "sawtooth",
@@ -13,9 +13,20 @@
     "filterEmphasis": 9,
     "amountOfContour": 7,
     "filterSustainLevel": 1,
-    "loudnessSustainLevel": 1
+    "loudnessSustainLevel": 1,
+    "osc1Range": "ft8",
+    "osc2Range": "ft8",
+    "osc3Range": "ft8",
+    "osc3Waveform": "triangle",
+    "osc3Volume": 0,
+    "noiseVolume": 0,
+    "filterModulation": "on",
+    "keyboardControl1": "on",
+    "keyboardControl2": "on"
   },
-  "tags": [],
+  "tags": [
+    "FX"
+  ],
   "instrument": "minimoog-model-d",
   "visibility": "public",
   "approximate": true,

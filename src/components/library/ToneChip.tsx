@@ -1,5 +1,5 @@
 import Chip from '@mui/material/Chip'
-import { TONE_COLOURS, type Tone } from '@/tones.ts'
+import { TONE_COLOURS, type Tone, type ToneColour } from '@/tones.ts'
 import styles from './ToneChip.module.css'
 
 /* One chip, in one of the library's tones. Everything the library labels goes
@@ -21,7 +21,10 @@ export function ToneChip({
   ariaLabel,
 }: {
   label: string
-  tone: Tone
+  /* A named tone, or the three shades themselves — which is how a tag wearing
+     a colour an administrator chose arrives, there being no custom property for
+     a colour nobody declared in advance. */
+  tone: Tone | ToneColour
   /* Only meaningful with onClick: a label is neither on nor off. */
   selected?: boolean
   onClick?: (event: React.MouseEvent) => void
@@ -30,7 +33,7 @@ export function ToneChip({
      inside a library row reads as the tag, and says what pressing it does. */
   ariaLabel?: string
 }) {
-  const colour = TONE_COLOURS[tone]
+  const colour = typeof tone === 'string' ? TONE_COLOURS[tone] : tone
   const on = selected === true
 
   return (

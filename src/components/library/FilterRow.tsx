@@ -1,13 +1,13 @@
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { ToneChip } from './ToneChip.tsx'
-import type { Tone } from '@/tones.ts'
+import type { Tone, ToneColour } from '@/tones.ts'
 import styles from './FilterRow.module.css'
 
 export interface FilterChoice {
   readonly value: string
   readonly label: string
-  readonly tone: Tone
+  readonly tone: Tone | ToneColour
   /* Shown but not switchable — a fact about the patch rather than a choice, like
      the bank a patch came from, which no button here can change. */
   readonly locked?: boolean

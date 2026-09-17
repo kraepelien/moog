@@ -5,6 +5,7 @@ import type { Repositories } from '@server/repositories/index.ts'
 import { createAccess } from './access.ts'
 import { createArrangementService } from './arrangements.ts'
 import { createPatchService, type Identity } from './patches.ts'
+import { createSkinService } from './skin.ts'
 import { createTagService } from './tags.ts'
 import { createUserService } from './users.ts'
 
@@ -32,6 +33,7 @@ export function createServices({
     limits,
     access: createAccess(repositories, config),
     patches: createPatchService(repositories, limits, identity),
+    skin: createSkinService(repositories),
     tags: createTagService(repositories),
     arrangements: createArrangementService(repositories, limits, identity),
     users: createUserService(repositories, config),

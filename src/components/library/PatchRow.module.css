@@ -17,6 +17,13 @@
   background: rgb(255 255 255 / 5%);
 }
 
+/* The row the editor is showing. A rule down its edge rather than a fill: a
+   filled row reads as hovered, and the list is hovered all the time. */
+.row[data-open] {
+  background: var(--tone-green-field);
+  box-shadow: inset 3px 0 0 var(--tone-green-ink);
+}
+
 /* The columns collapse rather than shrink: at this width the chips have stopped
    being readable, and the name and its rating are what the line is for. */
 @media (max-width: 880px) {
@@ -31,11 +38,14 @@
   }
 }
 
+/* Set in capitals the way the sheets print them. Typesetting only: the stored
+   name is whatever was typed, and this is the one place that decides. */
 .name {
   font-size: 0.86rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   overflow-wrap: anywhere;
+  text-transform: uppercase;
 }
 
 .tags,

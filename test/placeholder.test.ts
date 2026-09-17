@@ -48,7 +48,7 @@ describe('reviewing the layout cannot damage a patch', () => {
     const patch = createPatch({ values: { osc1Range: '8' } }, fixedIdentity())
     const { values, report } = resolvePatch(panelRegistry, patch)
 
-    expect(values.osc1Range).toBe('ft8')
+    expect(values.osc1Range).toBe('ft16')
     expect(report.invalid).toEqual([
       { id: 'osc1Range', reason: '"8" is not a position of osc1Range' },
     ])

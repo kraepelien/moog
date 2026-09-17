@@ -250,11 +250,20 @@ Three short fields that let a list be drawn without fetching each patch are the
 opposite trade. `approximate` stays out, because it is a claim about values the
 list does not carry.
 
-**A tag's colour is assigned, not meaningful.** Tags are plain strings an admin
-can add to and retire, so a hand-kept colour map would leave new tags grey and
-dead entries behind. `toneForTag` hashes the tag instead, which gives it one
-colour everywhere it appears without anyone choosing it. The colour is there to
-tell chips apart at a glance, nothing more.
+**A tag's colour is assigned unless somebody assigns it.** Tags are plain
+strings an admin can add to and retire, so a colour map that had to be kept by
+hand would leave new tags grey and dead entries behind. `toneForTag` hashes the
+name instead, which gives every tag one colour everywhere it appears without
+anyone choosing it, and the colour is there to tell chips apart at a glance and
+nothing more.
+
+An admin who *does* want to choose picks one on the Tags page, and it is stored
+on the row rather than in a map: deleting the tag takes the colour with it,
+where a map would keep a colour for a name nothing wears. One hex, not two — the
+lettering is the colour and the chip behind it is a `color-mix` of the same,
+which is why there is no pair that can be set to disagree. A patch stores the
+tag's *name* and points at no row, so a tag the list has since forgotten falls
+back to the hash and still draws.
 
 **The Other row is the opposite**, because it is a closed set of three the code
 owns and the colour is the distinction: Factory red, User blue, Custom purple.
@@ -322,6 +331,37 @@ MUI is wrapped in `StyledEngineProvider injectFirst` in `main.tsx`. Without it
 MUI's own single-class rules for things like `display` and `border-radius` are
 injected after ours and win on order alone, which makes a component's
 `.module.css` a suggestion rather than a rule.
+
+## The app's colours
+
+`src/shellPalette.css` declares every colour the chrome draws with as a custom property on `:root`,
+and `src/tones.ts` hands out `var()` references rather than values. Nothing else changes: MUI's
+theme, the CSS modules and the inline `sx` colours all read the same properties, so repainting the
+app is one write per colour with no re-render and no component knowing a skin exists.
+
+Only the **inks** are declared. Every wash and every switched-on chip is a `color-mix` of one, so a
+skin is sixteen colours rather than forty-eight that have to be kept in step by hand — and a tag
+coloured by an admin gets the same three shades from `shadesOf` without a custom property existing
+for it.
+
+A skin is **partial**: a key it leaves out is the stylesheet's value, so adding a colour to
+`SKIN_SWATCHES` never needs a migration, and choosing the default is *removing* the key rather than
+storing it. It is sifted by `cleanSkin` in both directions — on the way in, because a value that is
+not a hex is a way of writing CSS into everybody's page, and on the way out, so a skin saved by a
+newer build renders as this build's defaults instead of putting an unknown string in a style
+attribute. The same function runs in the browser and in the service, so the page cannot offer
+something the route would refuse.
+
+It is stored in `app_settings`, which is keyed and global — unlike `settings`, which is a row per
+person. A skin is the building's paint, not somebody's preference, so `AdminLayout` is what it takes
+to change it and everybody sees the result. It is fetched and painted in `main.tsx` **before the
+first render**, ahead of the session, so the sign-in page wears it too and nobody watches the
+defaults flash past.
+
+The Layout page has no preview pane, because the preview is the page: every field writes straight
+onto `:root`, so the bar, the cards, the chips and the text under the cursor all move as the picker
+moves. That is also why the draft lives in `Workspace` rather than on the page — leaving without
+saving has to take the paint back off, and the page that was painting it is gone by then.
 
 ## Patches
 
@@ -473,8 +513,8 @@ rejected is the reason the current shape looks odd if you meet it cold.
 </details>
 
 A **privilege** is a thing the code can do — `AccessAdmin`, `AdminUsers`, `AdminTags`,
-`AdminPatches`, `StoreMidi`. Adding one is that file plus the route that asks for it: never a
-migration.
+`AdminLayout`, `AdminPatches`, `StoreMidi`. Adding one is that file plus the route that asks for it:
+never a migration.
 
 A **role** is a preset — a named set of privileges, stored against a user. It is stored rather than
 stamped out as individual grants because that is what keeps a preset *live*: changing what `tester`
@@ -729,13 +769,24 @@ Factory presets ship with the app and are read-only. They share the patch schema
 timestamps, which belong to a stored patch. Loading one produces a fresh unsaved patch with a new
 id, so saving afterwards can never write back over a preset.
 
-The two presets in `presets/factory.ts` are obvious placeholders. Real preset data wants this shape,
-with any control you have no real value for **omitted** rather than guessed — an omission falls
-through to the registry default, which is honest, and a guess is not:
+A preset file is one patch, named after the slug inside it, and a control you have no real value
+for is **omitted** rather than guessed — an omission is honest and a guess is not:
 
 ```jsonc
 { "slug": "midnight-funk", "name": "Midnight Funk", "notes": "", "values": { "<controlId>": <value> } }
 ```
+
+**But an omission is a reference to the registry default, so moving a default re-voices the bank.**
+Every preset here is sparse, and most of them lean on a dozen defaults each. When the panel's
+starting positions changed to the Init patch's, every control whose default moved *and* whose old
+value a preset could be heard to depend on was written into that preset's file explicitly — decided
+by resolving each patch both ways and comparing `settingsFrom`, with the mod wheel down and wide
+open so a routing switch that only matters once the wheel is moved was kept rather than pruned as
+inaudible. Anything that made no difference to the sound was left out, which is why the files are
+still sparse rather than forty-six values each.
+
+The alternative was to let the bank drift, and a reconstruction of a sound that quietly changes is
+worse than a verbose file. Do the same thing the next time a default moves.
 
 ## Import and export
 

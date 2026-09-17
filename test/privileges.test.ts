@@ -265,6 +265,7 @@ describe('a role inheriting from the ones below it', () => {
       PRIVILEGE.AccessAdmin,
       PRIVILEGE.AdminUsers,
       PRIVILEGE.AdminTags,
+      PRIVILEGE.AdminLayout,
       PRIVILEGE.AdminPatches,
       PRIVILEGE.StoreMidi,
     ])

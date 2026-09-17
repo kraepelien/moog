@@ -7,7 +7,11 @@ import { SHELL } from './tones.ts'
 
    Dark throughout, at the instrument's own black rather than MUI's grey: the
    panel is white ink on black, and a light page around it made the panel a
-   window rather than the thing on the page. */
+   window rather than the thing on the page.
+
+   Every colour is a custom property rather than a value, so a skin an
+   administrator saves repaints MUI's own chrome along with everything else and
+   the theme never has to be rebuilt. */
 export const theme = createTheme({
   typography: {
     fontFamily: "'Google Sans Flex Variable', system-ui, sans-serif",
@@ -23,8 +27,8 @@ export const theme = createTheme({
       defaultProps: { elevation: 0, color: 'default' },
       styleOverrides: {
         root: {
-          backgroundColor: SHELL.page,
-          color: SHELL.ink,
+          backgroundColor: SHELL.bar,
+          color: SHELL.barInk,
           borderBottom: `1px solid ${SHELL.edge}`,
         },
       },

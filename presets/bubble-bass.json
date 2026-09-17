@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "bubble-bass",
-  "name": "BUBBLE BASS",
+  "name": "Bubble Bass",
   "notes": "",
   "values": {
     "osc1Range": "ft16",
@@ -16,9 +16,18 @@
     "amountOfContour": 7,
     "filterSustainLevel": 3,
     "loudnessSustainLevel": 7,
-    "modulationMix": 5
+    "modulationMix": 5,
+    "osc3Range": "ft8",
+    "osc3Waveform": "triangle",
+    "osc3Volume": 0,
+    "noiseVolume": 0,
+    "filterModulation": "on",
+    "keyboardControl2": "on",
+    "cutoffFrequency": 0
   },
-  "tags": [],
+  "tags": [
+    "Bass"
+  ],
   "instrument": "minimoog-model-d",
   "visibility": "public",
   "approximate": true,

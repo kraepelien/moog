@@ -158,7 +158,7 @@ describe('the request handler', () => {
     const { id } = (await created.json()) as { id: string }
 
     const got = (await call(handle, 'GET', `/api/patches/${id}`))!
-    expect(await got.json()).toMatchObject({ name: 'ONE' })
+    expect(await got.json()).toMatchObject({ name: 'One' })
 
     expect((await call(handle, 'DELETE', `/api/patches/${id}`))!.status).toBe(200)
     expect((await call(handle, 'GET', `/api/patches/${id}`))!.status).toBe(404)

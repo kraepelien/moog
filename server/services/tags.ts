@@ -1,5 +1,6 @@
 import type { Database } from 'bun:sqlite'
 import { tagNameProblem } from '@admin/tags.ts'
+import { isHexColour } from '@/tones.ts'
 import { createTags, type Tag } from '@server/repositories/tags.ts'
 import type { Repositories } from '@server/repositories/index.ts'
 import type { Refusal } from './refusal.ts'
@@ -21,7 +22,8 @@ export const INITIAL_TAGS: readonly string[] = [
   'Strings',
   'Pad',
   'Stabs',
-  'Drones',
+  'Drone',
+  'Drums',
   'FX',
 ]
 
@@ -52,6 +54,19 @@ export function createTagService(repositories: Repositories) {
         return { error: 'that tag is already on the list', status: 409 }
       }
       return tags.insert(trimmed)
+    },
+
+    /* `null` puts the tag back on the hash, which is the only way to undo a
+       colour — there is no empty hex. Checked here rather than at the route
+       because a colour reaching a style attribute unvalidated is how
+       `red; background: url(…)` gets drawn. */
+    setColour(id: number, colour: unknown): Tag | Refusal {
+      if (!Number.isInteger(id)) return { error: 'invalid id', status: 400 }
+      if (colour !== null && !isHexColour(colour)) {
+        return { error: 'a colour is #rgb or #rrggbb, or null to clear it', status: 400 }
+      }
+      const changed = tags.setColour(id, colour === null ? null : colour.toLowerCase())
+      return changed ?? { error: 'not found', status: 404 }
     },
 
     remove(id: number): true | Refusal {

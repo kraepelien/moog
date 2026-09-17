@@ -85,7 +85,7 @@ describe('what the app sends', () => {
     await store.save(createPatch({ name: 'Two' }, fixedIdentity()))
 
     expect(calls[0]!.init?.method).toBe('PUT')
-    expect(JSON.parse(String(calls[0]!.init?.body)).name).toBe('TWO')
+    expect(JSON.parse(String(calls[0]!.init?.body)).name).toBe('Two')
   })
 
   test('the session rides along, because the request is same-origin', async () => {

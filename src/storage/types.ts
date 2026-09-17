@@ -1,4 +1,4 @@
-import type { TagInUse } from '@admin/tags.ts'
+import type { Tag, TagInUse } from '@admin/tags.ts'
 import type { AdminUser } from '@admin/users.ts'
 import type { LibraryEntry } from '@components/library/entry.ts'
 import type {
@@ -7,6 +7,7 @@ import type {
   ArrangementSummary,
 } from '@components/midi/arrangement.ts'
 import type { Patch, Visibility } from '@patch/schema.ts'
+import type { Skin } from '@/tones.ts'
 
 export interface PatchSummary {
   readonly id: string
@@ -63,7 +64,16 @@ export interface PatchStore {
    patch and outlive any one of them. A patch stores the name as a plain string,
    so this list says what may be offered, never what a patch means. */
 export interface TagStore {
-  listTags(): Promise<readonly string[]>
+  /* Rows rather than names: the save form offers the names and every chip in
+     the app is drawn in whatever colour the row carries. */
+  listTags(): Promise<readonly Tag[]>
+}
+
+/* The app's colours. Readable by anyone — they have to be on :root before the
+   first paint, signed in or not — and writable only by an administrator. */
+export interface SkinStore {
+  getSkin(): Promise<Skin>
+  putSkin(skin: Skin): Promise<Skin>
 }
 
 /* Refused with `forbidden` for anyone the server does not count as an admin,
@@ -71,6 +81,9 @@ export interface TagStore {
 export interface AdminStore {
   listTagsInUse(): Promise<readonly TagInUse[]>
   addTag(name: string): Promise<void>
+  /* Null puts the tag back on the hash, which is the only way to undo one:
+     there is no empty hex. */
+  setTagColour(id: number, colour: string | null): Promise<void>
   removeTag(id: number): Promise<void>
 }
 

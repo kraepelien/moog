@@ -5,7 +5,7 @@ import { StarRating } from './StarRating.tsx'
 import { ToneChip } from './ToneChip.tsx'
 import { BANK_TONES, type Bank } from './entry.ts'
 import { instrumentName } from '@instruments/instruments.ts'
-import { TONE_COLOURS, toneForTag, type Tone } from '@/tones.ts'
+import { TONE_COLOURS, tagColour, type TagPalette, type Tone } from '@/tones.ts'
 import styles from './PatchHeader.module.css'
 
 export interface HeaderAction {
@@ -13,6 +13,16 @@ export interface HeaderAction {
   readonly tone: Tone
   readonly onSelect: () => void
   readonly disabled?: boolean
+}
+
+/* Whether what is on the panel has been written down. Green is the whole of the
+   feedback a save gives — there is no notification any more — so it has to be
+   the resting state of a saved patch rather than a flash that is gone by the
+   time anybody looks up. Amber is the other half of the same signal, and both
+   are away from the white the rest of the bar is set in. */
+const TITLE_TONE: Record<'saved' | 'unsaved', Tone> = {
+  saved: 'green',
+  unsaved: 'amber',
 }
 
 /* What a patch says about itself, in a bar: its name, the chips the library
@@ -32,6 +42,8 @@ export function PatchHeader({
   ratingCount,
   onRate,
   actions,
+  unsaved,
+  tagPalette = {},
 }: {
   name: string
   tags: readonly string[]
@@ -45,18 +57,32 @@ export function PatchHeader({
      rating on until it has been saved, so the stars are shown but not offered. */
   onRate?: (stars: number) => void
   actions: readonly HeaderAction[]
+  /* Only the editor knows this, and only the editor passes it. Left out, the
+     name is drawn in the bar's own ink, which is what a row in a list wants. */
+  unsaved?: boolean
+  tagPalette?: TagPalette
 }) {
   return (
     <Box className={styles.header}>
-      <Typography component="h2" className={styles.title}>
+      <Typography
+        component="h2"
+        className={styles.title}
+        sx={
+          unsaved === undefined
+            ? undefined
+            : { color: TONE_COLOURS[TITLE_TONE[unsaved ? 'unsaved' : 'saved']].ink }
+        }
+      >
         {name || '(unnamed)'}
       </Typography>
 
+      {/* Synth first, then what it is filed under: the instrument is a fact
+          about the patch and the categories are somebody's reading of it. */}
       <Box className={styles.chips}>
-        {tags.map((tag) => (
-          <ToneChip key={tag} label={tag} tone={toneForTag(tag)} />
-        ))}
         {instrument !== null && <ToneChip label={instrumentName(instrument)} tone="green" />}
+        {tags.map((tag) => (
+          <ToneChip key={tag} label={tag} tone={tagColour(tagPalette, tag)} />
+        ))}
         {bank !== null && <ToneChip label={bank} tone={BANK_TONES[bank]} />}
         {approximate && <ToneChip label="approximate" tone="grey" />}
       </Box>

@@ -8,8 +8,8 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { FilterRow, type FilterChoice } from './FilterRow.tsx'
 import { BANK_TONES } from './entry.ts'
-import { SHELL, TONE_COLOURS, toneForTag } from '@/tones.ts'
-import { patchName, type Patch, type Visibility } from '@patch/schema.ts'
+import { SHELL, TONE_COLOURS, tagColour, type TagPalette } from '@/tones.ts'
+import type { Patch, Visibility } from '@patch/schema.ts'
 import styles from './SavePatchDialog.module.css'
 
 function ClearGlyph() {
@@ -58,6 +58,7 @@ export function SavePatchDialog({
   patch,
   outcome,
   tagChoices,
+  tagPalette = {},
   onCancel,
   onSave,
 }: {
@@ -66,6 +67,7 @@ export function SavePatchDialog({
   outcome: SaveOutcome
   /* The tags already in use, since there is nowhere here to invent one. */
   tagChoices: readonly string[]
+  tagPalette?: TagPalette
   onCancel: () => void
   onSave: (fields: PatchFields) => void
 }) {
@@ -92,7 +94,7 @@ export function SavePatchDialog({
   const categories: FilterChoice[] = worn.map((tag) => ({
     value: tag,
     label: tag,
-    tone: toneForTag(tag),
+    tone: tagColour(tagPalette, tag),
   }))
 
   /* The bank is the server's, so there is no factory chip to press, and you are
@@ -145,9 +147,7 @@ export function SavePatchDialog({
           size="small"
           value={fields.name}
           placeholder="Patch name"
-          /* Uppercased as it is typed, not only drawn that way: the field
-             showed capitals while handing back whatever was typed. */
-          onChange={(event) => setFields({ ...fields, name: patchName(event.target.value) })}
+          onChange={(event) => setFields({ ...fields, name: event.target.value })}
           className={styles.name}
           sx={{ '& .MuiOutlinedInput-root': { backgroundColor: SHELL.field } }}
           slotProps={{
