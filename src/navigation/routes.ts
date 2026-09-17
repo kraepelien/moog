@@ -25,8 +25,16 @@ export const ROUTES: readonly RouteDef[] = [
   { name: 'editor', path: '/editor', title: 'Patch editor', tab: true },
   { name: 'library', path: '/library', title: 'Patch library', tab: true },
   { name: 'midi', path: '/midi', title: 'Play MIDI', tab: true },
-  { name: 'admin', path: '/admin', title: 'Administration', needs: PRIVILEGE.AccessAdmin },
+  { name: 'admin', path: '/admin', title: 'Tags', needs: PRIVILEGE.AccessAdmin },
+  /* Its own privilege rather than nesting behind AccessAdmin, so the two can be
+     held apart — which is what the rules protecting this page assume. */
+  { name: 'users', path: '/admin/users', title: 'People', needs: PRIVILEGE.AdminUsers },
 ]
+
+/* The administration area's own pages, for the nav inside it. */
+export const ADMIN_ROUTES: readonly RouteDef[] = ROUTES.filter((route) =>
+  route.path.startsWith('/admin'),
+)
 
 export const DEFAULT_ROUTE: RouteDef = ROUTES[0]!
 

@@ -1,4 +1,5 @@
 import type { TagInUse } from '@admin/tags.ts'
+import type { AdminUser } from '@admin/users.ts'
 import type { LibraryEntry } from '@components/library/entry.ts'
 import type {
   Arrangement,
@@ -71,6 +72,18 @@ export interface AdminStore {
   listTagsInUse(): Promise<readonly TagInUse[]>
   addTag(name: string): Promise<void>
   removeTag(id: number): Promise<void>
+}
+
+/* Everyone with an account, and what they may do. One privilege at a time
+   rather than a whole set: a set write would delete an override row naming a
+   privilege this build does not know, and a silently deleted revoke is somebody
+   getting access back. */
+export interface UserStore {
+  listUsers(): Promise<readonly AdminUser[]>
+  setUserRoles(uid: string, roles: readonly string[]): Promise<AdminUser>
+  setUserPrivilege(uid: string, privilege: string, granted: boolean): Promise<AdminUser>
+  /* Back to whatever the roles say. */
+  clearUserPrivilege(uid: string, privilege: string): Promise<AdminUser>
 }
 
 export interface PresetStore {

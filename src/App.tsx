@@ -11,6 +11,10 @@ import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { AdminPage } from './admin/AdminPage.tsx'
+import { AdminNav } from './admin/AdminNav.tsx'
+import { UsersPage } from './admin/UsersPage.tsx'
+import type { Decision } from './admin/UserAccess.tsx'
+import type { AdminUser } from './admin/users.ts'
 import type { TagInUse } from './admin/tags.ts'
 import { FitToWidth } from './components/FitToWidth.tsx'
 import { MidiHelp } from './components/MidiHelp.tsx'
@@ -34,7 +38,7 @@ import { signOut, useSession, type Session } from './session/session.ts'
 import { AccessProvider } from './access/AccessProvider.tsx'
 import { useCan } from './access/context.ts'
 import { Can, RouteGuard } from './access/Can.tsx'
-import { PRIVILEGE } from './access/privileges.ts'
+import { PRIVILEGE, type Privilege, type Role } from './access/privileges.ts'
 import { panelRegistry } from './controls/panel.ts'
 import { isRecalled } from './controls/recall.ts'
 import type { ControlValue } from './controls/types.ts'
@@ -142,6 +146,8 @@ function Workspace({
   const [{ route }, navigate] = useRoute()
   const mayAdminTags = useCan(PRIVILEGE.AdminTags)
   const mayAccessAdmin = useCan(PRIVILEGE.AccessAdmin)
+  const mayAdminUsers = useCan(PRIVILEGE.AdminUsers)
+  const [users, setUsers] = useState<readonly AdminUser[]>([])
   const [midiHelp, setMidiHelp] = useState(false)
   /* The menu cannot hold a file input, so it holds a button that clicks one. */
   const importing = useRef<HTMLInputElement>(null)
@@ -190,19 +196,80 @@ function Workspace({
     return () => window.removeEventListener('beforeunload', warn)
   }, [dirty])
 
-  const run = useCallback(async (message: string, action: () => Promise<void>) => {
-    try {
-      await action()
-      if (message) setStatus(message)
-    } catch (error) {
-      if (error instanceof Cancelled) return
-      setStatus(error instanceof StoreError ? error.message : `Failed: ${String(error)}`)
-    }
-  }, [])
+  const run = useCallback(
+    async (message: string, action: () => Promise<void>) => {
+      try {
+        await action()
+        if (message) setStatus(message)
+      } catch (error) {
+        if (error instanceof Cancelled) return
+        setStatus(error instanceof StoreError ? error.message : `Failed: ${String(error)}`)
+
+        /* A refusal means this browser's idea of what it may do is out of date —
+           somebody has been given something, or had it taken away, since the
+           page loaded. Asking again here is what makes the buttons correct
+           themselves without polling for a change that almost never comes. */
+        if (error instanceof StoreError && error.kind === 'forbidden') refreshSession()
+      }
+    },
+    [refreshSession],
+  )
 
   const refreshTagUse = useCallback(async () => {
     setTagUse(await store.listTagsInUse())
   }, [])
+
+  const refreshUsers = useCallback(async () => {
+    setUsers(await store.listUsers())
+  }, [])
+
+  /* Asked for only on the page that shows it, like the tag counts: everybody
+     else would be making a call the route refuses. */
+  useEffect(() => {
+    if (route.name !== 'users' || !mayAdminUsers) return
+    void (async () => {
+      await run('', refreshUsers)
+    })()
+  }, [route.name, mayAdminUsers, refreshUsers, run])
+
+  /* The list is replaced from what the write returned rather than re-fetched:
+     the server answers with the account as it now stands, so a second call
+     would only be a chance for the two to disagree. */
+  const replaceUser = useCallback((changed: AdminUser) => {
+    setUsers((held) => held.map((one) => (one.uid === changed.uid ? changed : one)))
+  }, [])
+
+  /* Changing your own access changes what this page may draw, so the session is
+     asked again — otherwise the buttons keep claiming something that is no
+     longer true about the person pressing them. */
+  const afterSelfEdit = useCallback(
+    (uid: string) => {
+      if (uid === session.user?.uid) refreshSession()
+    },
+    [refreshSession, session.user?.uid],
+  )
+
+  const decidePrivilege = useCallback(
+    (user: AdminUser, privilege: Privilege, decision: Decision) =>
+      void run('', async () => {
+        const changed =
+          decision === 'inherited'
+            ? await store.clearUserPrivilege(user.uid, privilege)
+            : await store.setUserPrivilege(user.uid, privilege, decision === 'granted')
+        replaceUser(changed)
+        afterSelfEdit(user.uid)
+      }),
+    [run, replaceUser, afterSelfEdit],
+  )
+
+  const setUserRoles = useCallback(
+    (user: AdminUser, roles: readonly Role[]) =>
+      void run('', async () => {
+        replaceUser(await store.setUserRoles(user.uid, roles))
+        afterSelfEdit(user.uid)
+      }),
+    [run, replaceUser, afterSelfEdit],
+  )
 
   /* Asked for only on the page that shows it: the counts are over everybody's
      patches, so the route refuses anyone else and every other page would be
@@ -357,12 +424,15 @@ function Workspace({
     },
     /* Shown only to somebody the server says may open it. The page refuses on
        its own too, so this is about not offering a locked door. */
-    ...(mayAccessAdmin
+    /* Aimed at the first administration page this account can open, because the
+       privileges are independent: somebody may keep the user list without
+       holding the tag page it used to land on. */
+    ...(mayAccessAdmin || mayAdminUsers
       ? [
           {
             label: 'Administration',
             separated: true,
-            onSelect: () => navigate(pathFor('admin')),
+            onSelect: () => navigate(pathFor(mayAccessAdmin ? 'admin' : 'users')),
           },
         ]
       : []),
@@ -552,19 +622,29 @@ function Workspace({
             drawing an empty list every button on which is refused. Opening the
             area and editing the tag list are separate privileges, so the panel
             asks for its own on top of what the page needed. */}
-        {route.name === 'admin' && (
+        {route.path.startsWith('/admin') && (
           <RouteGuard privilege={route.needs} title={route.title}>
-            <Can
-              privilege={PRIVILEGE.AdminTags}
-              otherwise={
-                <Alert severity="info">
-                  <AlertTitle>Tags</AlertTitle>
-                  Editing the tag list is not part of what this account administers.
-                </Alert>
-              }
-            >
-              <AdminPage tags={tagUse} onAdd={addTag} onRemove={removeTag} />
-            </Can>
+            <Stack spacing={2}>
+              <AdminNav here={route} onNavigate={navigate} />
+
+              {route.name === 'admin' && (
+                <Can
+                  privilege={PRIVILEGE.AdminTags}
+                  otherwise={
+                    <Alert severity="info">
+                      <AlertTitle>Tags</AlertTitle>
+                      Editing the tag list is not part of what this account administers.
+                    </Alert>
+                  }
+                >
+                  <AdminPage tags={tagUse} onAdd={addTag} onRemove={removeTag} />
+                </Can>
+              )}
+
+              {route.name === 'users' && (
+                <UsersPage users={users} onDecide={decidePrivilege} onRoles={setUserRoles} />
+              )}
+            </Stack>
           </RouteGuard>
         )}
 
