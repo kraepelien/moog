@@ -5,7 +5,6 @@ import AccordionSummary from '@mui/material/AccordionSummary'
 import Alert from '@mui/material/Alert'
 import AlertTitle from '@mui/material/AlertTitle'
 import Box from '@mui/material/Box'
-import Paper from '@mui/material/Paper'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { AdminPage } from './admin/AdminPage.tsx'
@@ -17,13 +16,12 @@ import type { AdminUser } from './admin/users.ts'
 import { paletteOf, type Tag, type TagInUse } from './admin/tags.ts'
 import { FitToWidth } from './components/FitToWidth.tsx'
 import { MidiHelp } from './components/MidiHelp.tsx'
-import { TopBar, type TopBarAction } from './components/TopBar.tsx'
+import { TopBar, type TopBarAction, type TopBarButton } from './components/TopBar.tsx'
 import surface from './components/controlSurface.module.css'
 import { PatchLibrary } from './components/library/PatchLibrary.tsx'
 import { NowPlaying } from './components/midi/NowPlaying.tsx'
 import { PlayMidi } from './components/midi/PlayMidi.tsx'
 import type { Desk } from './components/midi/desk.ts'
-import { PatchHeader } from './components/library/PatchHeader.tsx'
 import {
   SavePatchDialog,
   type PatchFields,
@@ -474,12 +472,83 @@ function Workspace({
   const outcome: SaveOutcome = stored ? 'overwrite' : copiedFrom ? 'duplicate' : 'new'
 
   /* The library row for what the editor is showing: a patch of mine is its own
-     row, and a copy not saved yet still points at what it was opened from — a
-     factory preset is rated by the person who has just played it, not by whoever
-     keeps a copy. It is where the stars the header offers live, and it is what
-     the library marks so the list says which one is loaded. A first draft
-     matches nothing and can be neither rated nor pointed at. */
+     row, and a copy not saved yet still points at what it was opened from. It is
+     what the library marks so the list says which one is loaded. A first draft
+     matches nothing and is pointed at by nothing. */
   const openRow = library.find((entry) => entry.id === (stored ? draft.id : copiedFrom)) ?? null
+
+  /* What can be done to the open patch, at the end of the bar rather than in a
+     row of its own above the panel: the panel is the page, and a second bar was
+     height the instrument could have had. */
+  const editorButtons: TopBarButton[] = [
+    {
+      /* An empty panel, at the positions a Model D is left in. Beside Save
+         rather than under the panel in a section of its own, which is where it
+         was and where nobody found it. */
+      label: 'Init',
+      tone: 'amber',
+      onSelect: () =>
+        void run(async () => {
+          if (
+            dirty &&
+            !(await ask({
+              title: 'Start a new draft?',
+              body: 'The panel has changes that have not been saved. They are lost.',
+              confirm: 'Discard and start new',
+              destructive: true,
+            }))
+          ) {
+            throw new Cancelled()
+          }
+          adopt(createPatch({ name: 'Untitled' }))
+        }),
+    },
+    {
+      /* One button, named after what it will do: pressing Save on a patch that
+         is not yours cannot write over it, so it says Duplicate rather than
+         reporting a refusal afterwards. */
+      label: outcome === 'duplicate' ? 'Duplicate' : 'Save',
+      tone: 'green',
+      /* Not disabled on a clean panel: the form is also how a patch is named,
+         tagged and published, none of which the panel marks as an edit. */
+      onSelect: () => setSaving(true),
+    },
+    {
+      label: 'Delete',
+      tone: 'pink',
+      /* Only a draft the server has is there to delete. */
+      disabled: !stored,
+      onSelect: () =>
+        void run(async () => {
+          if (
+            !(await ask({
+              title: `Delete “${draft.name || '(unnamed)'}”?`,
+              confirm: 'Delete',
+              destructive: true,
+            }))
+          ) {
+            throw new Cancelled()
+          }
+          await store.delete(draft.id)
+          await refresh()
+        }),
+    },
+    {
+      label: 'Export',
+      tone: 'blue',
+      onSelect: () =>
+        void run(async () => {
+          /* The draft as it stands, not the panel's resolved values: a control
+             the patch does not carry falls through to the registry default, and
+             writing that default into the file turns an honest omission into a
+             stored setting. */
+          downloadJson(
+            `${slugify(draft.name) || 'patch'}.moogpatch.json`,
+            serializeBundle(createBundle([draft])),
+          )
+        }),
+    },
+  ]
 
   const menu: TopBarAction[] = [
     { label: 'Import a file…', onSelect: () => importing.current?.click() },
@@ -526,7 +595,13 @@ function Workspace({
 
   return (
     <>
-      <TopBar route={route} onNavigate={navigate} actions={menu}>
+      <TopBar
+        route={route}
+        onNavigate={navigate}
+        actions={menu}
+        title={route.name === 'editor' ? { text: draft.name, unsaved: dirty } : undefined}
+        buttons={route.name === 'editor' ? editorButtons : []}
+      >
         <NowPlaying />
       </TopBar>
       {/* The whole editor, not each control: a drag that starts a hair off a knob,
@@ -556,122 +631,23 @@ function Workspace({
         )}
 
         {route.name === 'editor' && (
-          <>
-        {/* The panel does not name what it is showing, so the patch says so above
-            it: the same bar the library's rows are drawn from. */}
-        <Paper variant="outlined" sx={{ borderRadius: '10px' }}>
-          <PatchHeader
-            name={draft.name}
-            tags={draft.tags}
-            instrument={draft.instrument}
-            bank={null}
-            approximate={draft.approximate}
-            tagPalette={tagPalette}
-            rating={openRow?.rating ?? null}
-            average={openRow?.averageRating ?? null}
-            ratingCount={openRow?.ratingCount ?? 0}
-            onRate={
-              openRow === null
-                ? undefined
-                : (stars) =>
-                    void run(async () => {
-                      await store.rate(openRow.id, stars)
-                      await refresh()
-                    })
-            }
-            unsaved={dirty}
-            actions={[
-              {
-                /* An empty panel, at the positions a Model D is left in. Beside
-                   Save rather than under the panel in a section of its own,
-                   which is where it was and where nobody found it. */
-                label: 'Init',
-                tone: 'amber',
-                onSelect: () =>
-                  void run(async () => {
-                    if (
-                      dirty &&
-                      !(await ask({
-                        title: 'Start a new draft?',
-                        body: 'The panel has changes that have not been saved. They are lost.',
-                        confirm: 'Discard and start new',
-                        destructive: true,
-                      }))
-                    ) {
-                      throw new Cancelled()
-                    }
-                    adopt(createPatch({ name: 'Untitled' }))
-                  }),
-              },
-              {
-                /* One button, named after what it will do: pressing Save on a
-                   patch that is not yours cannot write over it, so it says
-                   Duplicate rather than reporting a refusal afterwards. */
-                label: outcome === 'duplicate' ? 'Duplicate' : 'Save',
-                tone: 'green',
-                /* Not disabled on a clean panel: the form is also how a patch
-                   is named, tagged and published, none of which the panel
-                   marks as an edit. */
-                onSelect: () => setSaving(true),
-              },
-              {
-                label: 'Delete',
-                tone: 'pink',
-                /* Only a draft the server has is there to delete. */
-                disabled: !stored,
-                onSelect: () =>
-                  void run(async () => {
-                    if (
-                      !(await ask({
-                        title: `Delete “${draft.name || '(unnamed)'}”?`,
-                        confirm: 'Delete',
-                        destructive: true,
-                      }))
-                    ) {
-                      throw new Cancelled()
-                    }
-                    await store.delete(draft.id)
-                    await refresh()
-                  }),
-              },
-              {
-                label: 'Export',
-                tone: 'blue',
-                onSelect: () =>
-                  void run(async () => {
-                    /* The draft as it stands, not the panel's resolved values: a
-                       control the patch does not carry falls through to the
-                       registry default, and writing that default into the file
-                       turns an honest omission into a stored setting. */
-                    downloadJson(
-                      `${slugify(draft.name) || 'patch'}.moogpatch.json`,
-                      serializeBundle(createBundle([draft])),
-                    )
-                  }),
-              },
-            ]}
-          />
-        </Paper>
-
-        <FitToWidth>
-          <Panel
-            registry={panelRegistry}
-            values={{ ...resolved.values, ...played }}
-            onChange={(id, next) => {
-              const def = panelRegistry.control(id)
-              if (def && !isRecalled(def)) {
-                setPlayed((previous) => ({ ...previous, [id]: next }))
-                return
-              }
-              setDraft({
-                ...draft,
-                values: mergeValues(panelRegistry, draft, { ...resolved.values, [id]: next }),
-              })
-            }}
-          />
-        </FitToWidth>
-
-          </>
+          <FitToWidth>
+            <Panel
+              registry={panelRegistry}
+              values={{ ...resolved.values, ...played }}
+              onChange={(id, next) => {
+                const def = panelRegistry.control(id)
+                if (def && !isRecalled(def)) {
+                  setPlayed((previous) => ({ ...previous, [id]: next }))
+                  return
+                }
+                setDraft({
+                  ...draft,
+                  values: mergeValues(panelRegistry, draft, { ...resolved.values, [id]: next }),
+                })
+              }}
+            />
+          </FitToWidth>
         )}
 
         {route.name === 'midi' && (
