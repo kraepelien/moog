@@ -56,10 +56,13 @@
   border-color: transparent;
 }
 
+/* Capitals are typesetting, so they stop at the glass: the field shows what the
+   panel will show while the value handed back is what was typed. */
 .name :global(input) {
   font-size: 0.82rem;
   font-weight: 600;
   letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .chips {

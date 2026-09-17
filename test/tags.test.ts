@@ -41,7 +41,7 @@ describe('the starting vocabulary', () => {
 
     const names = createTags(db).list().map((tag) => tag.name)
     expect(names).toContain('Choir')
-    expect(names.indexOf('Choir')).toBeLessThan(names.indexOf('Drones'))
+    expect(names.indexOf('Choir')).toBeLessThan(names.indexOf('Drone'))
   })
 })
 
@@ -57,7 +57,10 @@ describe('the app asks the server for them', () => {
 
   test('names come back through the adapter the browser uses', async () => {
     seedTags(api.db)
-    expect(await api.store.listTags()).toEqual([...INITIAL_TAGS].sort())
+    const rows = await api.store.listTags()
+    expect(rows.map((row) => row.name)).toEqual([...INITIAL_TAGS].sort())
+    /* Nobody has chosen one, so every chip is still on the hash. */
+    expect(rows.every((row) => row.colour === null)).toBe(true)
   })
 
   /* A bank nobody has tagged still has a vocabulary to offer, which is the

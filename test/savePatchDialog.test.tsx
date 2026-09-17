@@ -41,7 +41,7 @@ function save() {
 describe('the form starts from the patch', () => {
   test('the name is the one being saved', () => {
     renderDialog()
-    expect(screen.getByLabelText<HTMLInputElement>('Patch name').value).toBe('SUB BASS')
+    expect(screen.getByLabelText<HTMLInputElement>('Patch name').value).toBe('Sub Bass')
   })
 
   test('a tag the patch already wears is switched on', () => {
@@ -56,18 +56,19 @@ describe('editing', () => {
     const { saved } = renderDialog()
     fireEvent.change(screen.getByLabelText('Patch name'), { target: { value: 'Fat Bass' } })
     save()
-    expect(saved[0]!.name).toBe('FAT BASS')
+    expect(saved[0]!.name).toBe('Fat Bass')
   })
 
-  /* The field drew capitals in CSS and handed back what was typed, so a name
-     entered here was the one place a patch kept a lower-case name. */
-  test('a name typed in lower case is capitals in the field and in what is saved', () => {
+  /* The field is set in capitals by its stylesheet. That is typesetting and
+     stops at the glass: what leaves the form is what was typed, or the letters
+     somebody chose would survive nowhere. */
+  test('a name typed in lower case is saved in lower case', () => {
     const { saved } = renderDialog()
     fireEvent.change(screen.getByLabelText('Patch name'), { target: { value: 'fat bass' } })
 
-    expect(screen.getByLabelText<HTMLInputElement>('Patch name').value).toBe('FAT BASS')
+    expect(screen.getByLabelText<HTMLInputElement>('Patch name').value).toBe('fat bass')
     save()
-    expect(saved[0]!.name).toBe('FAT BASS')
+    expect(saved[0]!.name).toBe('fat bass')
   })
 
   test('the notes are handed back', () => {
@@ -176,7 +177,7 @@ describe('leaving without saving', () => {
       />,
     )
 
-    expect(screen.getByLabelText<HTMLInputElement>('Patch name').value).toBe('SUB BASS')
+    expect(screen.getByLabelText<HTMLInputElement>('Patch name').value).toBe('Sub Bass')
   })
 })
 

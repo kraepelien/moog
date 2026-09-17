@@ -9,13 +9,14 @@
   padding: 14px 20px;
 }
 
-/* The name is the one that was typed: chips and row labels are set in caps as
-   the sheet draws them, but a patch called “Sub Bass” is not called “SUB BASS”. */
+/* Capitals as the sheet draws them, and here rather than in the data: a patch
+   called “Sub Bass” is stored as “Sub Bass” and printed as “SUB BASS”. */
 .title {
   margin: 0;
   font-size: 1.05rem;
   font-weight: 600;
   letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .chips,

@@ -48,10 +48,11 @@ describe('createPatch', () => {
     expect(patch.values).toEqual({})
   })
 
-  /* The panel, the library and the save form all drew names in capitals with
-     CSS while the stored name kept whatever was typed. */
-  test('names a patch in capitals, whatever was typed', () => {
-    expect(createPatch({ name: 'fat bass' }, fixedIdentity()).name).toBe('FAT BASS')
+  /* The panel, the library and the save form all draw a name in capitals, and
+     they do it with CSS: the letters somebody typed are the only copy there is,
+     and a store that shouted them back could not be asked for them again. */
+  test('keeps a name exactly as it was typed', () => {
+    expect(createPatch({ name: 'fat bass' }, fixedIdentity()).name).toBe('fat bass')
   })
 
   test('copies values rather than aliasing the object it was given', () => {
@@ -71,10 +72,10 @@ describe('parsePatch', () => {
 
   /* Which is what covers an import and the bank in the repo, not only the
      routes a browser writes through. */
-  test('puts a name it is given in capitals', () => {
+  test('leaves a name it is given alone', () => {
     const patch = { ...createPatch({ name: 'Lead' }, fixedIdentity()), name: 'quiet lead' }
     const parsed = parsePatch(JSON.parse(JSON.stringify(patch)))
-    expect(parsed.ok && parsed.value.name).toBe('QUIET LEAD')
+    expect(parsed.ok && parsed.value.name).toBe('quiet lead')
   })
 
   test.each([
@@ -92,7 +93,7 @@ describe('migrateToCurrent', () => {
   test('passes a current-version patch through', () => {
     const patch = createPatch({ name: 'Pad' }, fixedIdentity())
     const result = migrateToCurrent(JSON.parse(JSON.stringify(patch)))
-    expect(result.ok && result.value.name).toBe('PAD')
+    expect(result.ok && result.value.name).toBe('Pad')
   })
 
   test('refuses a patch from a newer build instead of guessing', () => {

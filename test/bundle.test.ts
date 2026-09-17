@@ -35,7 +35,7 @@ describe('import', () => {
     expect(result.ok).toBe(true)
     if (!result.ok) return
     const [imported] = result.value.patches
-    expect(imported?.name).toBe('BASS')
+    expect(imported?.name).toBe('Bass')
     expect(imported?.values).toEqual({ testVolume: 3 })
     expect(imported?.id).not.toBe(original.id)
     expect(result.value.rejected).toEqual([])
@@ -76,7 +76,7 @@ describe('import', () => {
     )
     expect(result.ok).toBe(true)
     if (!result.ok) return
-    expect(result.value.patches.map((p) => p.name)).toEqual(['GOOD'])
+    expect(result.value.patches.map((p) => p.name)).toEqual(['Good'])
     expect(result.value.rejected).toHaveLength(2)
     expect(result.value.rejected[0]).toMatchObject({ index: 1, name: 'Broken' })
     expect(result.value.rejected[1]?.reason).toMatch(/Update the app/)
