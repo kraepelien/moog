@@ -99,16 +99,27 @@ describe('editing', () => {
     expect(saved[0]!.tags).toEqual([])
   })
 
-  test('Public turns visibility on and off', () => {
+  /* A patch is saved public, so the chip starts on and pressing it is how one is
+     kept back. */
+  test('Public turns visibility off and on again', () => {
     const { saved } = renderDialog()
     const chip = screen.getByRole('button', { name: 'Public' })
-    fireEvent.click(chip)
     save()
     expect(saved[0]!.visibility).toBe('public')
 
     fireEvent.click(chip)
     save()
     expect(saved[1]!.visibility).toBe('private')
+
+    fireEvent.click(chip)
+    save()
+    expect(saved[2]!.visibility).toBe('public')
+  })
+
+  test('a patch already kept private opens with Public off', () => {
+    const { saved } = renderDialog(patchWith({ visibility: 'private' }))
+    save()
+    expect(saved[0]!.visibility).toBe('private')
   })
 
   /* Which bank a patch belongs to is the server's to decide, so the chip saying
@@ -119,13 +130,12 @@ describe('editing', () => {
     expect(screen.getByText('User')).toBeTruthy()
   })
 
-  test('the instrument stays set when its own chip is pressed', () => {
-    const { saved } = renderDialog()
-    const before = screen.getByLabelText('Patch name')
-    expect(before).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Minimoog Model D' }))
-    save()
-    expect(saved[0]!.instrument).toBe('minimoog-model-d')
+  /* The editor a patch was made in is the instrument it is for, so the form does
+     not ask again — and must not offer a way to answer wrongly. */
+  test('the synth is not something this form asks about', () => {
+    renderDialog()
+    expect(screen.queryByText('Synth')).toBeNull()
+    expect(screen.queryByText('Minimoog Model D')).toBeNull()
   })
 })
 

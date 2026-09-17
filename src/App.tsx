@@ -17,6 +17,7 @@ import { MidiHelp } from './components/MidiHelp.tsx'
 import { TopBar, type TopBarAction } from './components/TopBar.tsx'
 import surface from './components/controlSurface.module.css'
 import { PatchLibrary } from './components/library/PatchLibrary.tsx'
+import { NowPlaying } from './components/midi/NowPlaying.tsx'
 import { PlayMidi } from './components/midi/PlayMidi.tsx'
 import { PatchHeader } from './components/library/PatchHeader.tsx'
 import {
@@ -330,7 +331,9 @@ export function App() {
 
   return (
     <>
-      <TopBar view={view} onView={goToView} actions={menu} />
+      <TopBar view={view} onView={goToView} actions={menu}>
+        <NowPlaying />
+      </TopBar>
       {/* The whole editor, not each control: a drag that starts a hair off a knob,
           or a double click meant for its value box, otherwise selects whatever
           caption it landed on and leaves it highlighted behind the panel. The

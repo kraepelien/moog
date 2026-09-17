@@ -26,7 +26,7 @@ export interface Patch {
      `values`, so it is part of the patch rather than of where it is kept. */
   readonly instrument: string
   /* Whether anyone but the owner can see it. Factory content is public by
-     definition; a patch you make is yours until you say otherwise. */
+     definition, and so is a patch you save, until you say otherwise. */
   readonly visibility: Visibility
   /* Set when the values are a reconstruction rather than settings read off an
      instrument, so the UI can say so rather than letting a guess pass for a
@@ -125,9 +125,11 @@ export function createPatch(
     values: { ...(fields.values ?? {}) },
     tags: [...(fields.tags ?? [])],
     instrument: fields.instrument ?? DEFAULT_INSTRUMENT.id,
-    /* Private unless said otherwise: publishing is an act, and a default that
-       publishes would be one nobody chose. */
-    visibility: fields.visibility ?? 'private',
+    /* Public unless said otherwise. A patch made here is made to be played by
+       whoever wants it, and a bank where everything starts hidden is one nobody
+       can browse; hiding one is the act, and the save form is where it is done.
+       A copy of somebody else's patch is the exception, and says so itself. */
+    visibility: fields.visibility ?? 'public',
     approximate: fields.approximate ?? false,
     derivedFrom: fields.derivedFrom ?? null,
     createdAt: timestamp,

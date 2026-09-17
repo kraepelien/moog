@@ -122,6 +122,83 @@ describe('playing a file', () => {
   })
 })
 
+/* Solo and mute are pressed mid-file, so the player is told what to leave out
+   rather than rebuilt around it. */
+describe('what is heard', () => {
+  test('a channel left out is given no notes', () => {
+    const { clock, advance } = fakeClock()
+    const lead = voice(0, [{ at: 0, data: on(0) }])
+    const bass = voice(2, [{ at: 0, data: on(2) }])
+    const player = createMidiPlayer([lead.made, bass.made], clock)
+
+    player.hear(new Set([2]))
+    player.play()
+    advance(0.01)
+
+    expect(notesOf(lead.instrument)).toEqual([])
+    expect(notesOf(bass.instrument)).toEqual([{ kind: 'on', key: 12 }])
+  })
+
+  test('a channel taken out mid-file stops sounding at the press', () => {
+    const { clock, advance } = fakeClock()
+    const one = voice(0, [
+      { at: 0, data: on(0) },
+      { at: 2, data: on(0, NOTE + 2) },
+    ])
+    const player = createMidiPlayer([one.made], clock)
+
+    player.play()
+    advance(0.01)
+    expect(notesOf(one.instrument)).toHaveLength(1)
+
+    player.hear(new Set())
+    expect(one.instrument.played.at(-1)).toEqual({ kind: 'allOff' })
+
+    advance(2)
+    expect(notesOf(one.instrument)).toHaveLength(1)
+  })
+
+  test('a channel put back plays the notes that come after', () => {
+    const { clock, advance } = fakeClock()
+    const one = voice(0, [
+      { at: 1, data: on(0) },
+      { at: 3, data: on(0, NOTE + 2) },
+    ])
+    const player = createMidiPlayer([one.made], clock)
+
+    player.hear(new Set())
+    player.play()
+    advance(1)
+    expect(notesOf(one.instrument)).toEqual([])
+
+    player.hear(new Set([0]))
+    advance(3)
+    expect(notesOf(one.instrument)).toEqual([{ kind: 'on', key: 14 }])
+  })
+
+  /* Only the strikes are held back. A release reaching a muted channel is what
+     stops the note it silenced coming back the moment it is heard again. */
+  test('a note off still reaches a channel nobody is hearing', () => {
+    const { clock, advance } = fakeClock()
+    const one = voice(0, [{ at: 1, data: off(0) }])
+    const player = createMidiPlayer([one.made], clock)
+
+    player.hear(new Set())
+    player.play()
+    advance(1)
+
+    expect(notesOf(one.instrument)).toEqual([{ kind: 'off', key: 12 }])
+  })
+
+  test('a player nobody has spoken to plays everything', () => {
+    const { clock, advance } = fakeClock()
+    const one = voice(0, [{ at: 0, data: on(0) }])
+    createMidiPlayer([one.made], clock).play()
+    advance(0.01)
+    expect(notesOf(one.instrument)).toHaveLength(1)
+  })
+})
+
 describe('the tempo it is played at', () => {
   test('a rate above one brings every note forward', () => {
     const { clock, advance } = fakeClock()

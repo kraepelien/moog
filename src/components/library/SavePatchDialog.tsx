@@ -7,7 +7,6 @@ import InputAdornment from '@mui/material/InputAdornment'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { FilterRow, type FilterChoice } from './FilterRow.tsx'
-import { INSTRUMENTS } from '../../instruments/instruments.ts'
 import { SHELL, TONE_COLOURS, toneForTag } from '../../tones.ts'
 import { patchName, type Patch, type Visibility } from '../../patch/schema.ts'
 import styles from './SavePatchDialog.module.css'
@@ -50,7 +49,6 @@ export interface PatchFields {
   readonly name: string
   readonly notes: string
   readonly tags: readonly string[]
-  readonly instrument: string
   readonly visibility: Visibility
 }
 
@@ -94,12 +92,6 @@ export function SavePatchDialog({
     value: tag,
     label: tag,
     tone: toneForTag(tag),
-  }))
-
-  const synths: FilterChoice[] = INSTRUMENTS.map((instrument) => ({
-    value: instrument.id,
-    label: instrument.name,
-    tone: 'green',
   }))
 
   /* The bank is the server's, so there is no factory chip to press: what is
@@ -190,14 +182,9 @@ export function SavePatchDialog({
               })
             }
           />
-          <FilterRow
-            label="Synth"
-            choices={synths}
-            selected={[fields.instrument]}
-            /* One instrument, not a set: pressing the one already on leaves it
-               on rather than leaving the patch belonging to nothing. */
-            onToggle={(id) => setFields({ ...fields, instrument: id })}
-          />
+          {/* No synth row: the patch belongs to the editor it was made in, so
+              the only instrument this form could offer is the one already
+              implied. The draft carries it and saving leaves it alone. */}
           <FilterRow
             label="Other"
             choices={others}
@@ -232,7 +219,6 @@ function read(patch: Patch): PatchFields {
     name: patch.name,
     notes: patch.notes,
     tags: patch.tags,
-    instrument: patch.instrument,
     visibility: patch.visibility,
   }
 }
