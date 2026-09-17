@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { adoptLegacyHash, navigate } from '@navigation/router.ts'
+import { adoptLegacyHash, navigate, setBlocker } from '@navigation/router.ts'
 import { resolve } from '@navigation/routes.ts'
 
 /* The address lives in the path now. What these pin is the three things that
@@ -7,8 +7,9 @@ import { resolve } from '@navigation/routes.ts'
    same event as a navigation, and a link bookmarked when the routes were in the
    fragment still opens the page it names. */
 
-afterEach(() => {
-  window.history.replaceState(null, '', '/')
+afterEach(async () => {
+  setBlocker(null)
+  await navigate('/')
 })
 
 const at = () => window.location.pathname + window.location.search
@@ -36,6 +37,64 @@ describe('navigating', () => {
     const depth = window.history.length
     navigate('/library')
     expect(window.history.length).toBe(depth)
+  })
+})
+
+/* Nothing else can stop a navigation: five places call `navigate`, and a sixth
+   would not know to ask. */
+describe('something blocking a navigation', () => {
+  test('stops it, and leaves the address where it was', async () => {
+    navigate('/library')
+    const stop = setBlocker(async () => false)
+
+    await navigate('/admin')
+    expect(at()).toBe('/library')
+    stop()
+  })
+
+  test('lets it through when it agrees', async () => {
+    navigate('/library')
+    const stop = setBlocker(async () => true)
+
+    await navigate('/admin')
+    expect(at()).toBe('/admin')
+    stop()
+  })
+
+  test('is told where the navigation was going', async () => {
+    const asked: string[] = []
+    const stop = setBlocker(async (to) => {
+      asked.push(to)
+      return false
+    })
+
+    await navigate('/admin/users')
+    expect(asked).toEqual(['/admin/users'])
+    stop()
+  })
+
+  /* The browser has already moved by the time popstate arrives, so refusing one
+     means putting the address back rather than preventing anything. */
+  test('puts the address back when Back is refused', async () => {
+    navigate('/library')
+    navigate('/admin')
+
+    const stop = setBlocker(async () => false)
+    window.history.back()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(at()).toBe('/admin')
+    stop()
+  })
+
+  test('stops blocking once it is taken away', async () => {
+    navigate('/library')
+    const stop = setBlocker(async () => false)
+    stop()
+
+    await navigate('/admin')
+    expect(at()).toBe('/admin')
   })
 })
 

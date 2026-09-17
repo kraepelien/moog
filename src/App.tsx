@@ -48,7 +48,7 @@ import { copyOf } from './presets/preset.ts'
 import { createHttpStore } from './storage/httpStore.ts'
 import { StoreError, type PatchSummary } from './storage/types.ts'
 import { createBundle, parseBundle, serializeBundle } from './transfer/bundle.ts'
-import { useLocation, useRoute } from './navigation/router.ts'
+import { useLocation, useNavigationBlock, useRoute } from './navigation/router.ts'
 import { pathFor } from './navigation/routes.ts'
 
 const store = createHttpStore()
@@ -201,6 +201,20 @@ function Workspace({
     window.addEventListener('beforeunload', warn)
     return () => window.removeEventListener('beforeunload', warn)
   }, [dirty])
+
+  /* The other half of that: `beforeunload` covers closing the tab and reloading,
+     and a move between pages is neither, so pressing Patch library with a dirty
+     panel used to discard it without asking. This is the app's own dialog rather
+     than the browser's — `beforeunload` has to make do with wording Chrome
+     chooses, and this does not. */
+  useNavigationBlock(dirty, () =>
+    ask({
+      title: 'Leave the editor?',
+      body: 'The panel has changes that have not been saved. They are lost.',
+      confirm: 'Discard and leave',
+      destructive: true,
+    }),
+  )
 
   const run = useCallback(
     async (message: string, action: () => Promise<void>) => {

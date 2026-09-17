@@ -589,13 +589,22 @@ The matcher captures `:name` segments and `useParams()` hands them over, althoug
 yet: that is what makes adding a page like `/patch/:id` a row in the table rather than a rewrite.
 
 There is no router dependency. What one would buy here is `useBlocker`, nested layouts, loaders and
-route-level code splitting; only the first has a use, and it is not wired up.
+route-level code splitting, and only the first had a use — it is `useNavigationBlock` now.
 
-**Known gap: leaving the editor with unsaved changes loses them.** `beforeunload` covers closing the
-tab or reloading, and nothing covers moving between pages — a client-side navigation is not an
-unload, so pressing *Patch library* with a dirty panel discards it silently. `dirty` is already
-computed in `App.tsx`; what is missing is a check in front of `navigate`, and the same guard on
-`popstate` for the back button.
+### Leaving a page with unsaved changes
+
+`beforeunload` covers closing the tab and reloading, and a move between pages is neither, so the
+editor holds a blocker while its draft is dirty. One at a time and registered at the module rather
+than checked at each call site: five places navigate, and a sixth would not know to ask.
+
+It asks with the app's own dialog rather than `window.confirm`, which is the same reason
+`useConfirm` exists at all — and `beforeunload` has to make do with wording the browser chooses,
+while this does not.
+
+**The back button is the awkward half.** `popstate` arrives *after* the browser has moved, so
+refusing one means pushing the old address back rather than preventing anything. That adds a history
+entry instead of removing one; the alternative is a page whose address disagrees with what it is
+showing, which is worse.
 
 ## The server
 
