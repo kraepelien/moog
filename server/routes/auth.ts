@@ -1,6 +1,7 @@
 import type { Database } from 'bun:sqlite'
 import {
   clearedSessionCookie,
+  originOf,
   readCookie,
   readToken,
   sessionCookie,
@@ -46,11 +47,8 @@ function redirect(to: string, cookies: string[] = []): Response {
   return new Response(null, { status: 302, headers })
 }
 
-/* Never from the request: Google matches it exactly against what is registered,
-   and a forged Host must not be able to steer where the code is delivered. */
 function redirectUri(config: AuthConfig, request: Request, provider: string): string {
-  const base = config.publicOrigin ?? new URL(request.url).origin
-  return `${base}/api/auth/${provider}/callback`
+  return `${originOf(config, request)}/api/auth/${provider}/callback`
 }
 
 export async function handleAuth(

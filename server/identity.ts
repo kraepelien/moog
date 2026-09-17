@@ -42,6 +42,31 @@ export function authConfigFromEnv(env: Record<string, string | undefined>): Auth
   }
 }
 
+/* Hostnames that can only be the machine the browser is running on. */
+export function isLoopback(hostname: string): boolean {
+  const host = hostname.toLowerCase()
+  if (host === 'localhost' || host.endsWith('.localhost')) return true
+  if (host === '::1' || host === '[::1]') return true
+  return /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)
+}
+
+/* The origin this server answers as, which is what a redirect back to itself has
+   to be built from.
+
+   Not the request's own Host in general: Google matches the redirect URI exactly
+   against what is registered, and a forged Host must not steer where the code is
+   delivered.
+
+   A loopback request is the exception, and answers for itself. It can only have
+   come from the machine the browser is on, so there is nobody else to steer it
+   towards — and locally the port is whichever was free when the tree started, so
+   a single configured origin would sign you out of every worktree but one. */
+export function originOf(config: AuthConfig, request: Request): string {
+  const own = new URL(request.url)
+  if (isLoopback(own.hostname)) return own.origin
+  return config.publicOrigin ?? own.origin
+}
+
 const encoder = new TextEncoder()
 
 const toBase64Url = (bytes: ArrayBuffer | Uint8Array): string =>
