@@ -5,6 +5,25 @@
   gap: 16px;
 }
 
+/* The two ends share the slack evenly, which is what puts the patch's name in
+   the middle of the bar rather than in the middle of what is left over. */
+.nav,
+.buttons {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  min-width: 0;
+}
+
+.nav {
+  gap: 12px;
+}
+
+.buttons {
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .mark {
   margin: 0;
   display: flex;
@@ -21,13 +40,17 @@
   min-height: 0;
 }
 
-/* Space between the labels rather than padding inside them, so the selected
-   tab's underline stays the width of its word. */
+/* Space between the tabs rather than padding inside them, so the selected tab's
+   underline stays the width of what it is drawn under. */
 .tabs :global(.MuiTabs-list) {
-  gap: 24px;
+  gap: 20px;
 }
 
+/* MUI sizes a tab for a word; these are a glyph wide, and the one that is also
+   labelled spaces itself with the gap rather than the icon's own margin. */
 .tab {
+  gap: 8px;
+  min-width: 0;
   min-height: 0;
   padding: 8px 4px;
   font-size: 0.78rem;
@@ -36,12 +59,34 @@
   text-transform: uppercase;
 }
 
-/* Takes the slack, so the account button sits at the right whatever the page
-   puts in the middle. */
-.spacer {
-  flex: 1;
+.tab :global(.MuiTab-iconWrapper) {
+  margin: 0;
+}
+
+/* A tooltip needs an element to hang on, and the glyph inside it is the whole
+   of what a tab shows. */
+.glyph {
   display: flex;
-  align-items: center;
-  gap: 12px;
+}
+
+/* Capitals as the sheet draws them, and here rather than in the data: a patch
+   called “Sub Bass” is stored as “Sub Bass” and printed as “SUB BASS”. */
+.title {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.button {
+  flex: none;
   min-width: 0;
+  padding: 2px 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
 }

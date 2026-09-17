@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { PatchHeader } from '@components/library/PatchHeader.tsx'
 import { PatchRow } from '@components/library/PatchRow.tsx'
 import type { LibraryEntry } from '@components/library/entry.ts'
 
@@ -116,42 +115,5 @@ describe('the stars on a library row', () => {
     const { rated, press } = renderRow({ rating: 4, averageRating: 4, ratingCount: 1 })
     press(1.5)
     expect(rated).toEqual([1.5])
-  })
-})
-
-/* The bar above the panel draws the same stars the library does, and for a while
-   drew them dead: the editor is where a patch is played, so it is where it gets
-   rated. */
-describe('the stars in the editor', () => {
-  function renderHeader(onRate?: (stars: number) => void) {
-    render(
-      <PatchHeader
-        name="Sub Bass"
-        tags={[]}
-        instrument="minimoog-model-d"
-        bank={null}
-        rating={null}
-        average={3.5}
-        ratingCount={2}
-        onRate={onRate}
-        actions={[]}
-      />,
-    )
-  }
-
-  test('can be pressed on a patch the server holds', () => {
-    const rated: number[] = []
-    renderHeader((stars) => rated.push(stars))
-
-    expect(screen.getByText('3.5 (2)')).toBeDefined()
-    fireEvent.click(screen.getByRole('radio', { name: '5 Stars' }))
-    expect(rated).toEqual([5])
-  })
-
-  test('are shown but not offered on a draft that has never been saved', () => {
-    renderHeader(undefined)
-
-    expect(screen.getByLabelText('Average rating for Sub Bass')).toBeDefined()
-    expect(screen.queryAllByRole('radio')).toEqual([])
   })
 })
