@@ -1,0 +1,54 @@
+/* The chrome's colours, apart from panelPalette.css because those are the
+   instrument's: the panel is black ink on white and was sampled off a
+   photograph, and these are a UI palette nobody measured.
+
+   Custom properties rather than constants because an administrator sets them.
+   A saved skin is written onto :root at startup, so changing one repaints
+   everything that reads it with no component knowing a skin exists — which is
+   why tones.ts hands out `var()` references rather than the hexes below.
+
+   Only the inks are given. Every wash and every edge is a color-mix of one, so
+   a skin is sixteen colours rather than forty-eight kept in step by hand. */
+
+:root {
+  --shell-page: #000000;
+  --shell-card: #0e0e11;
+  --shell-field: #161619;
+  --shell-edge: #212124;
+  --shell-ink: #e9e9ec;
+  --shell-ink-dim: #8b8b95;
+  --shell-star: #f2b01e;
+
+  /* The bar across the top, which is the page's colour until somebody says
+     otherwise, and its own ink so a light bar can be given dark lettering. */
+  --shell-bar: #000000;
+  --shell-bar-ink: #e9e9ec;
+
+  --tone-red-ink: #f2594b;
+  --tone-pink-ink: #ff6f9c;
+  --tone-amber-ink: #e8c257;
+  --tone-green-ink: #69dd94;
+  --tone-blue-ink: #74aaff;
+  --tone-violet-ink: #b78bff;
+  --tone-grey-ink: #9a9aa4;
+}
+
+/* Coloured text on a wash of the same hue rather than a solid fill: at this size
+   a filled chip reads as a button, and the rows already have real buttons in
+   them. 12% is a label, 26% the same label switched on. */
+:root {
+  --tone-red-field: color-mix(in srgb, var(--tone-red-ink) 12%, transparent);
+  --tone-red-strong: color-mix(in srgb, var(--tone-red-ink) 26%, transparent);
+  --tone-pink-field: color-mix(in srgb, var(--tone-pink-ink) 12%, transparent);
+  --tone-pink-strong: color-mix(in srgb, var(--tone-pink-ink) 26%, transparent);
+  --tone-amber-field: color-mix(in srgb, var(--tone-amber-ink) 12%, transparent);
+  --tone-amber-strong: color-mix(in srgb, var(--tone-amber-ink) 26%, transparent);
+  --tone-green-field: color-mix(in srgb, var(--tone-green-ink) 12%, transparent);
+  --tone-green-strong: color-mix(in srgb, var(--tone-green-ink) 26%, transparent);
+  --tone-blue-field: color-mix(in srgb, var(--tone-blue-ink) 12%, transparent);
+  --tone-blue-strong: color-mix(in srgb, var(--tone-blue-ink) 26%, transparent);
+  --tone-violet-field: color-mix(in srgb, var(--tone-violet-ink) 12%, transparent);
+  --tone-violet-strong: color-mix(in srgb, var(--tone-violet-ink) 26%, transparent);
+  --tone-grey-field: color-mix(in srgb, var(--tone-grey-ink) 12%, transparent);
+  --tone-grey-strong: color-mix(in srgb, var(--tone-grey-ink) 26%, transparent);
+}

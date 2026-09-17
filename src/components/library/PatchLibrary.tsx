@@ -17,7 +17,7 @@ import {
   type LibraryFilters,
 } from './entry.ts'
 import { instrumentName } from '@instruments/instruments.ts'
-import { toneForTag } from '@/tones.ts'
+import { tagColour, type TagPalette } from '@/tones.ts'
 import styles from './PatchLibrary.module.css'
 
 /* A page is long because the list is one line per patch and scrolling is cheaper
@@ -28,7 +28,10 @@ export const PER_PAGE = 100
 /* The filter rows are built from what is actually in the library rather than
    from a fixed list, so a tag nobody uses never offers itself and a tag added
    to a patch appears without anything here being edited. */
-function choicesFrom(entries: readonly LibraryEntry[]): {
+function choicesFrom(
+  entries: readonly LibraryEntry[],
+  palette: TagPalette,
+): {
   tags: FilterChoice[]
   instruments: FilterChoice[]
 } {
@@ -39,7 +42,9 @@ function choicesFrom(entries: readonly LibraryEntry[]): {
     instruments.add(entry.instrument)
   }
   return {
-    tags: [...tags].sort().map((tag) => ({ value: tag, label: tag, tone: toneForTag(tag) })),
+    tags: [...tags]
+      .sort()
+      .map((tag) => ({ value: tag, label: tag, tone: tagColour(palette, tag) })),
     instruments: [...instruments]
       .sort()
       .map((id) => ({ value: id, label: instrumentName(id), tone: 'green' as const })),
@@ -58,19 +63,23 @@ const BANK_CHOICES: readonly FilterChoice[] = [
 
 export function PatchLibrary({
   entries,
+  openId,
+  tagPalette = {},
   onOpen,
   onRate,
 }: {
   entries: readonly LibraryEntry[]
-  /* Picking a patch opens it in the editor, so the library holds no selection of
-     its own and nothing here has to be told when the editor loads something. */
+  /* Which row the editor is showing, by id. The library still holds no
+     selection of its own: this is the editor's state, drawn here. */
+  openId?: string | null
+  tagPalette?: TagPalette
   onOpen: (entry: LibraryEntry) => void
   onRate?: (entry: LibraryEntry, stars: number) => void
 }) {
   const [filters, setFilters] = useState<LibraryFilters>(NO_FILTERS)
   const [wantedPage, setPage] = useState(1)
 
-  const choices = useMemo(() => choicesFrom(entries), [entries])
+  const choices = useMemo(() => choicesFrom(entries, tagPalette), [entries, tagPalette])
   const shown = useMemo(
     () => entries.filter((entry) => matchesFilters(entry, filters)),
     [entries, filters],
@@ -146,6 +155,8 @@ export function PatchLibrary({
             <PatchRow
               key={`${entry.origin}-${entry.id}`}
               entry={entry}
+              open={entry.id === openId}
+              tagPalette={tagPalette}
               onOpen={() => onOpen(entry)}
               onFilter={(pressed) => change(withFilter(filters, pressed))}
               onRate={onRate === undefined ? undefined : (stars) => onRate(entry, stars)}

@@ -1,8 +1,9 @@
 import { migrateToCurrent } from '@patch/migrate.ts'
 import type { Patch } from '@patch/schema.ts'
+import type { Skin } from '@/tones.ts'
 import type { AdminUser } from '@admin/users.ts'
 import type { LibraryEntry } from '@components/library/entry.ts'
-import type { TagInUse } from '@admin/tags.ts'
+import type { Tag, TagInUse } from '@admin/tags.ts'
 import type {
   Arrangement,
   ArrangementInput,
@@ -17,6 +18,7 @@ import {
   type PatchStore,
   type PatchSummary,
   type PresetStore,
+  type SkinStore,
   type TagStore,
 } from './types.ts'
 
@@ -107,7 +109,14 @@ function toPatch(raw: unknown): Patch | null {
 
 export function createHttpStore(
   doFetch: Fetch = (path, init) => fetch(path, init),
-): PatchStore & PresetStore & LibraryStore & TagStore & AdminStore & ArrangementStore & UserStore {
+): PatchStore &
+  PresetStore &
+  LibraryStore &
+  TagStore &
+  SkinStore &
+  AdminStore &
+  ArrangementStore &
+  UserStore {
   const request = (path: string, init?: RequestInit) => requestWith(doFetch, path, init)
 
   return {
@@ -167,11 +176,16 @@ export function createHttpStore(
       })
     },
 
-    /* Names only: the row's id belongs to the admin page that edits the list,
-       and a patch never refers to one. */
-    async listTags(): Promise<readonly string[]> {
-      const raw = (await request('/tags')) as { name?: unknown }[]
-      return raw.map((row) => row.name).filter((name): name is string => typeof name === 'string')
+    async listTags(): Promise<readonly Tag[]> {
+      return ((await request('/tags')) ?? []) as Tag[]
+    },
+
+    async getSkin(): Promise<Skin> {
+      return ((await request('/skin')) ?? {}) as Skin
+    },
+
+    async putSkin(skin: Skin): Promise<Skin> {
+      return (await request('/skin', { method: 'PUT', body: JSON.stringify(skin) })) as Skin
     },
 
     async listTagsInUse(): Promise<readonly TagInUse[]> {
@@ -180,6 +194,10 @@ export function createHttpStore(
 
     async addTag(name: string): Promise<void> {
       await request('/tags', { method: 'POST', body: JSON.stringify({ name }) })
+    },
+
+    async setTagColour(id: number, colour: string | null): Promise<void> {
+      await request(`/tags/${id}/colour`, { method: 'PUT', body: JSON.stringify({ colour }) })
     },
 
     async removeTag(id: number): Promise<void> {

@@ -115,6 +115,59 @@ describe('adding one', () => {
   })
 })
 
+describe('colouring one', () => {
+  const rows = async (call: (m: string, p: string) => Promise<Response | undefined>) =>
+    (await (await call('GET', '/api/tags'))!.json()) as { id: number; name: string; colour: string | null }[]
+
+  test('starts with none, so every chip is on the hash', async () => {
+    const { boss } = await world()
+    expect((await rows(boss)).every((tag) => tag.colour === null)).toBe(true)
+  })
+
+  test('remembers the colour, in one case', async () => {
+    const { boss } = await world()
+    const bass = (await rows(boss)).find((tag) => tag.name === 'Bass')!
+
+    const response = (await boss('PUT', `/api/tags/${bass.id}/colour`, { colour: '#FF8800' }))!
+    expect(response.status).toBe(200)
+    expect((await rows(boss)).find((tag) => tag.name === 'Bass')!.colour).toBe('#ff8800')
+  })
+
+  /* There is no empty hex to pick, so null is the only way back to the hash. */
+  test('clears it with null', async () => {
+    const { boss } = await world()
+    const bass = (await rows(boss)).find((tag) => tag.name === 'Bass')!
+    await boss('PUT', `/api/tags/${bass.id}/colour`, { colour: '#ff8800' })
+    expect((await boss('PUT', `/api/tags/${bass.id}/colour`, { colour: null }))!.status).toBe(200)
+    expect((await rows(boss)).find((tag) => tag.name === 'Bass')!.colour).toBe(null)
+  })
+
+  /* A colour reaches a style attribute, so anything that is not one is a way of
+     writing CSS into everybody's page. */
+  test('refuses something that is not a colour', async () => {
+    const { boss } = await world()
+    const bass = (await rows(boss)).find((tag) => tag.name === 'Bass')!
+    for (const colour of ['rebeccapurple', '#fff; background: url(http://elsewhere/)', 7]) {
+      expect((await boss('PUT', `/api/tags/${bass.id}/colour`, { colour }))!.status).toBe(400)
+    }
+    expect((await rows(boss)).find((tag) => tag.name === 'Bass')!.colour).toBe(null)
+  })
+
+  test('says so when there is no such row', async () => {
+    const { boss } = await world()
+    expect((await boss('PUT', '/api/tags/999/colour', { colour: '#ffffff' }))!.status).toBe(404)
+  })
+
+  test('is refused to anyone else', async () => {
+    const { boss, punter } = await world()
+    const bass = (await rows(boss)).find((tag) => tag.name === 'Bass')!
+    expect((await punter('PUT', `/api/tags/${bass.id}/colour`, { colour: '#ffffff' }))!.status).toBe(
+      403,
+    )
+    expect((await rows(boss)).find((tag) => tag.name === 'Bass')!.colour).toBe(null)
+  })
+})
+
 describe('removing one', () => {
   test('takes it off the list and leaves the patches wearing it', async () => {
     const { boss, names } = await world()

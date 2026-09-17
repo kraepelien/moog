@@ -5,17 +5,16 @@ import AccordionSummary from '@mui/material/AccordionSummary'
 import Alert from '@mui/material/Alert'
 import AlertTitle from '@mui/material/AlertTitle'
 import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
 import Paper from '@mui/material/Paper'
-import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { AdminPage } from './admin/AdminPage.tsx'
 import { AdminNav } from './admin/AdminNav.tsx'
+import { LayoutPage } from './admin/LayoutPage.tsx'
 import { UsersPage } from './admin/UsersPage.tsx'
 import type { Decision } from './admin/UserAccess.tsx'
 import type { AdminUser } from './admin/users.ts'
-import type { TagInUse } from './admin/tags.ts'
+import { paletteOf, type Tag, type TagInUse } from './admin/tags.ts'
 import { FitToWidth } from './components/FitToWidth.tsx'
 import { MidiHelp } from './components/MidiHelp.tsx'
 import { TopBar, type TopBarAction } from './components/TopBar.tsx'
@@ -45,6 +44,8 @@ import type { ControlValue } from './controls/types.ts'
 import { mergeValues, resolvePatch, reportHasWarnings, type ResolveReport } from './patch/resolve.ts'
 import { createPatch, type Patch } from './patch/schema.ts'
 import { copyOf } from './presets/preset.ts'
+import { applySkin } from './skin.ts'
+import type { Skin } from './tones.ts'
 import { createHttpStore } from './storage/httpStore.ts'
 import { StoreError, type PatchSummary } from './storage/types.ts'
 import { createBundle, parseBundle, serializeBundle } from './transfer/bundle.ts'
@@ -76,22 +77,11 @@ function signature(patch: Patch): string {
   return JSON.stringify([patch.name, patch.notes, patch.values])
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <Paper variant="outlined" sx={{ p: 2 }}>
-      <Typography variant="h6" component="h2" gutterBottom>
-        {title}
-      </Typography>
-      {children}
-    </Paper>
-  )
-}
-
 /* Nothing is drawn until the session is known, so a signed-out visitor never
    sees an editor they cannot save from, and a signed-in one never sees the
    door. The privileges are put in reach of every component at the same moment,
    because until the session has arrived there is no honest answer to give. */
-export function App() {
+export function App({ skin }: { skin: Skin }) {
   const { session, refresh } = useSession()
   const [{ route }] = useRoute()
   const here = useLocation()
@@ -106,7 +96,7 @@ export function App() {
 
   return (
     <AccessProvider privileges={session.privileges}>
-      <Workspace session={session} refreshSession={refresh} />
+      <Workspace session={session} refreshSession={refresh} skin={skin} />
     </AccessProvider>
   )
 }
@@ -114,9 +104,14 @@ export function App() {
 function Workspace({
   session,
   refreshSession,
+  skin: painted,
 }: {
   session: Session
   refreshSession: () => void
+  /* Already on the document by the time this renders — it was painted before
+     the first frame. Taken as a prop so the layout page starts from what is
+     actually on the screen rather than from nothing. */
+  skin: Skin
 }) {
   const [draft, setDraft] = useState<Patch | null>(null)
   const [saved, setSaved] = useState<readonly PatchSummary[]>([])
@@ -125,11 +120,15 @@ function Workspace({
   /* The categories an admin keeps, which is what the save form offers — not the
      tags patches happen to wear, or a bank nothing is tagged in yet could never
      be given its first one. */
-  const [tags, setTags] = useState<readonly string[]>([])
+  const [tags, setTags] = useState<readonly Tag[]>([])
   /* The same list with its usage counts, which only an admin may ask for and
      only the admin page shows. */
   const [tagUse, setTagUse] = useState<readonly TagInUse[]>([])
-  const [status, setStatus] = useState('')
+  /* What went wrong, if anything. Successes used to travel this way too and
+     went out with the snackbar: a patch that opened is on the screen, and a
+     patch that saved says so in its own name. A failure has nowhere else to
+     appear, so it stays, in the page rather than over it. */
+  const [problem, setProblem] = useState('')
   const [report, setReport] = useState<ResolveReport | null>(null)
   const [failed, setFailed] = useState(false)
   /* What the draft looked like when it was last saved or loaded. Comparing
@@ -154,6 +153,12 @@ function Workspace({
   const mayAccessAdmin = useCan(PRIVILEGE.AccessAdmin)
   const mayAdminUsers = useCan(PRIVILEGE.AdminUsers)
   const [users, setUsers] = useState<readonly AdminUser[]>([])
+  /* What the server holds, and what the layout page is showing — which is also
+     what the document is painted with, since the page previews by painting.
+     Held here rather than on the page so that leaving it puts the paint back:
+     the page unmounts, this does not. */
+  const [skin, setSkin] = useState<Skin>(painted)
+  const [skinDraft, setSkinDraft] = useState<Skin>(painted)
   const [midiHelp, setMidiHelp] = useState(false)
   /* The menu cannot hold a file input, so it holds a button that clicks one. */
   const importing = useRef<HTMLInputElement>(null)
@@ -161,6 +166,11 @@ function Workspace({
   /* Computed before the hooks that read it, since the early return for a missing
      draft comes after them. */
   const dirty = draft !== null && signature(draft) !== clean
+
+  /* The two views of the same list: what the save form may offer, and what
+     colour each one is drawn in wherever it appears. */
+  const tagNames = useMemo(() => tags.map((tag) => tag.name), [tags])
+  const tagPalette = useMemo(() => paletteOf(tags), [tags])
 
   const refresh = useCallback(async () => {
     const [patches, bank, shelf, categories] = await Promise.all([
@@ -182,12 +192,11 @@ function Workspace({
       setClean(signature(fresh))
       try {
         await refresh()
-        setStatus('Ready')
       } catch (error) {
         /* Nothing works without the folder, so this is the one failure that has
            to be stated plainly rather than tucked into a status line. */
         setFailed(true)
-        setStatus(error instanceof StoreError ? error.message : String(error))
+        setProblem(error instanceof StoreError ? error.message : String(error))
       }
     })()
   }, [refresh])
@@ -217,13 +226,13 @@ function Workspace({
   )
 
   const run = useCallback(
-    async (message: string, action: () => Promise<void>) => {
+    async (action: () => Promise<void>) => {
       try {
+        setProblem('')
         await action()
-        if (message) setStatus(message)
       } catch (error) {
         if (error instanceof Cancelled) return
-        setStatus(error instanceof StoreError ? error.message : `Failed: ${String(error)}`)
+        setProblem(error instanceof StoreError ? error.message : `Failed: ${String(error)}`)
 
         /* A refusal means this browser's idea of what it may do is out of date —
            somebody has been given something, or had it taken away, since the
@@ -248,7 +257,7 @@ function Workspace({
   useEffect(() => {
     if (route.name !== 'users' || !mayAdminUsers) return
     void (async () => {
-      await run('', refreshUsers)
+      await run(refreshUsers)
     })()
   }, [route.name, mayAdminUsers, refreshUsers, run])
 
@@ -271,7 +280,7 @@ function Workspace({
 
   const decidePrivilege = useCallback(
     (user: AdminUser, privilege: Privilege, decision: Decision) =>
-      void run('', async () => {
+      void run(async () => {
         const changed =
           decision === 'inherited'
             ? await store.clearUserPrivilege(user.uid, privilege)
@@ -284,7 +293,7 @@ function Workspace({
 
   const setUserRoles = useCallback(
     (user: AdminUser, roles: readonly Role[]) =>
-      void run('', async () => {
+      void run(async () => {
         replaceUser(await store.setUserRoles(user.uid, roles))
         afterSelfEdit(user.uid)
       }),
@@ -297,14 +306,23 @@ function Workspace({
   useEffect(() => {
     if (route.name !== 'admin' || !mayAdminTags) return
     void (async () => {
-      await run('', refreshTagUse)
+      await run(refreshTagUse)
     })()
   }, [route.name, mayAdminTags, refreshTagUse, run])
 
   const addTag = useCallback(
     (name: string) =>
-      void run(`Added ${name}`, async () => {
+      void run(async () => {
         await store.addTag(name)
+        await Promise.all([refreshTagUse(), refresh()])
+      }),
+    [run, refreshTagUse, refresh],
+  )
+
+  const setTagColour = useCallback(
+    (tag: TagInUse, colour: string | null) =>
+      void run(async () => {
+        await store.setTagColour(tag.id, colour)
         await Promise.all([refreshTagUse(), refresh()])
       }),
     [run, refreshTagUse, refresh],
@@ -312,7 +330,7 @@ function Workspace({
 
   const removeTag = useCallback(
     (tag: TagInUse) =>
-      void run(`Removed ${tag.name}`, async () => {
+      void run(async () => {
         const agreed = await ask({
           title: `Remove ${tag.name} from the list?`,
           body:
@@ -329,35 +347,70 @@ function Workspace({
     [run, ask, refreshTagUse, refresh],
   )
 
+  /* The layout page previews by painting, so a draft goes onto the document as
+     soon as it is made. Nothing else in the app has to hear about it: every
+     colour anything draws with is one of these properties. */
+  const paint = useCallback((next: Skin) => {
+    setSkinDraft(next)
+    applySkin(next, document.documentElement)
+  }, [])
+
+  const saveSkin = useCallback(
+    (next: Skin) =>
+      void run(async () => {
+        const kept = await store.putSkin(next)
+        setSkin(kept)
+        paint(kept)
+      }),
+    [paint, run],
+  )
+
+  /* Walking away from an unsaved draft takes the paint back off, because the
+     preview is the whole app and not a pane inside the page. Through a ref
+     rather than a dependency: what it goes back to is whatever is saved *at the
+     moment of leaving*, and putting `skin` in the list would instead run this
+     on every save, undoing the draft somebody is still working on. */
+  const savedSkin = useRef(skin)
+  useEffect(() => {
+    savedSkin.current = skin
+  }, [skin])
+  useEffect(() => {
+    if (route.name !== 'layout') return
+    return () => {
+      setSkinDraft(savedSkin.current)
+      applySkin(savedSkin.current, document.documentElement)
+    }
+  }, [route.name])
+
   const importFile = useCallback(
     (file: File) =>
-      run('', async () => {
+      run(async () => {
         const parsed = parseBundle(await file.text())
         if (!parsed.ok) {
-          setStatus(`Import failed — ${parsed.error}`)
+          setProblem(`Import failed — ${parsed.error}`)
           return
         }
         for (const patch of parsed.value.patches) await store.create(patch)
         await refresh()
-        const { patches, rejected } = parsed.value
-        setStatus(
-          `Imported ${patches.length} patch(es)` +
-            (rejected.length
-              ? `; skipped ${rejected.length}: ${rejected.map((r) => `#${r.index} ${r.reason}`).join('; ')}`
-              : ''),
-        )
+        /* The patches that arrived are in the library to be looked at; what was
+           left behind is the only part of this nobody can see. */
+        const { rejected } = parsed.value
+        if (rejected.length > 0) {
+          setProblem(
+            `Skipped ${rejected.length}: ${rejected.map((r) => `#${r.index} ${r.reason}`).join('; ')}`,
+          )
+        }
       }),
     [refresh, run],
   )
 
   const adopt = useCallback(
-    (patch: Patch, message: string, options: { stored?: boolean; from?: string | null } = {}) => {
+    (patch: Patch, options: { stored?: boolean; from?: string | null } = {}) => {
       setDraft(patch)
       setClean(signature(patch))
       setReport(resolvePatch(panelRegistry, patch).report)
       setStored(options.stored ?? false)
       setCopiedFrom(options.from ?? null)
-      setStatus(message)
     },
     [],
   )
@@ -393,7 +446,7 @@ function Workspace({
      your own opens as itself, so saving updates the one you picked. */
   const openEntry = useCallback(
     (entry: LibraryEntry) =>
-      void run('', async () => {
+      void run(async () => {
         const patch = await fetchEntry(entry)
         if (!patch) return
         const factory = entry.origin === 'factory'
@@ -404,7 +457,6 @@ function Workspace({
             : copyOf(patch, {
                 owner: factory ? null : { id: null, name: entry.ownerName },
               }),
-          `Opened “${patch.name}”`,
           writable ? { stored: true } : { from: entry.id },
         )
         navigate(pathFor('editor'))
@@ -421,12 +473,13 @@ function Workspace({
      did not. */
   const outcome: SaveOutcome = stored ? 'overwrite' : copiedFrom ? 'duplicate' : 'new'
 
-  /* The library row for what the editor is showing, which is where its ratings
-     live: a patch of mine is its own row, and a copy not saved yet still rates
-     what it was opened from — a factory preset is rated by the person who has
-     just played it, not by whoever keeps a copy. A first draft matches nothing
-     and cannot be rated until it has been saved. */
-  const rated = library.find((entry) => entry.id === (stored ? draft.id : copiedFrom)) ?? null
+  /* The library row for what the editor is showing: a patch of mine is its own
+     row, and a copy not saved yet still points at what it was opened from — a
+     factory preset is rated by the person who has just played it, not by whoever
+     keeps a copy. It is where the stars the header offers live, and it is what
+     the library marks so the list says which one is loaded. A first draft
+     matches nothing and can be neither rated nor pointed at. */
+  const openRow = library.find((entry) => entry.id === (stored ? draft.id : copiedFrom)) ?? null
 
   const menu: TopBarAction[] = [
     { label: 'Import a file…', onSelect: () => importing.current?.click() },
@@ -436,7 +489,7 @@ function Workspace({
     {
       label: 'Export every patch',
       onSelect: () =>
-        void run('Exported every patch', async () => {
+        void run(async () => {
           const all = await Promise.all(saved.map((summary) => store.get(summary.id)))
           const present = all.filter((patch): patch is Patch => patch !== null)
           downloadJson('all-patches.moogpatch.json', serializeBundle(createBundle(present)))
@@ -493,6 +546,15 @@ function Workspace({
           </Alert>
         )}
 
+        {/* In the page rather than over it. A refusal is the one thing here
+            nothing else on the screen can be read for, so it waits to be
+            dismissed instead of timing out while somebody is looking down. */}
+        {problem !== '' && !failed && (
+          <Alert severity="error" onClose={() => setProblem('')}>
+            {problem}
+          </Alert>
+        )}
+
         {route.name === 'editor' && (
           <>
         {/* The panel does not name what it is showing, so the patch says so above
@@ -504,19 +566,43 @@ function Workspace({
             instrument={draft.instrument}
             bank={null}
             approximate={draft.approximate}
-            rating={rated?.rating ?? null}
-            average={rated?.averageRating ?? null}
-            ratingCount={rated?.ratingCount ?? 0}
+            tagPalette={tagPalette}
+            rating={openRow?.rating ?? null}
+            average={openRow?.averageRating ?? null}
+            ratingCount={openRow?.ratingCount ?? 0}
             onRate={
-              rated === null
+              openRow === null
                 ? undefined
                 : (stars) =>
-                    void run('', async () => {
-                      await store.rate(rated.id, stars)
+                    void run(async () => {
+                      await store.rate(openRow.id, stars)
                       await refresh()
                     })
             }
+            unsaved={dirty}
             actions={[
+              {
+                /* An empty panel, at the positions a Model D is left in. Beside
+                   Save rather than under the panel in a section of its own,
+                   which is where it was and where nobody found it. */
+                label: 'Init',
+                tone: 'amber',
+                onSelect: () =>
+                  void run(async () => {
+                    if (
+                      dirty &&
+                      !(await ask({
+                        title: 'Start a new draft?',
+                        body: 'The panel has changes that have not been saved. They are lost.',
+                        confirm: 'Discard and start new',
+                        destructive: true,
+                      }))
+                    ) {
+                      throw new Cancelled()
+                    }
+                    adopt(createPatch({ name: 'Untitled' }))
+                  }),
+              },
               {
                 /* One button, named after what it will do: pressing Save on a
                    patch that is not yours cannot write over it, so it says
@@ -534,7 +620,7 @@ function Workspace({
                 /* Only a draft the server has is there to delete. */
                 disabled: !stored,
                 onSelect: () =>
-                  void run(`Deleted “${draft.name}”`, async () => {
+                  void run(async () => {
                     if (
                       !(await ask({
                         title: `Delete “${draft.name || '(unnamed)'}”?`,
@@ -552,7 +638,7 @@ function Workspace({
                 label: 'Export',
                 tone: 'blue',
                 onSelect: () =>
-                  void run(`Exported “${draft.name}”`, async () => {
+                  void run(async () => {
                     /* The draft as it stands, not the panel's resolved values: a
                        control the patch does not carry falls through to the
                        registry default, and writing that default into the file
@@ -585,34 +671,6 @@ function Workspace({
           />
         </FitToWidth>
 
-        <Section title={dirty ? 'Working draft — unsaved' : 'Working draft'}>
-          <Stack spacing={2}>
-            <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
-              <Button
-                variant="outlined"
-                onClick={() =>
-                  void run('', async () => {
-                    if (
-                      dirty &&
-                      !(await ask({
-                        title: 'Start a new draft?',
-                        body: 'The panel has changes that have not been saved. They are lost.',
-                        confirm: 'Discard and start new',
-                        destructive: true,
-                      }))
-                    ) {
-                      throw new Cancelled()
-                    }
-                    adopt(createPatch({ name: 'Untitled' }), 'Started a new draft')
-                  })
-                }
-              >
-                New
-              </Button>
-            </Stack>
-          </Stack>
-        </Section>
-
           </>
         )}
 
@@ -621,16 +679,18 @@ function Workspace({
             entries={library}
             loadPatch={fetchEntry}
             desk={desk}
-            onReport={setStatus}
+            onProblem={setProblem}
           />
         )}
 
         {route.name === 'library' && (
           <PatchLibrary
             entries={library}
+            openId={openRow?.id ?? null}
+            tagPalette={tagPalette}
             onOpen={openEntry}
             onRate={(entry, stars) =>
-              void run('', async () => {
+              void run(async () => {
                 await store.rate(entry.id, stars)
                 await refresh()
               })
@@ -657,8 +717,17 @@ function Workspace({
                     </Alert>
                   }
                 >
-                  <AdminPage tags={tagUse} onAdd={addTag} onRemove={removeTag} />
+                  <AdminPage
+                    tags={tagUse}
+                    onAdd={addTag}
+                    onColour={setTagColour}
+                    onRemove={removeTag}
+                  />
                 </Can>
+              )}
+
+              {route.name === 'layout' && (
+                <LayoutPage skin={skin} draft={skinDraft} onDraft={paint} onSave={saveSkin} />
               )}
 
               {route.name === 'users' && (
@@ -719,21 +788,15 @@ function Workspace({
         }}
       />
 
-      <Snackbar
-        open={status !== ''}
-        message={status}
-        autoHideDuration={4000}
-        onClose={() => setStatus('')}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-      />
       <SavePatchDialog
         open={saving}
         patch={draft}
         outcome={outcome}
-        tagChoices={tags}
+        tagChoices={tagNames}
+        tagPalette={tagPalette}
         onCancel={() => setSaving(false)}
         onSave={(fields: PatchFields) =>
-          void run(outcome === 'duplicate' ? 'Saved a copy' : 'Saved', async () => {
+          void run(async () => {
             setSaving(false)
             const edited = { ...draft, ...fields, tags: [...fields.tags] }
             /* Only the server mints an id, so a draft it has never seen is

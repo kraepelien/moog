@@ -5,7 +5,7 @@ import { StarRating } from './StarRating.tsx'
 import { ToneChip } from './ToneChip.tsx'
 import { bankOf, BANK_TONES, type LibraryEntry, type RowFilter } from './entry.ts'
 import { instrumentName } from '@instruments/instruments.ts'
-import { toneForTag } from '@/tones.ts'
+import { tagColour, type TagPalette } from '@/tones.ts'
 import styles from './PatchRow.module.css'
 
 /* The whole row is the button, not a Select link inside it: the row is what a
@@ -14,11 +14,18 @@ import styles from './PatchRow.module.css'
    keyboard and announced as a button without any of that being written here. */
 export function PatchRow({
   entry,
+  open,
+  tagPalette = {},
   onOpen,
   onFilter,
   onRate,
 }: {
   entry: LibraryEntry
+  /* The one the editor is showing. Pressing a row opens it and leaves the list,
+     so coming back to a list of forty-four with no idea which one is loaded is
+     the state this marks. */
+  open?: boolean
+  tagPalette?: TagPalette
   onOpen: () => void
   /* Every chip on a row is one the filter rows also draw, so pressing one does
      what pressing it up there does: it narrows the list. Without this the only
@@ -46,8 +53,14 @@ export function PatchRow({
     <ButtonBase
       component="li"
       className={styles.row}
+      data-open={open === true ? '' : undefined}
       onClick={onOpen}
-      aria-label={`Open ${entry.name || 'this patch'} in the editor`}
+      aria-current={open === true ? 'true' : undefined}
+      aria-label={
+        open === true
+          ? `${entry.name || 'This patch'}, open in the editor`
+          : `Open ${entry.name || 'this patch'} in the editor`
+      }
     >
       <Typography component="span" className={styles.name}>
         {entry.name || '(unnamed)'}
@@ -58,7 +71,7 @@ export function PatchRow({
           <ToneChip
             key={tag}
             label={tag}
-            tone={toneForTag(tag)}
+            tone={tagColour(tagPalette, tag)}
             {...filtering({ kind: 'tag', value: tag }, tag)}
           />
         ))}

@@ -1,4 +1,5 @@
 import type { Database } from 'bun:sqlite'
+import { createAppSettings } from './appSettings.ts'
 import { createArrangements } from './arrangements.ts'
 import { createLibrary } from './library.ts'
 import { createPatches } from './patches.ts'
@@ -14,6 +15,7 @@ import { createUsers } from './users.ts'
 export function createRepositories(db: Database) {
   return {
     db,
+    appSettings: createAppSettings(db),
     patches: createPatches(db),
     ratings: createRatings(db),
     settings: createSettings(db),

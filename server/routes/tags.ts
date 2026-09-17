@@ -37,6 +37,19 @@ export const tagRoutes: readonly Route[] = [
     },
   }),
 
+  /* The colour only. A rename would change what every patch wearing the tag is
+     pointing at — they store the name — so there is nothing else here to set. */
+  route({
+    method: 'PUT',
+    path: '/tags/:id/colour',
+    needs: PRIVILEGE.AdminTags,
+    handle: async ({ params, request, services }) => {
+      const payload = (await readBody(request)) as { colour?: unknown } | null
+      const changed = services.tags.setColour(Number(params.id), payload?.colour ?? null)
+      return isRefusal(changed) ? json({ error: changed.error }, changed.status) : json(changed)
+    },
+  }),
+
   route({
     method: 'DELETE',
     path: '/tags/:id',

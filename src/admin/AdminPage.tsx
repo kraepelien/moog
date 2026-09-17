@@ -13,9 +13,15 @@ import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
+import { ColourField } from './ColourField.tsx'
 import { MAX_TAG_LENGTH, type TagInUse, tagNameProblem } from './tags.ts'
 import { ToneChip } from '@components/library/ToneChip.tsx'
-import { toneForTag } from '@/tones.ts'
+import { shadesOf, toneForTag, TONE_COLOURS } from '@/tones.ts'
+
+/* What the picker opens on for a tag nobody has coloured. Grey rather than one
+   of the five tag tones: starting on the hash's own answer would make pressing
+   Clear afterwards look like it had done nothing. */
+const TONE_DEFAULT = '#9a9aa4'
 
 function BinGlyph() {
   return (
@@ -35,10 +41,14 @@ function BinGlyph() {
 export function AdminPage({
   tags,
   onAdd,
+  onColour,
   onRemove,
 }: {
   tags: readonly TagInUse[]
   onAdd: (name: string) => void
+  /* Null puts the tag back on the hash, which is the only way to undo a colour:
+     a picker has no empty state to pick. */
+  onColour: (tag: TagInUse, colour: string | null) => void
   onRemove: (tag: TagInUse) => void
 }) {
   const [typed, setTyped] = useState('')
@@ -98,6 +108,7 @@ export function AdminPage({
               <TableHead>
                 <TableRow>
                   <TableCell>Tag</TableCell>
+                  <TableCell>Colour</TableCell>
                   <TableCell align="right">Patches</TableCell>
                   <TableCell align="right">Remove</TableCell>
                 </TableRow>
@@ -105,8 +116,32 @@ export function AdminPage({
               <TableBody>
                 {tags.map((tag) => (
                   <TableRow key={tag.id} hover>
+                    {/* The chip is the preview: it is the same component every
+                        row, filter and patch header draws the tag with, so
+                        there is nothing here that could look right while the
+                        library looked wrong. */}
                     <TableCell>
-                      <ToneChip label={tag.name} tone={toneForTag(tag.name)} />
+                      <ToneChip
+                        label={tag.name}
+                        tone={tag.colour === null ? toneForTag(tag.name) : shadesOf(tag.colour)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <ColourField
+                          label={`${tag.name} colour`}
+                          value={tag.colour ?? TONE_DEFAULT}
+                          onChange={(hex) => onColour(tag, hex)}
+                        />
+                        <Button
+                          size="small"
+                          disabled={tag.colour === null}
+                          onClick={() => onColour(tag, null)}
+                          sx={{ color: TONE_COLOURS.grey.ink }}
+                        >
+                          Clear
+                        </Button>
+                      </Box>
                     </TableCell>
                     <TableCell align="right">{tag.patches}</TableCell>
                     <TableCell align="right">

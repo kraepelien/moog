@@ -42,9 +42,14 @@ const BANK: readonly LibraryEntry[] = [
   entry({ id: 'borrowed-pad', name: 'Borrowed Pad', origin: 'user', ownerName: 'Wendy' }),
 ]
 
-function renderLibrary(entries: readonly LibraryEntry[] = BANK) {
+function renderLibrary(
+  entries: readonly LibraryEntry[] = BANK,
+  extra: { openId?: string; tagPalette?: Readonly<Record<string, string>> } = {},
+) {
   const opened: string[] = []
-  render(<PatchLibrary entries={entries} onOpen={(item) => opened.push(item.id)} />)
+  render(
+    <PatchLibrary entries={entries} onOpen={(item) => opened.push(item.id)} {...extra} />,
+  )
   return { opened }
 }
 
@@ -55,6 +60,40 @@ function rowNames(): string[] {
     .filter((label) => label.startsWith('Open '))
     .map((label) => label.replace(/^Open /, '').replace(/ in the editor$/, ''))
 }
+
+/* Opening a patch leaves the library, so coming back to a list of forty-four
+   with no idea which one is loaded is what this answers. */
+describe('the patch the editor is showing', () => {
+  test('is the row that says it is open, and only that one', () => {
+    renderLibrary(BANK, { openId: 'fuzz-lead' })
+    expect(screen.getByRole('button', { name: 'Fuzz Lead, open in the editor' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Open Sub Bass in the editor' })).toBeDefined()
+  })
+
+  test('is nothing at all for a draft that has never been saved', () => {
+    renderLibrary(BANK, { openId: undefined })
+    expect(screen.queryByRole('button', { name: /open in the editor/ })).toBeNull()
+  })
+
+  /* Marked, not disabled: pressing it again is how you throw away an edit and
+     start from what was saved. */
+  test('can still be opened again', () => {
+    const { opened } = renderLibrary(BANK, { openId: 'fuzz-lead' })
+    fireEvent.click(screen.getByRole('button', { name: 'Fuzz Lead, open in the editor' }))
+    expect(opened).toEqual(['fuzz-lead'])
+  })
+})
+
+/* A tag points at no row, so a colour an admin chose has to reach the chips by
+   being handed to them rather than by the chip looking it up. */
+describe('a category an administrator gave a colour', () => {
+  test('is drawn in it wherever the chip appears', () => {
+    renderLibrary(BANK, { tagPalette: { bass: '#ff8800' } })
+    const chips = screen.getAllByRole('button', { name: /bass/i })
+    const coloured = chips.filter((node) => getComputedStyle(node).color === '#ff8800')
+    expect(coloured.length).toBeGreaterThan(0)
+  })
+})
 
 describe('finding a patch', () => {
   test('typing narrows the list to matching names', () => {

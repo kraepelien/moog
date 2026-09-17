@@ -26,6 +26,7 @@ export const PRIVILEGE = {
   AccessAdmin: 'AccessAdmin',
   AdminUsers: 'AdminUsers',
   AdminTags: 'AdminTags',
+  AdminLayout: 'AdminLayout',
   /* Editing, deleting and unpublishing a patch that belongs to somebody else.
      Factory content is still refused to everybody holding it: the bank comes
      from the image and a write would be overwritten at the next start. */
@@ -49,6 +50,8 @@ export const DESCRIPTION: Record<Privilege, string> = {
     'See everyone with an account, and grant or revoke what they may do. Whoever holds this can change their own access and everybody else’s.',
   AdminTags:
     'Keep the list of categories the save form offers, and see how many patches wear each one. Retiring a tag leaves every patch already wearing it untouched.',
+  AdminLayout:
+    'Repaint the app for everybody. The colours are saved against the installation rather than the account, so whoever holds this decides what every other person sees.',
   AdminPatches:
     'Edit, delete or unpublish a patch belonging to somebody else. Factory presets stay read-only for everyone.',
   StoreMidi:
@@ -104,6 +107,7 @@ const ADDS: Record<Role, readonly Privilege[]> = {
     PRIVILEGE.AccessAdmin,
     PRIVILEGE.AdminUsers,
     PRIVILEGE.AdminTags,
+    PRIVILEGE.AdminLayout,
     PRIVILEGE.AdminPatches,
   ],
 }
@@ -135,6 +139,7 @@ export function presetFor(role: Role): readonly Privilege[] {
 export const REQUIRES: Partial<Record<Privilege, Privilege>> = {
   [PRIVILEGE.AdminUsers]: PRIVILEGE.AccessAdmin,
   [PRIVILEGE.AdminTags]: PRIVILEGE.AccessAdmin,
+  [PRIVILEGE.AdminLayout]: PRIVILEGE.AccessAdmin,
   [PRIVILEGE.AdminPatches]: PRIVILEGE.AccessAdmin,
 }
 
