@@ -50,31 +50,10 @@
   font-size: 10.5px;
 }
 
-.outerRing {
-  fill: var(--moog-panel);
-}
-
-.innerRing {
-  fill: var(--moog-panel);
-  stroke: var(--moog-ink);
-  stroke-width: 2;
-}
-
-.pointer {
-  fill: var(--moog-ink);
-  stroke: var(--moog-panel);
-  stroke-width: 4;
-}
-
-.cap {
-  fill: var(--moog-panel);
-  stroke: var(--moog-ink);
-  stroke-width: 2;
-}
-
+/* Sized by the component from the cap it is printed in, so only the ink and the
+   weight are here. */
 .capText {
   fill: var(--moog-ink);
-  font-size: 22px;
   font-weight: 700;
   pointer-events: none;
 }

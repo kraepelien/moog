@@ -1,17 +1,8 @@
 import { memo, useCallback, useId, useRef, useState } from 'react'
 import { positionIndex, stepBy, type StepKnobDef } from '../../controls/stepKnob.ts'
-import {
-  BAKED_ANGLE,
-  CAP,
-  CENTRE,
-  DETENT_ANGLES,
-  INNER_RING,
-  LABEL_RADIUS,
-  OUTER_RING,
-  POINTER,
-  TICKS,
-  VIEWBOX,
-} from './artwork.ts'
+import { CENTRE, DETENT_ANGLES, LABEL_RADIUS, TICKS, VIEWBOX } from './artwork.ts'
+import { capRadiusAt } from './dialArtwork.ts'
+import { KnobBody } from './KnobBody.tsx'
 import { waveformGlyphs, type WaveformId } from './waveforms.ts'
 import { PositionPicker } from './PositionPicker.tsx'
 import styles from './StepKnob.module.css'
@@ -62,18 +53,12 @@ const Labels = memo(function Labels({ def }: { def: StepKnobDef }) {
   )
 })
 
-/* Roughly forty nodes, and its props are two numbers, so it re-renders only when
-   the knob actually turns. Dragging one knob must not repaint the rest of them. */
-const Body = memo(function Body({ angle }: { angle: number }) {
-  return (
-    <g transform={`rotate(${angle - BAKED_ANGLE} ${CENTRE.x} ${CENTRE.y})`}>
-      <path d={OUTER_RING} fillRule="evenodd" clipRule="evenodd" className={styles.outerRing} />
-      <path d={INNER_RING} className={styles.innerRing} />
-      <path d={POINTER} className={styles.pointer} />
-      <circle cx={CAP.cx} cy={CAP.cy} r={CAP.r} className={styles.cap} />
-    </g>
-  )
-})
+/* The width the ring this replaces was drawn at, so the selectors keep the
+   footprint the panel is laid out around: the ticks stay clear of the body and
+   the six labels stay where they were printed. */
+const BODY_WIDTH = 73
+
+const CAP_RADIUS = capRadiusAt(BODY_WIDTH)
 
 /* The same mark that labels the detent, drawn again in the cap so the knob reads
    its own position the way the octave knob does. Scaled and centred from the
@@ -81,8 +66,9 @@ const Body = memo(function Body({ angle }: { angle: number }) {
    however different their shapes are. Outside the rotating group: the mark must
    stay upright while the body turns.
 
-   Sized against a cap of radius 20, leaving clear margin at the circle's edge. */
-const CAP_GLYPH_WIDTH = 15
+   Sized as a fraction of the cap rather than in units, so the mark keeps its
+   margin at the circle's edge whatever the knob is fitted to. */
+const CAP_GLYPH_WIDTH = CAP_RADIUS * 0.75
 
 function CapGlyph({ glyph }: { glyph: WaveformId }) {
   const { path, box } = waveformGlyphs[glyph]
@@ -91,7 +77,7 @@ function CapGlyph({ glyph }: { glyph: WaveformId }) {
   const cy = box.y + box.height / 2
   return (
     <g
-      transform={`translate(${CAP.cx} ${CAP.cy}) scale(${scale}) translate(${-cx} ${-cy})`}
+      transform={`translate(${CENTRE.x} ${CENTRE.y}) scale(${scale}) translate(${-cx} ${-cy})`}
       className={styles.capGlyph}
       style={{ strokeWidth: 1.5 / scale }}
     >
@@ -103,9 +89,9 @@ function CapGlyph({ glyph }: { glyph: WaveformId }) {
 /* "8'" and "32'" share one circle. Shrinking past two characters keeps the wider
    octave readings inside the cap rather than over its edge. */
 function capFontSize(length: number): number {
-  if (length <= 2) return 22
-  if (length === 3) return 16
-  return 13
+  if (length <= 2) return CAP_RADIUS * 1.1
+  if (length === 3) return CAP_RADIUS * 0.8
+  return CAP_RADIUS * 0.65
 }
 
 export interface StepKnobProps {
@@ -196,14 +182,14 @@ export function StepKnob({ def, value, onChange, hideHeader }: StepKnobProps) {
       >
         <path d={TICKS} className={styles.ticks} />
         <Labels def={def} />
-        <Body angle={angle} />
+        <KnobBody angle={angle} centre={CENTRE} width={BODY_WIDTH} />
         {current?.glyph && current.glyph in waveformGlyphs ? (
           <CapGlyph glyph={current.glyph as WaveformId} />
         ) : (
           current?.cap && (
             <text
-              x={CAP.cx}
-              y={CAP.cy}
+              x={CENTRE.x}
+              y={CENTRE.y}
               className={styles.capText}
               style={{ fontSize: capFontSize(current.cap.length) }}
               textAnchor="middle"
