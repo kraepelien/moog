@@ -440,6 +440,37 @@ disagree the keyboard is in the wrong octave.
 Three vocabularies, deliberately unlike each other, all in `src/access/privileges.ts` so that the
 server and the browser cannot disagree about what a name means.
 
+<details>
+<summary>The forks this design came to, and what was on the other side of each</summary>
+
+Each of these was a real choice, and the rejected half is written down because the reason it was
+rejected is the reason the current shape looks odd if you meet it cold.
+
+- **A role is stored, rather than stamped out as grants.** Applying a preset could have written one
+  grant row per privilege. That makes the role a dead shortcut: change what `tester` means and
+  nobody already marked one is affected. Stored, a preset stays live.
+- **`member` is not stored, unlike the others.** It was, briefly. Every row then had to be
+  backfilled correctly or the account had no privileges at all, and two accounts with identical
+  access showed different columns. Implicit, an un-backfilled row is still a member.
+- **Overrides are a table, not a JSON column on `users`.** `settings.json` looks like the precedent
+  and is the wrong one — it is justified by the server never reading inside it, and these are read
+  on every request. `ratings` is the real precedent: a per-(user, thing) decision with a composite
+  key. The table is also what allows one row to be written without sending the rest back.
+- **A revoke beats everything, including `MOOG_ADMINS`.** The alternative — an env admin immune to
+  revokes — would mean the person most likely to be testing what a member sees is the one person who
+  cannot. The recovery path is protected at the point a revoke is *written* instead, which keeps the
+  resolution order a rule without exceptions.
+- **`AccessAdmin` is a prerequisite, not a second `needs` on each admin route.** Annotating routes
+  would work until one was added without the annotation, which is the hole it closes; and routes are
+  not the only place a privilege is asked about.
+- **No router dependency.** react-router would bring `useBlocker`, nested layouts, loaders and
+  route-level code splitting. Only the first had a use here, and it is ~40 lines.
+- **Routes live in the path.** They lived in the fragment first, on the reasoning that moving them
+  would drag every OAuth return URL along. That turned out to be four string literals, and the
+  fragment was hiding a bug — see **Pages**.
+
+</details>
+
 A **privilege** is a thing the code can do — `AccessAdmin`, `AdminUsers`, `AdminTags`,
 `AdminPatches`, `StoreMidi`. Adding one is that file plus the route that asks for it: never a
 migration.
