@@ -571,13 +571,40 @@ copy.
 
 ## Pages
 
-`src/navigation/routes.ts` is one table of pages, each with the privilege it needs. The address
-lives in the fragment — it already survives a reload and works with the back button, and moving to
-real paths would drag every OAuth return URL with it for a cosmetic gain on an app that sits behind
-a sign-in. Only `read` in `router.ts` knows, so that change stays one function wide.
+`src/navigation/routes.ts` is one table of pages, each with the privilege it needs, matched against
+the **path**. `pushState` fires no event of its own, so `navigate` tells the store directly and
+`popstate` covers the back button — both through the same listener set, which is what makes a press
+of Back indistinguishable from a navigation to anything reading the address.
 
-The matcher captures `:name` segments although no page takes one yet: that is what makes adding a
-page like `/patch/:id` a row in the table rather than a rewrite.
+This works because the server hands back the app for an address it does not recognise — *"anything
+else is a client route"* in `serve.ts`, and Vite in development. That fallback is what a fragment
+would otherwise have been buying, and it was already there.
+
+`resolve` cuts the query off before matching: a query belongs to whoever reads it, like the
+`?error=` a failed sign-in comes back with, and never to the match. A link bookmarked when the
+routes lived in the fragment is rewritten once by `adoptLegacyHash` before anything renders; a
+fragment that is not a path is left alone, because that is somebody's anchor.
+
+The matcher captures `:name` segments and `useParams()` hands them over, although no page takes one
+yet: that is what makes adding a page like `/patch/:id` a row in the table rather than a rewrite.
+
+There is no router dependency. What one would buy here is `useBlocker`, nested layouts, loaders and
+route-level code splitting, and only the first had a use — it is `useNavigationBlock` now.
+
+### Leaving a page with unsaved changes
+
+`beforeunload` covers closing the tab and reloading, and a move between pages is neither, so the
+editor holds a blocker while its draft is dirty. One at a time and registered at the module rather
+than checked at each call site: five places navigate, and a sixth would not know to ask.
+
+It asks with the app's own dialog rather than `window.confirm`, which is the same reason
+`useConfirm` exists at all — and `beforeunload` has to make do with wording the browser chooses,
+while this does not.
+
+**The back button is the awkward half.** `popstate` arrives *after* the browser has moved, so
+refusing one means pushing the old address back rather than preventing anything. That adds a history
+entry instead of removing one; the alternative is a page whose address disagrees with what it is
+showing, which is worse.
 
 ## The server
 

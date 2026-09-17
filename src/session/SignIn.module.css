@@ -31,3 +31,10 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+
+.trouble {
+  color: #ff6f9c;
+  font-size: 0.85rem;
+  max-width: 28ch;
+  text-align: center;
+}

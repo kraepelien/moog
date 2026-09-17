@@ -18,7 +18,10 @@ const runtime = {
   fetch: globalThis.fetch,
 }
 
-GlobalRegistrator.register()
+/* With an origin, because the app keeps its routes in the path now: on the
+   default `about:blank` there is nothing for `pushState` to push onto and
+   `location.pathname` reads "blank". */
+GlobalRegistrator.register({ url: 'http://localhost/' })
 
 Object.assign(globalThis, runtime)
 

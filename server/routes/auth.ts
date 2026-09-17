@@ -108,13 +108,13 @@ export async function handleAuth(
     const flow = token === null ? null : await readToken<Flow>(token, config.secret, now())
     /* A refusal is a redirect rather than a 500: whatever went wrong, the
        person is in a browser and needs somewhere to land. */
-    if (!flow) return redirect('/#/signed-out?error=expired')
+    if (!flow) return redirect('/signed-out?error=expired')
     if (url.searchParams.get('state') !== flow.state) {
-      return redirect('/#/signed-out?error=state')
+      return redirect('/signed-out?error=state')
     }
 
     const code = url.searchParams.get('code')
-    if (code === null) return redirect('/#/signed-out?error=refused')
+    if (code === null) return redirect('/signed-out?error=refused')
 
     const profile = await exchangeCode({
       provider,
@@ -125,7 +125,7 @@ export async function handleAuth(
       redirectUri: redirectUri(config, request, provider.id),
       doFetch: options.doFetch,
     })
-    if (!profile) return redirect('/#/signed-out?error=exchange')
+    if (!profile) return redirect('/signed-out?error=exchange')
 
     const uid = await userIdFor(provider.id, profile.subject)
     /* A member, always. Whether they are also an admin is decided per request
