@@ -1,9 +1,9 @@
 /* One grid rather than a flex row, so every line's columns agree with the ones
    above and below without each cell being given a width. The named columns are
-   the sheet's: number, name, category, synth, where it came from, stars. */
+   the sheet's: name, category, synth, where it came from, stars. */
 .row {
   display: grid;
-  grid-template-columns: 3rem minmax(8rem, 1fr) minmax(0, 14rem) minmax(0, 12rem) minmax(0, 10rem) auto;
+  grid-template-columns: minmax(8rem, 1fr) minmax(0, 14rem) minmax(0, 12rem) minmax(0, 10rem) auto;
   align-items: center;
   gap: 12px;
   width: 100%;
@@ -21,7 +21,7 @@
    being readable, and the name and its rating are what the line is for. */
 @media (max-width: 880px) {
   .row {
-    grid-template-columns: 2.5rem 1fr auto;
+    grid-template-columns: 1fr auto;
   }
 
   .tags,
@@ -31,17 +31,10 @@
   }
 }
 
-.index {
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  font-variant-numeric: tabular-nums;
-}
-
 .name {
   font-size: 0.86rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
   overflow-wrap: anywhere;
 }
 
@@ -55,11 +48,19 @@
 
 .rating {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 8px;
 }
 
-/* What everyone else made of it, beside my own stars. */
+/* What everyone else made of it, beside my own stars. The width is fixed and the
+   slot is drawn empty until someone has rated, because a grid column sized to
+   its contents is per row: the first rating on a patch would otherwise widen
+   that one row's last column and slide every chip on the line leftwards. */
 .average {
+  flex: none;
+  width: 3.4rem;
   font-size: 0.75rem;
+  text-align: right;
   white-space: nowrap;
 }

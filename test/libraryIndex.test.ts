@@ -50,9 +50,9 @@ describe('what a viewer is shown', () => {
     store.putPreset('sub-bass', { ...createPatch({ name: 'Sub Bass', visibility: 'public' }), id: 'sub-bass' })
 
     expect(buildLibrary(db, me.id).map((row) => row.name).sort()).toEqual([
-      'Mine',
-      'Sub Bass',
-      'Theirs, shared',
+      'MINE',
+      'SUB BASS',
+      'THEIRS, SHARED',
     ])
   })
 
@@ -64,8 +64,8 @@ describe('what a viewer is shown', () => {
     patch('Theirs', them.id, 'public')
 
     const rows = buildLibrary(db, me.id)
-    expect(rows.find((row) => row.name === 'Mine')).toMatchObject({ mine: true, origin: 'user' })
-    expect(rows.find((row) => row.name === 'Theirs')).toMatchObject({
+    expect(rows.find((row) => row.name === 'MINE')).toMatchObject({ mine: true, origin: 'user' })
+    expect(rows.find((row) => row.name === 'THEIRS')).toMatchObject({
       mine: false,
       ownerName: 'THEM',
     })

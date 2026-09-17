@@ -9,10 +9,11 @@ import { PatchRow } from './PatchRow.tsx'
 import { SearchField } from './SearchField.tsx'
 import {
   matchesFilters,
-  toggled,
+  withFilter,
   NO_FILTERS,
   type LibraryEntry,
   type LibraryFilters,
+  type Origin,
 } from './entry.ts'
 import { instrumentName } from '../../instruments/instruments.ts'
 import { toneForTag } from '../../tones.ts'
@@ -100,25 +101,28 @@ export function PatchLibrary({
             label="Category"
             choices={choices.tags}
             selected={filters.tags}
-            onToggle={(tag) => change({ ...filters, tags: toggled(filters.tags, tag) })}
+            onToggle={(tag) => change(withFilter(filters, { kind: 'tag', value: tag }))}
           />
           <FilterRow
             label="Synth"
             choices={choices.instruments}
             selected={filters.instruments}
-            onToggle={(id) => change({ ...filters, instruments: toggled(filters.instruments, id) })}
+            onToggle={(id) => change(withFilter(filters, { kind: 'instrument', value: id }))}
           />
           <FilterRow
             label="Other"
             choices={ORIGIN_CHOICES}
             selected={[...filters.origins, ...(filters.publicOnly ? ['public'] : [])]}
-            onToggle={(value) => {
-              if (value === 'public') {
-                change({ ...filters, publicOnly: !filters.publicOnly })
-                return
-              }
-              change({ ...filters, origins: toggled(filters.origins, value as 'factory' | 'user') })
-            }}
+            onToggle={(value) =>
+              change(
+                withFilter(
+                  filters,
+                  value === 'public'
+                    ? { kind: 'public' }
+                    : { kind: 'origin', value: value as Origin },
+                ),
+              )
+            }
           />
         </Stack>
       </Paper>
@@ -133,12 +137,12 @@ export function PatchLibrary({
         </Box>
 
         <Box component="ul" className={styles.rows}>
-          {visible.map((entry, index) => (
+          {visible.map((entry) => (
             <PatchRow
               key={`${entry.origin}-${entry.id}`}
               entry={entry}
-              index={start + index}
               onOpen={() => onOpen(entry)}
+              onFilter={(pressed) => change(withFilter(filters, pressed))}
               onRate={onRate === undefined ? undefined : (stars) => onRate(entry, stars)}
             />
           ))}

@@ -10,12 +10,19 @@ import Paper from '@mui/material/Paper'
 import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
+import { AdminPage } from './admin/AdminPage.tsx'
+import type { TagInUse } from './admin/tags.ts'
 import { FitToWidth } from './components/FitToWidth.tsx'
+import { MidiHelp } from './components/MidiHelp.tsx'
 import { TopBar, type TopBarAction } from './components/TopBar.tsx'
 import surface from './components/controlSurface.module.css'
 import { PatchLibrary } from './components/library/PatchLibrary.tsx'
 import { PatchHeader } from './components/library/PatchHeader.tsx'
-import { SavePatchDialog, type PatchFields } from './components/library/SavePatchDialog.tsx'
+import {
+  SavePatchDialog,
+  type PatchFields,
+  type SaveOutcome,
+} from './components/library/SavePatchDialog.tsx'
 import type { LibraryEntry } from './components/library/entry.ts'
 import { Panel, PanelChecklist } from './components/Panel.tsx'
 import { useConfirm } from './components/useConfirm.tsx'
@@ -77,14 +84,18 @@ export function App() {
      tags patches happen to wear, or a bank nothing is tagged in yet could never
      be given its first one. */
   const [tags, setTags] = useState<readonly string[]>([])
+  /* The same list with its usage counts, which only an admin may ask for and
+     only the admin page shows. */
+  const [tagUse, setTagUse] = useState<readonly TagInUse[]>([])
   const [status, setStatus] = useState('')
   const [report, setReport] = useState<ResolveReport | null>(null)
   const [failed, setFailed] = useState(false)
   /* What the draft looked like when it was last saved or loaded. Comparing
      against it is what tells the user there is something unsaved. */
   const [clean, setClean] = useState('')
-  /* Whether the server has this draft yet. A new one is created, an existing
-     one written over, and only the server ever mints an id. */
+  /* Whether the server has this draft *and* will let me write it back. A patch
+     of my own is written over; anything else — a factory preset, somebody
+     else's — is created afresh, and only the server ever mints an id. */
   const [stored, setStored] = useState(false)
   /* What the draft was copied from, until it has been saved once. */
   const [copiedFrom, setCopiedFrom] = useState<string | null>(null)
@@ -98,6 +109,7 @@ export function App() {
   const { ask, dialog } = useConfirm()
   const { session, refresh: refreshSession } = useSession()
   const [view, goToView] = useView()
+  const [midiHelp, setMidiHelp] = useState(false)
   /* The menu cannot hold a file input, so it holds a button that clicks one. */
   const importing = useRef<HTMLInputElement>(null)
 
@@ -155,6 +167,48 @@ export function App() {
     }
   }, [])
 
+  const refreshTagUse = useCallback(async () => {
+    setTagUse(await store.listTagsInUse())
+  }, [])
+
+  /* Asked for only on the page that shows it: the counts are over everybody's
+     patches, so the route refuses anyone else and every other page would be
+     making a call it cannot use. */
+  useEffect(() => {
+    if (view !== 'admin' || session?.admin !== true) return
+    void (async () => {
+      await run('', refreshTagUse)
+    })()
+  }, [view, session?.admin, refreshTagUse, run])
+
+  const addTag = useCallback(
+    (name: string) =>
+      void run(`Added ${name}`, async () => {
+        await store.addTag(name)
+        await Promise.all([refreshTagUse(), refresh()])
+      }),
+    [run, refreshTagUse, refresh],
+  )
+
+  const removeTag = useCallback(
+    (tag: TagInUse) =>
+      void run(`Removed ${tag.name}`, async () => {
+        const agreed = await ask({
+          title: `Remove ${tag.name} from the list?`,
+          body:
+            tag.patches === 0
+              ? 'Nothing is wearing it.'
+              : `${tag.patches === 1 ? 'One patch wears' : `${tag.patches} patches wear`} this tag and will keep it. It only stops being offered when a patch is saved.`,
+          confirm: 'Remove',
+          destructive: true,
+        })
+        if (!agreed) throw new Cancelled()
+        await store.removeTag(tag.id)
+        await Promise.all([refreshTagUse(), refresh()])
+      }),
+    [run, ask, refreshTagUse, refresh],
+  )
+
   const importFile = useCallback(
     (file: File) =>
       run('', async () => {
@@ -209,10 +263,15 @@ export function App() {
         const patch = await fetchEntry(entry)
         if (!patch) return
         const factory = entry.origin === 'factory'
+        const writable = !factory && entry.mine
         adopt(
-          factory ? copyOf(patch, { owner: null }) : patch,
+          writable
+            ? patch
+            : copyOf(patch, {
+                owner: factory ? null : { id: null, name: entry.ownerName },
+              }),
           `Opened “${patch.name}”`,
-          factory ? { from: entry.id } : { stored: true },
+          writable ? { stored: true } : { from: entry.id },
         )
         goToView('editor')
       }),
@@ -229,8 +288,16 @@ export function App() {
 
   const resolved = resolvePatch(panelRegistry, draft)
 
+  /* Only a draft the server already holds as mine is written over. Everything
+     else is created: a copy when it came from somewhere, a first save when it
+     did not. */
+  const outcome: SaveOutcome = stored ? 'overwrite' : copiedFrom ? 'duplicate' : 'new'
+
   const menu: TopBarAction[] = [
     { label: 'Import a file…', onSelect: () => importing.current?.click() },
+    /* Discoverable from here because there is nowhere on the instrument it
+       could go: a Model D has no MIDI socket to label. */
+    { label: 'Playing over MIDI…', onSelect: () => setMidiHelp(true) },
     {
       label: 'Export every patch',
       onSelect: () =>
@@ -240,6 +307,11 @@ export function App() {
           downloadJson('all-patches.moogpatch.json', serializeBundle(createBundle(present)))
         }),
     },
+    /* Shown to an admin only, which the server decides: MOOG_ADMINS is read per
+       request, so adding somebody is a line in the .env and a restart. */
+    ...(session.admin
+      ? [{ label: 'Administration', separated: true, onSelect: () => goToView('admin') }]
+      : []),
     ...(session?.mode === 'oauth'
       ? [
           {
@@ -289,27 +361,15 @@ export function App() {
             rating={null}
             actions={[
               {
-                label: 'Save',
+                /* One button, named after what it will do: pressing Save on a
+                   patch that is not yours cannot write over it, so it says
+                   Duplicate rather than reporting a refusal afterwards. */
+                label: outcome === 'duplicate' ? 'Duplicate' : 'Save',
                 tone: 'green',
                 /* Not disabled on a clean panel: the form is also how a patch
                    is named, tagged and published, none of which the panel
                    marks as an edit. */
                 onSelect: () => setSaving(true),
-              },
-              {
-                label: 'Save as',
-                tone: 'green',
-                /* There is nothing to branch from until the draft is somewhere. */
-                disabled: !stored,
-                onSelect: () =>
-                  void run('', async () => {
-                    const copy = await store.create(
-                      { ...draft, name: `${draft.name} copy` },
-                      draft.id,
-                    )
-                    adopt(copy, `Saved as “${copy.name}”`, { stored: true })
-                    await refresh()
-                  }),
               },
               {
                 label: 'Delete',
@@ -412,6 +472,18 @@ export function App() {
           />
         )}
 
+        {/* Reachable by typing the address, so it says no rather than drawing an
+            empty list every button on which is refused. */}
+        {view === 'admin' &&
+          (session.admin ? (
+            <AdminPage tags={tagUse} onAdd={addTag} onRemove={removeTag} />
+          ) : (
+            <Alert severity="warning">
+              <AlertTitle>Administration</AlertTitle>
+              This page is for administrators, and this account is not one.
+            </Alert>
+          ))}
+
         {view === 'editor' && report && reportHasWarnings(report) && (
           <Alert severity="warning">
             <AlertTitle>The patch that was loaded did not fit the panel exactly</AlertTitle>
@@ -448,6 +520,8 @@ export function App() {
         </Stack>
       </Box>
 
+      <MidiHelp open={midiHelp} onClose={() => setMidiHelp(false)} />
+
       {/* Out of the flow: the menu's Import clicks this. */}
       <input
         type="file"
@@ -471,10 +545,11 @@ export function App() {
       <SavePatchDialog
         open={saving}
         patch={draft}
+        outcome={outcome}
         tagChoices={tags}
         onCancel={() => setSaving(false)}
         onSave={(fields: PatchFields) =>
-          void run('Saved', async () => {
+          void run(outcome === 'duplicate' ? 'Saved a copy' : 'Saved', async () => {
             setSaving(false)
             const edited = { ...draft, ...fields, tags: [...fields.tags] }
             /* Only the server mints an id, so a draft it has never seen is

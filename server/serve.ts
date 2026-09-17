@@ -4,6 +4,7 @@ import { backupTo, openDatabase } from './db.ts'
 import { loadFactory } from './factory.ts'
 import { limitsFromEnv } from './limits.ts'
 import { createStore } from './store.ts'
+import { authConfigFromEnv, describeAuth } from './identity.ts'
 import { seedTags } from './tags.ts'
 
 /* Serves the built app plus the same API the dev plugin serves, for running the
@@ -24,6 +25,7 @@ const db = openDatabase(join(root, 'moog.db'))
 const factory = loadFactory(db, seed)
 seedTags(db)
 console.log(`Factory bank: ${factory.loaded} presets, ${factory.retired} retired`)
+console.log(`Sign-in: ${describeAuth(authConfigFromEnv(process.env))}`)
 
 /* Trash is a grace period, not a place things stay. */
 const limits = limitsFromEnv(process.env)

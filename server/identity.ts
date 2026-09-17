@@ -67,6 +67,16 @@ export function originOf(config: AuthConfig, request: Request): string {
   return config.publicOrigin ?? own.origin
 }
 
+/* Said out loud at startup, because the two modes look the same from outside:
+   with no client id the app signs nobody in and hands everything to one local
+   user, which is indistinguishable from a .env the server never read. */
+export function describeAuth(config: AuthConfig): string {
+  if (config.mode === 'off') {
+    return 'off — everything belongs to the local user (MOOG_OAUTH_CLIENT_ID is unset)'
+  }
+  return `Google${config.admins.length > 0 ? `, ${config.admins.length} admin(s)` : ''}`
+}
+
 const encoder = new TextEncoder()
 
 const toBase64Url = (bytes: ArrayBuffer | Uint8Array): string =>

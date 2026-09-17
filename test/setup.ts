@@ -33,3 +33,16 @@ if (!Element.prototype.setPointerCapture) {
     return false
   }
 }
+
+/* Bun loads .env before any of this runs, and the server takes its configuration
+   from the environment, so a developer who has set up sign-in was running a
+   different application than CI was: oauth instead of off, and every write
+   answering 401 rather than saving. Forty-five tests failed on that machine and
+   nowhere else.
+
+   The suite therefore runs in an empty environment. A test that needs
+   configuration states it, as the sign-in tests already do by passing an object
+   to authConfigFromEnv rather than reading the environment. */
+for (const name of Object.keys(process.env)) {
+  if (name.startsWith('MOOG_')) delete process.env[name]
+}

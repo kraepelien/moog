@@ -20,6 +20,14 @@
   text-transform: uppercase;
 }
 
+/* What the button will do to the store, said once beside it: the same press
+   creates or overwrites depending on whose patch is open, and that is not
+   something the panel behind the dialog shows. */
+.note {
+  margin-top: -6px;
+  font-size: 0.78rem;
+}
+
 /* Pushed to the far end, as the sheet prints them. */
 .actions {
   display: flex;
@@ -51,8 +59,7 @@
 .name :global(input) {
   font-size: 0.82rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .chips {

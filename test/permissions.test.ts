@@ -110,7 +110,7 @@ describe('a factory preset', () => {
     const copy = (await response.json()) as Patch
     expect(copy.id).not.toBe('sub-bass')
     expect(copy.visibility).toBe('private')
-    expect(copy.derivedFrom).toMatchObject({ id: 'sub-bass', name: 'Sub Bass', kind: 'factory' })
+    expect(copy.derivedFrom).toMatchObject({ id: 'sub-bass', name: 'SUB BASS', kind: 'factory' })
     expect(store.locate(copy.id)?.ownerUid).toBe('u-mine')
   })
 
@@ -189,7 +189,7 @@ describe('somebody else copying my public patch', () => {
     expect(store.locate(copy.id)?.ownerUid).toBe('u-theirs')
     expect(copy.derivedFrom).toMatchObject({
       id: patch.id,
-      name: 'Shared',
+      name: 'SHARED',
       kind: 'user',
       ownerId: 'u-mine',
       ownerName: 'u-mine',

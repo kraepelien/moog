@@ -1,4 +1,5 @@
 import type { Database } from 'bun:sqlite'
+import { type TagInUse, tagNameProblem } from '../src/admin/tags.ts'
 
 /* The list of categories an admin keeps. A patch stores the tag's name as a
    plain string and points at nothing, so retiring a row here leaves every patch
@@ -50,4 +51,44 @@ export function seedTags(db: Database, names: readonly string[] = INITIAL_TAGS):
    among the first twelve instead of piling up after them. */
 export function listTags(db: Database): Tag[] {
   return db.query<Tag, []>(`select id, name from tags order by name collate nocase`).all()
+}
+
+/* The same list with the count the admin page needs to ask its question
+   honestly: removing a tag takes it off the list and leaves every patch
+   wearing it, so the page has to be able to say how many that is.
+
+   Matched on the name because that is all a patch stores. */
+export function listTagsInUse(db: Database): TagInUse[] {
+  return db
+    .query<TagInUse, []>(
+      `select t.id, t.name,
+              (select count(*) from patches p
+                where p.deleted_at is null
+                  and exists (select 1 from json_each(p.tags) worn
+                               where worn.value = t.name collate nocase)) as patches
+         from tags t
+        order by t.name collate nocase`,
+    )
+    .all()
+}
+
+export type TagRefusal = 'invalid' | 'taken'
+
+/* Case-insensitively unique: 'Bass' and 'bass' in one list is a mistake nobody
+   would make deliberately, and the column's own unique index would allow it. */
+export function addTag(db: Database, name: string): Tag | TagRefusal {
+  const trimmed = name.trim()
+  if (tagNameProblem(trimmed) !== null) return 'invalid'
+
+  const held = db
+    .query<{ id: number }, [string]>(`select id from tags where name = ? collate nocase`)
+    .get(trimmed)
+  if (held) return 'taken'
+
+  db.run(`insert into tags (name, created_at) values (?, ?)`, [trimmed, new Date().toISOString()])
+  return db.query<Tag, [string]>(`select id, name from tags where name = ?`).get(trimmed)!
+}
+
+export function removeTag(db: Database, id: number): boolean {
+  return db.run(`delete from tags where id = ?`, [id]).changes > 0
 }

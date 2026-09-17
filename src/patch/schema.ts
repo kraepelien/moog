@@ -95,6 +95,14 @@ export const systemIdentity: PatchIdentity = {
   now: () => new Date().toISOString(),
 }
 
+/* Patch names are uppercase, the way the sheets that came with the instrument
+   print them. Applied where a patch is written rather than where it is drawn:
+   every surface already uppercased the letters in CSS, which left the stored
+   name, an export and the save form disagreeing with the panel. */
+export function patchName(name: string): string {
+  return name.toUpperCase()
+}
+
 export function createPatch(
   fields: {
     name?: string
@@ -112,7 +120,7 @@ export function createPatch(
   return {
     schemaVersion: PATCH_SCHEMA_VERSION,
     id: identity.newId(),
-    name: fields.name ?? '',
+    name: patchName(fields.name ?? ''),
     notes: fields.notes ?? '',
     values: { ...(fields.values ?? {}) },
     tags: [...(fields.tags ?? [])],
@@ -151,7 +159,10 @@ const provenanceSchema = z.object({
 export const patchSchema = z.object({
   schemaVersion: z.int(),
   id: z.string().min(1),
-  name: z.string(),
+  /* Here rather than only at the routes, so a patch arriving from an import or
+     from the bank in the repo is named the same way one typed into the form
+     is. */
+  name: z.string().transform(patchName),
   notes: z.string(),
   values: z.record(z.string(), z.unknown()),
   tags: z.array(z.string()),
