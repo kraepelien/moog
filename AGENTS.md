@@ -83,6 +83,11 @@ rather than leaving a control quietly doing nothing.
   knob repaints every other.
 - **`localStorage` does not exist in Bun's runtime.** The storage adapter takes its `Storage` object
   as a parameter; keep it injected rather than reaching for `window`.
+- **Bun loads `.env`, and the server reads its configuration from the environment.** Before
+  `test/setup.ts` emptied every `MOOG_*` variable, a developer who had set up sign-in ran the suite
+  against a different application than CI did: oauth rather than off, and 45 tests failing on a 401
+  that nobody else could reproduce. A test that needs configuration states it rather than inheriting
+  it.
 - **happy-dom has no Web Audio.** `test/fakeAudio.ts` is a context that records instead of
   sounding, which is why the engine only ever uses the factory methods (`context.createGain()`)
   rather than the constructor forms: one surface to keep faked.
