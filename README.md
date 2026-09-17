@@ -43,7 +43,8 @@ src/
   components/ Panel.tsx renders whatever the registry holds
   components/library/ the patch library: search, filter chips, rows, the patch header
   patch/      schema.ts (Patch + structural parse) · migrate.ts (version chain) · resolve.ts (load policy)
-  access/     privileges.ts (the vocabulary, shared with the server) · Can.tsx (the guards)
+  access/     privileges.ts (the vocabulary and the one resolve()) · Can.tsx (the guards)
+  admin/      UsersPage.tsx (everyone with an account) · UserAccess.tsx (one person's privileges)
   components/midi/ the MIDI desk: a file, a sound per part, and saving the two together
   navigation/ routes.ts (the page table) · router.ts (the address)
   storage/    types.ts (the adapter interface) · webStorage.ts (localStorage + in-memory backends)
@@ -416,29 +417,65 @@ disagree the keyboard is in the wrong octave.
 
 ## Who may do what
 
-Two vocabularies, deliberately unlike each other, both in `src/access/privileges.ts` so that the
+Three vocabularies, deliberately unlike each other, all in `src/access/privileges.ts` so that the
 server and the browser cannot disagree about what a name means.
 
-A **privilege** is a thing the code can do — `AccessAdmin`, `AdminTags`, `AdminPatches`,
-`StoreMidi`. Privileges exist only in code. Nothing stores one, so adding a privilege is this file
-plus the route that asks for it: never a migration, never a row somewhere to keep in step.
+A **privilege** is a thing the code can do — `AccessAdmin`, `AdminUsers`, `AdminTags`,
+`AdminPatches`, `StoreMidi`. Adding one is that file plus the route that asks for it: never a
+migration.
 
-A **role** is stored against a user, in `users.roles`, as a comma-separated column. That makes a
-role name a published interface in the same way a control id is — renaming one leaves every row
-naming something nobody grants. Add roles; do not rename them. An unknown name in the column is
-dropped rather than rejected, so a database written by a newer build does not stop an older one
-answering.
+A **role** is a preset — a named set of privileges, stored against a user. It is stored rather than
+stamped out as individual grants because that is what keeps a preset *live*: changing what `tester`
+means in code reaches everyone already marked a tester, with no write.
 
-`member` is what an ordinary account can do. `admin` is granted the member set outright rather than
-inheriting it, so there is one table to read when asking why somebody can do something.
+An **override** is one person's answer for one privilege, and beats the preset either way.
 
-**`MOOG_ADMINS` grants and never revokes.** It is reconciled on every request, not only at sign-in,
-because that is what it already did: a line in `.env` and a restart made somebody an admin without
-them signing in again. A list that also revoked would fight every grant made in the app, and one
-typo would demote everybody at the next restart.
+`member` is the exception: it is **never stored**. Every signed-in account has it, applied at
+resolution, so no row can end up with no privileges at all and unlocking a basic feature reaches
+everybody without touching the database. `admin` and `tester` are the assignable ones.
+
+### The rule
+
+```
+roles   = stored roles + (admin, if the email is in MOOG_ADMINS)
+base    = PRESETS.member  ∪  PRESETS[role] for each role
+granted = base ∪ explicit grants
+final   = granted \ explicit revokes            // a revoke wins over everything
+```
+
+One function, `resolve()`, and nowhere else. `.env` is trump for the **role** — a listed account can
+never lose the admin role in the app — but a revoke still takes one privilege off them, which is
+what lets an admin see what everybody else sees. Being listed is protected where a revoke is
+*written*, not here, so this stays a rule rather than a rule with an exception.
 
 With sign-in off there is one local user and it **holds** the admin role, rather than the check
-making an exception for the mode. That is what keeps `off` from being a second code path.
+making an exception for the mode.
+
+### Names are stored now, so renaming one is not free
+
+`user_privileges` stores privilege names and `users.roles` stores role names. Adding is still free.
+**Renaming is not**, and it fails in the dangerous direction: an unknown *grant* row fails closed
+(access lost, safe), but an unknown *revoke* fails open — the gate exists under the new name while
+the revoke still names the old one. `test/privilege-names.lock.json` is add-only and pins every name
+ever shipped; when it fails, restore the old name. An override naming something this build does not
+know is kept, never acted on, and shown on the People page.
+
+### If nobody can administer users any more
+
+Three rules stop it, all enforced where a write happens: you cannot revoke `AccessAdmin` or
+`AdminUsers` from **yourself**; neither can be revoked from an address listed in `MOOG_ADMINS`; and
+no write may leave **zero** accounts holding `AdminUsers` — counted again inside the write's own
+transaction, because two administrators revoking each other at the same moment both pass a check
+taken beforehand.
+
+If it happens anyway, the break-glass is the data:
+
+```sql
+delete from user_privileges where privilege = 'AdminUsers';
+```
+
+against `moog.db` on the volume. Restarting with no `MOOG_OAUTH_CLIENT_ID` also brings back the
+`off`-mode local admin.
 
 ### Where the check happens
 
@@ -459,6 +496,26 @@ button is refused reads as broken rather than shut.
 
 A privilege the browser cannot name is dropped when the list is read, so a server one version ahead
 can never widen what this build draws.
+
+The browser's list is filled once, at mount, so a privilege changed under somebody signed in does
+not move until they reload — their buttons stay drawn and the route answers 403. Rather than poll
+for a change that almost never comes, a refusal asks for the session again, which makes the stale
+page correct itself; and an administrator editing their own access refreshes straight after the
+write, since otherwise the page would be lying about the person pressing the buttons.
+
+### Administering people
+
+`/admin/users` lists everyone with an account, searchable, with what each has made. Opening one
+shows every privilege with a plain description and three states — *granted*, *default*, *revoked* —
+because "nobody has said" is a different thing from "no". Each click writes on its own: there is no
+Save, because one click puts it back, and no whole-set write, because that would delete an override
+naming a privilege this build has never heard of.
+
+It is its own route with its own privilege rather than nesting behind `AccessAdmin`, so the two can
+be held apart — which is what the rules above assume. Worth knowing when revoking `AccessAdmin`:
+it is the **door, not the lock**. The admin routes declare `AdminTags` and friends, never
+`AccessAdmin`, so taking it away hides the pages without taking back what the account may do behind
+them.
 
 ### Arrangements are the first thing a privilege gates
 

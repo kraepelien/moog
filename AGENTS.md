@@ -61,9 +61,17 @@ remapping every saved patch.
 - **Ids reaching the filesystem are pattern-checked** in `server/repositories/patches.ts` before
   they become filenames. The pattern, not the path join, is what keeps an id of `../../etc/passwd`
   in its folder.
-- **A privilege is code; a role is data.** Adding a privilege is `src/access/privileges.ts` plus the
-  route that asks for it, and never a migration. A *role* name is stored in `users.roles`, which
-  makes it a published interface like a control id: add roles, never rename one.
+- **Adding a privilege is free; renaming one is not.** Adding is `src/access/privileges.ts` plus the
+  route that asks for it, and never a migration. But `user_privileges` stores privilege *names* and
+  `users.roles` stores role names, so both are published interfaces like a control id, recorded in
+  `test/privilege-names.lock.json` — hand-written, add-only. A rename fails in the dangerous
+  direction: an orphaned revoke stops applying while the gate lives on under the new name, quietly
+  handing access back. When that lock fails, restore the old name rather than edit the lock.
+- **One privilege is written at a time, never the set.** A whole-set write deletes override rows
+  naming privileges the writing build does not know, and a silently deleted revoke is somebody
+  getting access back. `resolve()` in `src/access/privileges.ts` is the only place the order
+  preset → grant → revoke exists; the reasons a particular revoke may not be *written* live in
+  `server/services/users.ts`, so the resolution order stays a rule without exceptions.
 - **A route declares what it needs**, in `server/routes/table.ts`'s entries. The guard runs there
   for every route at once, so a handler never checks for itself — and a route that forgot to ask
   cannot exist. The client's `<Can>` and `<RouteGuard>` choose what to draw and are never the check.
