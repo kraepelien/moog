@@ -474,6 +474,12 @@ the tool rather than guessing by eye.
 `knob-export.svg` is hand-drawn. Reuse the paths verbatim and change only grouping and colour
 references.
 
+The two `.mid` files are there to be opened by the MIDI page, and are what its parsing was checked
+against: `Wily1st1.mid` names its parts and carries six tracks of text that play nothing, and
+`Silius1.mid` names none of them. Between them they cover both of the cases the page has to draw.
+Neither is ours — each credits its author inside the file — and neither is a test fixture: the
+parser's tests build files byte by byte, so nothing breaks if these ever have to go.
+
 Two things learned the hard way that still apply when control components arrive:
 
 - SVG gradient and filter ids are document-global. Shared `<defs>` in one component, not per knob,
