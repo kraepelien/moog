@@ -22,11 +22,16 @@ file.
 | `BUTTON (1).svg` | nothing — it is `BUTTON.svg` mirrored, and the component reflects rather than carrying a second copy | — |
 | `WHEEL.svg` | frame, face, the eighteen ribs and the marker | `wheel/wheelArtwork.ts` |
 
-Two things worth knowing before changing any of them:
+Worth knowing before changing any of them:
 
 - **One drawing serves every continuous knob.** A bigger knob is a render scale,
   not a second path. `KNOB 5.svg` is drawn in its own 100-unit box, and the code
   fits it onto the 116-unit dial with a group transform rather than re-pathing it.
+- **The selector is not one of them.** `OSC. 1 (1).svg` draws its own knob, a
+  pointer on a wide skirt, because that is a different part on the instrument —
+  `../measurements.md` measures the two apart. Drawing both from `KNOB 5.svg` was
+  tried and reverted: it made the panel agree with itself and disagree with the
+  Minimoog.
 - **Its cap holds a `0`.** That is the digit it was drawn with, not artwork: the
   dial prints the live value as text, so the glyph is left out.
 - **Each export is drawn turned to some angle**, recorded in the code as
