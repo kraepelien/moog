@@ -541,8 +541,8 @@ neither is ever written to a row:
   Somebody who needs one administrative power without being an administrator is given that
   privilege, not the role.
 
-A row that still says `admin`, written by an earlier build, is ignored rather than honoured — and a
-migration takes it out of the column, so the page stops showing a role nobody is being given.
+A row that says `admin` is ignored rather than honoured: nothing writes one, and the resolution not
+honouring it is what makes that a rule rather than a thing nothing happens to do.
 
 **The roles are a ladder** — `member`, then `tester`, then `admin` — and each rung holds what the
 rungs below it hold. `ROLE_LADDER` states that order, and each role lists only what it *adds*.

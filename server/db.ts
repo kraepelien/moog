@@ -6,7 +6,15 @@ import { dirname } from 'node:path'
    dependency — which is most of why the patches stopped being one file each. */
 
 /* Keyed by the version it upgrades FROM, like the patch migrations, and for the
-   same reason: a database on disk keeps the version it was written with. */
+   same reason: a database on disk keeps the version it was written with.
+
+   There is one step, and it is the whole schema. Nothing is deployed against a
+   database anybody would mind losing, so a column added or withdrawn is edited
+   into the step that makes its table and the database recreated — a second step
+   correcting the first buys nothing and is here for ever. The array and
+   `meta.db_version` stay: the day something real is running against data that
+   has to survive is the day a step becomes append-only, and that day should
+   need no rewiring. */
 type Step = (db: Database) => void
 
 const SCHEMA: Step[] = [
@@ -26,6 +34,7 @@ const SCHEMA: Step[] = [
         email text,
         display_name text,
         avatar_url text,
+        roles text not null default '',
         created_at text not null,
         last_seen_at text not null,
         unique (provider, subject)
@@ -52,10 +61,13 @@ const SCHEMA: Step[] = [
       create index patches_owner on patches (owner_id);
       create index patches_instrument on patches (instrument_id);
 
+      /* Half stars, and the constraint lists them rather than testing a
+         remainder: 0.5 has no exact double in binary, so a check written as
+         stars * 2 = cast(stars * 2 as int) would turn on how SQLite rounds. */
       create table ratings (
         user_id integer not null references users(id) on delete cascade,
         patch_id integer not null references patches(id) on delete cascade,
-        stars integer not null check (stars between 1 and 5),
+        stars real not null check (stars in (0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)),
         updated_at text not null,
         primary key (user_id, patch_id)
       );
@@ -65,55 +77,23 @@ const SCHEMA: Step[] = [
         json text not null
       );
 
+      /* The colour an administrator picks is on the tag rather than in a
+         settings blob because it belongs to the row: deleting the tag takes it
+         with it, where a blob would keep a colour for a name nothing wears.
+         Null is the normal state and means the hash picks. */
       create table tags (
         id integer primary key,
         name text not null unique,
+        colour text,
         created_at text not null
       );
-    `)
-  },
 
-  /* Half stars. SQLite cannot loosen a check constraint in place, so the table
-     is rebuilt; the whole numbers already given carry over unchanged, a rating
-     of 4 being the same rating either way. The constraint lists the steps rather
-     than testing a remainder, because 0.5 has no exact double in binary and
-     `stars * 2 = cast(stars * 2 as int)` would turn on how SQLite rounds. */
-  (db) => {
-    db.run(`
-      create table ratings_half (
-        user_id integer not null references users(id) on delete cascade,
-        patch_id integer not null references patches(id) on delete cascade,
-        stars real not null check (stars in (0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)),
-        updated_at text not null,
-        primary key (user_id, patch_id)
-      );
-      insert into ratings_half (user_id, patch_id, stars, updated_at)
-        select user_id, patch_id, stars, updated_at from ratings;
-      drop table ratings;
-      alter table ratings_half rename to ratings;
-    `)
-  },
-
-  (db) => {
-    db.run(`alter table users add column roles text not null default ''`)
-
-    /* Backfilled to what the build before this one already did, so switching
-       over changes nobody's access. Everybody who could sign in was a member in
-       all but name; the local user is the one the `off` mode handed admin to
-       unconditionally, and it keeps it by holding the role rather than by the
-       checker making an exception. */
-    db.run(`update users set roles = 'member'`)
-    db.run(`update users set roles = 'admin,member' where provider = 'local'`)
-  },
-
-  /* A MIDI file with a sound on each of its parts. The file is stored whole
-     because it is what was uploaded and nothing here can reconstruct it, but
-     the sounds are stored as patch *ids*: a part points at a patch rather than
-     copying it, so editing a patch changes what the arrangement plays and
-     deleting one leaves a part silent rather than leaving a stale copy that
-     nothing can find its way back from. */
-  (db) => {
-    db.run(`
+      /* A MIDI file with a sound on each of its parts. The file is stored whole
+         because it is what was uploaded and nothing here can reconstruct it, but
+         the sounds are stored as patch *ids*: a part points at a patch rather
+         than copying it, so editing a patch changes what the arrangement plays
+         and deleting one leaves a part silent rather than a stale copy that
+         nothing can find its way back from. */
       create table arrangements (
         id integer primary key,
         uid text not null unique,
@@ -129,16 +109,13 @@ const SCHEMA: Step[] = [
         updated_at text not null
       );
       create index arrangements_owner on arrangements (owner_id);
-    `)
-  },
 
-  /* One person's answer for one privilege, beating whatever their roles give.
-     A table rather than a column on `users`: this is a per-(user, privilege)
-     decision with two states, which is the shape `ratings` already has, and it
-     lets one row be written without sending the rest back — a whole-set write
-     would delete any row naming a privilege the writing build does not know. */
-  (db) => {
-    db.run(`
+      /* One person's answer for one privilege, beating whatever their roles
+         give. A table rather than a column on users: this is a per-(user,
+         privilege) decision with two states, which is the shape ratings
+         already has, and it lets one row be written without sending the rest
+         back — a whole-set write would delete any row naming a privilege the
+         writing build does not know. */
       create table user_privileges (
         user_id    integer not null references users(id) on delete cascade,
         privilege  text not null,
@@ -148,60 +125,6 @@ const SCHEMA: Step[] = [
         primary key (user_id, privilege)
       );
     `)
-  },
-
-  /* `member` is applied to everyone at resolution now, so storing it says
-     nothing. Left in the column it would show in the admin page for accounts
-     written before this and not for accounts written after, which reads as two
-     kinds of member. Written in TypeScript rather than SQL because the column
-     is a comma-separated set and the orderings are not worth enumerating. */
-  (db) => {
-    const rows = db.query<{ id: number; roles: string }, []>(`select id, roles from users`).all()
-    const update = db.prepare(`update users set roles = ? where id = ?`)
-    for (const row of rows) {
-      const kept = row.roles
-        .split(',')
-        .map((name) => name.trim())
-        .filter((name) => name !== '' && name !== 'member')
-      if (kept.length !== row.roles.split(',').filter(Boolean).length) {
-        update.run(kept.join(','), row.id)
-      }
-    }
-  },
-
-  /* `admin` now comes from MOOG_ADMINS and nowhere else, so a stored one is a
-     second source for a fact that has one. Resolution already ignores it; this
-     takes it out of the column too, so the admin page stops showing a role
-     nobody is being given. `tester` is the only thing left that is. */
-  (db) => {
-    const rows = db.query<{ id: number; roles: string }, []>(`select id, roles from users`).all()
-    const update = db.prepare(`update users set roles = ? where id = ?`)
-    for (const row of rows) {
-      const kept = row.roles
-        .split(',')
-        .map((name) => name.trim())
-        .filter((name) => name !== '' && name !== 'admin')
-      if (kept.length !== row.roles.split(',').filter(Boolean).length) {
-        update.run(kept.join(','), row.id)
-      }
-    }
-  },
-
-  /* A colour an administrator picks for a category.
-
-     The colour is on the tag rather than in a settings blob because it belongs
-     to the row: deleting the tag takes it with it, where a blob would keep a
-     colour for a name nothing wears. Null is the normal state and means the
-     hash picks, which is what every tag written before this had.
-
-     This step also made an `app_settings` table to hold the app's palette. That
-     palette is a preview on the device now, so nothing ever read the table and
-     the step is edited rather than followed by one that drops it: nothing is
-     deployed, and archaeology for a feature that never shipped is worse than a
-     database recreated once. A database made before this keeps the empty table
-     until it is; `drop table app_settings` is the whole of catching up. */
-  (db) => {
-    db.run(`alter table tags add column colour text`)
   },
 ]
 
