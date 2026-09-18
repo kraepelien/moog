@@ -751,6 +751,19 @@ to the same page an inch apart. `HOME_ROUTE` is what the mark aims at, named sep
 `DEFAULT_ROUTE` although they are the same page today — one is where the logo leads and the other is
 where an unrecognised address lands.
 
+The mark is two drawings. `public/patchdb.svg` is the lockup — the keys with PATCHDB under them —
+and it is what the rail shows unfolded and what the sign-in page shows. `public/logo.svg` is the
+keys alone, and it is what the rail shows folded: the name is a word like any other, and at 60px the
+lockup would be a wordmark eight pixels tall. Both are named PATCHDB to a reader, so the heading
+reads the same whichever is up.
+
+Both are drawn through an `<img>` rather than inlined like the glyphs. They carry gradients, and a
+gradient's id is document-global: inlined in two places those ids would collide, and the second mark
+would be painted with the first one's fill. An external file is its own document, so the id stays
+inside it. The keys are the mark — there is no tile behind them on a page — which is why neither
+`.logo` rule rounds its corners; the tile belongs to the icons, and `reference/icon.svg` brings its
+own.
+
 The glyphs are inline components in `railIcons.tsx`, not `*.svg?react` imports, although `svgr` is
 configured. svgr runs in Vite and not in Bun, so an imported file would be a component the suite
 cannot render — and the rail is the part of the app with no other way to be tested. The paths are

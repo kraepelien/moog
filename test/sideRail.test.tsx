@@ -121,6 +121,20 @@ describe('folding the rail', () => {
     expect(screen.getByRole('navigation').getAttribute('data-collapsed')).toBe('false')
   })
 
+  /* The name is a word like any other, and at 60px the lockup would be a
+     wordmark eight pixels tall. Both drawings are named PATCHDB, so the heading
+     reads the same whichever is up. */
+  test('takes the name off the mark too, and keeps the heading', () => {
+    const mark = () => screen.getByRole('img', { name: 'PATCHDB' }) as HTMLImageElement
+
+    renderRail({ collapsed: false })
+    expect(mark().getAttribute('src')).toBe('/patchdb.svg')
+
+    cleanup()
+    renderRail({ collapsed: true })
+    expect(mark().getAttribute('src')).toBe('/logo.svg')
+  })
+
   test('is what the arrow does', () => {
     const asked: boolean[] = []
     renderRail({ collapsed: false, onCollapse: (next) => asked.push(next) })

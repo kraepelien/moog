@@ -125,9 +125,13 @@ export function SideRail({
         </ButtonBase>
       </Tooltip>
 
-      {/* The page's heading is the instrument, and the mark says it without
-          spending a row on words — and it is the way home, which is where a
-          logo already takes everybody who presses one. */}
+      {/* The page's heading, and the way home — which is where a logo already
+          takes everybody who presses one.
+
+          The name goes with the rest of the words when the rail is folded: at
+          60px the lockup would be the wordmark at eight pixels tall, which is a
+          smudge rather than a name. Both drawings say PATCHDB to a reader, so
+          the heading reads the same either way. */}
       <h1 className={styles.mark}>
         <ButtonBase
           className={styles.home}
@@ -136,10 +140,10 @@ export function SideRail({
           onClick={() => onNavigate(HOME_ROUTE.path)}
         >
           <img
-            src="/logo.png"
-            alt="Minimoog Model D"
-            width="34"
-            height="34"
+            src={collapsed ? '/logo.svg' : '/patchdb.svg'}
+            alt="PATCHDB"
+            width={collapsed ? 34 : 68}
+            height={collapsed ? 34 : 61}
             className={styles.logo}
           />
         </ButtonBase>
