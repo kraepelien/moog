@@ -17,3 +17,29 @@
   gap: 4px;
   flex-wrap: wrap;
 }
+
+/* What the columns measure themselves against. The card and not the window: the
+   navigation is a rail beside the page above 900px and a bar over it below, so
+   the window crossing that width hands this table the rail's 96px back. */
+.table {
+  container-type: inline-size;
+}
+
+/* The tallies go rather than shrink, the way the library's rows drop their
+   chips. Seven columns stop fitting below this, and a table wider than its card
+   is not merely cramped here: Access is the last column, so it is Change — the
+   only way in to somebody's privileges — that ends up off the edge, behind a
+   sideways scroll the page gives no sign of having.
+
+   Who somebody is and what they hold are what the line is for; the counts are
+   read when comparing people, which is what a wider window is for.
+
+   Measured against one account named "This install": all seven fit at 738 and
+   Last seen starts wrapping at 694. The number sits above both because that
+   account is the narrowest Person column there will ever be — a real name over
+   an email is most of a column wider, and it is the tallies that would pay. */
+@container (max-width: 760px) {
+  .tally {
+    display: none;
+  }
+}

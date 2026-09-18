@@ -38,7 +38,12 @@
   border-color: inherit;
 }
 
+/* What a row measures itself against, in PatchRow.module.css. A row's width is
+   this list's and never the window's: the navigation is a rail or a bar and
+   folds either way, and this same list is drawn inside the MIDI page's patch
+   picker at whatever width that dialog is. */
 .rows {
+  container-type: inline-size;
   margin: 0;
   padding: 0;
   list-style: none;
