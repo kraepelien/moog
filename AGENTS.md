@@ -30,6 +30,20 @@ typechecks `src/`: tests sit outside `tsconfig.app.json`'s `include` and run typ
 Two dev servers cannot share a port, so quote the port with any URL or screenshot; otherwise which
 worktree it came from is a guess.
 
+## Pull requests
+
+`CHANGELOG.md` lists every pull request merged into `main`, newest first, one line each:
+
+```markdown
+- [Home on the mark, and a tag's picker on the colour it is wearing](https://github.com/kraepelien/moog/pull/76)
+```
+
+Nothing else goes in it: no versions, no dates, no grouping. The order it landed in is the history.
+
+The line is written after the merge, on a `main` that already has it, and never on the branch being
+merged: on the branch it conflicts with every other branch adding its own line, and a commit pushed
+to a branch whose pull request has already merged is stranded.
+
 ## Names in a saved patch are a published interface
 
 Control ids, position ids and control types are written into people's patches and exported files.
