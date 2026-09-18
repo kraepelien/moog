@@ -3,6 +3,7 @@
 Everything that has landed on `main`, newest first. A pull request carries its link; a commit pushed
 straight to `main` has none to carry.
 
+- Name the tab after the page it is showing
 - Offer the drawing itself to a browser that reads SVG
 - [Take the new logo whole, and cut the icons and the marks out of it](https://github.com/kraepelien/moog/pull/84)
 - [Say in the menu when the browser has no Web MIDI to offer](https://github.com/kraepelien/moog/pull/83)
