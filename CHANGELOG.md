@@ -5,7 +5,7 @@ straight to `main` has none to carry.
 
 - Give the shell a vocabulary and the colours to go with it
 - Say where the reference material comes from, and drop the two files nothing points at any more
-- Give revoking a box of its own, and draw the revokes that are refused as locked
+- [Give revoking a box of its own, and draw the revokes that are refused as locked](https://github.com/kraepelien/moog/pull/98)
 - [Pin the preferences page open to everybody, where a privilege would lock it](https://github.com/kraepelien/moog/pull/97)
 - [Measure a row against its list rather than against the window](https://github.com/kraepelien/moog/pull/96)
 - [Let a session merge the pull request it opened](https://github.com/kraepelien/moog/pull/95)
