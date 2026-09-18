@@ -698,6 +698,7 @@ function Workspace({
                     >
                       <AdminPage
                         tags={tagUse}
+                        skin={skin}
                         onAdd={addTag}
                         onColour={setTagColour}
                         onRemove={removeTag}

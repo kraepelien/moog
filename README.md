@@ -266,6 +266,15 @@ which is why there is no pair that can be set to disagree. A patch stores the
 tag's *name* and points at no row, so a tag the list has since forgotten falls
 back to the hash and still draws.
 
+**The picker opens on the colour the tag is wearing**, hashed or chosen. It has
+to: a field showing one colour beside a chip drawn in another reads as the page
+having lost track of which is which. A hash names a *tone*, and a tone is a
+custom property an `<input type="color">` cannot parse, so the hex comes from
+`skinValue` — the skin's answer, or the stylesheet's — which is the same helper
+the Layout page seeds its own fields from and moves with a repainted tone rather
+than going stale against it. Clear is then the only thing saying whether a
+colour was chosen or worked out, which is what it is disabled for.
+
 **The Other row is the opposite**, because it is a closed set of three the code
 owns and the colour is the distinction: Factory red, User blue, Custom purple.
 Red is kept out of the tag rotation, but only because adding a sixth tone
