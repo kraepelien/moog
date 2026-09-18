@@ -1,4 +1,11 @@
-import { DEFAULT_SKIN, isHexColour, SKIN_SWATCHES, type Skin, type SkinSwatch } from '@/tones.ts'
+import {
+  DEFAULT_SKIN,
+  isHexColour,
+  SKIN_SHEETS,
+  SKIN_SWATCHES,
+  type Skin,
+  type SkinSwatch,
+} from '@/tones.ts'
 
 /* Turning a preview into something that can be asked for.
  *
@@ -11,14 +18,21 @@ import { DEFAULT_SKIN, isHexColour, SKIN_SWATCHES, type Skin, type SkinSwatch } 
  * what stops the wording drifting away from the files it names.
  */
 
-/* The two places a default is written down. Named in the prompt, and checked
-   against the filesystem by `exportPrompt.test.ts`, so a rename fails here
-   rather than in a paste six weeks later. */
+/* Where a default is written down. Named in the prompt, and checked against the
+   filesystem by `exportPrompt.test.ts`, so a rename fails here rather than in a
+   paste six weeks later. The stylesheet is not one file: the chrome's colours
+   and the instrument's are declared apart, so only the sheets a change actually
+   touches are named. */
 const SOURCES = {
   constant: 'src/tones.ts',
-  stylesheet: 'src/shellPalette.css',
   lock: 'test/skin.test.ts',
 } as const
+
+function sheetsFor(changes: readonly ColourChange[]): string {
+  const named = [...new Set(changes.map(({ swatch }) => SKIN_SHEETS[swatch.sheet]))].sort()
+  const blocks = named.length === 1 ? 'the :root block in' : ':root blocks in'
+  return `${blocks} ${named.join(' and ')}`
+}
 
 export interface ColourChange {
   readonly swatch: SkinSwatch
@@ -54,7 +68,7 @@ export function exportPrompt(changes: readonly ColourChange[]): string {
   return [
     `Change the ${colours} the moog app ships with.`,
     '',
-    `They are written down twice and ${SOURCES.lock} fails if the two disagree, so both have to change together: DEFAULT_SKIN in ${SOURCES.constant}, and the :root block in ${SOURCES.stylesheet}.`,
+    `They are written down twice and ${SOURCES.lock} fails if the two disagree, so both have to change together: DEFAULT_SKIN in ${SOURCES.constant}, and ${sheetsFor(changes)}.`,
     '',
     `Set these ${changes.length} of the ${SKIN_SWATCHES.length} colours:`,
     '',

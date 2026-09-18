@@ -25,6 +25,11 @@
   --shell-bar: #101012;
   --shell-bar-ink: #e9e9ec;
 
+  /* What the pointer lays over whatever is under it. One ink, mixed to two
+     strengths below: a hover is the same gesture on a library row, a table row,
+     a menu item and a tab, so it is one colour rather than four that drift. */
+  --shell-hover: #ffffff;
+
   --tone-red-ink: #f2594b;
   --tone-pink-ink: #ff6f9c;
   --tone-amber-ink: #e8c257;
@@ -32,6 +37,14 @@
   --tone-blue-ink: #74aaff;
   --tone-violet-ink: #b78bff;
   --tone-grey-ink: #9a9aa4;
+}
+
+/* Two strengths of the hover ink. Faint is a whole row, which is large and only
+   has to hold the eye; strong is a word-sized target that has to look pressable.
+   Mixed by the browser so setting the ink moves both. */
+:root {
+  --shell-hover-faint: color-mix(in srgb, var(--shell-hover) 3%, transparent);
+  --shell-hover-strong: color-mix(in srgb, var(--shell-hover) 10%, transparent);
 }
 
 /* Coloured text on a wash of the same hue rather than a solid fill: at this size

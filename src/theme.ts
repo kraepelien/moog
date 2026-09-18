@@ -27,6 +27,10 @@ export const theme = createTheme({
     background: { default: SHELL.page, paper: SHELL.card },
     text: { primary: SHELL.ink, secondary: SHELL.inkDim },
     divider: SHELL.edge,
+    /* MUI hovers its own table rows, menu items and tabs out of this, so
+       handing it the same property the library's rows use is what stops a skin
+       repainting half the hovers on the page and leaving the rest white. */
+    action: { hover: SHELL.hoverFaint, selected: SHELL.hoverStrong },
   },
   components: {
     MuiAppBar: {

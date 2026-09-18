@@ -4,6 +4,7 @@ import { applySkin, skinValue } from '@/skin.ts'
 import {
   DEFAULT_SKIN,
   SKIN_KEYS,
+  SKIN_SHEETS,
   SKIN_SWATCHES,
   cleanSkin,
   isHexColour,
@@ -71,15 +72,35 @@ describe('painting it', () => {
 })
 
 describe('the defaults written down twice', () => {
-  const css = readFileSync(new URL('../src/shellPalette.css', import.meta.url), 'utf8')
+  /* Two stylesheets: the chrome's colours and the instrument's are declared
+     apart, and each swatch says which one holds it. */
+  const sheets = new Map(
+    Object.entries(SKIN_SHEETS).map(([name, path]) => [
+      name,
+      readFileSync(new URL(`../${path}`, import.meta.url), 'utf8'),
+    ]),
+  )
 
   /* The stylesheet is what the app draws with and DEFAULT_SKIN is what the
      layout page shows in a field nobody has touched. Two copies of one fact, so
      this is what stops them drifting. */
-  test('agree with the stylesheet, property for property', () => {
+  test('agree with their stylesheet, property for property', () => {
     for (const swatch of SKIN_SWATCHES) {
+      const css = sheets.get(swatch.sheet)!
       const declared = css.includes(`${swatch.property}: ${DEFAULT_SKIN[swatch.key]};`)
       expect([swatch.key, declared]).toEqual([swatch.key, true])
+    }
+  })
+
+  /* A swatch pointing at the wrong sheet would pass the test above only by the
+     other sheet happening to declare the same property, so the pairing is
+     checked on its own. */
+  test('are declared in the sheet the swatch names, and not the other', () => {
+    for (const swatch of SKIN_SWATCHES) {
+      for (const [name, css] of sheets) {
+        const here = css.includes(`${swatch.property}:`)
+        expect([swatch.key, name, here]).toEqual([swatch.key, name, name === swatch.sheet])
+      }
     }
   })
 
