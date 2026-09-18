@@ -34,6 +34,9 @@ export const ROUTES: readonly RouteDef[] = [
   { name: 'library', path: '/library', title: 'Patch library', rail: 'Library' },
   { name: 'editor', path: '/editor', title: 'Patch editor', rail: 'Editor' },
   { name: 'midi', path: '/midi', title: 'Play MIDI', rail: 'MIDI' },
+  /* Not a row of its own: this is a page somebody opens once and leaves, and it
+     is in the account menu where the rest of what belongs to a person is. */
+  { name: 'preferences', path: '/preferences', title: 'Preferences' },
   { name: 'admin', path: '/admin', title: 'Tags', needs: PRIVILEGE.AccessAdmin },
   /* Its own privilege rather than nesting behind AccessAdmin, so the two can be
      held apart — which is what the rules protecting this page assume. */

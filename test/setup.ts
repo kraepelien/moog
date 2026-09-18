@@ -1,5 +1,14 @@
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
 
+/* happy-dom hangs its own controls off the window it registers, the viewport
+   among them, which is the whole of what a test of where the nav goes has to
+   move. The registrator puts them there without typing them onto the global. */
+declare global {
+  interface Window {
+    readonly happyDOM: { setViewport(viewport: { width?: number; height?: number }): void }
+  }
+}
+
 /* Loaded before the suite by bunfig.toml. Only the tests that render need a DOM,
    but registering it globally is cheaper than splitting the suite in two, and
    nothing in the logic tests looks at these. */
