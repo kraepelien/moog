@@ -11,7 +11,6 @@ export interface Facts {
   /* Saved by whoever is looking, which is not every patch that is not factory:
      someone else's published patch is in the library and is not theirs. */
   readonly mine: number
-  readonly tags: number
   readonly rated: number
   /* The mean of the per-patch averages, over the patches that carry one. Not
      the mean of every rating ever given: the server sends one number per patch
@@ -25,20 +24,18 @@ export interface Facts {
    them, and this file is arithmetic over a library. */
 export interface Panel {
   readonly controls: number
-  /* The ones that make a sound, which is not all of them: three have nothing a
-     browser could plug into. */
+  /* The ones that make a sound, which is not all of them: what cannot be
+     modelled is listed in SILENT, with its reason. */
   readonly audible: number
 }
 
 export function factsOf(entries: readonly LibraryEntry[], panel: Panel): Facts {
-  const tags = new Set<string>()
   let factory = 0
   let mine = 0
   let rated = 0
   let total = 0
 
   for (const entry of entries) {
-    for (const tag of entry.tags) tags.add(tag)
     const bank = bankOf(entry)
     if (bank === 'factory') factory += 1
     if (bank === 'user') mine += 1
@@ -52,7 +49,6 @@ export function factsOf(entries: readonly LibraryEntry[], panel: Panel): Facts {
     total: entries.length,
     factory,
     mine,
-    tags: tags.size,
     rated,
     average: rated === 0 ? null : total / rated,
     panel,
