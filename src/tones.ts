@@ -155,25 +155,22 @@ export const SKIN_SWATCHES: readonly SkinSwatch[] = [
   { key: 'star', property: '--star', label: 'Star', group: 'Page', hint: "Everyone's rating", sheet: 'shell' },
   { key: 'onTone', property: '--on-tone', label: 'Ink on a colour', group: 'Page', hint: 'Lettering on a filled chip', sheet: 'shell' },
 
-  /* The border, the ink and the dim ink are not the designer's: their list names
-     the menu's fill and its two lit states and stops there, which left the rail's
+  /* The border and the colour are not the designer's: their list names the
+     menu's fill and its two lit states and stops there, which left the rail's
      edge and every item you are not standing on drawing with the content's, so
      one field moved the nav and the page under it together.
 
-     `--menu-color` is the odd one and is marked, because nothing in the nav
-     rests at a bright ink: dim is the resting state, and hover and the current
-     page are the two that light up, each with its own colour. It is declared so
-     the family has no hole in it — a colour somebody goes looking for and does
-     not find is the more expensive of the two mistakes — and the field says out
-     loud that it repaints nothing yet. */
-  { key: 'menuBg', property: '--menu-bg', label: 'Menu', group: 'Menu', hint: 'The nav, rail or top', sheet: 'shell' },
+     `--menu-color` is the resting one rather than a bright ink with a dim
+     variant beside it. The nav has three states and the quiet one is where it
+     spends its time, so it takes the family's plain name and the two that light
+     up say which state they are. */
+  { key: 'menuBg', property: '--menu-bg', label: 'Menu background color', group: 'Menu', hint: 'The nav, rail or top', sheet: 'shell' },
   { key: 'menuBorder', property: '--menu-border', label: 'Menu border', group: 'Menu', hint: 'The rule against the page', sheet: 'shell' },
-  { key: 'menuColor', property: '--menu-color', label: 'Menu ink', group: 'Menu', hint: 'The nav at rest', sheet: 'shell', pending: true },
-  { key: 'menuColorAlt', property: '--menu-color-alt', label: 'Menu ink, dim', group: 'Menu', hint: 'The pages you are not on', sheet: 'shell' },
-  { key: 'menuActiveBg', property: '--menu-active-bg', label: 'Menu, current page', group: 'Menu', hint: 'Behind where you are standing', sheet: 'shell' },
-  { key: 'menuActiveColor', property: '--menu-active-color', label: 'Menu ink, current page', group: 'Menu', hint: 'The page you are on', sheet: 'shell' },
-  { key: 'menuHoverBg', property: '--menu-hover-bg', label: 'Menu hover', group: 'Menu', hint: 'Under the pointer', sheet: 'shell' },
-  { key: 'menuHoverColor', property: '--menu-hover-color', label: 'Menu hover ink', group: 'Menu', hint: 'The item under the pointer', sheet: 'shell' },
+  { key: 'menuColor', property: '--menu-color', label: 'Menu color', group: 'Menu', hint: 'The pages you are not on', sheet: 'shell' },
+  { key: 'menuActiveBg', property: '--menu-active-bg', label: 'Menu background color on active page', group: 'Menu', hint: 'Behind where you are standing', sheet: 'shell' },
+  { key: 'menuActiveColor', property: '--menu-active-color', label: 'Menu color on active page', group: 'Menu', hint: 'The page you are on', sheet: 'shell' },
+  { key: 'menuHoverBg', property: '--menu-hover-bg', label: 'Menu background color on hover', group: 'Menu', hint: 'Under the pointer', sheet: 'shell' },
+  { key: 'menuHoverColor', property: '--menu-hover-color', label: 'Menu color on hover', group: 'Menu', hint: 'The item under the pointer', sheet: 'shell' },
 
   { key: 'headerBg', property: '--header-bg', label: 'Header', group: 'Header', hint: 'The bar across the top', sheet: 'shell' },
   { key: 'headerBorder', property: '--header-border', label: 'Header border', group: 'Header', hint: 'The rule under it', sheet: 'shell', pending: true },
@@ -294,8 +291,7 @@ export const DEFAULT_SKIN: Readonly<Record<string, string>> = {
   onTone: '#0e0e11',
   menuBg: '#101012',
   menuBorder: '#1d1d24',
-  menuColor: '#e9e9ec',
-  menuColorAlt: '#8b8b95',
+  menuColor: '#8b8b95',
   menuActiveBg: '#00000000',
   menuActiveColor: '#e9e9ec',
   menuHoverBg: '#ffffff08',

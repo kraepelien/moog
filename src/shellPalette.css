@@ -35,19 +35,16 @@
      would move the nav with them and the way out of a page could not be told
      from the page.
 
-     `--menu-color` is the family's ink and nothing draws with it: an item at
-     rest is the dim one, and hover and the current page are the two that light
-     up, each with a colour of its own below. It is here because a family with a
-     hole in it is a colour somebody looks for and does not find, and because
-     the state that wants it may yet arrive.
+     `--menu-color` is what an item is drawn in at rest, which is the dim end of
+     the range: the two below are the states that light up, so the resting one
+     is the quiet one rather than a dimmed version of something brighter.
 
      The active item ships fully transparent: the nav marks where you are
      standing with white lettering and nothing behind it, so a fill here is an
      addition somebody makes rather than one they have to undo. */
   --menu-bg: #101012;
   --menu-border: #1d1d24;
-  --menu-color: #e9e9ec;
-  --menu-color-alt: #8b8b95;
+  --menu-color: #8b8b95;
   --menu-active-bg: #00000000;
   --menu-active-color: #e9e9ec;
   --menu-hover-bg: #ffffff08;
