@@ -81,16 +81,24 @@ export function UsersPage({
             {users.length === 0 ? 'Nobody has signed in yet.' : 'Nobody by that name.'}
           </Typography>
         ) : (
-          <TableContainer>
+          <TableContainer className={styles.table}>
             <Table size="small">
               <TableHead>
                 <TableRow>
                   <TableCell>Person</TableCell>
                   <TableCell>Holds</TableCell>
-                  <TableCell align="right">Patches</TableCell>
-                  <TableCell align="right">Arrangements</TableCell>
-                  <TableCell align="right">Ratings</TableCell>
-                  <TableCell align="right">Last seen</TableCell>
+                  <TableCell align="right" className={styles.tally}>
+                    Patches
+                  </TableCell>
+                  <TableCell align="right" className={styles.tally}>
+                    Arrangements
+                  </TableCell>
+                  <TableCell align="right" className={styles.tally}>
+                    Ratings
+                  </TableCell>
+                  <TableCell align="right" className={styles.tally}>
+                    Last seen
+                  </TableCell>
                   <TableCell align="right">Access</TableCell>
                 </TableRow>
               </TableHead>
@@ -131,10 +139,18 @@ export function UsersPage({
                       </Box>
                     </TableCell>
 
-                    <TableCell align="right">{user.stats.patches}</TableCell>
-                    <TableCell align="right">{user.stats.arrangements}</TableCell>
-                    <TableCell align="right">{user.stats.ratings}</TableCell>
-                    <TableCell align="right">{when(user.lastSeenAt)}</TableCell>
+                    <TableCell align="right" className={styles.tally}>
+                      {user.stats.patches}
+                    </TableCell>
+                    <TableCell align="right" className={styles.tally}>
+                      {user.stats.arrangements}
+                    </TableCell>
+                    <TableCell align="right" className={styles.tally}>
+                      {user.stats.ratings}
+                    </TableCell>
+                    <TableCell align="right" className={styles.tally}>
+                      {when(user.lastSeenAt)}
+                    </TableCell>
                     <TableCell align="right">
                       <Button
                         size="small"

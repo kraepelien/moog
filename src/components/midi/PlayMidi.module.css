@@ -56,7 +56,10 @@
   font-size: 0.86rem;
 }
 
+/* What a part measures itself against, the way the library's rows measure
+   themselves against their list. */
 .parts {
+  container-type: inline-size;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -80,13 +83,27 @@
 }
 
 /* At this width the counts have stopped being readable and the part and its
-   sound are what the line is for. */
-@media (max-width: 760px) {
+   sound are what the line is for. Against the list rather than the window, for
+   the reason PatchRow.module.css gives: the navigation moves from a rail to a
+   bar at 900px and the page gains the rail's width back as it does, so a window
+   query collapses a list that has just been handed the room to fit.
+
+   Below this the drum channel's two chips stop sharing a line, which clips
+   nothing but doubles the height of every row in the list to keep one of them. */
+@container (max-width: 740px) {
+  /* Five columns for the five that are left — channel, the two switches, the
+     part, its sound and the button. A template short of a column does not clip:
+     the last cell wraps onto a second line and the row grows taller than the
+     one this collapse was meant to shorten. */
   .part {
-    grid-template-columns: 2.5rem auto 1fr auto;
+    grid-template-columns: 2.5rem auto minmax(6rem, 1fr) minmax(0, 10rem) auto;
   }
 
-  .marks {
+  /* Through .part, and not because the marks are ever anywhere else: a query
+     adds no specificity, so a bare `.marks` here loses to the `.marks` further
+     down the file that makes it a flex row, and the column stays on the page
+     and stacks. Keep the parent, or this rule goes quiet. */
+  .part .marks {
     display: none;
   }
 }

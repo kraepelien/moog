@@ -3,6 +3,7 @@
 Everything that has landed on `main`, newest first. A pull request carries its link; a commit pushed
 straight to `main` has none to carry.
 
+- Measure the lists and the People table against their own width, and make the collapse actually fire
 - Let a session merge the pull request it opened
 - Say where the reference material comes from, and drop the two files nothing points at any more
 - [Put the menu across the top where the window is narrow, or wherever it is asked for](https://github.com/kraepelien/moog/pull/93)
