@@ -3,10 +3,10 @@
 Everything that has landed on `main`, newest first. A pull request carries its link; a commit pushed
 straight to `main` has none to carry.
 
-- Pin the preferences page open to everybody, where a privilege would lock it
+- [Pin the preferences page open to everybody, where a privilege would lock it](https://github.com/kraepelien/moog/pull/97)
 - [Measure a row against its list rather than against the window](https://github.com/kraepelien/moog/pull/96)
-- Let a session merge the pull request it opened
-- Say where the reference material comes from, and drop the two files nothing points at any more
+- [Let a session merge the pull request it opened](https://github.com/kraepelien/moog/pull/95)
+- [Say where the reference material comes from, and drop the two files nothing points at any more](https://github.com/kraepelien/moog/pull/94)
 - [Put the menu across the top where the window is narrow, or wherever it is asked for](https://github.com/kraepelien/moog/pull/93)
 - [Ask for a pull request and get it merged, not just opened](https://github.com/kraepelien/moog/pull/92)
 - [Open a page at its top, the way following a link does](https://github.com/kraepelien/moog/pull/91)
