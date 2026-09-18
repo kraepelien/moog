@@ -18,7 +18,7 @@ export function HomePage({
   return (
     <Box className={styles.page}>
       <Typography component="h2" className={styles.heading}>
-        Minimoog Model D
+        PATCHDB
       </Typography>
       <Typography className={styles.line}>
         {patches} {patches === 1 ? 'patch' : 'patches'} in the library. A dashboard goes here.

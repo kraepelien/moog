@@ -88,4 +88,4 @@ Bun.serve({
    relative and collided as `.//data` against the container's own MOOG_DATA. An
    absolute path also says *which* checkout this is, the same reason the port is
    worth quoting when two worktrees are running. */
-console.log(`Minimoog patch editor on http://localhost:${port}  (data in ${resolve(root)})`)
+console.log(`PATCHDB on http://localhost:${port}  (data in ${resolve(root)})`)
