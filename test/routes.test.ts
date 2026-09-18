@@ -4,9 +4,9 @@ import {
   DEFAULT_ROUTE,
   matchRoute,
   pathFor,
+  RAIL,
   resolve,
   ROUTES,
-  TABS,
 } from '@navigation/routes.ts'
 
 describe('resolving an address', () => {
@@ -16,13 +16,18 @@ describe('resolving an address', () => {
   })
 
   /* The only way to reach one is to type it, and there is nothing useful an
-     error page could say that the editor does not. */
+     error page could say that the home page does not. */
   test('falls back to the default rather than to an error page', () => {
     expect(resolve('/nowhere').route).toBe(DEFAULT_ROUTE)
     expect(resolve('').route).toBe(DEFAULT_ROUTE)
     expect(resolve('/library/extra').route).toBe(DEFAULT_ROUTE)
   })
 
+  /* The home page's path is no segments at all, which every other route in the
+     table has at least one of. */
+  test('finds the home page at the root', () => {
+    expect(resolve('/').route.name).toBe('home')
+  })
 })
 
 /* No page takes a parameter yet. The matcher does, which is what makes adding
@@ -51,6 +56,12 @@ describe('building an address', () => {
     expect(pathFor('midi')).toBe('/midi')
   })
 
+  /* Reducing no segments gives an empty string, which `pushState` cannot be
+     handed as an address. */
+  test('gives the home page a root rather than an empty string', () => {
+    expect(pathFor('home')).toBe('/')
+  })
+
   test('falls back rather than building an address to nowhere', () => {
     expect(pathFor('does-not-exist')).toBe(DEFAULT_ROUTE.path)
   })
@@ -60,14 +71,25 @@ describe('the table itself', () => {
   test('puts administration behind a privilege and the rest in front of one', () => {
     const admin = ROUTES.find((route) => route.name === 'admin')!
     expect(admin.needs).toBe(PRIVILEGE.AccessAdmin)
-    expect(ROUTES.filter((route) => route.tab).every((route) => route.needs === undefined)).toBe(
-      true,
-    )
+    expect(
+      ROUTES.filter((route) => route.rail !== undefined).every(
+        (route) => route.needs === undefined,
+      ),
+    ).toBe(true)
   })
 
-  /* A tab everybody could see would be a door most people find locked. */
-  test('keeps administration out of the tab bar', () => {
-    expect(TABS.map((tab) => tab.name)).toEqual(['library', 'editor', 'midi'])
+  /* A row everybody could see would be a door most people find locked. The rail
+     draws Settings itself, from the administration pages this account can open,
+     rather than from a route that says it is in the rail — and home is the mark
+     at the top rather than a row of its own. */
+  test('keeps administration and home out of the rail', () => {
+    expect(RAIL.map((entry) => entry.name)).toEqual(['library', 'editor', 'midi'])
+  })
+
+  /* The rail is as wide as its widest label, so every row in it has a word of
+     its own to wear rather than falling back to a two-word title. */
+  test('gives every page in the rail a label of its own', () => {
+    expect(RAIL.every((entry) => (entry.rail ?? '').split(' ').length === 1)).toBe(true)
   })
 
   test('names every page once', () => {

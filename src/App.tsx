@@ -15,9 +15,12 @@ import type { Decision } from './admin/UserAccess.tsx'
 import type { AdminUser } from './admin/users.ts'
 import { paletteOf, type Tag, type TagInUse } from './admin/tags.ts'
 import { FitToWidth } from './components/FitToWidth.tsx'
+import { HomePage } from './components/HomePage.tsx'
 import { MidiHelp } from './components/MidiHelp.tsx'
+import { PatchBar, type PatchBarButton } from './components/PatchBar.tsx'
 import { PreviewBanner } from './components/PreviewBanner.tsx'
-import { TopBar, type TopBarAction, type TopBarButton } from './components/TopBar.tsx'
+import { SideRail, type RailAction } from './components/SideRail.tsx'
+import shell from './components/shell.module.css'
 import surface from './components/controlSurface.module.css'
 import { PatchLibrary } from './components/library/PatchLibrary.tsx'
 import { NowPlaying } from './components/midi/NowPlaying.tsx'
@@ -80,7 +83,17 @@ function signature(patch: Patch): string {
    sees an editor they cannot save from, and a signed-in one never sees the
    door. The privileges are put in reach of every component at the same moment,
    because until the session has arrived there is no honest answer to give. */
-export function App({ skin, keepSkin }: { skin: Skin; keepSkin: (next: Skin) => boolean }) {
+export function App({
+  skin,
+  keepSkin,
+  railCollapsed,
+  keepRail,
+}: {
+  skin: Skin
+  keepSkin: (next: Skin) => boolean
+  railCollapsed: boolean
+  keepRail: (next: boolean) => void
+}) {
   const { session, refresh } = useSession()
   const [{ route }] = useRoute()
   const here = useLocation()
@@ -100,6 +113,8 @@ export function App({ skin, keepSkin }: { skin: Skin; keepSkin: (next: Skin) => 
         refreshSession={refresh}
         skin={skin}
         keepSkin={keepSkin}
+        railCollapsed={railCollapsed}
+        keepRail={keepRail}
       />
     </AccessProvider>
   )
@@ -110,6 +125,8 @@ function Workspace({
   refreshSession,
   skin: painted,
   keepSkin,
+  railCollapsed,
+  keepRail,
 }: {
   session: Session
   refreshSession: () => void
@@ -121,7 +138,13 @@ function Workspace({
      browser would keep it. A function rather than the store itself, so nothing
      below here learns that a `Storage` exists. */
   keepSkin: (next: Skin) => boolean
+  /* Where the rail was left last time, and where to write it when it moves.
+     State here rather than in the rail, because a rail that held its own would
+     start unfolded for a frame before this arrived. */
+  railCollapsed: boolean
+  keepRail: (next: boolean) => void
 }) {
+  const [collapsed, setCollapsed] = useState(railCollapsed)
   const [draft, setDraft] = useState<Patch | null>(null)
   const [saved, setSaved] = useState<readonly PatchSummary[]>([])
   const [library, setLibrary] = useState<readonly LibraryEntry[]>([])
@@ -158,7 +181,6 @@ function Workspace({
   const { ask, dialog } = useConfirm()
   const [{ route }, navigate] = useRoute()
   const mayAdminTags = useCan(PRIVILEGE.AdminTags)
-  const mayAccessAdmin = useCan(PRIVILEGE.AccessAdmin)
   const mayAdminUsers = useCan(PRIVILEGE.AdminUsers)
   const [users, setUsers] = useState<readonly AdminUser[]>([])
   /* What this device is being shown in, which is also what the layout page's
@@ -456,10 +478,9 @@ function Workspace({
      matches nothing and can be neither rated nor pointed at. */
   const openRow = library.find((entry) => entry.id === (stored ? draft.id : copiedFrom)) ?? null
 
-  /* What can be done to the open patch, at the end of the bar rather than in a
-     row of its own above the panel: the panel is the page, and a second bar was
-     height the instrument could have had. */
-  const editorButtons: TopBarButton[] = [
+  /* What can be done to the open patch, in the editor page beside the name of
+     what is open. */
+  const editorButtons: PatchBarButton[] = [
     {
       /* An empty panel, at the positions a Model D is left in. Beside Save
          rather than under the panel in a section of its own, which is where it
@@ -529,7 +550,7 @@ function Workspace({
     },
   ]
 
-  const menu: TopBarAction[] = [
+  const menu: RailAction[] = [
     { label: 'Import a file…', onSelect: () => importing.current?.click() },
     /* Discoverable from here because there is nowhere on the instrument it
        could go: a Model D has no MIDI socket to label. */
@@ -543,20 +564,6 @@ function Workspace({
           downloadJson('all-patches.moogpatch.json', serializeBundle(createBundle(present)))
         }),
     },
-    /* Shown only to somebody the server says may open it. The page refuses on
-       its own too, so this is about not offering a locked door. */
-    /* Aimed at the first administration page this account can open, because the
-       privileges are independent: somebody may keep the user list without
-       holding the tag page it used to land on. */
-    ...(mayAccessAdmin || mayAdminUsers
-      ? [
-          {
-            label: 'Administration',
-            separated: true,
-            onSelect: () => navigate(pathFor(mayAccessAdmin ? 'admin' : 'users')),
-          },
-        ]
-      : []),
     ...(session?.mode === 'oauth'
       ? [
           {
@@ -574,161 +581,178 @@ function Workspace({
 
   return (
     <>
-      <TopBar
-        route={route}
-        onNavigate={navigate}
-        actions={menu}
-        title={route.name === 'editor' ? { text: draft.name, unsaved: dirty } : undefined}
-        buttons={route.name === 'editor' ? editorButtons : []}
-      >
-        <NowPlaying />
-      </TopBar>
-      {/* Under the bar and above everything else, on every page: the colours
-          follow you off the layout page, so this is what says why. */}
-      <PreviewBanner skin={skin} onReset={() => paint({})} />
-      {/* The whole editor, not each control: a drag that starts a hair off a knob,
-          or a double click meant for its value box, otherwise selects whatever
-          caption it landed on and leaves it highlighted behind the panel. The
-          library keeps its text selectable. */}
-      <Box
-        component="main"
-        className={route.name === 'editor' ? surface.noSelect : undefined}
-        sx={{ p: 2 }}
-      >
-        <Stack spacing={2}>
-        {failed && (
-          <Alert severity="error">
-            <AlertTitle>The patch server is not answering</AlertTitle>
-            Nothing can be loaded or saved. Start it with <code>bun run dev</code>.
-          </Alert>
-        )}
+      <Box className={shell.shell}>
+        <SideRail
+          route={route}
+          onNavigate={navigate}
+          actions={menu}
+          collapsed={collapsed}
+          onCollapse={(next) => {
+            setCollapsed(next)
+            keepRail(next)
+          }}
+        />
 
-        {/* In the page rather than over it. A refusal is the one thing here
-            nothing else on the screen can be read for, so it waits to be
-            dismissed instead of timing out while somebody is looking down. */}
-        {problem !== '' && !failed && (
-          <Alert severity="error" onClose={() => setProblem('')}>
-            {problem}
-          </Alert>
-        )}
-
-        {route.name === 'editor' && (
-          <FitToWidth>
-            <Panel
-              registry={panelRegistry}
-              values={{ ...resolved.values, ...played }}
-              onChange={(id, next) => {
-                const def = panelRegistry.control(id)
-                if (def && !isRecalled(def)) {
-                  setPlayed((previous) => ({ ...previous, [id]: next }))
-                  return
-                }
-                setDraft({
-                  ...draft,
-                  values: mergeValues(panelRegistry, draft, { ...resolved.values, [id]: next }),
-                })
-              }}
-            />
-          </FitToWidth>
-        )}
-
-        {route.name === 'midi' && (
-          <PlayMidi
-            entries={library}
-            loadPatch={(id) => store.get(id)}
-            desk={desk}
-            onProblem={setProblem}
-          />
-        )}
-
-        {route.name === 'library' && (
-          <PatchLibrary
-            entries={library}
-            openId={openRow?.id ?? null}
-            tagPalette={tagPalette}
-            onOpen={openEntry}
-            onRate={(entry, stars) =>
-              void run(async () => {
-                await store.rate(entry.id, stars)
-                await refresh()
-              })
-            }
-          />
-        )}
-
-        {/* Reachable by typing the address, so the guard says no rather than
-            drawing an empty list every button on which is refused. Opening the
-            area and editing the tag list are separate privileges, so the panel
-            asks for its own on top of what the page needed. */}
-        {route.path.startsWith('/admin') && (
-          <RouteGuard privilege={route.needs} title={route.title}>
+        <Box className={shell.page}>
+          {/* Above everything else, on every page: the colours follow you off the
+              layout page, so this is what says why. */}
+          <PreviewBanner skin={skin} onReset={() => paint({})} />
+          {/* The whole editor, not each control: a drag that starts a hair off a knob,
+              or a double click meant for its value box, otherwise selects whatever
+              caption it landed on and leaves it highlighted behind the panel. The
+              library keeps its text selectable. */}
+          <Box
+            component="main"
+            className={route.name === 'editor' ? surface.noSelect : undefined}
+            sx={{ p: 2 }}
+          >
             <Stack spacing={2}>
-              <AdminNav here={route} onNavigate={navigate} />
+            {/* Not on the MIDI page, which has the way back and the way off it in
+                front of you; everywhere else a file left playing needs both. */}
+            <NowPlaying />
 
-              {route.name === 'admin' && (
-                <Can
-                  privilege={PRIVILEGE.AdminTags}
-                  otherwise={
-                    <Alert severity="info">
-                      <AlertTitle>Tags</AlertTitle>
-                      Editing the tag list is not part of what this account administers.
-                    </Alert>
-                  }
-                >
-                  <AdminPage
-                    tags={tagUse}
-                    onAdd={addTag}
-                    onColour={setTagColour}
-                    onRemove={removeTag}
-                  />
-                </Can>
-              )}
+            {route.name === 'editor' && (
+              <PatchBar title={{ text: draft.name, unsaved: dirty }} buttons={editorButtons} />
+            )}
 
-              {route.name === 'layout' && (
-                <LayoutPage skin={skin} keeping={keeping} onSkin={paint} />
-              )}
+            {route.name === 'home' && <HomePage onNavigate={navigate} patches={library.length} />}
 
-              {route.name === 'users' && (
-                <UsersPage users={users} onDecide={decidePrivilege} onRoles={setUserRoles} />
-              )}
+            {failed && (
+              <Alert severity="error">
+                <AlertTitle>The patch server is not answering</AlertTitle>
+                Nothing can be loaded or saved. Start it with <code>bun run dev</code>.
+              </Alert>
+            )}
+
+            {/* In the page rather than over it. A refusal is the one thing here
+                nothing else on the screen can be read for, so it waits to be
+                dismissed instead of timing out while somebody is looking down. */}
+            {problem !== '' && !failed && (
+              <Alert severity="error" onClose={() => setProblem('')}>
+                {problem}
+              </Alert>
+            )}
+
+            {route.name === 'editor' && (
+              <FitToWidth>
+                <Panel
+                  registry={panelRegistry}
+                  values={{ ...resolved.values, ...played }}
+                  onChange={(id, next) => {
+                    const def = panelRegistry.control(id)
+                    if (def && !isRecalled(def)) {
+                      setPlayed((previous) => ({ ...previous, [id]: next }))
+                      return
+                    }
+                    setDraft({
+                      ...draft,
+                      values: mergeValues(panelRegistry, draft, { ...resolved.values, [id]: next }),
+                    })
+                  }}
+                />
+              </FitToWidth>
+            )}
+
+            {route.name === 'midi' && (
+              <PlayMidi
+                entries={library}
+                loadPatch={(id) => store.get(id)}
+                desk={desk}
+                onProblem={setProblem}
+              />
+            )}
+
+            {route.name === 'library' && (
+              <PatchLibrary
+                entries={library}
+                openId={openRow?.id ?? null}
+                tagPalette={tagPalette}
+                onOpen={openEntry}
+                onRate={(entry, stars) =>
+                  void run(async () => {
+                    await store.rate(entry.id, stars)
+                    await refresh()
+                  })
+                }
+              />
+            )}
+
+            {/* Reachable by typing the address, so the guard says no rather than
+                drawing an empty list every button on which is refused. Opening the
+                area and editing the tag list are separate privileges, so the panel
+                asks for its own on top of what the page needed. */}
+            {route.path.startsWith('/admin') && (
+              <RouteGuard privilege={route.needs} title={route.title}>
+                <Stack spacing={2}>
+                  <AdminNav here={route} onNavigate={navigate} />
+
+                  {route.name === 'admin' && (
+                    <Can
+                      privilege={PRIVILEGE.AdminTags}
+                      otherwise={
+                        <Alert severity="info">
+                          <AlertTitle>Tags</AlertTitle>
+                          Editing the tag list is not part of what this account administers.
+                        </Alert>
+                      }
+                    >
+                      <AdminPage
+                        tags={tagUse}
+                        skin={skin}
+                        onAdd={addTag}
+                        onColour={setTagColour}
+                        onRemove={removeTag}
+                      />
+                    </Can>
+                  )}
+
+                  {route.name === 'layout' && (
+                    <LayoutPage skin={skin} keeping={keeping} onSkin={paint} />
+                  )}
+
+                  {route.name === 'users' && (
+                    <UsersPage users={users} onDecide={decidePrivilege} onRoles={setUserRoles} />
+                  )}
+                </Stack>
+              </RouteGuard>
+            )}
+
+            {route.name === 'editor' && report && reportHasWarnings(report) && (
+              <Alert severity="warning">
+                <AlertTitle>The patch that was loaded did not fit the panel exactly</AlertTitle>
+                <ul style={{ margin: 0, paddingInlineStart: '1.2em' }}>
+                  {report.unknown.length > 0 && (
+                    <li>Unknown control ids kept: {report.unknown.join(', ')}</li>
+                  )}
+                  {report.coerced.map((note) => (
+                    <li key={`c-${note.id}`}>
+                      Coerced {note.id}: {note.reason}
+                    </li>
+                  ))}
+                  {report.invalid.map((note) => (
+                    <li key={`i-${note.id}`}>
+                      Reset {note.id} to default: {note.reason}
+                    </li>
+                  ))}
+                </ul>
+              </Alert>
+            )}
+
+            {route.name === 'editor' && (
+            <Accordion variant="outlined" disableGutters>
+              <AccordionSummary>
+                <Typography variant="h6" component="h2">
+                  Every control on the instrument
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <PanelChecklist registry={panelRegistry} />
+              </AccordionDetails>
+            </Accordion>
+            )}
             </Stack>
-          </RouteGuard>
-        )}
-
-        {route.name === 'editor' && report && reportHasWarnings(report) && (
-          <Alert severity="warning">
-            <AlertTitle>The patch that was loaded did not fit the panel exactly</AlertTitle>
-            <ul style={{ margin: 0, paddingInlineStart: '1.2em' }}>
-              {report.unknown.length > 0 && (
-                <li>Unknown control ids kept: {report.unknown.join(', ')}</li>
-              )}
-              {report.coerced.map((note) => (
-                <li key={`c-${note.id}`}>
-                  Coerced {note.id}: {note.reason}
-                </li>
-              ))}
-              {report.invalid.map((note) => (
-                <li key={`i-${note.id}`}>
-                  Reset {note.id} to default: {note.reason}
-                </li>
-              ))}
-            </ul>
-          </Alert>
-        )}
-
-        {route.name === 'editor' && (
-        <Accordion variant="outlined" disableGutters>
-          <AccordionSummary>
-            <Typography variant="h6" component="h2">
-              Every control on the instrument
-            </Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <PanelChecklist registry={panelRegistry} />
-          </AccordionDetails>
-        </Accordion>
-        )}
-        </Stack>
+          </Box>
+        </Box>
       </Box>
 
       <MidiHelp open={midiHelp} onClose={() => setMidiHelp(false)} />

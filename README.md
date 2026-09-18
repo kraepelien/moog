@@ -40,7 +40,7 @@ Hardware values reported to us live in `reference/control-values.md`. The recurr
 ```
 src/
   controls/   registry.ts (generic machinery) · types.ts (contracts) · placeholder.ts · panel.ts (the panel)
-  components/ Panel.tsx renders whatever the registry holds
+  components/ Panel.tsx renders whatever the registry holds · SideRail.tsx (the navigation)
   components/library/ the patch library: search, filter chips, rows, the patch header
   patch/      schema.ts (Patch + structural parse) · migrate.ts (version chain) · resolve.ts (load
               policy) · copy.ts (copying anything you may not write over)
@@ -48,7 +48,8 @@ src/
   admin/      UsersPage.tsx (everyone with an account) · UserAccess.tsx (one person's privileges)
   components/midi/ the MIDI desk: a file, a sound per part, and saving the two together
   navigation/ routes.ts (the page table) · router.ts (the address)
-  storage/    types.ts (the adapter interface) · httpStore.ts (the API) · deviceSkin.ts (the colour preview)
+  storage/    types.ts (the adapter interface) · httpStore.ts (the API) · deviceSkin.ts (the colour
+              preview) · deviceRail.ts (whether the rail is folded)
   transfer/   bundle.ts (JSON import/export)
   audio/      calibration.ts (every dial-to-physical number) · settings.ts (the panel read as
               an instrument) · engine.ts (the Web Audio graph)
@@ -234,7 +235,7 @@ rather than collecting by id, so registry order stays authoritative.
 
 ## The library and the patch header
 
-Two views, switched in the top bar: the editor is the panel, the library is
+Two views, switched in the side rail: the editor is the panel, the library is
 everything saved. `src/components/library/` holds both the library and the bar
 the editor prints above the panel, because they are drawn from the same fields.
 
@@ -264,6 +265,15 @@ lettering is the colour and the chip behind it is a `color-mix` of the same,
 which is why there is no pair that can be set to disagree. A patch stores the
 tag's *name* and points at no row, so a tag the list has since forgotten falls
 back to the hash and still draws.
+
+**The picker opens on the colour the tag is wearing**, hashed or chosen. It has
+to: a field showing one colour beside a chip drawn in another reads as the page
+having lost track of which is which. A hash names a *tone*, and a tone is a
+custom property an `<input type="color">` cannot parse, so the hex comes from
+`skinValue` — the skin's answer, or the stylesheet's — which is the same helper
+the Layout page seeds its own fields from and moves with a repainted tone rather
+than going stale against it. Clear is then the only thing saying whether a
+colour was chosen or worked out, which is what it is disabled for.
 
 **The Other row is the opposite**, because it is a closed set of three the code
 owns and the colour is the distinction: Factory red, User blue, Custom purple.
@@ -714,6 +724,38 @@ yet: that is what makes adding a page like `/patch/:id` a row in the table rathe
 
 There is no router dependency. What one would buy here is `useBlocker`, nested layouts, loaders and
 route-level code splitting, and only the first had a use — it is `useNavigationBlock` now.
+
+### The side rail
+
+`SideRail.tsx` is the only way to any page, down the left of every one of them. A route is in it by
+carrying a `rail` label, and that label is a single word rather than the route's title: the rail is
+as wide as its widest label, and "Patch library" over two lines is what a title would cost. The
+title is still what the row is named to a reader, so folding the words away takes nothing with it.
+
+Settings is not a row in that table. It is drawn from the first administration page this account can
+open, because the administration privileges are held independently — somebody may keep the user list
+without holding the tag page — and it is absent where there is none, which is the same rule the
+account menu followed: a row everybody could see would be a door most people find locked.
+
+Folding leaves the glyphs and takes the words rather than taking the rail away altogether. A rail
+that could be dismissed entirely needs a second control to bring it back, and there is nowhere left
+to put one. Whether it is folded is `storage/deviceRail.ts`, in `localStorage` rather than the
+`sessionStorage` a previewed skin uses: it is how somebody wants their window laid out, not
+something they are in the middle of trying.
+
+The home page at `/` is a placeholder for a dashboard. It is the address the app opens at and the
+one an unrecognised address falls back to, so it says what the pages are rather than being blank —
+but it holds nothing of its own yet. It is not a row: the mark at the top of the rail goes there,
+which is where a logo already takes everybody who presses one, and a row as well would be two ways
+to the same page an inch apart. `HOME_ROUTE` is what the mark aims at, named separately from
+`DEFAULT_ROUTE` although they are the same page today — one is where the logo leads and the other is
+where an unrecognised address lands.
+
+The glyphs are inline components in `railIcons.tsx`, not `*.svg?react` imports, although `svgr` is
+configured. svgr runs in Vite and not in Bun, so an imported file would be a component the suite
+cannot render — and the rail is the part of the app with no other way to be tested. The paths are
+the exports in `reference/` verbatim; the only edit is the fill, which is `currentColor` so one rule
+lights the row you are standing on.
 
 ### Leaving a page with unsaved changes
 
