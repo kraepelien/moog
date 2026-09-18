@@ -6,12 +6,11 @@ import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import Tooltip from '@mui/material/Tooltip'
 import { usePrivileges } from '@access/context.ts'
-import { ADMIN_ROUTES, RAIL, type RouteDef } from '@navigation/routes.ts'
+import { ADMIN_ROUTES, HOME_ROUTE, RAIL, type RouteDef } from '@navigation/routes.ts'
 import {
   AccountGlyph,
   CollapseGlyph,
   EditorGlyph,
-  HomeGlyph,
   LibraryGlyph,
   PlayGlyph,
   SettingsGlyph,
@@ -23,7 +22,6 @@ import styles from './SideRail.module.css'
    into both. A page added to the rail with no glyph here is a mistake worth
    seeing, so this is exhaustive rather than defaulted. */
 const GLYPHS: Readonly<Record<string, ReactNode>> = {
-  home: <HomeGlyph />,
   library: <LibraryGlyph />,
   editor: <EditorGlyph />,
   midi: <PlayGlyph />,
@@ -128,15 +126,23 @@ export function SideRail({
       </Tooltip>
 
       {/* The page's heading is the instrument, and the mark says it without
-          spending a row on words. */}
+          spending a row on words — and it is the way home, which is where a
+          logo already takes everybody who presses one. */}
       <h1 className={styles.mark}>
-        <img
-          src="/logo.png"
-          alt="Minimoog Model D"
-          width="34"
-          height="34"
-          className={styles.logo}
-        />
+        <ButtonBase
+          className={styles.home}
+          aria-label={HOME_ROUTE.title}
+          aria-current={route.name === HOME_ROUTE.name ? 'page' : undefined}
+          onClick={() => onNavigate(HOME_ROUTE.path)}
+        >
+          <img
+            src="/logo.png"
+            alt="Minimoog Model D"
+            width="34"
+            height="34"
+            className={styles.logo}
+          />
+        </ButtonBase>
       </h1>
 
       <Box className={styles.group}>

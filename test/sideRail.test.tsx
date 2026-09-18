@@ -48,6 +48,23 @@ describe('the pages', () => {
     )
   })
 
+  /* Home is the mark rather than a row: a logo is where everybody presses to get
+     back to the start, and spending a row on it as well would be two of them. */
+  test('do not include home, which the mark carries', () => {
+    renderRail()
+    expect(screen.queryByText('Home')).toBeNull()
+    const mark = screen.getByRole('heading', { level: 1 })
+    expect(mark.contains(screen.getByRole('button', { name: 'Home' }))).toBe(true)
+  })
+
+  test('are reached from the mark, for home', () => {
+    const went: string[] = []
+    renderRail({ onNavigate: (path) => went.push(path) })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Home' }))
+    expect(went).toEqual(['/'])
+  })
+
   test('go to the page they name', () => {
     const went: string[] = []
     renderRail({ onNavigate: (path) => went.push(path) })

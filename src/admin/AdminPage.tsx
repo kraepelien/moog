@@ -16,15 +16,8 @@ import Typography from '@mui/material/Typography'
 import { ColourField } from './ColourField.tsx'
 import { MAX_TAG_LENGTH, type TagInUse, tagNameProblem } from './tags.ts'
 import { ToneChip } from '@components/library/ToneChip.tsx'
-import { DEFAULT_SKIN, shadesOf, toneForTag, TONE_COLOURS } from '@/tones.ts'
-
-/* What the picker opens on for a tag nobody has coloured. Grey rather than one
-   of the five tag tones: starting on the hash's own answer would make pressing
-   Clear afterwards look like it had done nothing.
-
-   The shipped hex rather than `--tone-grey-ink`, because an `<input type=color>`
-   needs a value it can parse and a custom property is not one. */
-const TONE_DEFAULT = DEFAULT_SKIN.grey!
+import { skinValue } from '@/skin.ts'
+import { shadesOf, toneForTag, TONE_COLOURS, type Skin } from '@/tones.ts'
 
 function BinGlyph() {
   return (
@@ -43,11 +36,16 @@ function BinGlyph() {
 
 export function AdminPage({
   tags,
+  skin,
   onAdd,
   onColour,
   onRemove,
 }: {
   tags: readonly TagInUse[]
+  /* What the app is drawing with, so a tag nobody has coloured can show the
+     colour it is actually wearing rather than a stand-in. The five tag tones are
+     custom properties, and `<input type="color">` needs a value it can parse. */
+  skin: Skin
   onAdd: (name: string) => void
   /* Null puts the tag back on the hash, which is the only way to undo a colour:
      a picker has no empty state to pick. */
@@ -117,7 +115,14 @@ export function AdminPage({
                 </TableRow>
               </TableHead>
               <TableBody>
-                {tags.map((tag) => (
+                {tags.map((tag) => {
+                  /* A tag nobody has coloured wears the hash's answer, and that
+                     is what the picker has to open on: a field showing one
+                     colour beside a chip drawn in another reads as the page
+                     having lost track of which is which. Clear is what says
+                     whether it was chosen — it is disabled until it was. */
+                  const worn = tag.colour ?? skinValue(skin, toneForTag(tag.name))
+                  return (
                   <TableRow key={tag.id} hover>
                     {/* The chip is the preview: it is the same component every
                         row, filter and patch header draws the tag with, so
@@ -133,7 +138,8 @@ export function AdminPage({
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <ColourField
                           label={`${tag.name} colour`}
-                          value={tag.colour ?? TONE_DEFAULT}
+                          hint={tag.colour === null ? 'From the name' : undefined}
+                          value={worn}
                           onChange={(hex) => onColour(tag, hex)}
                         />
                         <Button
@@ -158,7 +164,8 @@ export function AdminPage({
                       </IconButton>
                     </TableCell>
                   </TableRow>
-                ))}
+                  )
+                })}
               </TableBody>
             </Table>
           </TableContainer>
