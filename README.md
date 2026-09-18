@@ -755,18 +755,25 @@ to the same page an inch apart. `HOME_ROUTE` is what the mark aims at, named sep
 `DEFAULT_ROUTE` although they are the same page today — one is where the logo leads and the other is
 where an unrecognised address lands.
 
-The mark is two drawings. `public/patchdb.svg` is the lockup — the keys with PATCHDB under them —
-and it is what the rail shows unfolded and what the sign-in page shows. `public/logo.svg` is the
-keys alone, and it is what the rail shows folded: the name is a word like any other, and at 60px the
+The mark is two drawings. `public/patchdb.svg` is the lockup — the logo with PATCHDB under it — and
+it is what the rail shows unfolded and what the sign-in page shows. `public/logo.svg` is the logo on
+its own, and it is what the rail shows folded: the name is a word like any other, and at 60px the
 lockup would be a wordmark eight pixels tall. Both are named PATCHDB to a reader, so the heading
 reads the same whichever is up.
+
+Both draw the logo whole, tile and all, rather than lifting the keys out of it. The page does not
+supply a backdrop for the mark any more than a launcher does — the logo is a tile with keys on it,
+and a page showing only the keys would be showing a different mark from the one in the tab beside
+it. `public/logo.svg` is a copy of `reference/logo.svg` made by `make-icons.ts`, two names for one
+drawing for the same reason `logo.png` is not `icon-512.png`: the day an icon cut for a launcher
+wants to differ from a mark drawn on a page, the rail should not have to be re-pointed.
 
 Both are drawn through an `<img>` rather than inlined like the glyphs. They carry gradients, and a
 gradient's id is document-global: inlined in two places those ids would collide, and the second mark
 would be painted with the first one's fill. An external file is its own document, so the id stays
-inside it. The keys are the mark — there is no tile behind them on a page — which is why neither
-`.logo` rule rounds its corners; the tile belongs to the icons, and `reference/icon.svg` brings its
-own.
+inside it. Neither `.logo` rule rounds its corners, and now that the page draws the tile that is a
+decision rather than a non-question: the tile's corners are already curved in the path, so a radius
+on the box would cut a second curve inside the first.
 
 The glyphs are inline components in `railIcons.tsx`, not `*.svg?react` imports, although `svgr` is
 configured. svgr runs in Vite and not in Bun, so an imported file would be a component the suite
@@ -941,7 +948,7 @@ references.
 
 ### The icons
 
-`icon.svg` is the logo as drawn, and everything else is cut out of it. It arrives as a finished tile
+`logo.svg` is the logo as drawn, and everything else comes out of it. It arrives as a finished tile
 — the gradient square, the dark panel inset in it, and the keys — rather than as the mark alone, so
 it is the export verbatim and nothing in it is composed here. Everything in `public/` that a
 browser, a dock or a launcher asks for comes out of it and `icon-maskable.svg` beside it by
@@ -950,31 +957,34 @@ SVG, and a dependency that did would be a rasteriser in every install of the app
 few times a year. Run it when either source changes; the PNGs are committed, because the build
 serves `public/` as it stands and a deploy machine has no browser.
 
-The tile is what the icon keeps and the page drawings drop. On a page the gaps between the keys take
-the page's black; an icon has no page, and a light backdrop would put those gaps through the middle
-of the keys, so the icon holds on to the one it was drawn with. The maskable one differs twice over,
-and both are what maskable means: a plain square, because a launcher cuts its own shape and the
+The tile goes everywhere the logo goes, a page as much as a launcher: it is what the gaps between
+the keys are drawn against, and a mark that borrowed the page's black for them would be one mark on
+a dark page, another on a light one, and a third in the tab beside them. The maskable drawing is the
+only one that departs from the artwork, and it differs twice over — both of them what maskable
+means: a plain square, because a launcher cuts its own shape and the
 drawn tile's rounded corners under a circle leave transparent slivers; and everything inside it at
 80% of its drawn size, so it stays inside the safe zone a mask is guaranteed to keep. The panel's
 rounded corner reaches 498 units from the centre against that zone's radius of 409.6, so at full
 size a round launcher shaves the panel and the outer keys with it.
 
-Every drawing cut from the icon — the maskable tile, `public/logo.svg`, `public/patchdb.svg` — keeps
-the paths and the gradients in the coordinates they were drawn in, and moves them with a transform.
-`userSpaceOnUse` resolves against the space the gradient is *referenced* from, which is inside that
-transform, so the 0-to-1024 run is carried onto the artwork by the same scale. Rewritten into the
-destination's own coordinates, as looked obvious, the mark came out flat blue.
+The two that place the artwork rather than copying it — the maskable tile and `public/patchdb.svg`,
+which stands the logo over the wordmark — keep the paths and the gradients in the coordinates they
+were drawn in and move them with a transform. `userSpaceOnUse` resolves against the space the
+gradient is *referenced* from, which is inside that transform, so the 0-to-1024 run is carried onto
+the artwork by the same scale. Rewritten into the destination's own coordinates, as looked obvious,
+the mark came out flat blue.
 
 `favicon.ico` is packed by the same script: a header, one directory entry per size, and a whole PNG
 per entry rather than a bitmap. Every browser that still asks for an `.ico` by name has read
 PNG-in-ICO for fifteen years, and the bitmap form would mean writing a BMP encoder and its
 upside-down AND mask.
 
-`public/icon.svg` is the one icon that is not rasterised at all. A browser that takes an SVG favicon
-draws it at whatever size it wants instead of picking the nearest bitmap, so it is the only one that
-reaches a tab as it was drawn. The script copies it rather than anyone doing it by hand: `public/`
-is what is served and `reference/` is not, and a copy made by hand is a drawing that drifts from the
-one every PNG beside it was baked from.
+`public/icon.svg` and `public/logo.svg` are not rasterised at all — they are the drawing itself,
+copied. A browser that takes an SVG favicon draws it at whatever size it wants instead of picking
+the nearest bitmap, and the folded rail draws the same file at 34px, so between them they are the
+only places the artwork reaches a screen as it was drawn. The script does the copying rather than
+anyone doing it by hand: `public/` is what is served and `reference/` is not, and a copy made by
+hand is a drawing that drifts from the one every PNG beside it was baked from.
 
 Its `<link>` in `index.html` and the `sizes="any"` on the `.ico` link above it are one decision, not
 two. Chromium prefers an `.ico` to an SVG unless the `.ico` states a size, so with either half

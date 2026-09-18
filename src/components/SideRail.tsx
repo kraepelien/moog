@@ -125,8 +125,8 @@ export function SideRail({
           <img
             src={collapsed ? '/logo.svg' : '/patchdb.svg'}
             alt="PATCHDB"
-            width={collapsed ? 33 : 68}
-            height={collapsed ? 26 : 61}
+            width={collapsed ? 34 : 68}
+            height={collapsed ? 34 : 61}
             className={styles.logo}
           />
         </ButtonBase>

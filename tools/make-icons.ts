@@ -1,4 +1,4 @@
-/* Bakes public/'s icons out of reference/icon.svg and reference/icon-maskable.svg.
+/* Bakes public/'s icons out of reference/logo.svg and reference/icon-maskable.svg.
  *
  *   bun tools/make-icons.ts
  *
@@ -29,18 +29,18 @@ const target = (name: string) => fileURLToPath(new URL(`public/${name}`, root))
 /* Every size something asks for, and which drawing answers. The .ico is packed
    from the first three afterwards. */
 const ICONS: readonly { file: string; size: number; svg: string }[] = [
-  { file: 'favicon-16.png', size: 16, svg: 'icon.svg' },
-  { file: 'favicon-32.png', size: 32, svg: 'icon.svg' },
-  { file: 'favicon-48.png', size: 48, svg: 'icon.svg' },
-  { file: 'apple-touch-icon.png', size: 180, svg: 'icon.svg' },
-  { file: 'icon-192.png', size: 192, svg: 'icon.svg' },
-  { file: 'icon-512.png', size: 512, svg: 'icon.svg' },
+  { file: 'favicon-16.png', size: 16, svg: 'logo.svg' },
+  { file: 'favicon-32.png', size: 32, svg: 'logo.svg' },
+  { file: 'favicon-48.png', size: 48, svg: 'logo.svg' },
+  { file: 'apple-touch-icon.png', size: 180, svg: 'logo.svg' },
+  { file: 'icon-192.png', size: 192, svg: 'logo.svg' },
+  { file: 'icon-512.png', size: 512, svg: 'logo.svg' },
   { file: 'icon-512-maskable.png', size: 512, svg: 'icon-maskable.svg' },
   /* The rail and the sign-in page still draw this one. It is the same 512 as
      icon-512.png and was already a byte-for-byte copy of it; kept rather than
      pointed at the icon because the two are the same picture today and need not
      be tomorrow — an icon is cut for a launcher and a mark is drawn on a page. */
-  { file: 'logo.png', size: 512, svg: 'icon.svg' },
+  { file: 'logo.png', size: 512, svg: 'logo.svg' },
 ]
 
 const ICO = ['favicon-16.png', 'favicon-32.png', 'favicon-48.png'] as const
@@ -177,10 +177,17 @@ writeFileSync(
 )
 console.log(`favicon.ico  ${images.map((image) => image.size).join(', ')}`)
 
-/* The one icon that is not rasterised: a browser taking an SVG favicon draws it
-   at whatever size it wants rather than picking the nearest bitmap. Copied
-   rather than linked because `public/` is what is served and `reference/` is
-   not, and copied here rather than by hand so the served drawing cannot drift
-   from the one every PNG above was baked from. */
-copyFileSync(source('icon.svg'), target('icon.svg'))
-console.log('icon.svg     the drawing itself')
+/* The two that are not rasterised at all. A browser taking an SVG favicon draws
+   the drawing at whatever size it wants rather than picking the nearest bitmap,
+   and the folded rail draws the same file at 34px. Copied rather than linked
+   because `public/` is what is served and `reference/` is not, and copied here
+   rather than by hand so neither can drift from the one every PNG above was
+   baked from.
+
+   Two names for one drawing, for the reason logo.png is not icon-512.png: an
+   icon is cut for a launcher and a mark is drawn on a page, and the day those
+   want different artwork the rail should not have to be re-pointed. */
+for (const file of ['icon.svg', 'logo.svg']) {
+  copyFileSync(source('logo.svg'), target(file))
+  console.log(`${file.padEnd(12)} the drawing itself`)
+}
