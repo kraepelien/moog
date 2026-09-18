@@ -36,6 +36,7 @@ import { Panel, PanelChecklist } from './components/Panel.tsx'
 import { useConfirm } from './components/useConfirm.tsx'
 import { SignIn } from './session/SignIn.tsx'
 import { signOut, useSession, type Session } from './session/session.ts'
+import { webMidiSupported } from './audio/useMidi.ts'
 import { AccessProvider } from './access/AccessProvider.tsx'
 import { useCan } from './access/context.ts'
 import { Can, RouteGuard } from './access/Can.tsx'
@@ -553,8 +554,12 @@ function Workspace({
   const menu: RailAction[] = [
     { label: 'Import a file…', onSelect: () => importing.current?.click() },
     /* Discoverable from here because there is nowhere on the instrument it
-       could go: a Model D has no MIDI socket to label. */
-    { label: 'Playing over MIDI…', onSelect: () => setMidiHelp(true) },
+       could go: a Model D has no MIDI socket to label. A browser without Web
+       MIDI ignores a controller in silence, so the label has to say so. */
+    {
+      label: webMidiSupported() ? 'Playing over MIDI…' : 'Playing over MIDI (not in this browser)…',
+      onSelect: () => setMidiHelp(true),
+    },
     {
       label: 'Export every patch',
       onSelect: () =>

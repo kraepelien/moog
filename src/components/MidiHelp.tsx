@@ -10,6 +10,7 @@ import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
 import TableRow from '@mui/material/TableRow'
 import Typography from '@mui/material/Typography'
+import { webMidiSupported } from '@audio/useMidi.ts'
 
 /* How to play the instrument from something other than this page.
  *
@@ -24,10 +25,6 @@ import Typography from '@mui/material/Typography'
  * silent keyboard actually has.
  */
 
-const supported = (): boolean =>
-  typeof navigator !== 'undefined' &&
-  typeof (navigator as Navigator & { requestMIDIAccess?: unknown }).requestMIDIAccess === 'function'
-
 const ROUTING: readonly (readonly [string, string])[] = [
   ['Keys', 'F1 to C5. Notes outside those are ignored rather than moved into range.'],
   ['Pitch bend', 'The Pitch wheel. Sprung, and never saved in a patch.'],
@@ -36,7 +33,7 @@ const ROUTING: readonly (readonly [string, string])[] = [
 ]
 
 export function MidiHelp({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const canDo = supported()
+  const canDo = webMidiSupported()
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth scroll="paper">
