@@ -15,16 +15,22 @@ export interface RouteDef {
   /* Segments, with `:name` capturing one. */
   readonly path: string
   readonly title: string
-  /* In the tab bar. A page without one is reached from the account menu: a tab
-     everybody could see would be a door most people find locked. */
-  readonly tab?: boolean
+  /* What this page is called in the side rail, and whether it is in it at all.
+     A page without one is reached from the account menu: a row everybody could
+     see would be a door most people find locked.
+
+     A word of its own rather than the title, because the rail is as wide as its
+     widest label and "Patch library" over two lines is what that costs. The
+     title is still what the row is named to a reader. */
+  readonly rail?: string
   readonly needs?: Privilege
 }
 
 export const ROUTES: readonly RouteDef[] = [
-  { name: 'library', path: '/library', title: 'Patch library', tab: true },
-  { name: 'editor', path: '/editor', title: 'Patch editor', tab: true },
-  { name: 'midi', path: '/midi', title: 'Play MIDI', tab: true },
+  { name: 'home', path: '/', title: 'Home', rail: 'Home' },
+  { name: 'library', path: '/library', title: 'Patch library', rail: 'Library' },
+  { name: 'editor', path: '/editor', title: 'Patch editor', rail: 'Editor' },
+  { name: 'midi', path: '/midi', title: 'Play MIDI', rail: 'MIDI' },
   { name: 'admin', path: '/admin', title: 'Tags', needs: PRIVILEGE.AccessAdmin },
   /* Its own privilege rather than nesting behind AccessAdmin, so the two can be
      held apart — which is what the rules protecting this page assume. */
@@ -37,11 +43,11 @@ export const ADMIN_ROUTES: readonly RouteDef[] = ROUTES.filter((route) =>
   route.path.startsWith('/admin'),
 )
 
-/* Named rather than taken from the head of the list: the tabs are in the order
-   they are read in, and an address naming no page still lands on the editor. */
-export const DEFAULT_ROUTE: RouteDef = ROUTES.find((entry) => entry.name === 'editor')!
+/* Named rather than taken from the head of the list: the rail is in the order
+   it is read in, and an address naming no page still lands on the home page. */
+export const DEFAULT_ROUTE: RouteDef = ROUTES.find((entry) => entry.name === 'home')!
 
-export const TABS: readonly RouteDef[] = ROUTES.filter((entry) => entry.tab === true)
+export const RAIL: readonly RouteDef[] = ROUTES.filter((entry) => entry.rail !== undefined)
 
 export interface Match {
   readonly route: RouteDef
@@ -65,7 +71,7 @@ export function matchRoute(route: RouteDef, path: string): Match | null {
   return { route, params }
 }
 
-/* An address naming no page is the editor rather than an error page: the only
+/* An address naming no page is the home page rather than an error page: the only
    way to reach one is to type it, and there is nothing useful to say.
 
    The query is cut off first: it belongs to whoever reads it — a sign-in that
@@ -81,9 +87,12 @@ export function resolve(path: string): Match {
 
 export function pathFor(name: string, params: Readonly<Record<string, string>> = {}): string {
   const route = ROUTES.find((entry) => entry.name === name) ?? DEFAULT_ROUTE
-  return route.path
+  const built = route.path
     .split('/')
     .filter(Boolean)
     .map((part) => (part.startsWith(':') ? encodeURIComponent(params[part.slice(1)] ?? '') : part))
-    .reduce((built, part) => `${built}/${part}`, '')
+    .reduce((path, part) => `${path}/${part}`, '')
+  /* The home page has no segments, and an empty string is not an address
+     `pushState` can be given. */
+  return built === '' ? '/' : built
 }
