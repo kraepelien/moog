@@ -3,10 +3,10 @@
 .prompt {
   margin: 0;
   padding: 12px 14px;
-  border: 1px solid var(--shell-border);
+  border: 1px solid var(--content-border);
   border-radius: 4px;
-  background: var(--shell-input);
-  color: var(--shell-ink);
+  background: var(--input-bg);
+  color: var(--content-color);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.78rem;
   line-height: 1.5;

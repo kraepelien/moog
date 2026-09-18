@@ -11,13 +11,14 @@
   text-align: left;
   border-bottom: 1px solid;
   border-color: inherit;
+  background-color: var(--content-row-1);
 }
 
 /* Every other line, to carry the eye across five columns to a rating at the far
    end. Before the two rules below, which match at the same specificity and so
    are decided by order. */
 .row:nth-child(even) {
-  background-color: var(--shell-alternate);
+  background-color: var(--content-row-2);
 }
 
 /* Faint, because the line is no longer a target: it is there to hold the eye on
@@ -27,7 +28,7 @@
    replacing it: the two wash to about the same value, and a hover that swapped
    one for the other left every second row looking untouched. */
 .row:hover {
-  background-image: linear-gradient(var(--shell-hover-faint), var(--shell-hover-faint));
+  background-image: linear-gradient(var(--content-hover-faint), var(--content-hover-faint));
 }
 
 /* The row the editor is showing. A rule down its edge rather than a fill: a
@@ -36,7 +37,7 @@
    open row is the one row drawn in a single colour. */
 .row[data-open] {
   background: var(--tone-green-field);
-  box-shadow: inset 3px 0 0 var(--shell-success);
+  box-shadow: inset 3px 0 0 var(--success-color);
 }
 
 /* The columns collapse rather than shrink: at this width the chips have stopped
@@ -83,7 +84,7 @@
 
 .name:hover,
 .name:focus-visible {
-  background: var(--shell-hover-strong);
+  background: var(--content-hover-strong);
 }
 
 .name:hover .nameText {

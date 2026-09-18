@@ -14,7 +14,7 @@ import { SHELL, TONE_COLOURS } from './tones.ts'
    the theme never has to be rebuilt. `nativeColor` is what lets that hold: MUI
    mixes some palette colours rather than printing them (a chip's delete icon
    out of the body ink, a switch's track), and that arithmetic cannot run on
-   `var(--shell-ink)`, so a Chip threw on render and took the page down with it.
+   `var(--content-color)`, so a Chip threw on render and took the page down with it.
    With it the mixing is left to the browser as `oklch(from ...)`, and the
    properties a contrast colour needs are declared alongside the palette. */
 export const theme = createTheme({

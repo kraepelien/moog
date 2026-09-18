@@ -4,9 +4,18 @@
   gap: 10px;
 }
 
+.controls {
+  min-width: 0;
+  width: 9rem;
+}
+
 /* The native picker draws its own inset border and padding, which at this size
    leaves a swatch smaller than the well around it. Stripped back so the square
-   is the colour and nothing else. */
+   is the colour and nothing else.
+
+   The chequers are behind the swatch rather than in it: the swatch is drawn at
+   the colour's own opacity, so what shows through is this, which is the only
+   thing on the row that tells a translucent colour from a solid one. */
 .swatch {
   flex: none;
   width: 34px;
@@ -16,8 +25,15 @@
   border: 1px solid;
   border-color: inherit;
   border-radius: 6px;
-  background: none;
   cursor: pointer;
+  background-color: #ffffff;
+  background-image:
+    linear-gradient(45deg, #00000033 25%, transparent 25%, transparent 75%, #00000033 75%),
+    linear-gradient(45deg, #00000033 25%, transparent 25%, transparent 75%, #00000033 75%);
+  background-size: 10px 10px;
+  background-position:
+    0 0,
+    5px 5px;
 }
 
 .swatch::-webkit-color-swatch-wrapper {
@@ -28,14 +44,23 @@
 .swatch::-moz-color-swatch {
   border: none;
   border-radius: 5px;
+  opacity: var(--swatch-alpha, 1);
 }
 
 .text {
-  min-width: 0;
-  width: 9rem;
+  width: 100%;
 }
 
 .text input {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.82rem;
+}
+
+/* Tucked under the hex box rather than beside it: a row of these is already
+   four columns wide, and opacity is the half of a colour that is looked at
+   least often. */
+.alpha {
+  display: block;
+  width: calc(100% - 8px);
+  margin: -14px 4px 0;
 }

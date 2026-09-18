@@ -38,12 +38,12 @@ test('names a draft nobody has titled', () => {
 describe('whether the panel has been written down', () => {
   test('says unsaved in the warning colour', () => {
     renderBar({ title: { text: 'Sub Bass', unsaved: true } })
-    expect(nameColour()).toBe(DEFAULT_SKIN.warning!)
+    expect(nameColour()).toBe(DEFAULT_SKIN.warningColor!)
   })
 
   test('says saved in the success colour', () => {
     renderBar({ title: { text: 'Sub Bass', unsaved: false } })
-    expect(nameColour()).toBe(DEFAULT_SKIN.success!)
+    expect(nameColour()).toBe(DEFAULT_SKIN.successColor!)
   })
 })
 

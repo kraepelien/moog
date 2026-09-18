@@ -35,9 +35,9 @@ export function shadesOf(ink: string): ToneColour {
    the same red, so there is one property, one swatch and nothing to keep in
    step. The other four have only the one meaning and hold their own. */
 const TONE_INK: Record<Tone, string> = {
-  red: '--shell-error',
-  amber: '--shell-warning',
-  green: '--shell-success',
+  red: '--error-color',
+  amber: '--warning-color',
+  green: '--success-color',
   pink: '--tone-pink-ink',
   blue: '--tone-blue-ink',
   violet: '--tone-violet-ink',
@@ -88,27 +88,40 @@ export function tagColour(palette: TagPalette, tag: string): ToneColour {
    no entry, and one with a swatch and no surface yet is reachable through
    `SKIN_SWATCHES` until something here asks for it. */
 export const SHELL = {
-  background: 'var(--shell-background)',
-  content: 'var(--shell-content)',
-  input: 'var(--shell-input)',
-  border: 'var(--shell-border)',
-  ink: 'var(--shell-ink)',
-  inkDim: 'var(--shell-ink-dim)',
-  star: 'var(--shell-star)',
-  header: 'var(--shell-header)',
-  headerInk: 'var(--shell-header-ink)',
-  hoverFaint: 'var(--shell-hover-faint)',
-  hoverStrong: 'var(--shell-hover-strong)',
+  background: 'var(--background)',
+  content: 'var(--content-bg)',
+  input: 'var(--input-bg)',
+  border: 'var(--content-border)',
+  ink: 'var(--content-color)',
+  inkDim: 'var(--content-color-alt)',
+  star: 'var(--star)',
+  header: 'var(--header-bg)',
+  headerInk: 'var(--header-color)',
+  hoverFaint: 'var(--content-hover-faint)',
+  hoverStrong: 'var(--content-hover-strong)',
   /* Written on a filled tone, wherever one is filled. */
-  onTone: 'var(--shell-on-tone)',
-  starEmpty: 'var(--shell-star-empty)',
+  onTone: 'var(--on-tone)',
+  starEmpty: 'var(--star-empty)',
 } as const
 
 /* Every colour a skin may set, in the order the page that edits them draws
    them, with the custom property each one writes and what it is for. One list:
    the admin page builds its fields from it, the export names them from it, and
    a stored preview is sifted against it, so none of the three can drift. */
-export const SKIN_GROUPS = ['Shell', 'Tones', 'Panel', 'Caps', 'Lamps', 'Keys'] as const
+export const SKIN_GROUPS = [
+  'Page',
+  'Menu',
+  'Header',
+  'Content',
+  'Status',
+  'Input',
+  'Input alt',
+  'Tones',
+  'Panel',
+  'Caps',
+  'Lamps',
+  'Keys',
+] as const
 export type SkinGroup = (typeof SKIN_GROUPS)[number]
 
 /* Where each default is declared. Two stylesheets, because the chrome's colours
@@ -128,40 +141,94 @@ export interface SkinSwatch {
   readonly group: SkinGroup
   readonly hint: string
   readonly sheet: SkinSheet
-  /* Declared and settable, but nothing reads it yet. Said out loud on the page
-     that edits it, because a picker that moves and repaints nothing is
-     indistinguishable from a broken one. Drop the flag as each surface is
-     pointed at its property. */
+  /* Declared and settable, but nothing in the app draws with it yet. Said out
+     loud on the page that edits it and warned about on the way to an export,
+     because a colour somebody chose and shipped that no surface reads is a
+     change they think they made. The specimen beside the field is how it can be
+     seen at all and is not one of those surfaces; `test/skin.test.ts` reads
+     past it. Drop the flag as each surface is pointed at its property. */
   readonly pending?: true
 }
 
 export const SKIN_SWATCHES: readonly SkinSwatch[] = [
-  { key: 'background', property: '--shell-background', label: 'Background', group: 'Shell', hint: 'Behind everything', sheet: 'shell' },
-  { key: 'menu', property: '--shell-menu', label: 'Menu', group: 'Shell', hint: 'The nav, rail or top', sheet: 'shell' },
-  { key: 'header', property: '--shell-header', label: 'Header', group: 'Shell', hint: 'The bar across the top', sheet: 'shell' },
-  { key: 'headerInk', property: '--shell-header-ink', label: 'Header ink', group: 'Shell', hint: 'Its tabs and icons', sheet: 'shell' },
-  { key: 'content', property: '--shell-content', label: 'Content', group: 'Shell', hint: 'Every panel and list', sheet: 'shell' },
-  { key: 'alternate', property: '--shell-alternate', label: 'Alternate', group: 'Shell', hint: 'Every other patch in the list', sheet: 'shell' },
-  { key: 'hover', property: '--shell-hover', label: 'Hover', group: 'Shell', hint: 'The wash under the pointer', sheet: 'shell' },
-  { key: 'border', property: '--shell-border', label: 'Border', group: 'Shell', hint: 'Every rule and edge', sheet: 'shell' },
-  { key: 'ink', property: '--shell-ink', label: 'Ink', group: 'Shell', hint: 'Body text', sheet: 'shell' },
-  { key: 'inkDim', property: '--shell-ink-dim', label: 'Dim ink', group: 'Shell', hint: 'Captions and counts', sheet: 'shell' },
-  { key: 'star', property: '--shell-star', label: 'Star', group: 'Shell', hint: "Everyone's rating", sheet: 'shell' },
-  { key: 'onTone', property: '--shell-on-tone', label: 'Ink on a colour', group: 'Shell', hint: 'Lettering on a filled chip', sheet: 'shell' },
-  { key: 'notification', property: '--shell-notification', label: 'Notification', group: 'Shell', hint: 'Something worth saying', sheet: 'shell', pending: true },
-  { key: 'notificationBorder', property: '--shell-notification-border', label: 'Notification border', group: 'Shell', hint: 'Around it', sheet: 'shell', pending: true },
-  { key: 'success', property: '--shell-success', label: 'Success', group: 'Shell', hint: 'Saved, synth, a tag', sheet: 'shell' },
-  { key: 'successBorder', property: '--shell-success-border', label: 'Success border', group: 'Shell', hint: 'Around it', sheet: 'shell', pending: true },
-  { key: 'warning', property: '--shell-warning', label: 'Warning', group: 'Shell', hint: 'Unsaved, public, a tag', sheet: 'shell' },
-  { key: 'warningBorder', property: '--shell-warning-border', label: 'Warning border', group: 'Shell', hint: 'Around it', sheet: 'shell', pending: true },
-  { key: 'error', property: '--shell-error', label: 'Error', group: 'Shell', hint: 'Factory, and what went wrong', sheet: 'shell' },
-  { key: 'errorBorder', property: '--shell-error-border', label: 'Error border', group: 'Shell', hint: 'Around it', sheet: 'shell', pending: true },
-  { key: 'input', property: '--shell-input', label: 'Input', group: 'Shell', hint: 'Inside a text box', sheet: 'shell' },
-  { key: 'inputBorder', property: '--shell-input-border', label: 'Input border', group: 'Shell', hint: 'Around one at rest', sheet: 'shell', pending: true },
-  { key: 'inputColor', property: '--shell-input-color', label: 'Input ink', group: 'Shell', hint: 'What you have typed', sheet: 'shell', pending: true },
-  { key: 'inputActive', property: '--shell-input-active', label: 'Input, active', group: 'Shell', hint: 'With the caret in it', sheet: 'shell', pending: true },
-  { key: 'inputActiveBorder', property: '--shell-input-active-border', label: 'Input border, active', group: 'Shell', hint: 'Around the one in use', sheet: 'shell', pending: true },
-  { key: 'inputActiveColor', property: '--shell-input-active-color', label: 'Input ink, active', group: 'Shell', hint: 'Typing into it', sheet: 'shell', pending: true },
+  { key: 'background', property: '--background', label: 'Background', group: 'Page', hint: 'Behind everything', sheet: 'shell' },
+  { key: 'star', property: '--star', label: 'Star', group: 'Page', hint: "Everyone's rating", sheet: 'shell' },
+  { key: 'onTone', property: '--on-tone', label: 'Ink on a colour', group: 'Page', hint: 'Lettering on a filled chip', sheet: 'shell' },
+
+  /* `--menu-color-alt` is not the designer's: their list names the menu's fill
+     and its two lit states and stops there, which left every item you are not
+     on drawing with the content's dim ink — one field moving the nav and the
+     page under it together. There is no `--menu-color` beside it because
+     nothing in the nav rests at a bright ink: dim is the resting state, and
+     hover and the current page are the two that light up.
+
+     The rail's edge is still the content's border, which is the other half of
+     the same seam and wants a name from whoever owns the palette. */
+  { key: 'menuBg', property: '--menu-bg', label: 'Menu', group: 'Menu', hint: 'The nav, rail or top', sheet: 'shell' },
+  { key: 'menuColorAlt', property: '--menu-color-alt', label: 'Menu ink, dim', group: 'Menu', hint: 'The pages you are not on', sheet: 'shell' },
+  { key: 'menuActiveBg', property: '--menu-active-bg', label: 'Menu, current page', group: 'Menu', hint: 'Behind where you are standing', sheet: 'shell' },
+  { key: 'menuActiveColor', property: '--menu-active-color', label: 'Menu ink, current page', group: 'Menu', hint: 'The page you are on', sheet: 'shell' },
+  { key: 'menuHoverBg', property: '--menu-hover-bg', label: 'Menu hover', group: 'Menu', hint: 'Under the pointer', sheet: 'shell' },
+  { key: 'menuHoverColor', property: '--menu-hover-color', label: 'Menu hover ink', group: 'Menu', hint: 'The item under the pointer', sheet: 'shell' },
+
+  { key: 'headerBg', property: '--header-bg', label: 'Header', group: 'Header', hint: 'The bar across the top', sheet: 'shell' },
+  { key: 'headerBorder', property: '--header-border', label: 'Header border', group: 'Header', hint: 'The rule under it', sheet: 'shell', pending: true },
+  { key: 'headerColor', property: '--header-color', label: 'Header ink', group: 'Header', hint: 'Its tabs and icons', sheet: 'shell' },
+  { key: 'headerColorAlt', property: '--header-color-alt', label: 'Header ink, dim', group: 'Header', hint: 'What it says in passing', sheet: 'shell', pending: true },
+
+  { key: 'contentBg', property: '--content-bg', label: 'Content', group: 'Content', hint: 'Every panel and list', sheet: 'shell' },
+  { key: 'contentBorder', property: '--content-border', label: 'Content border', group: 'Content', hint: 'Every rule and edge', sheet: 'shell' },
+  { key: 'contentColor', property: '--content-color', label: 'Content ink', group: 'Content', hint: 'Body text', sheet: 'shell' },
+  { key: 'contentColorAlt', property: '--content-color-alt', label: 'Content ink, dim', group: 'Content', hint: 'Captions and counts', sheet: 'shell' },
+  { key: 'contentHover', property: '--content-hover', label: 'Content hover', group: 'Content', hint: 'The wash under the pointer', sheet: 'shell' },
+  { key: 'contentHoverBorder', property: '--content-hover-border', label: 'Content hover border', group: 'Content', hint: 'Around what is under it', sheet: 'shell', pending: true },
+  { key: 'contentHoverColor', property: '--content-hover-color', label: 'Content hover ink', group: 'Content', hint: 'What it says under the pointer', sheet: 'shell', pending: true },
+  { key: 'contentRow1', property: '--content-row-1', label: 'Row', group: 'Content', hint: 'Every odd patch in the list', sheet: 'shell' },
+  { key: 'contentRow2', property: '--content-row-2', label: 'Row, alternate', group: 'Content', hint: 'Every other patch in the list', sheet: 'shell' },
+
+  /* Four families of one shape. Three of the inks are also a tone — red, amber
+     and green are Error, Warning and Success — so the tone reads the shell
+     property rather than holding a hex of its own. */
+  { key: 'notificationBg', property: '--notification-bg', label: 'Notification', group: 'Status', hint: 'Behind something worth saying', sheet: 'shell', pending: true },
+  { key: 'notificationBorder', property: '--notification-border', label: 'Notification border', group: 'Status', hint: 'Around it', sheet: 'shell', pending: true },
+  { key: 'notificationColor', property: '--notification-color', label: 'Notification ink', group: 'Status', hint: 'What it says', sheet: 'shell', pending: true },
+  { key: 'notificationColorAlt', property: '--notification-color-alt', label: 'Notification ink, dim', group: 'Status', hint: 'Its aside', sheet: 'shell', pending: true },
+  { key: 'successBg', property: '--success-bg', label: 'Success', group: 'Status', hint: 'Behind saved, synth, a tag', sheet: 'shell', pending: true },
+  { key: 'successBorder', property: '--success-border', label: 'Success border', group: 'Status', hint: 'Around it', sheet: 'shell', pending: true },
+  { key: 'successColor', property: '--success-color', label: 'Success ink', group: 'Status', hint: 'Saved, synth, a tag', sheet: 'shell' },
+  { key: 'successColorAlt', property: '--success-color-alt', label: 'Success ink, dim', group: 'Status', hint: 'Its aside', sheet: 'shell', pending: true },
+  { key: 'warningBg', property: '--warning-bg', label: 'Warning', group: 'Status', hint: 'Behind unsaved, public, a tag', sheet: 'shell', pending: true },
+  { key: 'warningBorder', property: '--warning-border', label: 'Warning border', group: 'Status', hint: 'Around it', sheet: 'shell', pending: true },
+  { key: 'warningColor', property: '--warning-color', label: 'Warning ink', group: 'Status', hint: 'Unsaved, public, a tag', sheet: 'shell' },
+  { key: 'warningColorAlt', property: '--warning-color-alt', label: 'Warning ink, dim', group: 'Status', hint: 'Its aside', sheet: 'shell', pending: true },
+  { key: 'errorBg', property: '--error-bg', label: 'Error', group: 'Status', hint: 'Behind factory, and what went wrong', sheet: 'shell', pending: true },
+  { key: 'errorBorder', property: '--error-border', label: 'Error border', group: 'Status', hint: 'Around it', sheet: 'shell', pending: true },
+  { key: 'errorColor', property: '--error-color', label: 'Error ink', group: 'Status', hint: 'Factory, and what went wrong', sheet: 'shell' },
+  { key: 'errorColorAlt', property: '--error-color-alt', label: 'Error ink, dim', group: 'Status', hint: 'Its aside', sheet: 'shell', pending: true },
+
+  { key: 'inputBg', property: '--input-bg', label: 'Input', group: 'Input', hint: 'Inside a text box', sheet: 'shell' },
+  { key: 'inputBorder', property: '--input-border', label: 'Input border', group: 'Input', hint: 'Around one at rest', sheet: 'shell', pending: true },
+  { key: 'inputColor', property: '--input-color', label: 'Input ink', group: 'Input', hint: 'What you have typed', sheet: 'shell', pending: true },
+  { key: 'inputActive', property: '--input-active', label: 'Input, active', group: 'Input', hint: 'With the caret in it', sheet: 'shell', pending: true },
+  { key: 'inputActiveBorder', property: '--input-active-border', label: 'Input border, active', group: 'Input', hint: 'Around the one in use', sheet: 'shell', pending: true },
+  { key: 'inputActiveColor', property: '--input-active-color', label: 'Input ink, active', group: 'Input', hint: 'Typing into it', sheet: 'shell', pending: true },
+  { key: 'inputHover', property: '--input-hover', label: 'Input, hover', group: 'Input', hint: 'Under the pointer', sheet: 'shell', pending: true },
+  { key: 'inputHoverBorder', property: '--input-hover-border', label: 'Input border, hover', group: 'Input', hint: 'Around that one', sheet: 'shell', pending: true },
+  { key: 'inputHoverColor', property: '--input-hover-color', label: 'Input ink, hover', group: 'Input', hint: 'What it says under the pointer', sheet: 'shell', pending: true },
+  { key: 'inputPlaceholderColor', property: '--input-placeholder-color', label: 'Input placeholder', group: 'Input', hint: 'Before anything is typed', sheet: 'shell', pending: true },
+
+  /* The second field, for a form drawn on something other than a card. Every
+     one of these is settable and nothing reads any of it yet. */
+  { key: 'inputAltBg', property: '--input-alt-bg', label: 'Input', group: 'Input alt', hint: 'Inside a text box', sheet: 'shell', pending: true },
+  { key: 'inputAltBorder', property: '--input-alt-border', label: 'Input border', group: 'Input alt', hint: 'Around one at rest', sheet: 'shell', pending: true },
+  { key: 'inputAltColor', property: '--input-alt-color', label: 'Input ink', group: 'Input alt', hint: 'What you have typed', sheet: 'shell', pending: true },
+  { key: 'inputAltActive', property: '--input-alt-active', label: 'Input, active', group: 'Input alt', hint: 'With the caret in it', sheet: 'shell', pending: true },
+  { key: 'inputAltActiveBorder', property: '--input-alt-active-border', label: 'Input border, active', group: 'Input alt', hint: 'Around the one in use', sheet: 'shell', pending: true },
+  { key: 'inputAltActiveColor', property: '--input-alt-active-color', label: 'Input ink, active', group: 'Input alt', hint: 'Typing into it', sheet: 'shell', pending: true },
+  { key: 'inputAltHover', property: '--input-alt-hover', label: 'Input, hover', group: 'Input alt', hint: 'Under the pointer', sheet: 'shell', pending: true },
+  { key: 'inputAltHoverBorder', property: '--input-alt-hover-border', label: 'Input border, hover', group: 'Input alt', hint: 'Around that one', sheet: 'shell', pending: true },
+  { key: 'inputAltHoverColor', property: '--input-alt-hover-color', label: 'Input ink, hover', group: 'Input alt', hint: 'What it says under the pointer', sheet: 'shell', pending: true },
+  { key: 'inputAltPlaceholderColor', property: '--input-alt-placeholder-color', label: 'Input placeholder', group: 'Input alt', hint: 'Before anything is typed', sheet: 'shell', pending: true },
 
   /* Four of the seven. Red, amber and green are Success, Warning and Error
      above: the chip and the status are one colour said twice, so the tone reads
@@ -219,31 +286,63 @@ export const TONE_SWATCH: Record<Tone, string> = Object.fromEntries(
    `test/skin.test.ts` fails if a copy ever disagrees with its sheet. */
 export const DEFAULT_SKIN: Readonly<Record<string, string>> = {
   background: '#000000',
-  menu: '#101012',
-  header: '#101012',
-  headerInk: '#e9e9ec',
-  content: '#101012',
-  alternate: '#141418',
-  hover: '#ffffff',
-  border: '#1d1d24',
-  ink: '#e9e9ec',
-  inkDim: '#8b8b95',
   star: '#f2b01e',
   onTone: '#0e0e11',
-  notification: '#74aaff',
+  menuBg: '#101012',
+  menuColorAlt: '#8b8b95',
+  menuActiveBg: '#00000000',
+  menuActiveColor: '#e9e9ec',
+  menuHoverBg: '#ffffff08',
+  menuHoverColor: '#e9e9ec',
+  headerBg: '#101012',
+  headerBorder: '#1d1d24',
+  headerColor: '#e9e9ec',
+  headerColorAlt: '#8b8b95',
+  contentBg: '#101012',
+  contentBorder: '#1d1d24',
+  contentColor: '#e9e9ec',
+  contentColorAlt: '#8b8b95',
+  contentHover: '#ffffff',
+  contentHoverBorder: '#2a2a33',
+  contentHoverColor: '#ffffff',
+  contentRow1: '#00000000',
+  contentRow2: '#141418',
+  notificationBg: '#74aaff1f',
   notificationBorder: '#35507a',
-  success: '#69dd94',
+  notificationColor: '#74aaff',
+  notificationColorAlt: '#8b8b95',
+  successBg: '#69dd941f',
   successBorder: '#2f6f47',
-  warning: '#e8c257',
+  successColor: '#69dd94',
+  successColorAlt: '#8b8b95',
+  warningBg: '#e8c2571f',
   warningBorder: '#7a6426',
-  error: '#f2594b',
+  warningColor: '#e8c257',
+  warningColorAlt: '#8b8b95',
+  errorBg: '#f2594b1f',
   errorBorder: '#7e2f27',
-  input: '#19191e',
+  errorColor: '#f2594b',
+  errorColorAlt: '#8b8b95',
+  inputBg: '#19191e',
   inputBorder: '#2a2a33',
   inputColor: '#e9e9ec',
   inputActive: '#1f1f27',
   inputActiveBorder: '#74aaff',
   inputActiveColor: '#ffffff',
+  inputHover: '#1c1c23',
+  inputHoverBorder: '#35353f',
+  inputHoverColor: '#e9e9ec',
+  inputPlaceholderColor: '#8b8b95',
+  inputAltBg: '#19191e',
+  inputAltBorder: '#2a2a33',
+  inputAltColor: '#e9e9ec',
+  inputAltActive: '#1f1f27',
+  inputAltActiveBorder: '#74aaff',
+  inputAltActiveColor: '#ffffff',
+  inputAltHover: '#1c1c23',
+  inputAltHoverBorder: '#35353f',
+  inputAltHoverColor: '#e9e9ec',
+  inputAltPlaceholderColor: '#8b8b95',
   pink: '#ff6f9c',
   blue: '#74aaff',
   violet: '#b78bff',
@@ -274,11 +373,16 @@ export const DEFAULT_SKIN: Readonly<Record<string, string>> = {
    an older build never has to be migrated when a colour is added above. */
 export type Skin = Readonly<Record<string, string>>
 
-/* Six or three digits, with the hash. A colour arriving from a form or out of
-   session storage ends up in a style attribute, and `red; background: url(...)`
+/* Three, four, six or eight digits, with the hash. The four- and eight-digit
+   forms carry an alpha byte, which is what lets a wash be written as a colour
+   that sits on whatever is behind it rather than one flattened against today's
+   content and wrong as soon as that moves.
+
+   A whitelist rather than a parse, because a colour arriving from a form or out
+   of session storage ends up in a style attribute and `red; background: url(...)`
    is not a colour. Shared with the server, which holds tag colours to the same
    rule. */
-const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i
+const HEX = /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i
 
 export function isHexColour(value: unknown): value is string {
   return typeof value === 'string' && HEX.test(value)

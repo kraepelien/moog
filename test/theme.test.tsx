@@ -22,7 +22,7 @@ import { theme } from '@/theme.ts'
 
    Every colour in it is a custom property, and MUI does arithmetic on some of
    them: a chip fades its delete icon out of the body ink, a switch its track.
-   That arithmetic cannot run on `var(--shell-ink)`, so the theme asks for
+   That arithmetic cannot run on `var(--ink)`, so the theme asks for
    `nativeColor`, which leaves the fading to the browser. Without it a Chip
    throws on render and takes the whole page down with it, and a component test
    that renders without the theme never finds out.
@@ -89,7 +89,7 @@ describe('MUI chrome under the app theme', () => {
    own chrome along with everything else, without the theme being rebuilt. A
    palette of hexes would render perfectly well and quietly stop doing this. */
 test("a saved skin reaches MUI's palette", () => {
-  applySkin({ content: '#123456' }, document.documentElement)
+  applySkin({ contentBg: '#123456' }, document.documentElement)
   render(
     <ThemeProvider theme={theme}>
       <Paper data-testid="card">Card</Paper>
