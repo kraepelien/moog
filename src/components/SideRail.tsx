@@ -113,7 +113,7 @@ export function SideRail({
 
           The name goes with the rest of the words when the rail is folded: at
           60px the lockup would be the wordmark at eight pixels tall, which is a
-          smudge rather than a name. Both drawings say PATCHDB to a reader, so
+          smudge rather than a name. Both drawings say PatchDB to a reader, so
           the heading reads the same either way. */}
       <h1 className={styles.mark}>
         <ButtonBase
@@ -124,7 +124,7 @@ export function SideRail({
         >
           <img
             src={collapsed ? '/logo.svg' : '/patchdb.svg'}
-            alt="PATCHDB"
+            alt="PatchDB"
             width={collapsed ? 34 : 68}
             height={collapsed ? 34 : 61}
             className={styles.logo}

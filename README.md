@@ -1,4 +1,4 @@
-# PATCHDB
+# PatchDB
 
 An interactive patch sheet for the Minimoog Model D. Every knob and switch on the panel holds a
 value; a patch is that set of values plus a name and notes. Load the factory patches, save your own
@@ -755,10 +755,10 @@ to the same page an inch apart. `HOME_ROUTE` is what the mark aims at, named sep
 `DEFAULT_ROUTE` although they are the same page today — one is where the logo leads and the other is
 where an unrecognised address lands.
 
-The mark is two drawings. `public/patchdb.svg` is the lockup — the logo with PATCHDB under it — and
+The mark is two drawings. `public/patchdb.svg` is the lockup — the logo with PatchDB under it — and
 it is what the rail shows unfolded and what the sign-in page shows. `public/logo.svg` is the logo on
 its own, and it is what the rail shows folded: the name is a word like any other, and at 60px the
-lockup would be a wordmark eight pixels tall. Both are named PATCHDB to a reader, so the heading
+lockup would be a wordmark eight pixels tall. Both are named PatchDB to a reader, so the heading
 reads the same whichever is up.
 
 Both draw the logo whole, tile and all, rather than lifting the keys out of it. The page does not

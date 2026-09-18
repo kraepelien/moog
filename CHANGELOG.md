@@ -11,7 +11,7 @@ straight to `main` has none to carry.
 - [Take the new logo whole, and cut the icons and the marks out of it](https://github.com/kraepelien/moog/pull/84)
 - [Say in the menu when the browser has no Web MIDI to offer](https://github.com/kraepelien/moog/pull/83)
 - [A home page that shows the bank rather than describing it](https://github.com/kraepelien/moog/pull/82)
-- [Call the app PATCHDB](https://github.com/kraepelien/moog/pull/79)
+- [Call the app PatchDB](https://github.com/kraepelien/moog/pull/79)
 - [Let a commit pushed to main take a line of its own](https://github.com/kraepelien/moog/pull/80)
 - [Stop the suite waiting on a dialog fade, and run it across workers](https://github.com/kraepelien/moog/pull/81)
 - Add the two that merged after the list was written

@@ -1,6 +1,6 @@
 {
-  "name": "PATCHDB",
-  "short_name": "PATCHDB",
+  "name": "PatchDB",
+  "short_name": "PatchDB",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",

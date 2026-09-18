@@ -7,7 +7,7 @@ import { ADMIN_ROUTES, HOME_ROUTE, type RouteDef } from './routes.ts'
    name every page after the one visited before it.
 
    `test/title.test.ts` fails if the two copies drift apart. */
-export const APP_NAME = 'PATCHDB'
+export const APP_NAME = 'PatchDB'
 
 /* The table's title is what the page is called to a reader, which is what a tab,
    a bookmark and a history entry all want; the app's name follows it so a row of

@@ -27,7 +27,7 @@ export function SignIn({ returnTo = '/', error }: { returnTo?: string; error?: s
         href={signInHref(returnTo)}
         aria-label="Sign in with Google"
       >
-        <img src="/patchdb.svg" alt="PATCHDB" width="174" height="156" className={styles.logo} />
+        <img src="/patchdb.svg" alt="PatchDB" width="174" height="156" className={styles.logo} />
       </ButtonBase>
       <Typography className={styles.hint} component="p">
         Sign in with Google
