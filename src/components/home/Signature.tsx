@@ -35,8 +35,8 @@ export function Signature() {
     >
       <defs>
         <linearGradient id="homeSignatureWash" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--shell-star)" stopOpacity="0.28" />
-          <stop offset="100%" stopColor="var(--shell-star)" stopOpacity="0" />
+          <stop offset="0%" stopColor="var(--star)" stopOpacity="0.28" />
+          <stop offset="100%" stopColor="var(--star)" stopOpacity="0" />
         </linearGradient>
         <filter id="homeSignatureGlow" x="-20%" y="-40%" width="140%" height="200%">
           <feGaussianBlur stdDeviation="6" result="blurred" />

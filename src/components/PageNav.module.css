@@ -1,4 +1,4 @@
-/* Structure only — the colours are the shell's custom properties, so a skin an
+/* Structure only — the colours are the palette's custom properties, so a skin an
    administrator saves repaints the nav with nothing here to change.
 
    Two placements of one nav. Everything both of them agree on is written once,
@@ -9,7 +9,7 @@
   top: 0;
   box-sizing: border-box;
   display: flex;
-  background-color: var(--shell-menu);
+  background-color: var(--menu-bg);
   /* The toggle hangs half over the page, and the page is drawn after this in
      the document; without a layer of its own the nav would be painted under
      whatever the open page starts with. */
@@ -25,7 +25,7 @@
   gap: 28px;
   width: 96px;
   padding: 52px 8px 20px;
-  border-inline-end: 1px solid var(--shell-border);
+  border-inline-end: 1px solid var(--content-border);
   /* Only the width, and only this long: the page under it reflows as the rail
      folds, and anything slower leaves the panel visibly catching up. */
   transition: width 140ms ease;
@@ -43,7 +43,7 @@
   gap: 12px;
   width: 100%;
   padding: 6px 12px;
-  border-block-end: 1px solid var(--shell-border);
+  border-block-end: 1px solid var(--content-border);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -65,12 +65,12 @@
   height: 24px;
   padding: 0;
   border-radius: 50%;
-  background-color: var(--shell-background);
-  color: var(--shell-ink-dim);
+  background-color: var(--background);
+  color: var(--menu-color-alt);
 }
 
 .toggle:hover {
-  color: var(--shell-ink);
+  color: var(--menu-hover-color);
 }
 
 .nav[data-collapsed='true'] .toggle {
@@ -91,7 +91,7 @@
 }
 
 .home:hover {
-  background-color: var(--shell-hover-faint);
+  background-color: var(--menu-hover-bg);
 }
 
 /* No rounding: the logo is drawn on its own tile and that tile's corners are
@@ -132,7 +132,7 @@
 
 .item {
   border-radius: 10px;
-  color: var(--shell-ink-dim);
+  color: var(--menu-color-alt);
   transition: color 120ms ease;
 }
 
@@ -149,14 +149,16 @@
 }
 
 .item:hover {
-  color: var(--shell-ink);
-  background-color: var(--shell-hover-faint);
+  color: var(--menu-hover-color);
+  background-color: var(--menu-hover-bg);
 }
 
-/* White, and only here: the nav has no other mark for where you are standing,
-   so the glyph and its word carry it between them. */
+/* The nav has no other mark for where you are standing, so the glyph and its
+   word carry it between them. The fill ships transparent, which leaves the
+   lettering doing that on its own until somebody sets one. */
 .item[aria-current='page'] {
-  color: var(--shell-ink);
+  color: var(--menu-active-color);
+  background-color: var(--menu-active-bg);
 }
 
 .glyph {

@@ -1,0 +1,36 @@
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.banner {
+  padding: 10px 14px;
+  border: 1px solid;
+  border-radius: 8px;
+}
+
+.said {
+  font-size: 0.9rem;
+}
+
+.aside {
+  font-size: 0.75rem;
+  color: var(--content-color-alt);
+}
+
+.fieldRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Sized like the search box it stands for rather than filling the card: a
+   specimen the width of the page would read as a form somebody can type in. */
+.box {
+  width: 15rem;
+  padding: 8px 12px;
+  border: 1px solid;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}

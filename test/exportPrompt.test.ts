@@ -27,9 +27,9 @@ describe('what counts as a change', () => {
   })
 
   test('the ones that differ, in the order the fields are drawn', () => {
-    const changed = skinChanges({ blue: '#2266ff', content: '#123456' })
-    expect(changed.map((change) => change.swatch.key)).toEqual(['content', 'blue'])
-    expect(changed[0]).toMatchObject({ from: DEFAULT_SKIN.content!, to: '#123456' })
+    const changed = skinChanges({ blue: '#2266ff', contentBg: '#123456' })
+    expect(changed.map((change) => change.swatch.key)).toEqual(['contentBg', 'blue'])
+    expect(changed[0]).toMatchObject({ from: DEFAULT_SKIN.contentBg!, to: '#123456' })
   })
 })
 
@@ -48,14 +48,14 @@ describe('the prompt it writes', () => {
   )
 
   test('counts what it is asking for, and says it in the singular when it is one', () => {
-    expect(promptFor({ content: '#123456' }))
+    expect(promptFor({ contentBg: '#123456' }))
       .toContain(`Set these 1 of the ${SKIN_SWATCHES.length} colours`)
-    expect(promptFor({ content: '#123456' })).toContain('Change the colour the moog app ships')
-    expect(promptFor({ content: '#123456', blue: '#2266ff' })).toContain('Change the colours')
+    expect(promptFor({ contentBg: '#123456' })).toContain('Change the colour the moog app ships')
+    expect(promptFor({ contentBg: '#123456', blue: '#2266ff' })).toContain('Change the colours')
   })
 
   test('asks for the pull request, which is the point of exporting one', () => {
-    expect(promptFor({ content: '#123456' })).toContain('open a pull request')
+    expect(promptFor({ contentBg: '#123456' })).toContain('open a pull request')
   })
 
   /* Exporting a colour nothing reads yet is a real thing to want, and the
@@ -64,12 +64,12 @@ describe('the prompt it writes', () => {
   test('warns when a colour it is asking for repaints nothing yet', () => {
     const pending = SKIN_SWATCHES.find((swatch) => swatch.pending)!
     expect(promptFor({ [pending.key]: '#123456' })).toContain('repaints nothing')
-    expect(promptFor({ content: '#123456' })).not.toContain('repaints nothing')
+    expect(promptFor({ contentBg: '#123456' })).not.toContain('repaints nothing')
   })
 })
 
 describe('the files it tells somebody to edit', () => {
-  const named = [...promptFor({ content: '#123456' }).matchAll(/[\w/.-]+\.(?:ts|tsx|css)/g)].map(
+  const named = [...promptFor({ contentBg: '#123456' }).matchAll(/[\w/.-]+\.(?:ts|tsx|css)/g)].map(
     (match) => match[0],
   )
 
@@ -92,13 +92,13 @@ describe('the files it tells somebody to edit', () => {
      always named the chrome's would send somebody to a file without the
      property in it. */
   test('name the stylesheet the changed colour is actually declared in', () => {
-    expect(promptFor({ content: '#123456' })).toContain(SKIN_SHEETS.shell)
-    expect(promptFor({ content: '#123456' })).not.toContain(SKIN_SHEETS.panel)
+    expect(promptFor({ contentBg: '#123456' })).toContain(SKIN_SHEETS.shell)
+    expect(promptFor({ contentBg: '#123456' })).not.toContain(SKIN_SHEETS.panel)
 
     expect(promptFor({ capOrange: '#123456' })).toContain(SKIN_SHEETS.panel)
     expect(promptFor({ capOrange: '#123456' })).not.toContain(SKIN_SHEETS.shell)
 
-    const both = promptFor({ content: '#123456', capOrange: '#123456' })
+    const both = promptFor({ contentBg: '#123456', capOrange: '#123456' })
     expect(both).toContain(SKIN_SHEETS.shell)
     expect(both).toContain(SKIN_SHEETS.panel)
   })

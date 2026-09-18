@@ -22,9 +22,9 @@ import {
 
 describe('sifting a skin', () => {
   test('keeps a colour for a key the app knows', () => {
-    expect(cleanSkin({ background: '#112233', success: '#ABC' })).toEqual({
+    expect(cleanSkin({ background: '#112233', successColor: '#ABC' })).toEqual({
       background: '#112233',
-      success: '#abc',
+      successColor: '#abc',
     })
   })
 
@@ -39,7 +39,7 @@ describe('sifting a skin', () => {
   test.each([
     ['not a colour', 'rebeccapurple'],
     ['smuggling a declaration', '#fff; background: url(http://elsewhere/)'],
-    ['the wrong length', '#ff00'],
+    ['the wrong length', '#ff000'],
     ['no hash', 'ff0000'],
     ['not a string', 7],
   ])('refuses %s', (_label, value) => {
@@ -58,9 +58,9 @@ describe('painting it', () => {
 
   test('writes each chosen colour onto the property that draws it', () => {
     const element = root()
-    applySkin({ background: '#101010', success: '#00ff00' }, element)
-    expect(element.style.getPropertyValue('--shell-background')).toBe('#101010')
-    expect(element.style.getPropertyValue('--shell-success')).toBe('#00ff00')
+    applySkin({ background: '#101010', successColor: '#00ff00' }, element)
+    expect(element.style.getPropertyValue('--background')).toBe('#101010')
+    expect(element.style.getPropertyValue('--success-color')).toBe('#00ff00')
   })
 
   /* Removed rather than left behind, so putting a colour back to the default is
@@ -70,7 +70,7 @@ describe('painting it', () => {
     const element = root()
     applySkin({ background: '#101010' }, element)
     applySkin({}, element)
-    expect(element.style.getPropertyValue('--shell-background')).toBe('')
+    expect(element.style.getPropertyValue('--background')).toBe('')
   })
 })
 
@@ -125,23 +125,29 @@ describe('the defaults written down twice', () => {
     ['amber', 'warning'],
     ['green', 'success'],
   ])('the %s tone is the %s colour rather than a copy of it', (tone, status) => {
-    expect(TONE_COLOURS[tone as Tone].ink).toBe(`var(--shell-${status})`)
+    expect(TONE_COLOURS[tone as Tone].ink).toBe(`var(--${status}-color)`)
     expect(sheets.get('shell')!).not.toContain(`--tone-${tone}-ink`)
     expect(SKIN_KEYS).not.toContain(tone)
   })
 })
 
-/* `pending` is the page's claim that a picker will not repaint anything yet, so
-   it is worth only as much as its being true: a colour something already reads
-   must not be marked, and one nothing reads must be. Wiring a surface up is
-   therefore two edits, and forgetting the second fails here rather than in a
-   field somebody drags and disbelieves. */
+/* `pending` is the page's claim that the app does not draw with a colour yet,
+   so it is worth only as much as its being true: a colour something already
+   reads must not be marked, and one nothing reads must be. Wiring a surface up
+   is therefore two edits, and forgetting the second fails here rather than in a
+   field somebody drags and disbelieves.
+
+   The specimens are not one of those surfaces and are read past. They exist to
+   show a colour that has nowhere else to be seen, so counting them would mark
+   every one of them applied on the day it got a preview — and the export would
+   stop warning that the app itself still ignores it, which is the whole of what
+   the flag is for. */
 describe('a colour that is settable and not yet applied', () => {
+  const specimens = ['admin/Specimens.tsx', 'admin/Specimens.module.css']
   const source = new Map(
-    [...new Bun.Glob('**/*.{css,ts,tsx}').scanSync('src')].map((path) => [
-      path,
-      readFileSync(new URL(`../src/${path}`, import.meta.url), 'utf8'),
-    ]),
+    [...new Bun.Glob('**/*.{css,ts,tsx}').scanSync('src')]
+      .filter((path) => !specimens.includes(path))
+      .map((path) => [path, readFileSync(new URL(`../src/${path}`, import.meta.url), 'utf8')]),
   )
 
   test.each(SKIN_SWATCHES.map((swatch) => [swatch.key, swatch] as const))(

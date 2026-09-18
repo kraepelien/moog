@@ -93,12 +93,10 @@ describe('removing one', () => {
    with, so the two disagreeing is the page having lost track of which colour a
    tag is actually wearing. */
 describe('the colour of a tag', () => {
-  /* The picker and the box beside it are both labelled for the tag, and it is
-     the picker's own value this is about. */
+  /* The swatch, the hex box and the opacity slider are all labelled for the
+     tag, and it is the swatch's own value this is about. */
   const swatch = (tag: string) =>
-    screen.getByLabelText(`${tag} colour`, {
-      selector: 'input[type="color"]',
-    }) as HTMLInputElement
+    screen.getByLabelText(`${tag} colour as a swatch`) as HTMLInputElement
   const clear = (index: number) =>
     screen.getAllByRole('button', { name: 'Clear' })[index] as HTMLButtonElement
 
