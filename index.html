@@ -5,8 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- The .ico carries 16, 32 and 48 for anything that still asks for one by
-         name; the PNGs are what a current browser picks. -->
+         name; the PNGs answer Safari and anything else that reads no SVG.
+
+         `sizes="any"` on the .ico is load-bearing rather than descriptive, and
+         it is why the SVG below carries no `sizes` of its own: Chromium prefers
+         the .ico to an SVG unless the .ico states a size, so dropping either
+         half leaves Chrome rendering a 32px bitmap where it could be drawing
+         the artwork. crbug.com/1162276. -->
     <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

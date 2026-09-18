@@ -944,7 +944,7 @@ references.
 `icon.svg` is the logo as drawn, and everything else is cut out of it. It arrives as a finished tile
 — the gradient square, the dark panel inset in it, and the keys — rather than as the mark alone, so
 it is the export verbatim and nothing in it is composed here. Everything in `public/` that a
-browser, a dock or a launcher asks for is baked out of it and `icon-maskable.svg` beside it by
+browser, a dock or a launcher asks for comes out of it and `icon-maskable.svg` beside it by
 `bun tools/make-icons.ts`, which drives headless Chrome — nothing else on a machine here rasterises
 SVG, and a dependency that did would be a rasteriser in every install of the app for a script run a
 few times a year. Run it when either source changes; the PNGs are committed, because the build
@@ -969,6 +969,18 @@ destination's own coordinates, as looked obvious, the mark came out flat blue.
 per entry rather than a bitmap. Every browser that still asks for an `.ico` by name has read
 PNG-in-ICO for fifteen years, and the bitmap form would mean writing a BMP encoder and its
 upside-down AND mask.
+
+`public/icon.svg` is the one icon that is not rasterised at all. A browser that takes an SVG favicon
+draws it at whatever size it wants instead of picking the nearest bitmap, so it is the only one that
+reaches a tab as it was drawn. The script copies it rather than anyone doing it by hand: `public/`
+is what is served and `reference/` is not, and a copy made by hand is a drawing that drifts from the
+one every PNG beside it was baked from.
+
+Its `<link>` in `index.html` and the `sizes="any"` on the `.ico` link above it are one decision, not
+two. Chromium prefers an `.ico` to an SVG unless the `.ico` states a size, so with either half
+missing Chrome renders a 32px bitmap where it could be drawing the artwork — and for the same
+reason the SVG's own link carries no `sizes` (crbug.com/1162276). Safari reads no SVG favicon at
+all, which is what the two PNG links are still there for.
 
 The two `.mid` files are there to be opened by the MIDI page, and are what its parsing was checked
 against: `Wily1st1.mid` names its parts and carries six tracks of text that play nothing, and
