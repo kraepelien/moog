@@ -16,7 +16,7 @@
  * when the page never goes idle.
  */
 
-import { writeFileSync } from 'node:fs'
+import { copyFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 const CHROME =
@@ -176,3 +176,11 @@ writeFileSync(
   Buffer.concat([header, ...entries, ...images.map((image) => image.bytes)]),
 )
 console.log(`favicon.ico  ${images.map((image) => image.size).join(', ')}`)
+
+/* The one icon that is not rasterised: a browser taking an SVG favicon draws it
+   at whatever size it wants rather than picking the nearest bitmap. Copied
+   rather than linked because `public/` is what is served and `reference/` is
+   not, and copied here rather than by hand so the served drawing cannot drift
+   from the one every PNG above was baked from. */
+copyFileSync(source('icon.svg'), target('icon.svg'))
+console.log('icon.svg     the drawing itself')
