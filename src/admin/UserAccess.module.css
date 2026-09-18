@@ -36,10 +36,39 @@
   padding: 0;
 }
 
-.row {
-  display: flex;
+/* The boxes and the text, shared with the header, so the two column names sit
+   over the boxes they name rather than near them. */
+.row,
+.head {
+  display: grid;
+  grid-template-columns: 112px 1fr;
   gap: 8px;
-  align-items: flex-start;
+  align-items: start;
+}
+
+/* A box of its own rather than two grid tracks: it is what the tooltip hangs
+   off on a locked row, and `display: contents` would leave nothing to hover. */
+.boxes {
+  display: grid;
+  grid-template-columns: 56px 56px;
+  align-items: start;
+}
+
+.head {
+  padding-bottom: 6px;
+  border-bottom: 1px solid;
+  border-color: inherit;
+}
+
+/* Tighter than the roles' label: "REVOKE" has to sit inside its own column or
+   the two headings run into each other and name neither box. */
+.head .boxes > * {
+  justify-self: center;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+}
+
+.row {
   padding: 12px 0;
   border-bottom: 1px solid;
   border-color: inherit;
@@ -53,12 +82,19 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  flex: 1 1 320px;
   min-width: 0;
 }
 
 .name {
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lock {
+  display: inline-flex;
+  color: var(--shell-ink-dim);
 }
 
 .what {
@@ -73,20 +109,29 @@
 
 /* Aligned to the first line of the name rather than centred on a row whose
    height is set by the description under it. */
-.check {
-  flex: 0 0 auto;
+.grant,
+.revoke {
+  justify-self: center;
   margin-top: -6px;
 }
 
 /* Nothing is stored against this account, so a role is answering. Faded rather
    than recoloured, the way the library's filter chips show an inactive one: the
-   tick still has to read as a tick, just not as somebody's decision. */
-.row[data-stored='no'] .check {
+   tick still has to read as a tick, just not as somebody's decision. Only the
+   grant box fades — a revoke is never anything but somebody's decision. */
+.row[data-stored='no'] .grant {
   opacity: 0.45;
 }
 
-.clear {
-  flex: 0 0 auto;
-  font-size: 0.72rem;
-  white-space: nowrap;
+/* Locked is not the same as off, so the tick keeps its weight and only the box
+   around it recedes; otherwise a privilege that cannot be taken away reads as
+   one that is not held. */
+.row[data-locked='yes'] .revoke {
+  opacity: 0.25;
+}
+
+.legend {
+  display: block;
+  margin-top: 12px;
+  font-size: 0.75rem;
 }

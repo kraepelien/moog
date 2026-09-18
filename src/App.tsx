@@ -761,7 +761,12 @@ function Workspace({
                   )}
 
                   {route.name === 'users' && (
-                    <UsersPage users={users} onDecide={decidePrivilege} onRoles={setUserRoles} />
+                    <UsersPage
+                      users={users}
+                      viewerUid={session.user?.uid ?? null}
+                      onDecide={decidePrivilege}
+                      onRoles={setUserRoles}
+                    />
                   )}
                 </Stack>
               </RouteGuard>

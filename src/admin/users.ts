@@ -1,4 +1,4 @@
-import type { Privilege, Role } from '@access/privileges.ts'
+import { isProtected, type Privilege, type Role } from '@access/privileges.ts'
 
 /* An account as the administration page sees it: who they are, what they hold,
    and enough of a count to tell a real user from an empty one. Shared with the
@@ -46,4 +46,31 @@ export function matchesUser(user: AdminUser, query: string): boolean {
   return [user.name, user.email, user.uid].some(
     (field) => field !== null && field.toLowerCase().includes(wanted),
   )
+}
+
+/* Why a revoke would be refused, or null. Both reasons are the server's, and it
+   still refuses them; the editor asks so it can draw a locked tick rather than
+   offer a box whose only outcome is an error banner.
+
+   Self first, matching the order the service checks in, so the tooltip says
+   what the refusal would have said. The third refusal — never leaving nobody
+   holding AdminUsers — is deliberately not here: it counts across every
+   account, and a second copy of that count on this side is one that can
+   disagree with the one inside the write's transaction. */
+export function protectedReason(
+  user: AdminUser,
+  privilege: Privilege,
+  viewerUid: string | null,
+): string | null {
+  if (!isProtected(privilege)) return null
+
+  if (viewerUid !== null && user.uid === viewerUid) {
+    return `This is your own account, and ${privilege} is what you would need to put it back. Another administrator can take it from you.`
+  }
+
+  if (user.envAdmin) {
+    return `This address is listed in MOOG_ADMINS, which is how a locked-out install is recovered, so ${privilege} cannot be revoked from it. Take the address out of the environment and restart instead.`
+  }
+
+  return null
 }
