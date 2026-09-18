@@ -356,10 +356,25 @@ and `src/tones.ts` hands out `var()` references rather than values. Nothing else
 theme, the CSS modules and the inline `sx` colours all read the same properties, so repainting the
 app is one write per colour with no re-render and no component knowing a skin exists.
 
-Only the **inks** are declared. Every wash and every switched-on chip is a `color-mix` of one, so a
-skin is sixteen colours rather than forty-eight that have to be kept in step by hand — and a tag
-coloured by an admin gets the same three shades from `shadesOf` without a custom property existing
-for it.
+Every wash and every switched-on chip is a `color-mix` of an ink, so those are not declared and
+cannot drift — and a tag coloured by an admin gets the same three shades from `shadesOf` without a
+custom property existing for it. The status and input **edges** are the exception and are declared,
+because an edge mixed out of its own fill cannot be tried on its own, and trying them is the point
+of having them.
+
+One property per colour, which is occasionally a colour wearing two names. Red, amber and green have
+no property of their own: they are `--shell-error`, `--shell-warning` and `--shell-success`, because
+the Factory chip and something having gone wrong are the same red said twice, and two pickers for it
+is how they stop agreeing. `TONE_INK` in `tones.ts` is where a tone says which property holds it, and
+`TONE_SWATCH` is how anything asks — `toneForTag` answers with a tone, and a tone is no longer also a
+skin key.
+
+A swatch marked **`pending`** is declared and settable and nothing reads it yet. The Layout page says
+so in the field, because a picker that repaints nothing is otherwise a picker that looks broken, and
+`test/skin.test.ts` fails if the flag is wrong in either direction — so pointing a surface at one of
+these properties is two edits, not one. The same test fails on a `var()` naming a property no
+stylesheet declares, which is the quiet half of a rename: it draws as though the rule were never
+written.
 
 A skin is **partial**: a key it leaves out is the stylesheet's value, so adding a colour to
 `SKIN_SWATCHES` never needs a migration, and choosing the default is *removing* the key rather than

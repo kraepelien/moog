@@ -3,9 +3,9 @@
 .prompt {
   margin: 0;
   padding: 12px 14px;
-  border: 1px solid var(--shell-edge);
+  border: 1px solid var(--shell-border);
   border-radius: 4px;
-  background: var(--shell-field);
+  background: var(--shell-input);
   color: var(--shell-ink);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.78rem;

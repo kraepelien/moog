@@ -34,14 +34,14 @@ describe('keeping a preview on the device', () => {
   test('gives back what it was given', () => {
     const { storage } = fakeStorage()
     const device = createDeviceSkin(storage)
-    expect(device.write({ card: '#123456' })).toBe(true)
-    expect(device.read()).toEqual({ card: '#123456' })
+    expect(device.write({ content: '#123456' })).toBe(true)
+    expect(device.read()).toEqual({ content: '#123456' })
   })
 
   test('takes the entry away rather than storing an empty skin', () => {
     const { storage, held } = fakeStorage()
     const device = createDeviceSkin(storage)
-    device.write({ card: '#123456' })
+    device.write({ content: '#123456' })
     device.write({})
     expect(held.size).toBe(0)
     expect(device.read()).toEqual({})
@@ -65,8 +65,8 @@ describe('an entry it did not write', () => {
   /* This lands in a style attribute before the first render, so a hand-edited
      entry is the same untrusted input a request body was. */
   test('keeps the colours and drops everything else', () => {
-    const seed = '{"page":"rebeccapurple","card":"#0E0E11","wallpaper":"#ffffff"}'
-    expect(createDeviceSkin(fakeStorage(seed).storage).read()).toEqual({ card: '#0e0e11' })
+    const seed = '{"background":"rebeccapurple","content":"#0E0E11","wallpaper":"#ffffff"}'
+    expect(createDeviceSkin(fakeStorage(seed).storage).read()).toEqual({ content: '#0e0e11' })
   })
 })
 
@@ -76,12 +76,12 @@ describe('a browser that will not keep anything', () => {
   })
 
   test('says so instead of throwing, so the page can tell somebody', () => {
-    expect(createDeviceSkin(throwing).write({ card: '#123456' })).toBe(false)
+    expect(createDeviceSkin(throwing).write({ content: '#123456' })).toBe(false)
   })
 
   test('is the same answer when there is no storage at all', () => {
     const device = createDeviceSkin(null)
     expect(device.read()).toEqual({})
-    expect(device.write({ card: '#123456' })).toBe(false)
+    expect(device.write({ content: '#123456' })).toBe(false)
   })
 })

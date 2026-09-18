@@ -11,6 +11,7 @@ import {
   shadesOf,
   tagColour,
   TONE_COLOURS,
+  type Tone,
   toneForTag,
 } from '@/tones.ts'
 
@@ -21,14 +22,16 @@ import {
 
 describe('sifting a skin', () => {
   test('keeps a colour for a key the app knows', () => {
-    expect(cleanSkin({ page: '#112233', green: '#ABC' })).toEqual({
-      page: '#112233',
-      green: '#abc',
+    expect(cleanSkin({ background: '#112233', success: '#ABC' })).toEqual({
+      background: '#112233',
+      success: '#abc',
     })
   })
 
   test('drops a key nothing declares, so a newer build cannot write into this one', () => {
-    expect(cleanSkin({ page: '#112233', wallpaper: '#ffffff' })).toEqual({ page: '#112233' })
+    expect(cleanSkin({ background: '#112233', wallpaper: '#ffffff' })).toEqual({
+      background: '#112233',
+    })
   })
 
   /* A skin ends up in a style attribute, so a value that is not a colour is a
@@ -41,7 +44,7 @@ describe('sifting a skin', () => {
     ['not a string', 7],
   ])('refuses %s', (_label, value) => {
     expect(isHexColour(value)).toBe(false)
-    expect(cleanSkin({ page: value })).toEqual({})
+    expect(cleanSkin({ background: value })).toEqual({})
   })
 
   test('is unbothered by something that is not an object at all', () => {
@@ -55,9 +58,9 @@ describe('painting it', () => {
 
   test('writes each chosen colour onto the property that draws it', () => {
     const element = root()
-    applySkin({ page: '#101010', green: '#00ff00' }, element)
-    expect(element.style.getPropertyValue('--shell-page')).toBe('#101010')
-    expect(element.style.getPropertyValue('--tone-green-ink')).toBe('#00ff00')
+    applySkin({ background: '#101010', success: '#00ff00' }, element)
+    expect(element.style.getPropertyValue('--shell-background')).toBe('#101010')
+    expect(element.style.getPropertyValue('--shell-success')).toBe('#00ff00')
   })
 
   /* Removed rather than left behind, so putting a colour back to the default is
@@ -65,9 +68,9 @@ describe('painting it', () => {
      edit without knowing the stylesheet's value. */
   test('takes a property back off when the skin stops naming it', () => {
     const element = root()
-    applySkin({ page: '#101010' }, element)
+    applySkin({ background: '#101010' }, element)
     applySkin({}, element)
-    expect(element.style.getPropertyValue('--shell-page')).toBe('')
+    expect(element.style.getPropertyValue('--shell-background')).toBe('')
   })
 })
 
@@ -109,9 +112,68 @@ describe('the defaults written down twice', () => {
   })
 
   test('are what an untouched field shows', () => {
-    expect(skinValue({}, 'page')).toBe(DEFAULT_SKIN.page!)
-    expect(skinValue({ page: '#123456' }, 'page')).toBe('#123456')
+    expect(skinValue({}, 'background')).toBe(DEFAULT_SKIN.background!)
+    expect(skinValue({ background: '#123456' }, 'background')).toBe('#123456')
   })
+
+  /* Red, amber and green have no property and no swatch of their own: the
+     status colour is the tone, mixed into the washes and handed out as the ink.
+     Giving the tone its own hex back would leave the two free to drift while
+     both tests above still passed. */
+  test.each([
+    ['red', 'error'],
+    ['amber', 'warning'],
+    ['green', 'success'],
+  ])('the %s tone is the %s colour rather than a copy of it', (tone, status) => {
+    expect(TONE_COLOURS[tone as Tone].ink).toBe(`var(--shell-${status})`)
+    expect(sheets.get('shell')!).not.toContain(`--tone-${tone}-ink`)
+    expect(SKIN_KEYS).not.toContain(tone)
+  })
+})
+
+/* `pending` is the page's claim that a picker will not repaint anything yet, so
+   it is worth only as much as its being true: a colour something already reads
+   must not be marked, and one nothing reads must be. Wiring a surface up is
+   therefore two edits, and forgetting the second fails here rather than in a
+   field somebody drags and disbelieves. */
+describe('a colour that is settable and not yet applied', () => {
+  const source = new Map(
+    [...new Bun.Glob('**/*.{css,ts,tsx}').scanSync('src')].map((path) => [
+      path,
+      readFileSync(new URL(`../src/${path}`, import.meta.url), 'utf8'),
+    ]),
+  )
+
+  test.each(SKIN_SWATCHES.map((swatch) => [swatch.key, swatch] as const))(
+    '%s is marked exactly when nothing reads it',
+    (_key, swatch) => {
+      const read = [...source].some(([, text]) => text.includes(`var(${swatch.property})`))
+      expect([swatch.key, read]).toEqual([swatch.key, swatch.pending !== true])
+    },
+  )
+})
+
+/* The other way a colour goes missing, and the quieter one: `var()` on a
+   property nothing declares is not an error anywhere. It draws as though the
+   rule had not been written, which on a colour looks like a component that was
+   never styled — so renaming a property and leaving one reader behind survives
+   the build, the linter and the eye.
+
+   Whole names only. `tones.ts` builds a tone's three properties by
+   interpolation, and half a name is not something this can check; what covers
+   those is that every tone has a chip on the Layout page. */
+test('nothing asks for a custom property no stylesheet declares', () => {
+  const read = (path: string) => readFileSync(new URL(`../src/${path}`, import.meta.url), 'utf8')
+  const files = [...new Bun.Glob('**/*.{css,ts,tsx}').scanSync('src')]
+  const declared = new Set(
+    files.flatMap((path) => [...read(path).matchAll(/^\s*(--[\w-]+):/gm)].map(([, name]) => name!)),
+  )
+
+  for (const path of files) {
+    for (const [, asked] of read(path).matchAll(/var\((--[\w-]+)\)/g)) {
+      expect([path, asked, declared.has(asked!)]).toEqual([path, asked, true])
+    }
+  }
 })
 
 describe('a tag that was given a colour', () => {

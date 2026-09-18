@@ -55,6 +55,21 @@ export function skinChanges(skin: Skin): readonly ColourChange[] {
   return changes
 }
 
+/* A colour nothing reads yet is still worth changing the default of, because it
+   is what the surface will be pointed at. Said out loud all the same: an agent
+   that made the change, reloaded, saw no difference and went looking for what
+   it had broken would be right to. */
+function notYetDrawn(changes: readonly ColourChange[]): readonly string[] {
+  const pending = changes.filter(({ swatch }) => swatch.pending)
+  if (pending.length === 0) return []
+  const named = pending.map(({ swatch }) => swatch.label).join(', ')
+  const them = pending.length === 1 ? 'it' : 'them'
+  return [
+    `Nothing reads ${named} yet, so changing ${them} repaints nothing. Set the default and leave it at that; pointing a surface at the property is a separate change.`,
+    '',
+  ]
+}
+
 export function exportPrompt(changes: readonly ColourChange[]): string {
   const colours = changes.length === 1 ? 'colour' : 'colours'
   const lines = changes.map(
@@ -74,6 +89,7 @@ export function exportPrompt(changes: readonly ColourChange[]): string {
     '',
     ...lines,
     '',
+    ...notYetDrawn(changes),
     'Change nothing else. These are the defaults the app ships with, not a stored setting: there is no server-side skin and no database row to update.',
     '',
     'Then run `bun test` and `bun run lint`, and open a pull request saying what each colour was and what it became.',

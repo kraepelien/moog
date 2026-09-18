@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { AdminPage } from '@admin/AdminPage.tsx'
 import type { TagInUse } from '@admin/tags.ts'
-import { DEFAULT_SKIN, toneForTag, type Skin } from '@/tones.ts'
+import { DEFAULT_SKIN, toneForTag, TONE_SWATCH, type Skin } from '@/tones.ts'
 
 afterEach(cleanup)
 
@@ -104,14 +104,14 @@ describe('the colour of a tag', () => {
 
   test('opens on the colour the name hashes to, where nobody has chosen one', () => {
     renderPage()
-    expect(swatch('Bass').value).toBe(DEFAULT_SKIN[toneForTag('Bass')]!)
-    expect(swatch('Lead').value).toBe(DEFAULT_SKIN[toneForTag('Lead')]!)
+    expect(swatch('Bass').value).toBe(DEFAULT_SKIN[TONE_SWATCH[toneForTag('Bass')]]!)
+    expect(swatch('Lead').value).toBe(DEFAULT_SKIN[TONE_SWATCH[toneForTag('Lead')]]!)
   })
 
   /* Which is what stops the field going stale the day somebody repaints a tone
      on the Layout page: the hash names a tone, not a hex. */
   test('follows the skin the app is painted in', () => {
-    renderPage(TAGS, { [toneForTag('Bass')]: '#123456' })
+    renderPage(TAGS, { [TONE_SWATCH[toneForTag('Bass')]]: '#123456' })
     expect(swatch('Bass').value).toBe('#123456')
   })
 

@@ -8,22 +8,33 @@
    which is why tones.ts hands out `var()` references rather than the hexes
    below. These hexes are what the app ships with; changing one is a commit.
 
-   Only the inks are given. Every wash and every edge is a color-mix of one, so
-   a skin is sixteen colours rather than forty-eight kept in step by hand. */
+   The washes are still color-mixes of an ink, so a hover stays one colour
+   rather than four that drift. The edges below are given rather than mixed,
+   because an edge mixed from its own fill cannot be tried on its own, and
+   trying them is what they are here for. */
 
 :root {
-  --shell-page: #000000;
-  --shell-card: #101012;
-  --shell-field: #19191e;
-  --shell-edge: #1d1d24;
+  --shell-background: #000000;
+  --shell-content: #101012;
+  --shell-border: #1d1d24;
   --shell-ink: #e9e9ec;
   --shell-ink-dim: #8b8b95;
   --shell-star: #f2b01e;
 
-  /* The bar across the top, which is the page's colour until somebody says
-     otherwise, and its own ink so a light bar can be given dark lettering. */
-  --shell-bar: #101012;
-  --shell-bar-ink: #e9e9ec;
+  /* The bar across the top, which is the background's colour until somebody
+     says otherwise, and its own ink so a light bar can be given dark
+     lettering. */
+  --shell-header: #101012;
+  --shell-header-ink: #e9e9ec;
+
+  /* The nav, whichever side it is hung on. Its own rather than the content's,
+     so the way out of a page can be told from the page. */
+  --shell-menu: #101012;
+
+  /* Every other row of a long list. A shade off the content it stripes, not a
+     second kind of row: the eye is being helped across to a rating, not told
+     that something differs. */
+  --shell-alternate: #141418;
 
   /* What the pointer lays over whatever is under it. One ink, mixed to two
      strengths below: a hover is the same gesture on a library row, a table row,
@@ -37,10 +48,34 @@
      unreadable with nothing to set. */
   --shell-on-tone: #0e0e11;
 
-  --tone-red-ink: #f2594b;
+  /* Said in colour, each with the edge that bounds it. Three of them are also
+     the red, amber and green a chip is drawn in, and there is no second
+     property for the tone: the Factory chip and a thing having gone wrong are
+     the same red said twice, so the washes below mix from these directly.
+
+     Notification is its own rather than the blue tone. It starts at the same
+     hex, but an information banner and "this patch is yours" are two statements
+     that only happen to agree today. */
+  --shell-notification: #74aaff;
+  --shell-notification-border: #35507a;
+  --shell-success: #69dd94;
+  --shell-success-border: #2f6f47;
+  --shell-warning: #e8c257;
+  --shell-warning-border: #7a6426;
+  --shell-error: #f2594b;
+  --shell-error-border: #7e2f27;
+
+  /* A box you can type in, at rest and with the caret in it. Three each rather
+     than one: a field that changes only its edge on focus is missed on a dense
+     form, and one that changes only its fill loses the edge against the card. */
+  --shell-input: #19191e;
+  --shell-input-border: #2a2a33;
+  --shell-input-color: #e9e9ec;
+  --shell-input-active: #1f1f27;
+  --shell-input-active-border: #74aaff;
+  --shell-input-active-color: #ffffff;
+
   --tone-pink-ink: #ff6f9c;
-  --tone-amber-ink: #e8c257;
-  --tone-green-ink: #69dd94;
   --tone-blue-ink: #74aaff;
   --tone-violet-ink: #b78bff;
   --tone-grey-ink: #9a9aa4;
@@ -65,14 +100,14 @@
    a filled chip reads as a button, and the rows already have real buttons in
    them. 12% is a label, 26% the same label switched on. */
 :root {
-  --tone-red-field: color-mix(in srgb, var(--tone-red-ink) 12%, transparent);
-  --tone-red-strong: color-mix(in srgb, var(--tone-red-ink) 26%, transparent);
+  --tone-red-field: color-mix(in srgb, var(--shell-error) 12%, transparent);
+  --tone-red-strong: color-mix(in srgb, var(--shell-error) 26%, transparent);
   --tone-pink-field: color-mix(in srgb, var(--tone-pink-ink) 12%, transparent);
   --tone-pink-strong: color-mix(in srgb, var(--tone-pink-ink) 26%, transparent);
-  --tone-amber-field: color-mix(in srgb, var(--tone-amber-ink) 12%, transparent);
-  --tone-amber-strong: color-mix(in srgb, var(--tone-amber-ink) 26%, transparent);
-  --tone-green-field: color-mix(in srgb, var(--tone-green-ink) 12%, transparent);
-  --tone-green-strong: color-mix(in srgb, var(--tone-green-ink) 26%, transparent);
+  --tone-amber-field: color-mix(in srgb, var(--shell-warning) 12%, transparent);
+  --tone-amber-strong: color-mix(in srgb, var(--shell-warning) 26%, transparent);
+  --tone-green-field: color-mix(in srgb, var(--shell-success) 12%, transparent);
+  --tone-green-strong: color-mix(in srgb, var(--shell-success) 26%, transparent);
   --tone-blue-field: color-mix(in srgb, var(--tone-blue-ink) 12%, transparent);
   --tone-blue-strong: color-mix(in srgb, var(--tone-blue-ink) 26%, transparent);
   --tone-violet-field: color-mix(in srgb, var(--tone-violet-ink) 12%, transparent);

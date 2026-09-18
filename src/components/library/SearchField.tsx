@@ -39,7 +39,7 @@ export function SearchField({
       placeholder={placeholder}
       onChange={(event) => onChange(event.target.value)}
       sx={{
-        '& .MuiOutlinedInput-root': { backgroundColor: SHELL.field, borderRadius: '6px' },
+        '& .MuiOutlinedInput-root': { backgroundColor: SHELL.input, borderRadius: '6px' },
         '& .MuiOutlinedInput-notchedOutline': { borderColor: 'transparent' },
         '& .MuiInputAdornment-root': { color: 'text.secondary' },
       }}
