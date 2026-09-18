@@ -89,7 +89,7 @@ describe('MUI chrome under the app theme', () => {
    own chrome along with everything else, without the theme being rebuilt. A
    palette of hexes would render perfectly well and quietly stop doing this. */
 test("a saved skin reaches MUI's palette", () => {
-  applySkin({ card: '#123456' }, document.documentElement)
+  applySkin({ content: '#123456' }, document.documentElement)
   render(
     <ThemeProvider theme={theme}>
       <Paper data-testid="card">Card</Paper>

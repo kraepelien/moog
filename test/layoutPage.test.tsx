@@ -36,22 +36,22 @@ const button = (name: string) => screen.getByRole('button', { name })
 describe('choosing a colour', () => {
   test('reports it under the key that draws it', () => {
     const reported = renderPage()
-    typeHex('Card', '#123456')
-    expect(reported).toEqual([{ card: '#123456' }])
+    typeHex('Content', '#123456')
+    expect(reported).toEqual([{ content: '#123456' }])
   })
 
   /* Typing the stylesheet's own colour back in is how a field is undone, and it
      has to leave nothing behind or the export would offer `#x → #x`. */
   test('drops the key again when the colour goes back to the default', () => {
-    const reported = renderPage({ start: { card: '#123456' } })
-    typeHex('Card', DEFAULT_SKIN.card!)
+    const reported = renderPage({ start: { content: '#123456' } })
+    typeHex('Content', DEFAULT_SKIN.content!)
     expect(reported).toEqual([{}])
   })
 
   test('starts each field at what the app is actually drawing with', () => {
-    renderPage({ start: { card: '#123456' } })
-    expect((hexBox('Card') as HTMLInputElement).value).toBe('#123456')
-    expect((hexBox('Page') as HTMLInputElement).value).toBe(DEFAULT_SKIN.page!)
+    renderPage({ start: { content: '#123456' } })
+    expect((hexBox('Content') as HTMLInputElement).value).toBe('#123456')
+    expect((hexBox('Background') as HTMLInputElement).value).toBe(DEFAULT_SKIN.background!)
   })
 })
 
@@ -70,7 +70,7 @@ describe('what it says it is doing', () => {
   })
 
   test('has no Save, because there is nothing to save to', () => {
-    renderPage({ start: { card: '#123456' } })
+    renderPage({ start: { content: '#123456' } })
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Revert' })).toBeNull()
   })
@@ -95,7 +95,7 @@ describe('going back to the colours the app ships with', () => {
   })
 
   test('clears every choice at once', () => {
-    const reported = renderPage({ start: { card: '#123456', blue: '#2266ff' } })
+    const reported = renderPage({ start: { content: '#123456', blue: '#2266ff' } })
     fireEvent.click(button('Defaults'))
     expect(reported).toEqual([{}])
   })

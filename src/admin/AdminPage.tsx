@@ -17,7 +17,7 @@ import { ColourField } from './ColourField.tsx'
 import { MAX_TAG_LENGTH, type TagInUse, tagNameProblem } from './tags.ts'
 import { ToneChip } from '@components/library/ToneChip.tsx'
 import { skinValue } from '@/skin.ts'
-import { shadesOf, toneForTag, TONE_COLOURS, type Skin } from '@/tones.ts'
+import { shadesOf, toneForTag, TONE_COLOURS, TONE_SWATCH, type Skin } from '@/tones.ts'
 
 function BinGlyph() {
   return (
@@ -121,7 +121,7 @@ export function AdminPage({
                      colour beside a chip drawn in another reads as the page
                      having lost track of which is which. Clear is what says
                      whether it was chosen — it is disabled until it was. */
-                  const worn = tag.colour ?? skinValue(skin, toneForTag(tag.name))
+                  const worn = tag.colour ?? skinValue(skin, TONE_SWATCH[toneForTag(tag.name)])
                   return (
                   <TableRow key={tag.id} hover>
                     {/* The chip is the preview: it is the same component every

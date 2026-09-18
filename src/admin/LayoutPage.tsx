@@ -107,7 +107,10 @@ export function LayoutPage({
                 <ColourField
                   key={swatch.key}
                   label={swatch.label}
-                  hint={swatch.hint}
+                  /* A colour nothing reads yet says so in the one place
+                     somebody would otherwise conclude the picker is broken:
+                     the page repaints as you drag, except for these. */
+                  hint={swatch.pending ? `${swatch.hint}, once applied` : swatch.hint}
                   value={skinValue(skin, swatch.key)}
                   onChange={(hex) => set(swatch.key, hex)}
                 />

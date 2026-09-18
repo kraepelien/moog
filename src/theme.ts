@@ -24,9 +24,9 @@ export const theme = createTheme({
   },
   palette: {
     mode: 'dark',
-    background: { default: SHELL.page, paper: SHELL.card },
+    background: { default: SHELL.background, paper: SHELL.content },
     text: { primary: SHELL.ink, secondary: SHELL.inkDim },
-    divider: SHELL.edge,
+    divider: SHELL.border,
     /* MUI hovers its own table rows, menu items and tabs out of this, so
        handing it the same property the library's rows use is what stops a skin
        repainting half the hovers on the page and leaving the rest white. */
@@ -54,14 +54,14 @@ export const theme = createTheme({
       defaultProps: { elevation: 0, color: 'default' },
       styleOverrides: {
         root: {
-          backgroundColor: SHELL.bar,
-          color: SHELL.barInk,
-          borderBottom: `1px solid ${SHELL.edge}`,
+          backgroundColor: SHELL.header,
+          color: SHELL.headerInk,
+          borderBottom: `1px solid ${SHELL.border}`,
         },
       },
     },
-    /* Cards are told apart from the page by their own edge, so the default
-       elevation shadow would only smudge it. */
+    /* Content is told apart from the background by its own border, so the
+       default elevation shadow would only smudge it. */
     MuiPaper: {
       defaultProps: { elevation: 0 },
       styleOverrides: {

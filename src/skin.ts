@@ -6,7 +6,7 @@ import { DEFAULT_SKIN, SKIN_SWATCHES, type Skin } from '@/tones.ts'
  * all come to the same thing: nothing has to be told. MUI's chrome, the CSS
  * modules and the inline styles all read the same properties, a repaint is one
  * write per colour with no re-render, and a component can go on asking for
- * `SHELL.card` without knowing a skin exists.
+ * `SHELL.content` without knowing a skin exists.
  *
  * A key a skin leaves out is *removed* rather than left as it was, so putting a
  * colour back to the default is the same operation as setting one, and the

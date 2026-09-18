@@ -18,24 +18,24 @@ describe('what counts as a change', () => {
   /* The page drops a key whose colour is the default, but a session entry
      edited by hand need not, and `#000000 → #000000` is not an instruction. */
   test('not a colour that happens to equal the default', () => {
-    expect(skinChanges({ page: DEFAULT_SKIN.page! })).toEqual([])
+    expect(skinChanges({ background: DEFAULT_SKIN.background! })).toEqual([])
   })
 
   test('not something that is not a colour', () => {
-    expect(skinChanges({ page: 'rebeccapurple' })).toEqual([])
-    expect(skinChanges({ page: '#fff; background: url(http://elsewhere/)' })).toEqual([])
+    expect(skinChanges({ background: 'rebeccapurple' })).toEqual([])
+    expect(skinChanges({ background: '#fff; background: url(http://elsewhere/)' })).toEqual([])
   })
 
   test('the ones that differ, in the order the fields are drawn', () => {
-    const changed = skinChanges({ blue: '#2266ff', card: '#123456' })
-    expect(changed.map((change) => change.swatch.key)).toEqual(['card', 'blue'])
-    expect(changed[0]).toMatchObject({ from: DEFAULT_SKIN.card!, to: '#123456' })
+    const changed = skinChanges({ blue: '#2266ff', content: '#123456' })
+    expect(changed.map((change) => change.swatch.key)).toEqual(['content', 'blue'])
+    expect(changed[0]).toMatchObject({ from: DEFAULT_SKIN.content!, to: '#123456' })
   })
 })
 
 describe('the prompt it writes', () => {
   /* Each swatch on its own, so a colour whose label or property is wrong cannot
-     hide behind fifteen that are right. */
+     hide behind the rest that are right. */
   test.each(SKIN_SWATCHES.map((swatch) => [swatch.key, swatch] as const))(
     'names %s by its label, its property and what it is now',
     (_key, swatch) => {
@@ -48,19 +48,28 @@ describe('the prompt it writes', () => {
   )
 
   test('counts what it is asking for, and says it in the singular when it is one', () => {
-    expect(promptFor({ card: '#123456' }))
+    expect(promptFor({ content: '#123456' }))
       .toContain(`Set these 1 of the ${SKIN_SWATCHES.length} colours`)
-    expect(promptFor({ card: '#123456' })).toContain('Change the colour the moog app ships')
-    expect(promptFor({ card: '#123456', blue: '#2266ff' })).toContain('Change the colours')
+    expect(promptFor({ content: '#123456' })).toContain('Change the colour the moog app ships')
+    expect(promptFor({ content: '#123456', blue: '#2266ff' })).toContain('Change the colours')
   })
 
   test('asks for the pull request, which is the point of exporting one', () => {
-    expect(promptFor({ card: '#123456' })).toContain('open a pull request')
+    expect(promptFor({ content: '#123456' })).toContain('open a pull request')
+  })
+
+  /* Exporting a colour nothing reads yet is a real thing to want, and the
+     instruction is the same. What differs is that the change is invisible, and
+     an agent not told so would take that for a mistake of its own. */
+  test('warns when a colour it is asking for repaints nothing yet', () => {
+    const pending = SKIN_SWATCHES.find((swatch) => swatch.pending)!
+    expect(promptFor({ [pending.key]: '#123456' })).toContain('repaints nothing')
+    expect(promptFor({ content: '#123456' })).not.toContain('repaints nothing')
   })
 })
 
 describe('the files it tells somebody to edit', () => {
-  const named = [...promptFor({ card: '#123456' }).matchAll(/[\w/.-]+\.(?:ts|tsx|css)/g)].map(
+  const named = [...promptFor({ content: '#123456' }).matchAll(/[\w/.-]+\.(?:ts|tsx|css)/g)].map(
     (match) => match[0],
   )
 
@@ -83,13 +92,13 @@ describe('the files it tells somebody to edit', () => {
      always named the chrome's would send somebody to a file without the
      property in it. */
   test('name the stylesheet the changed colour is actually declared in', () => {
-    expect(promptFor({ card: '#123456' })).toContain(SKIN_SHEETS.shell)
-    expect(promptFor({ card: '#123456' })).not.toContain(SKIN_SHEETS.panel)
+    expect(promptFor({ content: '#123456' })).toContain(SKIN_SHEETS.shell)
+    expect(promptFor({ content: '#123456' })).not.toContain(SKIN_SHEETS.panel)
 
     expect(promptFor({ capOrange: '#123456' })).toContain(SKIN_SHEETS.panel)
     expect(promptFor({ capOrange: '#123456' })).not.toContain(SKIN_SHEETS.shell)
 
-    const both = promptFor({ card: '#123456', capOrange: '#123456' })
+    const both = promptFor({ content: '#123456', capOrange: '#123456' })
     expect(both).toContain(SKIN_SHEETS.shell)
     expect(both).toContain(SKIN_SHEETS.panel)
   })

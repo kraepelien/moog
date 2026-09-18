@@ -23,7 +23,7 @@
    filled row reads as hovered, and the list is hovered all the time. */
 .row[data-open] {
   background: var(--tone-green-field);
-  box-shadow: inset 3px 0 0 var(--tone-green-ink);
+  box-shadow: inset 3px 0 0 var(--shell-success);
 }
 
 /* The columns collapse rather than shrink: at this width the chips have stopped

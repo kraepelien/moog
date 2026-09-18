@@ -36,14 +36,14 @@ test('names a draft nobody has titled', () => {
 /* Colour is the only feedback a save gives now that nothing pops up to say so,
    which is why it is a resting state rather than a flash. */
 describe('whether the panel has been written down', () => {
-  test('says unsaved in amber', () => {
+  test('says unsaved in the warning colour', () => {
     renderBar({ title: { text: 'Sub Bass', unsaved: true } })
-    expect(nameColour()).toBe(DEFAULT_SKIN.amber!)
+    expect(nameColour()).toBe(DEFAULT_SKIN.warning!)
   })
 
-  test('says saved in green', () => {
+  test('says saved in the success colour', () => {
     renderBar({ title: { text: 'Sub Bass', unsaved: false } })
-    expect(nameColour()).toBe(DEFAULT_SKIN.green!)
+    expect(nameColour()).toBe(DEFAULT_SKIN.success!)
   })
 })
 

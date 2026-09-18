@@ -30,8 +30,22 @@ export function shadesOf(ink: string): ToneColour {
   }
 }
 
+/* Which property holds a tone's ink. Three of them are a status colour under
+   another name and say so: the Factory chip and a thing having gone wrong are
+   the same red, so there is one property, one swatch and nothing to keep in
+   step. The other four have only the one meaning and hold their own. */
+const TONE_INK: Record<Tone, string> = {
+  red: '--shell-error',
+  amber: '--shell-warning',
+  green: '--shell-success',
+  pink: '--tone-pink-ink',
+  blue: '--tone-blue-ink',
+  violet: '--tone-violet-ink',
+  grey: '--tone-grey-ink',
+}
+
 const toneVars = (tone: Tone): ToneColour => ({
-  ink: `var(--tone-${tone}-ink)`,
+  ink: `var(${TONE_INK[tone]})`,
   field: `var(--tone-${tone}-field)`,
   strong: `var(--tone-${tone}-strong)`,
 })
@@ -66,18 +80,23 @@ export function tagColour(palette: TagPalette, tag: string): ToneColour {
   return chosen === undefined ? TONE_COLOURS[toneForTag(tag)] : shadesOf(chosen)
 }
 
-/* The page and its cards. The design puts the body at black and lifts each card
-   a little off it, so a card's edge is the only thing dividing them. */
+/* The background and what sits on it. The design puts the body at black and
+   lifts each block of content a little off it, so a border is the only thing
+   dividing them.
+
+   Only what something is actually drawn with. A colour that has a swatch and no
+   surface yet is reachable through `SKIN_SWATCHES` and belongs here on the day
+   something reads it. */
 export const SHELL = {
-  page: 'var(--shell-page)',
-  card: 'var(--shell-card)',
-  field: 'var(--shell-field)',
-  edge: 'var(--shell-edge)',
+  background: 'var(--shell-background)',
+  content: 'var(--shell-content)',
+  input: 'var(--shell-input)',
+  border: 'var(--shell-border)',
   ink: 'var(--shell-ink)',
   inkDim: 'var(--shell-ink-dim)',
   star: 'var(--shell-star)',
-  bar: 'var(--shell-bar)',
-  barInk: 'var(--shell-bar-ink)',
+  header: 'var(--shell-header)',
+  headerInk: 'var(--shell-header-ink)',
   hoverFaint: 'var(--shell-hover-faint)',
   hoverStrong: 'var(--shell-hover-strong)',
   /* Written on a filled tone, wherever one is filled. */
@@ -109,27 +128,48 @@ export interface SkinSwatch {
   readonly group: SkinGroup
   readonly hint: string
   readonly sheet: SkinSheet
+  /* Declared and settable, but nothing reads it yet. Said out loud on the page
+     that edits it, because a picker that moves and repaints nothing is
+     indistinguishable from a broken one. Drop the flag as each surface is
+     pointed at its property. */
+  readonly pending?: true
 }
 
 export const SKIN_SWATCHES: readonly SkinSwatch[] = [
-  { key: 'page', property: '--shell-page', label: 'Page', group: 'Shell', hint: 'Behind everything', sheet: 'shell' },
-  { key: 'card', property: '--shell-card', label: 'Card', group: 'Shell', hint: 'Every panel and list', sheet: 'shell' },
-  { key: 'field', property: '--shell-field', label: 'Field', group: 'Shell', hint: 'Inside a text box', sheet: 'shell' },
-  { key: 'edge', property: '--shell-edge', label: 'Edge', group: 'Shell', hint: 'Every rule and border', sheet: 'shell' },
+  { key: 'background', property: '--shell-background', label: 'Background', group: 'Shell', hint: 'Behind everything', sheet: 'shell' },
+  { key: 'menu', property: '--shell-menu', label: 'Menu', group: 'Shell', hint: 'The nav, rail or top', sheet: 'shell', pending: true },
+  { key: 'header', property: '--shell-header', label: 'Header', group: 'Shell', hint: 'The bar across the top', sheet: 'shell' },
+  { key: 'headerInk', property: '--shell-header-ink', label: 'Header ink', group: 'Shell', hint: 'Its tabs and icons', sheet: 'shell' },
+  { key: 'content', property: '--shell-content', label: 'Content', group: 'Shell', hint: 'Every panel and list', sheet: 'shell' },
+  { key: 'alternate', property: '--shell-alternate', label: 'Alternate', group: 'Shell', hint: 'Every other row', sheet: 'shell', pending: true },
+  { key: 'hover', property: '--shell-hover', label: 'Hover', group: 'Shell', hint: 'The wash under the pointer', sheet: 'shell' },
+  { key: 'border', property: '--shell-border', label: 'Border', group: 'Shell', hint: 'Every rule and edge', sheet: 'shell' },
   { key: 'ink', property: '--shell-ink', label: 'Ink', group: 'Shell', hint: 'Body text', sheet: 'shell' },
   { key: 'inkDim', property: '--shell-ink-dim', label: 'Dim ink', group: 'Shell', hint: 'Captions and counts', sheet: 'shell' },
   { key: 'star', property: '--shell-star', label: 'Star', group: 'Shell', hint: "Everyone's rating", sheet: 'shell' },
-  { key: 'bar', property: '--shell-bar', label: 'Top bar', group: 'Shell', hint: 'The header strip', sheet: 'shell' },
-  { key: 'barInk', property: '--shell-bar-ink', label: 'Top bar ink', group: 'Shell', hint: 'Its tabs and icons', sheet: 'shell' },
-  { key: 'red', property: '--tone-red-ink', label: 'Red', group: 'Tones', hint: 'Factory', sheet: 'shell' },
+  { key: 'onTone', property: '--shell-on-tone', label: 'Ink on a colour', group: 'Shell', hint: 'Lettering on a filled chip', sheet: 'shell' },
+  { key: 'notification', property: '--shell-notification', label: 'Notification', group: 'Shell', hint: 'Something worth saying', sheet: 'shell', pending: true },
+  { key: 'notificationBorder', property: '--shell-notification-border', label: 'Notification border', group: 'Shell', hint: 'Around it', sheet: 'shell', pending: true },
+  { key: 'success', property: '--shell-success', label: 'Success', group: 'Shell', hint: 'Saved, synth, a tag', sheet: 'shell' },
+  { key: 'successBorder', property: '--shell-success-border', label: 'Success border', group: 'Shell', hint: 'Around it', sheet: 'shell', pending: true },
+  { key: 'warning', property: '--shell-warning', label: 'Warning', group: 'Shell', hint: 'Unsaved, public, a tag', sheet: 'shell' },
+  { key: 'warningBorder', property: '--shell-warning-border', label: 'Warning border', group: 'Shell', hint: 'Around it', sheet: 'shell', pending: true },
+  { key: 'error', property: '--shell-error', label: 'Error', group: 'Shell', hint: 'Factory, and what went wrong', sheet: 'shell' },
+  { key: 'errorBorder', property: '--shell-error-border', label: 'Error border', group: 'Shell', hint: 'Around it', sheet: 'shell', pending: true },
+  { key: 'input', property: '--shell-input', label: 'Input', group: 'Shell', hint: 'Inside a text box', sheet: 'shell' },
+  { key: 'inputBorder', property: '--shell-input-border', label: 'Input border', group: 'Shell', hint: 'Around one at rest', sheet: 'shell', pending: true },
+  { key: 'inputColor', property: '--shell-input-color', label: 'Input ink', group: 'Shell', hint: 'What you have typed', sheet: 'shell', pending: true },
+  { key: 'inputActive', property: '--shell-input-active', label: 'Input, active', group: 'Shell', hint: 'With the caret in it', sheet: 'shell', pending: true },
+  { key: 'inputActiveBorder', property: '--shell-input-active-border', label: 'Input border, active', group: 'Shell', hint: 'Around the one in use', sheet: 'shell', pending: true },
+  { key: 'inputActiveColor', property: '--shell-input-active-color', label: 'Input ink, active', group: 'Shell', hint: 'Typing into it', sheet: 'shell', pending: true },
+
+  /* Four of the seven. Red, amber and green are Success, Warning and Error
+     above: the chip and the status are one colour said twice, so the tone reads
+     the shell property rather than holding a hex of its own. */
   { key: 'pink', property: '--tone-pink-ink', label: 'Pink', group: 'Tones', hint: 'Delete, and a tag', sheet: 'shell' },
-  { key: 'amber', property: '--tone-amber-ink', label: 'Amber', group: 'Tones', hint: 'Unsaved, public, a tag', sheet: 'shell' },
-  { key: 'green', property: '--tone-green-ink', label: 'Green', group: 'Tones', hint: 'Saved, synth, a tag', sheet: 'shell' },
   { key: 'blue', property: '--tone-blue-ink', label: 'Blue', group: 'Tones', hint: 'Yours, and a tag', sheet: 'shell' },
   { key: 'violet', property: '--tone-violet-ink', label: 'Violet', group: 'Tones', hint: "Somebody else's, and a tag", sheet: 'shell' },
   { key: 'grey', property: '--tone-grey-ink', label: 'Grey', group: 'Tones', hint: 'Said without emphasis', sheet: 'shell' },
-  { key: 'hover', property: '--shell-hover', label: 'Hover', group: 'Shell', hint: 'The wash under the pointer', sheet: 'shell' },
-  { key: 'onTone', property: '--shell-on-tone', label: 'Ink on a colour', group: 'Shell', hint: 'Lettering on a filled chip', sheet: 'shell' },
 
   /* The instrument's own, from panelPalette.css. Measured off the scans rather
      than chosen, so they ship as they were sampled — and every one is settable
@@ -158,28 +198,56 @@ export const SKIN_SWATCHES: readonly SkinSwatch[] = [
 
 export const SKIN_KEYS: readonly string[] = SKIN_SWATCHES.map((swatch) => swatch.key)
 
+/* Which swatch a tone is drawn out of. Not the tone's own name: red, amber and
+   green are Error, Warning and Success, so anything wanting the hex a tag is
+   currently wearing has to ask rather than assume the two vocabularies still
+   agree — they did until a status owned the colour, and silently stopped.
+
+   Built off the property both sides already name, and eagerly, so a tone whose
+   ink no swatch declares fails at startup rather than as a picker that opens
+   on nothing. */
+export const TONE_SWATCH: Record<Tone, string> = Object.fromEntries(
+  TONES.map((tone) => {
+    const swatch = SKIN_SWATCHES.find((candidate) => candidate.property === TONE_INK[tone])
+    if (swatch === undefined) throw new Error(`No swatch declares ${TONE_INK[tone]}`)
+    return [tone, swatch.key]
+  }),
+) as Record<Tone, string>
+
 /* What the stylesheets declare, written out again so the page that edits a skin
    can show what a field will fall back to and offer to put it back.
    `test/skin.test.ts` fails if a copy ever disagrees with its sheet. */
 export const DEFAULT_SKIN: Readonly<Record<string, string>> = {
-  page: '#000000',
-  card: '#101012',
-  field: '#19191e',
-  edge: '#1d1d24',
+  background: '#000000',
+  menu: '#101012',
+  header: '#101012',
+  headerInk: '#e9e9ec',
+  content: '#101012',
+  alternate: '#141418',
+  hover: '#ffffff',
+  border: '#1d1d24',
   ink: '#e9e9ec',
   inkDim: '#8b8b95',
   star: '#f2b01e',
-  bar: '#101012',
-  barInk: '#e9e9ec',
-  red: '#f2594b',
+  onTone: '#0e0e11',
+  notification: '#74aaff',
+  notificationBorder: '#35507a',
+  success: '#69dd94',
+  successBorder: '#2f6f47',
+  warning: '#e8c257',
+  warningBorder: '#7a6426',
+  error: '#f2594b',
+  errorBorder: '#7e2f27',
+  input: '#19191e',
+  inputBorder: '#2a2a33',
+  inputColor: '#e9e9ec',
+  inputActive: '#1f1f27',
+  inputActiveBorder: '#74aaff',
+  inputActiveColor: '#ffffff',
   pink: '#ff6f9c',
-  amber: '#e8c257',
-  green: '#69dd94',
   blue: '#74aaff',
   violet: '#b78bff',
   grey: '#9a9aa4',
-  hover: '#ffffff',
-  onTone: '#0e0e11',
   panel: '#000000',
   panelInk: '#ffffff',
   capOrange: '#f37c3e',

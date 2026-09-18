@@ -175,7 +175,7 @@ export function SavePatchDialog({
           placeholder="Patch name"
           onChange={(event) => setFields({ ...fields, name: event.target.value })}
           className={styles.name}
-          sx={{ '& .MuiOutlinedInput-root': { backgroundColor: SHELL.field } }}
+          sx={{ '& .MuiOutlinedInput-root': { backgroundColor: SHELL.input } }}
           slotProps={{
             htmlInput: { 'aria-label': 'Patch name' },
             input: {
@@ -247,7 +247,7 @@ export function SavePatchDialog({
           placeholder="Patch notes"
           onChange={(event) => setFields({ ...fields, notes: event.target.value })}
           className={styles.notes}
-          sx={{ '& .MuiOutlinedInput-root': { backgroundColor: SHELL.field } }}
+          sx={{ '& .MuiOutlinedInput-root': { backgroundColor: SHELL.input } }}
           slotProps={{ htmlInput: { 'aria-label': 'Patch notes' } }}
         />
       </Box>

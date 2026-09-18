@@ -13,7 +13,7 @@
   align-items: center;
   gap: 32px;
   padding: 48px;
-  border: 1px solid var(--shell-edge);
+  border: 1px solid var(--shell-border);
   border-radius: 20px;
   /* A wash of the panel's own amber off the corner the curve sweeps under,
      over the card colour. Two layers rather than a gradient on the background
@@ -23,7 +23,7 @@
     color-mix(in srgb, var(--shell-star) 12%, transparent),
     transparent 62%
   );
-  background-color: var(--shell-card);
+  background-color: var(--shell-content);
 }
 
 @media (max-width: 860px) {
@@ -95,7 +95,7 @@
 }
 
 .secondary {
-  border: 1px solid var(--shell-edge);
+  border: 1px solid var(--shell-border);
   color: var(--shell-ink);
 }
 
@@ -135,7 +135,7 @@
   flex-direction: column;
   gap: 6px;
   padding-block-start: 14px;
-  border-block-start: 1px solid var(--shell-edge);
+  border-block-start: 1px solid var(--shell-border);
 }
 
 .kicker {
@@ -208,9 +208,9 @@
 .door {
   display: block;
   padding: 18px;
-  border: 1px solid var(--shell-edge);
+  border: 1px solid var(--shell-border);
   border-radius: 14px;
-  background-color: var(--shell-card);
+  background-color: var(--shell-content);
   color: inherit;
   font: inherit;
   text-align: start;
@@ -230,7 +230,7 @@
 
 .patch:hover,
 .door:hover {
-  background-color: var(--shell-field);
+  background-color: var(--shell-input);
   border-color: color-mix(in srgb, var(--shell-ink) 22%, transparent);
 }
 

@@ -3,6 +3,7 @@
 Everything that has landed on `main`, newest first. A pull request carries its link; a commit pushed
 straight to `main` has none to carry.
 
+- Give the shell a vocabulary and the colours to go with it
 - Say where the reference material comes from, and drop the two files nothing points at any more
 - [Put the menu across the top where the window is narrow, or wherever it is asked for](https://github.com/kraepelien/moog/pull/93)
 - [Ask for a pull request and get it merged, not just opened](https://github.com/kraepelien/moog/pull/92)
