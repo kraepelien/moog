@@ -1,8 +1,17 @@
 import { memo, useCallback, useId, useRef, useState } from 'react'
 import { positionIndex, stepBy, type StepKnobDef } from '@controls/stepKnob.ts'
-import { CENTRE, DETENT_ANGLES, LABEL_RADIUS, TICKS, VIEWBOX } from './artwork.ts'
-import { capRadiusAt } from './dialArtwork.ts'
-import { KnobBody } from './KnobBody.tsx'
+import {
+  BAKED_ANGLE,
+  CAP,
+  CENTRE,
+  DETENT_ANGLES,
+  INNER_RING,
+  LABEL_RADIUS,
+  OUTER_RING,
+  POINTER,
+  TICKS,
+  VIEWBOX,
+} from './artwork.ts'
 import { waveformGlyphs, type WaveformId } from './waveforms.ts'
 import { PositionPicker } from './PositionPicker.tsx'
 import styles from './StepKnob.module.css'
@@ -53,12 +62,20 @@ const Labels = memo(function Labels({ def }: { def: StepKnobDef }) {
   )
 })
 
-/* The width the ring this replaces was drawn at, so the selectors keep the
-   footprint the panel is laid out around: the ticks stay clear of the body and
-   the six labels stay where they were printed. */
-const BODY_WIDTH = 73
+/* Roughly forty nodes, and its prop is one number, so it re-renders only when
+   the knob actually turns. Dragging one knob must not repaint the rest. */
+const Body = memo(function Body({ angle }: { angle: number }) {
+  return (
+    <g transform={`rotate(${angle - BAKED_ANGLE} ${CENTRE.x} ${CENTRE.y})`}>
+      <path d={OUTER_RING} fillRule="evenodd" clipRule="evenodd" className={styles.outerRing} />
+      <path d={INNER_RING} className={styles.innerRing} />
+      <path d={POINTER} className={styles.pointer} />
+      <circle cx={CAP.cx} cy={CAP.cy} r={CAP.r} className={styles.cap} />
+    </g>
+  )
+})
 
-const CAP_RADIUS = capRadiusAt(BODY_WIDTH)
+const CAP_RADIUS = CAP.r
 
 /* The same mark that labels the detent, drawn again in the cap so the knob reads
    its own position the way the octave knob does. Scaled and centred from the
@@ -182,7 +199,7 @@ export function StepKnob({ def, value, onChange, hideHeader }: StepKnobProps) {
       >
         <path d={TICKS} className={styles.ticks} />
         <Labels def={def} />
-        <KnobBody angle={angle} centre={CENTRE} width={BODY_WIDTH} />
+        <Body angle={angle} />
         {current?.glyph && current.glyph in waveformGlyphs ? (
           <CapGlyph glyph={current.glyph as WaveformId} />
         ) : (
