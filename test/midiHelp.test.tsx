@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { cleanup, render, screen } from '@testing-library/react'
 import { MidiHelp } from '@components/MidiHelp.tsx'
+import { webMidiSupported } from '@audio/useMidi.ts'
 
 afterEach(() => {
   cleanup()
@@ -47,5 +48,18 @@ describe('the MIDI guide', () => {
   test('shows nothing at all while it is closed', () => {
     render(<MidiHelp open={false} onClose={() => {}} />)
     expect(screen.queryByText(/Play one key on screen first/i)).toBe(null)
+  })
+})
+
+describe('reading whether the browser can do it at all', () => {
+  /* The menu item that leads to the guide is labelled from this, so it answers
+     for somebody who never opens the dialog. */
+  test('says no where there is no Web MIDI', () => {
+    expect(webMidiSupported()).toBe(false)
+  })
+
+  test('says yes where there is', () => {
+    grant()
+    expect(webMidiSupported()).toBe(true)
   })
 })

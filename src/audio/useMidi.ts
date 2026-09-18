@@ -24,6 +24,13 @@ type MidiInputLike = {
   onmidimessage: ((event: { data: ArrayLike<number> | null }) => void) | null
 }
 
+/* Safari has no Web MIDI at all, and a browser without it fails silently: a
+   controller is never heard from. Read in one place so the request and the copy
+   explaining its absence cannot disagree. */
+export const webMidiSupported = (): boolean =>
+  typeof navigator !== 'undefined' &&
+  typeof (navigator as Navigator & { requestMIDIAccess?: unknown }).requestMIDIAccess === 'function'
+
 export function useMidi(onEvent: (event: MidiEvent) => void): () => void {
   /* The handler is read through a ref so that attaching to a port does not have
      to happen again every time the component renders with a new closure. Kept
@@ -46,12 +53,12 @@ export function useMidi(onEvent: (event: MidiEvent) => void): () => void {
   const connect = useCallback(() => {
     if (asked.current) return
     asked.current = true
+    if (!webMidiSupported()) return
     const request = (
       navigator as Navigator & {
-        requestMIDIAccess?: () => Promise<MidiLike>
+        requestMIDIAccess: () => Promise<MidiLike>
       }
     ).requestMIDIAccess
-    if (typeof request !== 'function') return
     void request
       .call(navigator)
       .then((granted) => {
