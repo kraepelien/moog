@@ -3,6 +3,7 @@
 Everything that has landed on `main`, newest first. A pull request carries its link; a commit pushed
 straight to `main` has none to carry.
 
+- Give the menu the whole family shape, and take the nav's edge off the content's
 - [Take the designer's palette, give every colour an opacity, and split the page up](https://github.com/kraepelien/moog/pull/101)
 - [Give the nav its own colour, and stripe the library](https://github.com/kraepelien/moog/pull/100)
 - [Give the shell a vocabulary and the colours to go with it](https://github.com/kraepelien/moog/pull/99)

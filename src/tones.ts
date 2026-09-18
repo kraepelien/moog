@@ -155,16 +155,20 @@ export const SKIN_SWATCHES: readonly SkinSwatch[] = [
   { key: 'star', property: '--star', label: 'Star', group: 'Page', hint: "Everyone's rating", sheet: 'shell' },
   { key: 'onTone', property: '--on-tone', label: 'Ink on a colour', group: 'Page', hint: 'Lettering on a filled chip', sheet: 'shell' },
 
-  /* `--menu-color-alt` is not the designer's: their list names the menu's fill
-     and its two lit states and stops there, which left every item you are not
-     on drawing with the content's dim ink — one field moving the nav and the
-     page under it together. There is no `--menu-color` beside it because
-     nothing in the nav rests at a bright ink: dim is the resting state, and
-     hover and the current page are the two that light up.
+  /* The border, the ink and the dim ink are not the designer's: their list names
+     the menu's fill and its two lit states and stops there, which left the rail's
+     edge and every item you are not standing on drawing with the content's, so
+     one field moved the nav and the page under it together.
 
-     The rail's edge is still the content's border, which is the other half of
-     the same seam and wants a name from whoever owns the palette. */
+     `--menu-color` is the odd one and is marked, because nothing in the nav
+     rests at a bright ink: dim is the resting state, and hover and the current
+     page are the two that light up, each with its own colour. It is declared so
+     the family has no hole in it — a colour somebody goes looking for and does
+     not find is the more expensive of the two mistakes — and the field says out
+     loud that it repaints nothing yet. */
   { key: 'menuBg', property: '--menu-bg', label: 'Menu', group: 'Menu', hint: 'The nav, rail or top', sheet: 'shell' },
+  { key: 'menuBorder', property: '--menu-border', label: 'Menu border', group: 'Menu', hint: 'The rule against the page', sheet: 'shell' },
+  { key: 'menuColor', property: '--menu-color', label: 'Menu ink', group: 'Menu', hint: 'The nav at rest', sheet: 'shell', pending: true },
   { key: 'menuColorAlt', property: '--menu-color-alt', label: 'Menu ink, dim', group: 'Menu', hint: 'The pages you are not on', sheet: 'shell' },
   { key: 'menuActiveBg', property: '--menu-active-bg', label: 'Menu, current page', group: 'Menu', hint: 'Behind where you are standing', sheet: 'shell' },
   { key: 'menuActiveColor', property: '--menu-active-color', label: 'Menu ink, current page', group: 'Menu', hint: 'The page you are on', sheet: 'shell' },
@@ -289,6 +293,8 @@ export const DEFAULT_SKIN: Readonly<Record<string, string>> = {
   star: '#f2b01e',
   onTone: '#0e0e11',
   menuBg: '#101012',
+  menuBorder: '#1d1d24',
+  menuColor: '#e9e9ec',
   menuColorAlt: '#8b8b95',
   menuActiveBg: '#00000000',
   menuActiveColor: '#e9e9ec',
