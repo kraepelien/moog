@@ -77,8 +77,9 @@
   background-color: var(--shell-hover-faint);
 }
 
+/* No rounding: the mark is the keys themselves on nothing, so there is no tile
+   whose corners could be cut. */
 .logo {
-  border-radius: 8px;
   display: block;
 }
 

@@ -136,7 +136,7 @@ export function SideRail({
           onClick={() => onNavigate(HOME_ROUTE.path)}
         >
           <img
-            src="/logo.png"
+            src="/logo.svg"
             alt="Minimoog Model D"
             width="34"
             height="34"

@@ -751,6 +751,12 @@ to the same page an inch apart. `HOME_ROUTE` is what the mark aims at, named sep
 `DEFAULT_ROUTE` although they are the same page today — one is where the logo leads and the other is
 where an unrecognised address lands.
 
+The mark itself is `public/logo.svg`, drawn through an `<img>` in both the rail and the sign-in page
+rather than inlined like the glyphs. It carries a gradient, and a gradient's id is document-global:
+inlined in two places those ids would collide, and the second mark would be painted with the first
+one's fill. An external file is its own document, so the id stays inside it. The keys are the mark —
+there is no tile behind them — which is why neither `.logo` rule rounds its corners.
+
 The glyphs are inline components in `railIcons.tsx`, not `*.svg?react` imports, although `svgr` is
 configured. svgr runs in Vite and not in Bun, so an imported file would be a component the suite
 cannot render — and the rail is the part of the app with no other way to be tested. The paths are
