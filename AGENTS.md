@@ -85,10 +85,25 @@ remapping every saved patch.
 - **SQL lives in a repository, rules live in a service.** A repository that also refused would be a
   second place for the rules to live. A route with no rules of its own talks to its repository
   rather than to a service that would only forward the call.
-- **A schema step is append-only, and `test/oldDatabase.ts` undoes it.** Migration tests make an old
+- **Nothing is deployed, so a schema change edits the step it belongs in and the database is
+  recreated.** A new column goes into the step that makes its table; something that turned out to be
+  a mistake comes back out of the step that added it. Do not add a step to correct an earlier one
+  and do not bump `DB_VERSION` — a migration buys nothing while no database anywhere holds data
+  that has to survive, and it costs an undo in `test/oldDatabase.ts` for ever. `app_settings` was
+  taken out of step 8 this way rather than dropped by a step 9.
+
+  The cost is paid by whoever is already running one: a database made before the edit keeps whatever
+  the old step gave it, because its version is unchanged and nothing re-runs. Deleting
+  `data/moog.db*` is how it catches up, and on the NAS that means a redeploy with the volume
+  cleared. Say so in the pull request every time.
+
+  **`test/oldDatabase.ts` still has to undo whatever the steps do.** Migration tests make an old
   database by opening a current one and winding it back, and reopening re-runs *every* step above
-  the version set — so a new step in `server/db.ts` needs its undo added there, or those tests fail
-  with `already exists`.
+  the version set, so an edited step needs its undo edited to match or those tests fail with
+  `already exists`.
+
+  This changes the day something real is running against a database somebody cares about. From then
+  on a step is append-only and a new one is the only honest move.
 
 ## The sound is derived, and says so
 
