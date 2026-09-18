@@ -25,15 +25,17 @@
   display: block;
 }
 
+/* Dimmed off the panel's ink rather than the shell's, because this page is drawn
+   on the instrument's black and not on the app's chrome. */
 .hint {
-  color: rgb(255 255 255 / 55%);
+  color: color-mix(in srgb, var(--moog-ink) 55%, transparent);
   font-size: 0.85rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .trouble {
-  color: #ff6f9c;
+  color: var(--tone-pink-ink);
   font-size: 0.85rem;
   max-width: 28ch;
   text-align: center;

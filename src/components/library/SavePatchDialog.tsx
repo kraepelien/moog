@@ -143,7 +143,7 @@ export function SavePatchDialog({
               className={styles.action}
               onClick={() => onSave(fields)}
               sx={{
-                color: '#07110b',
+                color: SHELL.onTone,
                 backgroundColor: TONE_COLOURS.green.ink,
                 '&:hover': { backgroundColor: TONE_COLOURS.green.ink },
               }}
@@ -154,7 +154,7 @@ export function SavePatchDialog({
               className={styles.action}
               onClick={onCancel}
               sx={{
-                color: '#1b0509',
+                color: SHELL.onTone,
                 backgroundColor: TONE_COLOURS.pink.ink,
                 '&:hover': { backgroundColor: TONE_COLOURS.pink.ink },
               }}

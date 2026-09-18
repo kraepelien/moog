@@ -16,12 +16,15 @@ import Typography from '@mui/material/Typography'
 import { ColourField } from './ColourField.tsx'
 import { MAX_TAG_LENGTH, type TagInUse, tagNameProblem } from './tags.ts'
 import { ToneChip } from '@components/library/ToneChip.tsx'
-import { shadesOf, toneForTag, TONE_COLOURS } from '@/tones.ts'
+import { DEFAULT_SKIN, shadesOf, toneForTag, TONE_COLOURS } from '@/tones.ts'
 
 /* What the picker opens on for a tag nobody has coloured. Grey rather than one
    of the five tag tones: starting on the hash's own answer would make pressing
-   Clear afterwards look like it had done nothing. */
-const TONE_DEFAULT = '#9a9aa4'
+   Clear afterwards look like it had done nothing.
+
+   The shipped hex rather than `--tone-grey-ink`, because an `<input type=color>`
+   needs a value it can parse and a custom property is not one. */
+const TONE_DEFAULT = DEFAULT_SKIN.grey!
 
 function BinGlyph() {
   return (

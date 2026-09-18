@@ -80,6 +80,9 @@ export const SHELL = {
   barInk: 'var(--shell-bar-ink)',
   hoverFaint: 'var(--shell-hover-faint)',
   hoverStrong: 'var(--shell-hover-strong)',
+  /* Written on a filled tone, wherever one is filled. */
+  onTone: 'var(--shell-on-tone)',
+  starEmpty: 'var(--shell-star-empty)',
 } as const
 
 /* Every colour a skin may set, in the order the page that edits them draws
@@ -126,6 +129,7 @@ export const SKIN_SWATCHES: readonly SkinSwatch[] = [
   { key: 'violet', property: '--tone-violet-ink', label: 'Violet', group: 'Tones', hint: "Somebody else's, and a tag", sheet: 'shell' },
   { key: 'grey', property: '--tone-grey-ink', label: 'Grey', group: 'Tones', hint: 'Said without emphasis', sheet: 'shell' },
   { key: 'hover', property: '--shell-hover', label: 'Hover', group: 'Shell', hint: 'The wash under the pointer', sheet: 'shell' },
+  { key: 'onTone', property: '--shell-on-tone', label: 'Ink on a colour', group: 'Shell', hint: 'Lettering on a filled chip', sheet: 'shell' },
 
   /* The instrument's own, from panelPalette.css. Measured off the scans rather
      than chosen, so they ship as they were sampled — and every one is settable
@@ -175,6 +179,7 @@ export const DEFAULT_SKIN: Readonly<Record<string, string>> = {
   violet: '#b78bff',
   grey: '#9a9aa4',
   hover: '#ffffff',
+  onTone: '#0e0e11',
   panel: '#000000',
   panelInk: '#ffffff',
   capOrange: '#f37c3e',

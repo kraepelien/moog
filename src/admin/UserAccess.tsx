@@ -19,7 +19,7 @@ import {
   type Source,
 } from '@access/privileges.ts'
 import { displayName, type AdminUser } from './users.ts'
-import { TONE_COLOURS } from '@/tones.ts'
+import { SHELL, TONE_COLOURS } from '@/tones.ts'
 import styles from './UserAccess.module.css'
 
 /* What one account may do, and why.
@@ -95,7 +95,7 @@ export function UserAccess({
                   )
                 }
                 sx={{
-                  color: held ? '#0e0e11' : colour.ink,
+                  color: held ? SHELL.onTone : colour.ink,
                   backgroundColor: held ? colour.ink : colour.field,
                   '&:hover': { backgroundColor: held ? colour.ink : colour.strong },
                 }}
