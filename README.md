@@ -818,17 +818,35 @@ for is **omitted** rather than guessed — an omission is honest and a guess is 
 { "slug": "midnight-funk", "name": "Midnight Funk", "notes": "", "values": { "<controlId>": <value> } }
 ```
 
-**But an omission is a reference to the registry default, so moving a default re-voices the bank.**
-Every file here is sparse, and most of them lean on a dozen defaults each. When the panel's
-starting positions changed to the Init patch's, every control whose default moved *and* whose old
-value a patch could be heard to depend on was written into that patch's file explicitly — decided
-by resolving each patch both ways and comparing `settingsFrom`, with the mod wheel down and wide
-open so a routing switch that only matters once the wheel is moved was kept rather than pruned as
-inaudible. Anything that made no difference to the sound was left out, which is why the files are
-still sparse rather than forty-six values each.
+**An omission means Init, on purpose.** It is a live reference to the registry default, so the
+blank panel and the factory bank are the same dial: move a default in `panel.ts` and every patch
+that never specified that control moves with it. That is the intended reading — a sheet that does
+not mention Keyboard Control 1 describes a sound where it sat wherever Init leaves it, not one
+asserting a value nobody wrote down.
 
-The alternative was to let the bank drift, and a reconstruction of a sound that quietly changes is
-worse than a verbose file. Do the same thing the next time a default moves.
+### Where the 44 come from
+
+The **Patch Sheets** chapter of the Minimoog Model D manual, pages 55 to 76 — two filled-in sheets
+a page, exactly 44. They were transcribed by hand once from a source nobody recorded, and that
+transcription was wrong: Midnight Funk had Oscillator-1 at 16' sawtooth, volume 8, where the sheet
+plainly draws 2', narrow pulse, pointer straight up.
+
+The sheets are vector drawings, so the settings are geometry and were read back rather than
+estimated — the same reason `tools/measure-artwork.py` exists for the panel. A knob comes from the
+angle of its pointer through the same −150..+150 sweep `ContinuousKnob` renders with, so a stored
+value redraws where it was read; a rotary selector from which of six detents the callout rings; a
+switch from which of its two cells is filled; Attack and Decay back through `CONTOUR_TIME_MS`. The
+marks are drawn in PANTONE 151 U, which is what separates a setting from the printed panel beneath
+it, and each sheet is normalised onto its own drawn extent because the declared boxes differ by 24
+units between recto and verso.
+
+Three things the sheets mark and the files do not carry. **Output Volume and Phones**, because a
+patch does not recall the volume of the room it is played in. **The Mod wheel**, which is drawn as
+an arrow up the slider rather than a handle at a height — that is "move this while you play", an
+instruction and not a setting, and the notes say so in words. And **anything left unmarked**, which
+is the sheet declining to set it.
+
+Each sheet's Notes box is the patch's `notes`; 35 of the 44 carry one.
 
 ## Import and export
 
