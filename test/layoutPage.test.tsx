@@ -67,7 +67,7 @@ describe('a colour with something showing through it', () => {
   test('shows the eight-digit default in the box', () => {
     renderPage()
     openSection('Menu')
-    expect((hexBox('Menu, current page') as HTMLInputElement).value).toBe(
+    expect((hexBox('Menu background color on active page') as HTMLInputElement).value).toBe(
       DEFAULT_SKIN.menuActiveBg!,
     )
   })
@@ -75,7 +75,7 @@ describe('a colour with something showing through it', () => {
   test('keeps the opacity when the picker moves the colour', () => {
     const reported = renderPage({ start: { menuActiveBg: '#11223380' } })
     openSection('Menu')
-    fireEvent.change(screen.getByLabelText('Menu, current page as a swatch'), {
+    fireEvent.change(screen.getByLabelText('Menu background color on active page as a swatch'), {
       target: { value: '#FF0000' },
     })
     expect(reported).toEqual([{ menuActiveBg: '#ff000080' }])
@@ -86,7 +86,7 @@ describe('a colour with something showing through it', () => {
   test('drops the alpha byte at full opacity', () => {
     const reported = renderPage({ start: { menuActiveBg: '#11223380' } })
     openSection('Menu')
-    typeHex('Menu, current page', '#112233FF')
+    typeHex('Menu background color on active page', '#112233FF')
     expect(reported).toEqual([{ menuActiveBg: '#112233' }])
   })
 
