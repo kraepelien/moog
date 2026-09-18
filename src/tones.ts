@@ -84,9 +84,9 @@ export function tagColour(palette: TagPalette, tag: string): ToneColour {
    lifts each block of content a little off it, so a border is the only thing
    dividing them.
 
-   Only what something is actually drawn with. A colour that has a swatch and no
-   surface yet is reachable through `SKIN_SWATCHES` and belongs here on the day
-   something reads it. */
+   Only what TypeScript draws with. A colour a stylesheet reads for itself needs
+   no entry, and one with a swatch and no surface yet is reachable through
+   `SKIN_SWATCHES` until something here asks for it. */
 export const SHELL = {
   background: 'var(--shell-background)',
   content: 'var(--shell-content)',
@@ -137,11 +137,11 @@ export interface SkinSwatch {
 
 export const SKIN_SWATCHES: readonly SkinSwatch[] = [
   { key: 'background', property: '--shell-background', label: 'Background', group: 'Shell', hint: 'Behind everything', sheet: 'shell' },
-  { key: 'menu', property: '--shell-menu', label: 'Menu', group: 'Shell', hint: 'The nav, rail or top', sheet: 'shell', pending: true },
+  { key: 'menu', property: '--shell-menu', label: 'Menu', group: 'Shell', hint: 'The nav, rail or top', sheet: 'shell' },
   { key: 'header', property: '--shell-header', label: 'Header', group: 'Shell', hint: 'The bar across the top', sheet: 'shell' },
   { key: 'headerInk', property: '--shell-header-ink', label: 'Header ink', group: 'Shell', hint: 'Its tabs and icons', sheet: 'shell' },
   { key: 'content', property: '--shell-content', label: 'Content', group: 'Shell', hint: 'Every panel and list', sheet: 'shell' },
-  { key: 'alternate', property: '--shell-alternate', label: 'Alternate', group: 'Shell', hint: 'Every other row', sheet: 'shell', pending: true },
+  { key: 'alternate', property: '--shell-alternate', label: 'Alternate', group: 'Shell', hint: 'Every other patch in the list', sheet: 'shell' },
   { key: 'hover', property: '--shell-hover', label: 'Hover', group: 'Shell', hint: 'The wash under the pointer', sheet: 'shell' },
   { key: 'border', property: '--shell-border', label: 'Border', group: 'Shell', hint: 'Every rule and edge', sheet: 'shell' },
   { key: 'ink', property: '--shell-ink', label: 'Ink', group: 'Shell', hint: 'Body text', sheet: 'shell' },

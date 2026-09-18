@@ -9,7 +9,7 @@
   top: 0;
   box-sizing: border-box;
   display: flex;
-  background-color: var(--shell-content);
+  background-color: var(--shell-menu);
   /* The toggle hangs half over the page, and the page is drawn after this in
      the document; without a layer of its own the nav would be painted under
      whatever the open page starts with. */
