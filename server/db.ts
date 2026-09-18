@@ -194,19 +194,14 @@ const SCHEMA: Step[] = [
      colour for a name nothing wears. Null is the normal state and means the
      hash picks, which is what every tag written before this had.
 
-     `app_settings` is keyed and global, unlike `settings`, which is one row per
-     person. It held the app's palette, which is a preview on the device now;
-     the table stays because a step is append-only. */
+     This step also made an `app_settings` table to hold the app's palette. That
+     palette is a preview on the device now, so nothing ever read the table and
+     the step is edited rather than followed by one that drops it: nothing is
+     deployed, and archaeology for a feature that never shipped is worse than a
+     database recreated once. A database made before this keeps the empty table
+     until it is; `drop table app_settings` is the whole of catching up. */
   (db) => {
-    db.run(`
-      alter table tags add column colour text;
-
-      create table app_settings (
-        key text primary key,
-        json text not null,
-        updated_at text not null
-      );
-    `)
+    db.run(`alter table tags add column colour text`)
   },
 ]
 

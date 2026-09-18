@@ -37,10 +37,7 @@ const UNDO: Record<number, (db: Database) => void> = {
     db.run(`update users set roles = 'member' where roles = ''`)
     db.run(`update users set roles = roles || ',member' where roles != '' and roles != 'member'`)
   },
-  8: (db) => {
-    db.run(`alter table tags drop column colour`)
-    db.run(`drop table app_settings`)
-  },
+  8: (db) => db.run(`alter table tags drop column colour`),
   /* Also not an exact inverse: it makes the local user an admin again, which is
      what the build before this stored, and leaves everybody else alone. */
   7: (db) => {
