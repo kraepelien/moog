@@ -937,24 +937,29 @@ references.
 
 ### The icons
 
-`logo.svg` is the mark: the keys and nothing else. Everything in `public/` that a browser, a dock or
-a launcher asks for is baked out of `icon.svg` and `icon-maskable.svg` beside it by
+`icon.svg` is the logo as drawn, and everything else is cut out of it. It arrives as a finished tile
+— the gradient square, the dark panel inset in it, and the keys — rather than as the mark alone, so
+it is the export verbatim and nothing in it is composed here. Everything in `public/` that a
+browser, a dock or a launcher asks for is baked out of it and `icon-maskable.svg` beside it by
 `bun tools/make-icons.ts`, which drives headless Chrome — nothing else on a machine here rasterises
 SVG, and a dependency that did would be a rasteriser in every install of the app for a script run a
 few times a year. Run it when either source changes; the PNGs are committed, because the build
 serves `public/` as it stands and a deploy machine has no browser.
 
-The tile is what the sources add to the mark. On a page the gaps between the keys take the page's
-black; an icon has no page, and a light backdrop would put those gaps through the middle of the
-keys, so the icon brings its own. The maskable one differs twice over, and both are what maskable
-means: square corners, because a launcher cuts its own shape and a rounded tile under a circle
-leaves transparent slivers; and a smaller mark, 50% of the canvas against 60%, so it stays inside
-the safe zone a mask is guaranteed to keep.
+The tile is what the icon keeps and the page drawings drop. On a page the gaps between the keys take
+the page's black; an icon has no page, and a light backdrop would put those gaps through the middle
+of the keys, so the icon holds on to the one it was drawn with. The maskable one differs twice over,
+and both are what maskable means: a plain square, because a launcher cuts its own shape and the
+drawn tile's rounded corners under a circle leave transparent slivers; and everything inside it at
+80% of its drawn size, so it stays inside the safe zone a mask is guaranteed to keep. The panel's
+rounded corner reaches 498 units from the centre against that zone's radius of 409.6, so at full
+size a round launcher shaves the panel and the outer keys with it.
 
-Both sources scale the keys path out of `logo.svg` verbatim, and take its gradient with them
-unchanged — `userSpaceOnUse` resolves against the space the gradient is *referenced* from, which is
-inside that transform, so the 0-to-28 run is carried onto the keys by the same scale. Rewritten into
-the tile's own 512 coordinates, as looked obvious, the mark came out flat blue.
+Every drawing cut from the icon — the maskable tile, `public/logo.svg`, `public/patchdb.svg` — keeps
+the paths and the gradients in the coordinates they were drawn in, and moves them with a transform.
+`userSpaceOnUse` resolves against the space the gradient is *referenced* from, which is inside that
+transform, so the 0-to-1024 run is carried onto the artwork by the same scale. Rewritten into the
+destination's own coordinates, as looked obvious, the mark came out flat blue.
 
 `favicon.ico` is packed by the same script: a header, one directory entry per size, and a whole PNG
 per entry rather than a bitmap. Every browser that still asks for an `.ico` by name has read
