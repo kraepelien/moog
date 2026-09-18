@@ -31,13 +31,22 @@
   --background: #000000;
 
   /* The nav, whichever side it is hung on. Its own rather than the content's,
-     so the way out of a page can be told from the page — the dim ink included,
-     or setting the page's captions would dim the nav with them.
+     down to the edge and the dim ink, or setting the page's rules and captions
+     would move the nav with them and the way out of a page could not be told
+     from the page.
+
+     `--menu-color` is the family's ink and nothing draws with it: an item at
+     rest is the dim one, and hover and the current page are the two that light
+     up, each with a colour of its own below. It is here because a family with a
+     hole in it is a colour somebody looks for and does not find, and because
+     the state that wants it may yet arrive.
 
      The active item ships fully transparent: the nav marks where you are
      standing with white lettering and nothing behind it, so a fill here is an
      addition somebody makes rather than one they have to undo. */
   --menu-bg: #101012;
+  --menu-border: #1d1d24;
+  --menu-color: #e9e9ec;
   --menu-color-alt: #8b8b95;
   --menu-active-bg: #00000000;
   --menu-active-color: #e9e9ec;
