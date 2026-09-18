@@ -2,6 +2,7 @@
 
 Every pull request merged into `main`, newest first.
 
+- Call the app PATCHDB
 - [Home on the mark, and a tag's picker on the colour it is wearing](https://github.com/kraepelien/moog/pull/76)
 - [Move the navigation down the left, where it can be folded away](https://github.com/kraepelien/moog/pull/75)
 - [Say where the data folder actually is](https://github.com/kraepelien/moog/pull/74)
