@@ -131,15 +131,17 @@ export function HomePage({
               className={styles.door}
               onClick={() => onNavigate(route.path)}
             >
-              <Box className={styles.doorGlyph}>
-                <RouteGlyph route={route.name} />
+              <Box className={styles.cardBody}>
+                <Box className={styles.doorGlyph}>
+                  <RouteGlyph route={route.name} />
+                </Box>
+                <Typography component="span" className={styles.doorTitle}>
+                  {route.title}
+                </Typography>
+                <Typography component="span" className={styles.doorBlurb}>
+                  {BLURB[route.name] ?? ''}
+                </Typography>
               </Box>
-              <Typography component="span" className={styles.doorTitle}>
-                {route.title}
-              </Typography>
-              <Typography component="span" className={styles.doorBlurb}>
-                {BLURB[route.name] ?? ''}
-              </Typography>
             </ButtonBase>
           ))}
         </Box>
@@ -168,24 +170,26 @@ function PatchCard({
       onClick={onOpen}
       aria-label={`Open ${name} in the editor`}
     >
-      <Box className={styles.patchHead}>
-        <ToneChip label={BANK_LABELS[bank]} tone={BANK_TONES[bank]} />
-        {/* Five empty stars hold a column in the library, where every row has
-            them. Four cards in a row do not have a column to hold, and the
-            empty set was the loudest thing on an unrated card. */}
-        {(entry.rating ?? entry.averageRating) !== null && (
-          <StarRating rating={entry.rating} average={entry.averageRating} subject={name} />
-        )}
-      </Box>
+      <Box className={styles.cardBody}>
+        <Box className={styles.patchHead}>
+          <ToneChip label={BANK_LABELS[bank]} tone={BANK_TONES[bank]} />
+          {/* Five empty stars hold a column in the library, where every row has
+              them. Four cards in a row do not have a column to hold, and the
+              empty set was the loudest thing on an unrated card. */}
+          {(entry.rating ?? entry.averageRating) !== null && (
+            <StarRating rating={entry.rating} average={entry.averageRating} subject={name} />
+          )}
+        </Box>
 
-      <Typography component="span" className={styles.patchName}>
-        {name}
-      </Typography>
+        <Typography component="span" className={styles.patchName}>
+          {name}
+        </Typography>
 
-      <Box className={styles.patchTags}>
-        {entry.tags.slice(0, 3).map((tag) => (
-          <ToneChip key={tag} label={tag} tone={tagColour(tagPalette, tag)} />
-        ))}
+        <Box className={styles.patchTags}>
+          {entry.tags.slice(0, 3).map((tag) => (
+            <ToneChip key={tag} label={tag} tone={tagColour(tagPalette, tag)} />
+          ))}
+        </Box>
       </Box>
     </ButtonBase>
   )
