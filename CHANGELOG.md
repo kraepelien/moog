@@ -5,6 +5,7 @@ straight to `main` has none to carry.
 
 - Let a commit pushed to main take a line of its own
 - Add the two that merged after the list was written
+- Stop the suite waiting on a dialog fade, and run it across workers
 - [Cut the icons from the new mark, on a tile](https://github.com/kraepelien/moog/pull/78)
 - [Draw the mark from the new logo](https://github.com/kraepelien/moog/pull/77)
 - [Home on the mark, and a tag's picker on the colour it is wearing](https://github.com/kraepelien/moog/pull/76)

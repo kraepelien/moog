@@ -19,7 +19,8 @@ Package manager is **Bun**. Never npm, npx, yarn or pnpm.
 bun install
 bun run dev      # Vite dev server on 5173, or the next free port if a worktree already holds it
 bun run build    # tsc -b, then a production build into dist/
-bun test         # unit, component and server tests
+bun test         # unit, component and server tests, one file at a time (~10s)
+bun run test     # the same suite across 4 worker processes (~4s)
 bun run lint     # oxlint
 bun run serve    # the built app plus the file-backed API on 5174 (PORT to change it)
 ```
@@ -47,9 +48,13 @@ to point at, and a line that named one would be pointing at somebody else's.
 
 Nothing else goes in it: no versions, no dates, no grouping. The order it landed in is the history.
 
-The line is written after the merge, on a `main` that already has it, and never on the branch being
-merged: on the branch it conflicts with every other branch adding its own line, and a commit pushed
-to a branch whose pull request has already merged is stranded.
+The branch writes its own line as it goes, without the link: a pull request has no number to point
+at until it is opened, and a line naming one would be pointing at somebody else's. After the merge,
+on a `main` that already has the change, the line is rewritten with the link.
+
+Two branches both adding a line collide on the same first line of the list. Both are wanted, so the
+conflict is settled by keeping both, in the order they landed. The rewrite never goes to the branch:
+a commit pushed to a branch whose pull request has already merged is stranded.
 
 ## Names in a saved patch are a published interface
 
@@ -188,6 +193,11 @@ Three resolvers have to agree on the map, and only two of them fail loudly:
 - **happy-dom has no Web Audio.** `test/fakeAudio.ts` is a context that records instead of
   sounding, which is why the engine only ever uses the factory methods (`context.createGain()`)
   rather than the constructor forms: one surface to keep faked.
+- **A MUI transition costs real wall-clock time in a test.** `waitForElementToBeRemoved` on a
+  dialog sits through the quarter-second close fade, and `test/playMidi.test.tsx` alone spent four
+  of the suite's fifteen seconds that way. Rendering under
+  `createTheme({ motion: { reducedMotion: 'always' } })` collapses every transition to one frame
+  without disabling it, so the tests still drive the dialog they always did.
 - **`fireEvent` cannot target `window` under happy-dom.** Dispatch on `document.body`; it bubbles.
 - **happy-dom has no pointer capture.** `test/setup.ts` installs no-ops, without which any
   `pointerdown` on a knob throws before a drag can be exercised.

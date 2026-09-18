@@ -7,7 +7,7 @@
     "dev": "bun --bun vite --configLoader native",
     "build": "tsc -b && bun --bun vite build --configLoader native",
     "lint": "oxlint",
-    "test": "bun test",
+    "test": "bun test --parallel=4",
     "preview": "bun --bun vite preview --configLoader native",
     "serve": "bun run server/serve.ts"
   },
