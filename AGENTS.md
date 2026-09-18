@@ -39,6 +39,13 @@ worktree it came from is a guess.
 - [Home on the mark, and a tag's picker on the colour it is wearing](https://github.com/kraepelien/moog/pull/76)
 ```
 
+A commit pushed straight to `main` may take a line too, without the link — there is no pull request
+to point at, and a line that named one would be pointing at somebody else's.
+
+```markdown
+- Add the two that merged after the list was written
+```
+
 Nothing else goes in it: no versions, no dates, no grouping. The order it landed in is the history.
 
 The branch writes its own line as it goes, without the link: a pull request has no number to point
