@@ -3,5 +3,11 @@
     "allow": [
       "Bash(gh pr merge:*)"
     ]
+  },
+  "autoMode": {
+    "allow": [
+      "$defaults",
+      "Merging a pull request in this repository with `gh pr merge`, including one the session opened itself. AGENTS.md asks for a pull request to be opened and merged in one go, with the build, tests and lint green first; nothing here waits on a review, and the branch is the only thing merged into."
+    ]
   }
 }
