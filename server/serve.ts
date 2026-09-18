@@ -18,7 +18,7 @@ import { seedTags } from './services/tags.ts'
 process.umask(0o002)
 
 const root = process.env.MOOG_DATA ?? 'data'
-const seed = process.env.MOOG_PRESETS ?? 'presets'
+const seed = process.env.MOOG_BANK ?? 'bank'
 const dist = process.env.MOOG_DIST ?? 'dist'
 const port = Number(process.env.PORT ?? 5174)
 
@@ -32,10 +32,10 @@ const factory = loadFactory(db, seed, { reseed })
 seedTags(db)
 console.log(
   reseed
-    ? `Factory bank: ${factory.loaded} presets RESEEDED from ${seed}, ${factory.retired} retired`
+    ? `Factory bank: ${factory.loaded} patches RESEEDED from ${seed}, ${factory.retired} retired`
     : `Factory bank: ${factory.loaded} new, ${factory.kept} kept, ${factory.retired} retired`,
 )
-if (reseed) console.warn('MOOG_RESEED=1 was set: any edits to factory presets have been overwritten.')
+if (reseed) console.warn('MOOG_RESEED=1 was set: any edits to factory patches have been overwritten.')
 console.log(`Sign-in: ${describeAuth(authConfigFromEnv(process.env))}`)
 const envTroubleFound = envTrouble(dirAt(process.cwd()), process.env)
 if (envTroubleFound) console.warn(envTroubleFound)

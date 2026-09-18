@@ -8,7 +8,7 @@ import { syncInstruments } from '@server/factory.ts'
 import { authConfigFromEnv, sessionCookie } from '@server/identity.ts'
 import { createRepositories } from '@server/repositories/index.ts'
 import { createUsers } from '@server/repositories/users.ts'
-import { copyOf } from '@presets/preset.ts'
+import { copyOf } from '@patch/copy.ts'
 import { createPatch, type Patch } from '@patch/schema.ts'
 
 /* Two people and a factory bank. Someone else's private patch answers 404
@@ -62,7 +62,7 @@ async function world() {
   const theirs = await person('u-theirs', 'theirs@example.com')
   const boss = await person('u-boss', 'boss@example.com')
 
-  store.patches.putPreset('sub-bass', {
+  store.patches.putFactory('sub-bass', {
     ...createPatch({ name: 'Sub Bass', visibility: 'public', approximate: true }),
     id: 'sub-bass',
   })
@@ -82,7 +82,9 @@ afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
 })
 
-describe('a factory preset', () => {
+/* Read through the same route as any other patch, refused on write by the same
+   `mayWrite` — there is no second surface for it to be reached through. */
+describe('a factory patch', () => {
   test('is readable by anyone signed in', async () => {
     const { mine, theirs } = await world()
     expect((await mine.call('GET', '/api/patches/sub-bass'))!.status).toBe(200)
@@ -91,13 +93,13 @@ describe('a factory preset', () => {
 
   test('cannot be written over, even by an admin', async () => {
     const { mine, boss, store } = await world()
-    const before = store.patches.listPresets()[0]!
+    const before = store.patches.listFactory()[0]!
 
     expect((await mine.call('PUT', '/api/patches/sub-bass', before))!.status).toBe(403)
     expect((await boss.call('PUT', '/api/patches/sub-bass', before))!.status).toBe(403)
     expect((await boss.call('DELETE', '/api/patches/sub-bass'))!.status).toBe(403)
 
-    expect(store.patches.listPresets()[0]).toEqual(before)
+    expect(store.patches.listFactory()[0]).toEqual(before)
   })
 
   /* Posted the way the editor posts it: the server keeps whatever visibility it
@@ -105,7 +107,7 @@ describe('a factory preset', () => {
   test('is copied instead, and the copy is mine and private', async () => {
     const { mine, store } = await world()
     const response = (await mine.call('POST', '/api/patches', {
-      ...copyOf(store.patches.listPresets()[0]!, { name: 'My Sub Bass', owner: null }),
+      ...copyOf(store.patches.listFactory()[0]!, { name: 'My Sub Bass', owner: null }),
       from: 'sub-bass',
     }))!
     expect(response.status).toBe(201)
@@ -120,12 +122,6 @@ describe('a factory preset', () => {
   test('is never listed as one of my patches', async () => {
     const { mine } = await world()
     expect(await (await mine.call('GET', '/api/patches'))!.json()).toEqual([])
-  })
-
-  test('cannot be written through the bank route either', async () => {
-    const { mine } = await world()
-    expect((await mine.call('PUT', '/api/presets/sub-bass', {}))!.status).toBe(403)
-    expect((await mine.call('DELETE', '/api/presets/sub-bass'))!.status).toBe(403)
   })
 })
 

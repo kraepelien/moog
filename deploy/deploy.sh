@@ -40,8 +40,9 @@ docker compose pull
 docker compose up -d --remove-orphans
 
 # Wait for the container to report healthy rather than assuming it came up. The
-# healthcheck reads the presets folder, so this also catches a missing or
-# unreadable volume, which is the failure most likely to survive a green build.
+# healthcheck counts the patches in the database, so this also catches a missing
+# or unreadable volume, which is the failure most likely to survive a green
+# build.
 echo -n "Waiting for health"
 for _ in $(seq 1 30); do
   state="$(docker inspect --format '{{.State.Health.Status}}' moog 2>/dev/null || echo starting)"

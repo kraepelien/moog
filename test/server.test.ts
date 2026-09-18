@@ -199,7 +199,7 @@ describe('the request handler', () => {
   test('says which methods a route has', async () => {
     const handle = api()
     expect((await call(handle, 'DELETE', '/api/patches'))!.status).toBe(405)
-    expect((await call(handle, 'POST', '/api/presets'))!.status).toBe(403)
+    expect((await call(handle, 'POST', '/api/library'))!.status).toBe(405)
   })
 
   test('reports a storage failure as one, with a reason', async () => {

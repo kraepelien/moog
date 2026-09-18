@@ -35,7 +35,7 @@ export function createPatchService(
     },
 
     mayWrite(found: Located, viewer: Viewer): Refusal | null {
-      if (isFactory(found)) return { error: 'factory presets are read-only', status: 403 }
+      if (isFactory(found)) return { error: 'factory patches are read-only', status: 403 }
       if (isMine(found, viewer) || viewer.can(PRIVILEGE.AdminPatches)) return null
       return { error: 'not yours', status: 403 }
     },
@@ -62,8 +62,8 @@ export function createPatchService(
     },
 
     /* Save as, and the only way a patch comes into existence. Loading a factory
-       preset and pressing Save arrives here, which is what makes "you can never
-       save over one" a missing route rather than a rule to remember. */
+       patch and pressing Save arrives here, which is what makes "you can never
+       save over one" a refusal in `mayWrite` rather than a rule to remember. */
     create(payload: unknown, viewer: Viewer): Patch | Refusal {
       if (patches.countOwnedBy(viewer.user.id) >= limits.maxPatches) {
         return {

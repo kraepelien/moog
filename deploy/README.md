@@ -58,7 +58,7 @@ answers 413, and over a rate 429.
 Compose hands this whole file to the container as its `env_file`, so a setting
 the server grows later belongs here and nowhere else; `docker-compose.yml` names
 only what compose itself reads. The one exception is a key the image already
-sets: `PORT`, `MOOG_DATA`, `MOOG_PRESETS` and `MOOG_DIST` are container paths,
+sets: `PORT`, `MOOG_DATA`, `MOOG_BANK` and `MOOG_DIST` are container paths,
 and writing one of them here overrides the image and breaks the container.
 
 `deploy.sh` only rewrites the `MOOG_IMAGE` line, so everything added here by
@@ -88,16 +88,16 @@ once if that is ever wanted. The LAN address cannot sign in: Google will not
 register a plain-http redirect for it and a browser will not send a `Secure`
 cookie there, so reach the app by hostname.
 
-`MOOG_UID` and `MOOG_GID` matter more than they look. The container writes every
-preset and patch as that id; if it does not match the account owning the share,
-the files come back unreadable from the NAS and editing them by hand — the reason
-they are files at all — stops working.
+`MOOG_UID` and `MOOG_GID` matter more than they look. The container writes the
+database as that id; if it does not match the account owning the share, the files
+come back unreadable from the NAS and reaching them by hand — the reason the
+volume is a share at all — stops working.
 
 **1027:65536 is already the default** in the Dockerfile, in `docker-compose.yml`
 and in the workflow, so nothing needs setting for this NAS. 65536 is the `docker`
 group, which the data folder belongs to — not the `docker` account's primary
 group of 100. With 100 the container would match neither the folder's owner nor
-its group, list every preset happily, and fail every save. On a different host,
+its group, list the bank happily, and fail every save. On a different host,
 find the right numbers with `ls -n` on the folder and override them.
 
 ## Repository settings
@@ -126,6 +126,6 @@ If it is taken, change `MOOG_PORT` in `.env` and the url in
 ## First deploy
 
 Seeding fills the data folder from the bank in the image the first time it runs,
-and records which presets it has placed. After that the folder is the truth: a
-preset deleted there stays deleted across restarts and redeploys, while a preset
-added to the repo in a later build does arrive.
+and records which patches it has placed. After that the folder is the truth: a
+factory patch deleted there stays deleted across restarts and redeploys, while
+one added to the repo in a later build does arrive.

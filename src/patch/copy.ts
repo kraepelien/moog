@@ -1,8 +1,8 @@
 import type { ControlValue } from '@controls/types.ts'
 import { createPatch, type Patch, type PatchIdentity, systemIdentity } from '@patch/schema.ts'
 
-/* A factory preset is a patch kept in the repo rather than saved by anyone, so
-   copying is the only thing here: you can never save over one.
+/* Opening anything you may not write lands here, which is a factory patch and
+   somebody else's alike: copying is the only thing this file does.
 
    `derivedFrom` is a snapshot, not a reference — the source can be renamed or
    deleted, and "from Sub Bass" is more use afterwards than a dangling id. */
@@ -11,7 +11,7 @@ export function copyOf(
   options: {
     name?: string
     values?: Readonly<Record<string, ControlValue>>
-    /* `null` is a factory preset, which has no maker. A maker the library knows
+    /* `null` is a factory patch, which has no maker. A maker the library knows
        only by name — a public patch of someone else's — carries a null id: the
        server fills in the real one when the copy is created. */
     owner?: { id: string | null; name: string | null } | null

@@ -81,15 +81,3 @@ describe('a captured segment', () => {
     expect((await server()('GET', '/api/tags/in-use'))!.status).toBe(200)
   })
 })
-
-describe('the factory bank', () => {
-  test('refuses a write as read-only rather than as a wrong method', async () => {
-    const call = server()
-    expect((await call('POST', '/api/presets'))!.status).toBe(403)
-    expect((await call('PUT', '/api/presets/sub-bass', {}))!.status).toBe(403)
-  })
-
-  test('has no route for one preset, because it is read through /api/patches', async () => {
-    expect((await server()('GET', '/api/presets/sub-bass'))!.status).toBe(404)
-  })
-})

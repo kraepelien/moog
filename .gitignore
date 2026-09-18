@@ -23,7 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 
-# Working data written by the patch server. The shipped bank lives in presets/.
+# Working data written by the patch server. The shipped bank lives in bank/.
 data/
 
 # The OAuth client secret and the session key live in one of these on the

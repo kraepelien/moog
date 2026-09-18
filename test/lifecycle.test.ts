@@ -3,7 +3,7 @@ import { panelRegistry } from '@controls/panel.ts'
 import { defaultValues } from '@controls/registry.ts'
 import { mergeValues, resolvePatch } from '@patch/resolve.ts'
 import { createPatch, type Patch } from '@patch/schema.ts'
-import { copyOf } from '@presets/preset.ts'
+import { copyOf } from '@patch/copy.ts'
 import { testApi } from './apiFixture.ts'
 import { createBundle, parseBundle, serializeBundle } from '@transfer/bundle.ts'
 import { fixedIdentity, testRegistry } from './fixtures.ts'
@@ -17,17 +17,17 @@ describe('patch lifecycle', () => {
     const store = api.store
     const registry = testRegistry()
 
-    /* Start from a preset. It must not be saved by loading it.
+    /* Start from a factory patch. It must not be saved by loading it.
 
        Declared here rather than taken from the shipped bank: this is a test of
        the storage lifecycle against a two-control test registry, and pulling a
-       real preset would make it depend on which sound happens to be first and
-       on every value that sound carries. */
-    const preset = createPatch(
-      { name: 'Test Preset', visibility: 'public' },
-      fixedIdentity('preset'),
+       real one would make it depend on which sound happens to be first and on
+       every value that sound carries. */
+    const factory = createPatch(
+      { name: 'Test Factory Patch', visibility: 'public' },
+      fixedIdentity('factory'),
     )
-    let draft = copyOf(preset, { owner: null }, fixedIdentity('draft'))
+    let draft = copyOf(factory, { owner: null }, fixedIdentity('draft'))
     expect(await store.list()).toEqual([])
 
     // Edit the panel. Values start from registry defaults.

@@ -188,7 +188,7 @@ export function createUsers(db: Database) {
 
     /* Everybody's overrides in one query, for the rare question that has to be
        asked about every account at once. Returning them rather than answering
-       "who holds X" in SQL: the answer depends on the presets and on one
+       "who holds X" in SQL: the answer depends on the roles and on one
        privilege being conditional on another, and a second copy of those rules
        written in SQL is a copy that drifts. */
     overridesAll(): Map<number, Overridden> {

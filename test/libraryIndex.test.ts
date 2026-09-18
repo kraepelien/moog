@@ -47,7 +47,7 @@ describe('what a viewer is shown', () => {
     patch('Mine', me.id)
     patch('Theirs, shared', them.id, 'public')
     patch('Theirs, secret', them.id, 'private')
-    store.patches.putPreset('sub-bass', { ...createPatch({ name: 'Sub Bass', visibility: 'public' }), id: 'sub-bass' })
+    store.patches.putFactory('sub-bass', { ...createPatch({ name: 'Sub Bass', visibility: 'public' }), id: 'sub-bass' })
 
     expect(createLibrary(db).entriesFor(me.id).map((row) => row.name).sort()).toEqual([
       'Mine',
@@ -74,7 +74,7 @@ describe('what a viewer is shown', () => {
   test('a factory row has no owner and says where it came from', () => {
     const { db, store, person } = library()
     const me = person('me')
-    store.patches.putPreset('sub-bass', {
+    store.patches.putFactory('sub-bass', {
       ...createPatch({ name: 'Sub Bass', visibility: 'public', approximate: true }),
       id: 'sub-bass',
     })

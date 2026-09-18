@@ -38,8 +38,8 @@ export function isRating(stars: unknown): stars is number {
   return Number.isInteger(stars / RATING_STEP)
 }
 
-/* Which store it came from, not a field on the patch: what makes a preset a
-   preset is that it lives in the repo and nobody may write over it. */
+/* Where it came from, not a field on the patch: what makes a patch a factory
+   one is that it started as a file in the repo and nobody may write over it. */
 export const ORIGINS = ['factory', 'user'] as const
 export type Origin = (typeof ORIGINS)[number]
 

@@ -94,7 +94,7 @@ export function patchApi(options: PatchApiOptions): Plugin {
       seedTags(db)
       server.config.logger.info(
         reseed
-          ? `  ➜  Factory bank: ${factory.loaded} presets reseeded from ${options.seed}`
+          ? `  ➜  Factory bank: ${factory.loaded} patches reseeded from ${options.seed}`
           : `  ➜  Factory bank: ${factory.loaded} new, ${factory.kept} kept`,
       )
 
