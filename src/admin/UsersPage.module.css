@@ -17,3 +17,17 @@
   gap: 4px;
   flex-wrap: wrap;
 }
+
+/* The tallies go rather than shrink, the way the library's rows drop their
+   chips. Seven columns do not fit beside the rail below this, and a table wider
+   than its card is not merely cramped here: Access is the last column, so it is
+   Change — the only way in to somebody's privileges — that ends up off the edge,
+   behind a sideways scroll on a page that gives no sign of having one.
+
+   Who somebody is and what they hold are what the line is for; the counts are
+   read when comparing people, which is what a wider window is for. */
+@media (max-width: 900px) {
+  .tally {
+    display: none;
+  }
+}

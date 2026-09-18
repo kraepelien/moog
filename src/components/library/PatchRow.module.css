@@ -27,15 +27,25 @@
 }
 
 /* The columns collapse rather than shrink: at this width the chips have stopped
-   being readable, and the name and its rating are what the line is for. */
-@media (max-width: 880px) {
+   being readable, and the name and its rating are what the line is for.
+
+   The synth column is what sets the number, being the one with a fixed longest
+   label: measured with the rail open, "MINIMOOG MODEL D" starts losing its tail
+   to the ellipsis at 910px and the two bank chips wrap onto a second line just
+   under that. The rail can be folded at any width, so the roomier case is not
+   the one to size for. */
+@media (max-width: 920px) {
   .row {
     grid-template-columns: 1fr auto;
   }
 
-  .tags,
-  .instrument,
-  .bank {
+  /* Through .row, and not because these are ever anywhere else: a media query
+     adds no specificity, so a bare `.tags` here loses to the `.tags` further
+     down the file that makes it a flex row, and the columns stayed on the page
+     and stacked instead. Keep the parent, or this rule goes quiet again. */
+  .row .tags,
+  .row .instrument,
+  .row .bank {
     display: none;
   }
 }

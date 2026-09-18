@@ -18,6 +18,7 @@ import { MAX_TAG_LENGTH, type TagInUse, tagNameProblem } from './tags.ts'
 import { ToneChip } from '@components/library/ToneChip.tsx'
 import { skinValue } from '@/skin.ts'
 import { shadesOf, toneForTag, TONE_COLOURS, type Skin } from '@/tones.ts'
+import styles from './AdminPage.module.css'
 
 function BinGlyph() {
   return (
@@ -110,7 +111,9 @@ export function AdminPage({
                 <TableRow>
                   <TableCell>Tag</TableCell>
                   <TableCell>Colour</TableCell>
-                  <TableCell align="right">Patches</TableCell>
+                  <TableCell align="right" className={styles.tally}>
+                    Patches
+                  </TableCell>
                   <TableCell align="right">Remove</TableCell>
                 </TableRow>
               </TableHead>
@@ -135,7 +138,7 @@ export function AdminPage({
                       />
                     </TableCell>
                     <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box className={styles.colour}>
                         <ColourField
                           label={`${tag.name} colour`}
                           hint={tag.colour === null ? 'From the name' : undefined}
@@ -152,7 +155,9 @@ export function AdminPage({
                         </Button>
                       </Box>
                     </TableCell>
-                    <TableCell align="right">{tag.patches}</TableCell>
+                    <TableCell align="right" className={styles.tally}>
+                      {tag.patches}
+                    </TableCell>
                     <TableCell align="right">
                       <IconButton
                         size="small"

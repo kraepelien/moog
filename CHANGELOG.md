@@ -3,6 +3,7 @@
 Everything that has landed on `main`, newest first. A pull request carries its link; a commit pushed
 straight to `main` has none to carry.
 
+- Collapse the lists and the admin tables at the width they stop fitting, and make the collapse fire
 - [Ask for a pull request and get it merged, not just opened](https://github.com/kraepelien/moog/pull/92)
 - [Open a page at its top, the way following a link does](https://github.com/kraepelien/moog/pull/91)
 - [Stack the home cards inside the button rather than on it](https://github.com/kraepelien/moog/pull/90)
