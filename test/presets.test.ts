@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { loadFactory } from '@server/factory.ts'
+import { createPatches } from '@server/repositories/patches.ts'
 import { createRepositories } from '@server/repositories/index.ts'
 import { PATCH_SCHEMA_VERSION, createPatch, parsePatch, type Patch } from '@patch/schema.ts'
 import { copyOf } from '@presets/preset.ts'
@@ -86,26 +87,54 @@ describe('loading the bank into the database', () => {
     expect(await api.store.listPresets()).toHaveLength(files().length)
   })
 
-  test('twice changes nothing', async () => {
+  test('twice writes nothing the second time', async () => {
     loadFactory(api.db, SEED)
     const again = loadFactory(api.db, SEED)
-    expect(again.loaded).toBe(files().length)
+    expect(again.loaded).toBe(0)
+    expect(again.kept).toBe(files().length)
     expect(await api.store.listPresets()).toHaveLength(files().length)
   })
 
-  test('a preset edited in the repo is refreshed on the next start', async () => {
-    /* The reason the manifest is gone: a row copied once could drift from the
-       image it came from, and only a reload can keep them together. */
+  /* The rows are the live bank, so an administrator's correction has to survive
+     a restart. That is the whole reason this seeds rather than re-asserts. */
+  test('leaves a preset the database already holds alone', async () => {
     const bank = aBank(join(api.root, 'bank'), { one: aPreset('one', 'First') })
     loadFactory(api.db, bank)
 
     aBank(bank, { one: { ...aPreset('one', 'Second'), values: { glide: 9 } } })
+    const again = loadFactory(api.db, bank)
+
+    expect([again.loaded, again.kept]).toEqual([0, 1])
+    const presets = await api.store.listPresets()
+    expect(presets[0]!.name).toBe('First')
+  })
+
+  /* Asked for out loud, and destructive on purpose: it is how the repo's copy
+     is put back over whatever the rows have become. */
+  test('reseeding writes the file back over the row', async () => {
+    const bank = aBank(join(api.root, 'bank'), { one: aPreset('one', 'First') })
     loadFactory(api.db, bank)
 
+    aBank(bank, { one: { ...aPreset('one', 'Second'), values: { glide: 9 } } })
+    const again = loadFactory(api.db, bank, { reseed: true })
+
+    expect([again.loaded, again.kept]).toEqual([1, 0])
     const presets = await api.store.listPresets()
     expect(presets).toHaveLength(1)
     expect(presets[0]!.name).toBe('Second')
     expect(presets[0]!.values).toEqual({ glide: 9 })
+  })
+
+  /* A preset taken out of the bank on purpose must not walk back in at the next
+     start just because its file is still in the image. */
+  test('does not bring back one that was retired', async () => {
+    const bank = aBank(join(api.root, 'bank'), { one: aPreset('one') })
+    loadFactory(api.db, bank)
+    createPatches(api.db).deletePreset('one')
+
+    const again = loadFactory(api.db, bank)
+    expect([again.loaded, again.kept]).toEqual([0, 1])
+    expect(await api.store.listPresets()).toHaveLength(0)
   })
 
   test('a preset the image no longer ships is retired', async () => {
@@ -131,7 +160,8 @@ describe('loading the bank into the database', () => {
   })
 
   test('a bank that is not there loads nothing rather than failing', () => {
-    expect(loadFactory(api.db, join(api.root, 'no-such-bank'))).toEqual({ loaded: 0, retired: 0 })
+    expect(loadFactory(api.db, join(api.root, 'no-such-bank')))
+      .toEqual({ loaded: 0, kept: 0, retired: 0 })
   })
 
   test('presets are not patches and never appear in the patch list', async () => {

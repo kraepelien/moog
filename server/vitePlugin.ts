@@ -89,9 +89,14 @@ export function patchApi(options: PatchApiOptions): Plugin {
       watchServerSources(server)
 
       const db = openDatabase(join(options.root, 'moog.db'))
-      const factory = loadFactory(db, options.seed)
+      const reseed = process.env.MOOG_RESEED === '1'
+      const factory = loadFactory(db, options.seed, { reseed })
       seedTags(db)
-      server.config.logger.info(`  ➜  Factory bank: ${factory.loaded} presets`)
+      server.config.logger.info(
+        reseed
+          ? `  ➜  Factory bank: ${factory.loaded} presets reseeded from ${options.seed}`
+          : `  ➜  Factory bank: ${factory.loaded} new, ${factory.kept} kept`,
+      )
 
       /* Without this, a .env the server cannot see looks exactly like no .env at
          all: sign-in is skipped, everything belongs to the local user, and the

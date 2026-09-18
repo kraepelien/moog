@@ -195,6 +195,17 @@ export function createPatches(db: Database) {
         .map(toPatch)
     },
 
+    /* Whether the bank already holds this one, deleted or not: a preset an
+       administrator retired must not come back at the next start just because
+       its file is still in the image. */
+    hasPreset(slug: string): boolean {
+      if (!isSafeName(slug)) throw new Error(`Unsafe preset slug: ${slug}`)
+      return (
+        db.query<{ n: number }, [string]>(`select count(*) as n from patches where slug = ?`)
+          .get(slug)?.n === 1
+      )
+    },
+
     putPreset(slug: string, patch: Patch): void {
       if (!isSafeName(slug)) throw new Error(`Unsafe preset slug: ${slug}`)
       const existing = db
