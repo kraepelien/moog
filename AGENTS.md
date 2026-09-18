@@ -26,7 +26,9 @@ bun run serve    # the built app plus the file-backed API on 5174 (PORT to chang
 ```
 
 Build, test and lint all pass before a change is done. `bun run build` is the only thing that
-typechecks `src/`: tests sit outside `tsconfig.app.json`'s `include` and run type-stripped.
+typechecks anything: `tsc -b` walks all three projects, `src/` under `tsconfig.app.json`,
+`vite.config.ts` and `server/` under `tsconfig.node.json`, and `test/` under `tsconfig.test.json`.
+Bun runs every one of them type-stripped, so a green suite says nothing about the types.
 
 Two dev servers cannot share a port, so quote the port with any URL or screenshot; otherwise which
 worktree it came from is a guess.
@@ -155,7 +157,7 @@ rather than leaving a control quietly doing nothing.
 Anything crossing out of its own directory goes through an alias — `@patch/schema.ts`,
 `@controls/registry.ts`, `@server/store.ts`, and `@/tones.ts` for the few files sitting directly in
 `src/`. Siblings stay relative (`./types.ts`). The map is `tsconfig.paths.json`, and it is the only
-copy: the three tsconfigs extend it, `vite.config.ts` reads it, and `test/image.test.ts` walks it.
+copy: the four tsconfigs extend it, `vite.config.ts` reads it, and `test/image.test.ts` walks it.
 Add a top-level directory and you add one line there, nowhere else.
 
 **Every specifier carries its `.ts`.** Not a style choice: `server/` and `vite.config.ts` compile
@@ -167,7 +169,7 @@ beats two.
 Three resolvers have to agree on the map, and only two of them fail loudly:
 
 - **Bun reads `paths` from the root `tsconfig.json` only.** It does not follow project references,
-  which is why the map is in a file all three configs extend rather than in `tsconfig.app.json`.
+  which is why the map is in a file all four configs extend rather than in `tsconfig.app.json`.
   This is also why the runtime image copies both tsconfigs: the server is not bundled, so Bun maps
   `@patch/schema.ts` as it boots, and without them it is an unresolved bare specifier and a
   crashloop. Pinned by `test/image.test.ts`.

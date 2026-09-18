@@ -1011,9 +1011,10 @@ Two things learned the hard way that still apply when control components arrive:
 useful — it forces the storage adapter to take its backend by injection instead of reaching for a
 global.
 
-Tests live in `test/`, outside `tsconfig.app.json`'s `include`, so `bun run build` does not try to
-typecheck `bun:test` imports without `@types/bun` installed. They run type-stripped and are not
-typechecked; installing `@types/bun` would fix that.
+Tests live in `test/` and have their own project, `tsconfig.test.json`, which the root config
+references so `tsc -b` typechecks them alongside `src/` and `server/`. It is the app config plus
+`bun` and `node` in `types`, which is what makes `bun:test` and `node:fs` resolve. Bun still runs
+the suite type-stripped, so `bun run build` is where a broken test type shows up.
 
 `test/fixtures.ts` defines two **fake** control types. They exist to prove the registry, resolver
 and importer are generic over control types. Neither is a proposal for a real Minimoog control, and

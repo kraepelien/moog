@@ -116,7 +116,9 @@ describe('adding one', () => {
 })
 
 describe('colouring one', () => {
-  const rows = async (call: (m: string, p: string) => Promise<Response | undefined>) =>
+  const rows = async (
+    call: (m: string, p: string, payload?: unknown) => Promise<Response | null>,
+  ) =>
     (await (await call('GET', '/api/tags'))!.json()) as { id: number; name: string; colour: string | null }[]
 
   test('starts with none, so every chip is on the hash', async () => {
