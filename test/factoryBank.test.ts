@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { loadFactory } from '@server/factory.ts'
 import { createPatches } from '@server/repositories/patches.ts'
@@ -109,6 +109,52 @@ describe('loading the bank into the database', () => {
     expect(rows[0]!.name).toBe('First')
   })
 
+  /* The cost of seeding: a database that already holds a slug never hears about
+     a change to its file. `BANK_REFRESH` is how a change is pushed through once
+     without anybody remembering an environment variable at the right deploy.
+
+     The number is read out of `meta`, so these drive it by clearing that row
+     rather than by editing the constant — what is under test is that it fires
+     exactly once, not what it currently equals. */
+  const forget = (db: typeof api.db) => db.run(`delete from meta where key = 'bank_refresh'`)
+
+  test('a raised refresh number rewrites rows that are already there, once', async () => {
+    const bank = aBank(join(api.root, 'bank'), { one: aFactoryPatch('one', 'First') })
+    loadFactory(api.db, bank)
+
+    aBank(bank, { one: { ...aFactoryPatch('one', 'Second'), values: { glide: 9 } } })
+    forget(api.db)
+    const pushed = loadFactory(api.db, bank)
+
+    expect([pushed.loaded, pushed.kept, pushed.refreshed]).toEqual([1, 0, true])
+    expect(createRepositories(api.db).patches.listFactory()[0]!.name).toBe('Second')
+  })
+
+  test('and goes back to leaving rows alone on the start after it', async () => {
+    const bank = aBank(join(api.root, 'bank'), { one: aFactoryPatch('one', 'First') })
+    forget(api.db)
+    loadFactory(api.db, bank)
+
+    aBank(bank, { one: { ...aFactoryPatch('one', 'Third'), values: { glide: 3 } } })
+    const after = loadFactory(api.db, bank)
+
+    expect([after.loaded, after.kept, after.refreshed]).toEqual([0, 1, false])
+    expect(createRepositories(api.db).patches.listFactory()[0]!.name).toBe('First')
+  })
+
+  /* A start that wrote half the bank and then failed must not be remembered as
+     having done it, or the rest would never be written. */
+  test('does not record the refresh when the load throws part way through', () => {
+    const bank = aBank(join(api.root, 'bank'), { good: aFactoryPatch('good') })
+    writeFileSync(join(bank, 'broken.json'), '{"id": 123}', 'utf8')
+    forget(api.db)
+    expect(() => loadFactory(api.db, bank)).toThrow(/broken.json/)
+
+    rmSync(join(bank, 'broken.json'))
+    const retry = loadFactory(api.db, bank)
+    expect(retry.refreshed).toBe(true)
+  })
+
   /* Asked for out loud, and destructive on purpose: it is how the repo's copy
      is put back over whatever the rows have become. */
   test('reseeding writes the file back over the row', async () => {
@@ -161,7 +207,7 @@ describe('loading the bank into the database', () => {
 
   test('a bank that is not there loads nothing rather than failing', () => {
     expect(loadFactory(api.db, join(api.root, 'no-such-bank')))
-      .toEqual({ loaded: 0, kept: 0, retired: 0 })
+      .toEqual({ loaded: 0, kept: 0, retired: 0, refreshed: false })
   })
 
   test('a factory patch never appears in the saved-patch list', async () => {

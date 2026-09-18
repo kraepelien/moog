@@ -33,7 +33,9 @@ seedTags(db)
 console.log(
   reseed
     ? `Factory bank: ${factory.loaded} patches RESEEDED from ${seed}, ${factory.retired} retired`
-    : `Factory bank: ${factory.loaded} new, ${factory.kept} kept, ${factory.retired} retired`,
+    : factory.refreshed
+      ? `Factory bank: ${factory.loaded} patches refreshed from ${seed} — a one-off, and the last one until the number is raised again`
+      : `Factory bank: ${factory.loaded} new, ${factory.kept} kept, ${factory.retired} retired`,
 )
 if (reseed) console.warn('MOOG_RESEED=1 was set: any edits to factory patches have been overwritten.')
 console.log(`Sign-in: ${describeAuth(authConfigFromEnv(process.env))}`)
