@@ -46,7 +46,7 @@ export function StarRating({
       onChange={(_event, next) => onRate?.(next ?? (mine ? 0 : hovered.current))}
       sx={{
         '& .MuiRating-iconFilled': { color: mine ? TONE_COLOURS.blue.ink : SHELL.star },
-        '& .MuiRating-iconEmpty': { color: 'rgb(255 255 255 / 18%)' },
+        '& .MuiRating-iconEmpty': { color: SHELL.starEmpty },
       }}
     />
   )

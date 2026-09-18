@@ -349,6 +349,17 @@ A skin is **partial**: a key it leaves out is the stylesheet's value, so adding 
 storing it. It is sifted by `cleanSkin` on the way in, because a value that is not a hex is a way of
 writing CSS into the page.
 
+**MUI's palette is the tones, under MUI's own names.** `primary`, `secondary`, `error`, `warning`,
+`success` and `info` are handed a `var()` apiece in `theme.ts`, because a component reaches for those
+rather than for a tone: a focused field, a checkbox, the tab indicator, the pager and anything
+`color="error"` were all drawing MUI's defaults, which no skin could reach. Nothing new is declared —
+each one is a tone that already has a swatch. `contrastText` is given rather than left to MUI, which
+derives it by *reading* `main`, and `main` here is a property it cannot read.
+
+The lettering *on* a filled tone is its own colour, `--shell-on-tone`. A near-black hand-tinted per
+tone would be four literals in three components, and a skin that lightened a tone would leave every
+one of them unreadable with nothing to set.
+
 ### The hexes are the product; the page is a preview
 
 The colours the app ships with are the hexes in `shellPalette.css` and `DEFAULT_SKIN`, and changing

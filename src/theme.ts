@@ -1,5 +1,5 @@
 import { createTheme } from '@mui/material/styles'
-import { SHELL } from './tones.ts'
+import { SHELL, TONE_COLOURS } from './tones.ts'
 
 /* MUI ships Roboto as its default face and this project does not load it, so
    without this the chrome would fall back to a system font while the panel
@@ -31,6 +31,23 @@ export const theme = createTheme({
        handing it the same property the library's rows use is what stops a skin
        repainting half the hovers on the page and leaving the rest white. */
     action: { hover: SHELL.hoverFaint, selected: SHELL.hoverStrong },
+
+    /* The tones, handed to MUI under the names its own components reach for.
+       Left unset these were MUI's defaults — a blue on every focused field,
+       checkbox, tab indicator and pager, and a red on anything `color="error"`
+       — none of which any skin could reach, so the Layout page repainted the
+       app around them and they stayed. Each one is a tone that already has a
+       swatch, so this adds no colour; it puts MUI inside the ones there are.
+
+       `contrastText` is given rather than computed: MUI derives it from `main`
+       by reading the value, and `main` here is a custom property it cannot
+       read. */
+    primary: { main: TONE_COLOURS.blue.ink, contrastText: SHELL.onTone },
+    secondary: { main: TONE_COLOURS.violet.ink, contrastText: SHELL.onTone },
+    error: { main: TONE_COLOURS.pink.ink, contrastText: SHELL.onTone },
+    warning: { main: TONE_COLOURS.amber.ink, contrastText: SHELL.onTone },
+    success: { main: TONE_COLOURS.green.ink, contrastText: SHELL.onTone },
+    info: { main: TONE_COLOURS.blue.ink, contrastText: SHELL.onTone },
   },
   components: {
     MuiAppBar: {

@@ -30,6 +30,13 @@
      a menu item and a tab, so it is one colour rather than four that drift. */
   --shell-hover: #ffffff;
 
+  /* What is written *on* a tone that has been filled in — a role button that is
+     held, the page you are on in the admin nav, Save and Cancel. One colour
+     rather than a near-black hand-tinted per tone: those were four literals in
+     three components, and a skin that lightened a tone left every one of them
+     unreadable with nothing to set. */
+  --shell-on-tone: #0e0e11;
+
   --tone-red-ink: #f2594b;
   --tone-pink-ink: #ff6f9c;
   --tone-amber-ink: #e8c257;
@@ -45,6 +52,13 @@
 :root {
   --shell-hover-faint: color-mix(in srgb, var(--shell-hover) 3%, transparent);
   --shell-hover-strong: color-mix(in srgb, var(--shell-hover) 10%, transparent);
+}
+
+/* The rest of a rating, behind the stars that are lit. Mixed from the body ink
+   rather than given: it is the same "there is a track here" as any disabled
+   mark, and a skin setting the page light needs it to darken with the ink. */
+:root {
+  --shell-star-empty: color-mix(in srgb, var(--shell-ink) 18%, transparent);
 }
 
 /* Coloured text on a wash of the same hue rather than a solid fill: at this size

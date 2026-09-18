@@ -29,7 +29,7 @@ import { ToneChip } from '@components/library/ToneChip.tsx'
 import type { LibraryEntry } from '@components/library/entry.ts'
 import { MidiFileError, readMidiFile, type MidiChannel } from '@audio/midiFile.ts'
 import type { Patch } from '@patch/schema.ts'
-import { TONE_COLOURS, type Tone } from '@/tones.ts'
+import { SHELL, TONE_COLOURS, type Tone } from '@/tones.ts'
 import styles from './PlayMidi.module.css'
 
 /* A file, its parts, and a sound for each.
@@ -333,7 +333,7 @@ export function PlayMidi({
                       letter="S"
                       title={`Solo ${partName(part)}`}
                       tone="amber"
-                      ink="#191203"
+                      ink={SHELL.onTone}
                       on={soloed.has(part.channel)}
                       onPress={() => toggleSolo(part.channel)}
                     />
@@ -341,7 +341,7 @@ export function PlayMidi({
                       letter="M"
                       title={`Mute ${partName(part)}`}
                       tone="pink"
-                      ink="#1b0509"
+                      ink={SHELL.onTone}
                       on={muted.has(part.channel)}
                       onPress={() => toggleMute(part.channel)}
                     />

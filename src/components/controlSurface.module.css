@@ -16,8 +16,11 @@
   outline: none;
 }
 
+/* Named rather than left to inherit `currentColor`: every control wearing this
+   sits on the fascia, so the ring is the panel's ink — the same one the keyboard
+   draws — and not whatever colour the text around it happens to be. */
 .focusRing:focus-visible {
-  outline: 2px solid;
+  outline: 2px solid var(--moog-ink);
   outline-offset: 2px;
 }
 

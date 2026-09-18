@@ -7,7 +7,7 @@
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--mui-palette-text-secondary, #9a9aa4);
+  color: var(--shell-ink-dim);
 }
 
 .roles {
