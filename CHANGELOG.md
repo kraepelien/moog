@@ -2,6 +2,7 @@
 
 Every pull request merged into `main`, newest first.
 
+- Stop the suite waiting on a dialog fade, and run it across workers
 - [Cut the icons from the new mark, on a tile](https://github.com/kraepelien/moog/pull/78)
 - [Draw the mark from the new logo](https://github.com/kraepelien/moog/pull/77)
 - [Home on the mark, and a tag's picker on the colour it is wearing](https://github.com/kraepelien/moog/pull/76)
