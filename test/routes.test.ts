@@ -80,9 +80,10 @@ describe('the table itself', () => {
 
   /* A row everybody could see would be a door most people find locked. The rail
      draws Settings itself, from the administration pages this account can open,
-     rather than from a route that says it is in the rail. */
-  test('keeps administration out of the rail', () => {
-    expect(RAIL.map((entry) => entry.name)).toEqual(['home', 'library', 'editor', 'midi'])
+     rather than from a route that says it is in the rail — and home is the mark
+     at the top rather than a row of its own. */
+  test('keeps administration and home out of the rail', () => {
+    expect(RAIL.map((entry) => entry.name)).toEqual(['library', 'editor', 'midi'])
   })
 
   /* The rail is as wide as its widest label, so every row in it has a word of

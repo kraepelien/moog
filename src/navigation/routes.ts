@@ -16,8 +16,9 @@ export interface RouteDef {
   readonly path: string
   readonly title: string
   /* What this page is called in the side rail, and whether it is in it at all.
-     A page without one is reached from the account menu: a row everybody could
-     see would be a door most people find locked.
+     A page without one is reached some other way — the account menu, or the
+     mark at the top of the rail: a row everybody could see would be a door most
+     people find locked.
 
      A word of its own rather than the title, because the rail is as wide as its
      widest label and "Patch library" over two lines is what that costs. The
@@ -27,7 +28,9 @@ export interface RouteDef {
 }
 
 export const ROUTES: readonly RouteDef[] = [
-  { name: 'home', path: '/', title: 'Home', rail: 'Home' },
+  /* Not a row of its own: the mark at the top of the rail goes here, which is
+     where a logo already takes everybody who presses one. */
+  { name: 'home', path: '/', title: 'Home' },
   { name: 'library', path: '/library', title: 'Patch library', rail: 'Library' },
   { name: 'editor', path: '/editor', title: 'Patch editor', rail: 'Editor' },
   { name: 'midi', path: '/midi', title: 'Play MIDI', rail: 'MIDI' },
@@ -43,9 +46,15 @@ export const ADMIN_ROUTES: readonly RouteDef[] = ROUTES.filter((route) =>
   route.path.startsWith('/admin'),
 )
 
+/* Where the mark at the top of the rail goes. Named rather than reached through
+   `DEFAULT_ROUTE`, which is the same page for a different reason: one is where
+   the logo leads and the other is where an address naming no page lands, and
+   the day they stop being the same page neither should have to be found again. */
+export const HOME_ROUTE: RouteDef = ROUTES.find((entry) => entry.name === 'home')!
+
 /* Named rather than taken from the head of the list: the rail is in the order
    it is read in, and an address naming no page still lands on the home page. */
-export const DEFAULT_ROUTE: RouteDef = ROUTES.find((entry) => entry.name === 'home')!
+export const DEFAULT_ROUTE: RouteDef = HOME_ROUTE
 
 export const RAIL: readonly RouteDef[] = ROUTES.filter((entry) => entry.rail !== undefined)
 

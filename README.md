@@ -736,7 +736,11 @@ something they are in the middle of trying.
 
 The home page at `/` is a placeholder for a dashboard. It is the address the app opens at and the
 one an unrecognised address falls back to, so it says what the pages are rather than being blank —
-but it holds nothing of its own yet.
+but it holds nothing of its own yet. It is not a row: the mark at the top of the rail goes there,
+which is where a logo already takes everybody who presses one, and a row as well would be two ways
+to the same page an inch apart. `HOME_ROUTE` is what the mark aims at, named separately from
+`DEFAULT_ROUTE` although they are the same page today — one is where the logo leads and the other is
+where an unrecognised address lands.
 
 The glyphs are inline components in `railIcons.tsx`, not `*.svg?react` imports, although `svgr` is
 configured. svgr runs in Vite and not in Bun, so an imported file would be a component the suite

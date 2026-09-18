@@ -65,6 +65,18 @@
   display: flex;
 }
 
+/* The mark is the way home, so it takes a target's worth of padding and says so
+   under the pointer. No `aria-current` styling: the logo is the logo whichever
+   page you are on, and dimming it would read as the app being switched off. */
+.home {
+  padding: 5px;
+  border-radius: 12px;
+}
+
+.home:hover {
+  background-color: var(--shell-hover-faint);
+}
+
 .logo {
   border-radius: 8px;
   display: block;

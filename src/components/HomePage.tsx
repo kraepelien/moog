@@ -1,6 +1,6 @@
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
-import { RAIL, type RouteDef } from '@navigation/routes.ts'
+import { RAIL } from '@navigation/routes.ts'
 import styles from './HomePage.module.css'
 
 /* A placeholder standing where a dashboard is going. It is the address the app
@@ -15,8 +15,6 @@ export function HomePage({
      without asking the server for anything the app has not already loaded. */
   patches: number
 }) {
-  const onward: readonly RouteDef[] = RAIL.filter((entry) => entry.name !== 'home')
-
   return (
     <Box className={styles.page}>
       <Typography component="h2" className={styles.heading}>
@@ -27,7 +25,7 @@ export function HomePage({
       </Typography>
 
       <Box className={styles.onward}>
-        {onward.map((entry) => (
+        {RAIL.map((entry) => (
           <Box
             key={entry.name}
             component="button"
