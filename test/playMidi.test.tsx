@@ -16,6 +16,14 @@ import type { Desk } from '@components/midi/desk.ts'
 import { AccessProvider } from '@access/AccessProvider.tsx'
 import { PRIVILEGE } from '@access/privileges.ts'
 import { createPatch, type Patch } from '@patch/schema.ts'
+import { ThemeProvider, createTheme } from '@mui/material/styles'
+
+/* MUI closes a dialog over a quarter-second fade, and `waitForElementToBeRemoved`
+   sits through it: seven of the tests below open two dialogs each, which was four
+   of the suite's fifteen seconds spent watching an animation nothing here asserts.
+   `always` is the setting a person who asks their machine for reduced motion gets,
+   so the dialogs still open and close, they just do it in one frame. */
+const still = createTheme({ motion: { reducedMotion: 'always' } })
 
 /* The page is driven the way a person drives it, and then unmounted, because
    what is being tested is what survives the unmount: leaving the tab used to
@@ -120,14 +128,16 @@ function show(privileges: readonly string[] = [PRIVILEGE.StoreMidi]) {
   desk = fakeDesk()
   problems = []
   const { container } = render(
-    <AccessProvider privileges={privileges}>
-      <PlayMidi
-        entries={[ENTRY]}
-        loadPatch={async () => createPatch({ name: 'Sub Bass' })}
-        desk={desk}
-        onProblem={(message) => problems.push(message)}
-      />
-    </AccessProvider>,
+    <ThemeProvider theme={still}>
+      <AccessProvider privileges={privileges}>
+        <PlayMidi
+          entries={[ENTRY]}
+          loadPatch={async () => createPatch({ name: 'Sub Bass' })}
+          desk={desk}
+          onProblem={(message) => problems.push(message)}
+        />
+      </AccessProvider>
+    </ThemeProvider>,
   )
   return container
 }

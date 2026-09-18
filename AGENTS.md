@@ -19,7 +19,8 @@ Package manager is **Bun**. Never npm, npx, yarn or pnpm.
 bun install
 bun run dev      # Vite dev server on 5173, or the next free port if a worktree already holds it
 bun run build    # tsc -b, then a production build into dist/
-bun test         # unit, component and server tests
+bun test         # unit, component and server tests, one file at a time (~10s)
+bun run test     # the same suite across 4 worker processes (~4s)
 bun run lint     # oxlint
 bun run serve    # the built app plus the file-backed API on 5174 (PORT to change it)
 ```
@@ -181,6 +182,11 @@ Three resolvers have to agree on the map, and only two of them fail loudly:
 - **happy-dom has no Web Audio.** `test/fakeAudio.ts` is a context that records instead of
   sounding, which is why the engine only ever uses the factory methods (`context.createGain()`)
   rather than the constructor forms: one surface to keep faked.
+- **A MUI transition costs real wall-clock time in a test.** `waitForElementToBeRemoved` on a
+  dialog sits through the quarter-second close fade, and `test/playMidi.test.tsx` alone spent four
+  of the suite's fifteen seconds that way. Rendering under
+  `createTheme({ motion: { reducedMotion: 'always' } })` collapses every transition to one frame
+  without disabling it, so the tests still drive the dialog they always did.
 - **`fireEvent` cannot target `window` under happy-dom.** Dispatch on `document.body`; it bubbles.
 - **happy-dom has no pointer capture.** `test/setup.ts` installs no-ops, without which any
   `pointerdown` on a knob throws before a drag can be exercised.
