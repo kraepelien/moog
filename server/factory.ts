@@ -5,14 +5,32 @@ import { INSTRUMENTS } from '@instruments/instruments.ts'
 import { parsePatch } from '@patch/schema.ts'
 import { createPatches } from './repositories/patches.ts'
 
-/* The bank in the repo is the truth about factory content, and it is reloaded
-   on every start. That replaces the seed manifest, which existed only because
-   the files were being copied once: a row refreshed from the image cannot drift
-   from it, and nobody can delete one for everybody. */
+/* The bank in the repo is where factory content comes from, and it is **seeded**
+   rather than re-asserted: a slug the database already holds is left exactly as
+   it is.
+
+   That is what makes a factory preset editable. The rows are the live bank now,
+   so an administrator correcting one has somewhere to put the correction that a
+   restart will not undo — the alternative was a bank that came back from the
+   image every boot and an edit that appeared to work until the next deploy.
+
+   The files stay the starting point, and `reseed` is how to go back to them:
+   it writes every file over the row, losing edits, which is the whole point of
+   asking for it. Nothing does that on its own. */
 
 export interface FactoryLoad {
+  /* Written this time: everything on a first start, and only what is new on
+     every start after it. */
   readonly loaded: number
+  /* Already there and left alone. */
+  readonly kept: number
   readonly retired: number
+}
+
+export interface FactoryOptions {
+  /* Write every file over the row it matches, discarding whatever an
+     administrator has changed. */
+  readonly reseed?: boolean
 }
 
 export function syncInstruments(db: Database): void {
@@ -23,7 +41,11 @@ export function syncInstruments(db: Database): void {
   for (const instrument of INSTRUMENTS) upsert.run(instrument.id, instrument.name)
 }
 
-export function loadFactory(db: Database, bank: string): FactoryLoad {
+export function loadFactory(
+  db: Database,
+  bank: string,
+  options: FactoryOptions = {},
+): FactoryLoad {
   syncInstruments(db)
   const patches = createPatches(db)
 
@@ -31,19 +53,30 @@ export function loadFactory(db: Database, bank: string): FactoryLoad {
   try {
     files = readdirSync(bank).filter((file) => file.endsWith('.json')).sort()
   } catch {
-    return { loaded: 0, retired: 0 }
+    return { loaded: 0, kept: 0, retired: 0 }
   }
 
   const slugs: string[] = []
+  let loaded = 0
+  let kept = 0
   db.transaction(() => {
     for (const file of files) {
       const slug = file.slice(0, -'.json'.length)
+      slugs.push(slug)
+
+      /* Seeded, not synced. A row that is already here is the live bank, edits
+         and all, and the file is only where it started. */
+      if (!options.reseed && patches.hasPreset(slug)) {
+        kept++
+        continue
+      }
+
       const parsed = parsePatch(JSON.parse(readFileSync(join(bank, file), 'utf8')))
       /* Loudly, at startup: a bank file that will not parse is a mistake in the
          repo, not something a user can fix by reloading. */
       if (!parsed.ok) throw new Error(`${file}: ${parsed.error}`)
       patches.putPreset(slug, parsed.value)
-      slugs.push(slug)
+      loaded++
     }
   })()
 
@@ -57,5 +90,5 @@ export function loadFactory(db: Database, bank: string): FactoryLoad {
     [new Date().toISOString(), ...slugs],
   )
 
-  return { loaded: slugs.length, retired: retired.changes }
+  return { loaded, kept, retired: retired.changes }
 }

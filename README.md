@@ -778,6 +778,23 @@ Factory presets ship with the app and are read-only. They share the patch schema
 timestamps, which belong to a stored patch. Loading one produces a fresh unsaved patch with a new
 id, so saving afterwards can never write back over a preset.
 
+**The bank is seeded, not synced.** `loadFactory` writes a file into the database only when that
+slug is not there yet; a row it already holds is left exactly as it is. That is what makes a factory
+preset editable at all — the rows are the live bank, so a correction has somewhere to live that a
+restart will not undo. It also means a preset that was retired stays retired rather than walking
+back in because its file is still in the image.
+
+To put the repo's copy back over the rows, start once with `MOOG_RESEED=1`. It overwrites every
+preset and discards whatever was edited, which is the point of having to ask for it; nothing does it
+on its own, and the flag is read per start rather than stored, so leaving it in a compose file would
+quietly undo every correction at the next restart.
+
+```bash
+# on the NAS, with the stack stopped
+docker compose run --rm -e MOOG_RESEED=1 moog bun server/serve.ts   # or just restart with it set
+docker compose up -d
+```
+
 A preset file is one patch, named after the slug inside it, and a control you have no real value
 for is **omitted** rather than guessed — an omission is honest and a guess is not:
 
