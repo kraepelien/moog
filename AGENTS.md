@@ -35,6 +35,17 @@ worktree it came from is a guess.
 
 ## Pull requests
 
+Asking for a pull request asks for the whole of it, in one go: commit, push, open it, merge it into
+`main`, pull `main`, and give the changelog line its link. "Done" and "ship it" ask for the same
+thing. Nothing waits on a review, and the link is there to be read afterwards or not at all.
+
+Build, test and lint are green before the first commit, and the body carries what the work turned
+up, because a review that happens a week later has only the body to go on.
+
+A merge that does not go through gets `main` brought in and one more attempt. If it still refuses,
+it stays open and the reason is said out loud with the link: a failing check, a protection rule and
+a conflict that is not ours to settle are each a reason to stop, never a reason to force it.
+
 `CHANGELOG.md` lists every pull request merged into `main`, newest first, one line each:
 
 ```markdown
@@ -52,7 +63,8 @@ Nothing else goes in it: no versions, no dates, no grouping. The order it landed
 
 The branch writes its own line as it goes, without the link: a pull request has no number to point
 at until it is opened, and a line naming one would be pointing at somebody else's. After the merge,
-on a `main` that already has the change, the line is rewritten with the link.
+on a `main` that already has the change, the line is rewritten with the link. That rewrite is a
+commit straight to `main` and takes no line of its own.
 
 Two branches both adding a line collide on the same first line of the list. Both are wanted, so the
 conflict is settled by keeping both, in the order they landed. The rewrite never goes to the branch:
