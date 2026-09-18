@@ -3,7 +3,7 @@
 Everything that has landed on `main`, newest first. A pull request carries its link; a commit pushed
 straight to `main` has none to carry.
 
-- Show the logo itself in the rail and on the sign-in page, tile and all
+- [Show the logo itself in the rail and on the sign-in page, tile and all](https://github.com/kraepelien/moog/pull/86)
 - [Write the offset every gradient stop is supposed to carry](https://github.com/kraepelien/moog/pull/87)
 - Add the latest logo
 - [Offer the drawing itself to a browser that reads SVG](https://github.com/kraepelien/moog/pull/85)
