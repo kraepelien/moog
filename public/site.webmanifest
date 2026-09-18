@@ -1,6 +1,6 @@
 {
-  "name": "Minimoog Model D — Patch Editor",
-  "short_name": "Patch Library",
+  "name": "PATCHDB",
+  "short_name": "PATCHDB",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",

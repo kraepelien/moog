@@ -1,4 +1,4 @@
-# Minimoog Model D — Patch Editor
+# PATCHDB
 
 An interactive patch sheet for the Minimoog Model D. Every knob and switch on the panel holds a
 value; a patch is that set of values plus a name and notes. Load the factory patches, save your own

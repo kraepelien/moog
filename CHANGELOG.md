@@ -3,6 +3,7 @@
 Everything that has landed on `main`, newest first. A pull request carries its link; a commit pushed
 straight to `main` has none to carry.
 
+- Call the app PATCHDB
 - Let a commit pushed to main take a line of its own
 - Add the two that merged after the list was written
 - Stop the suite waiting on a dialog fade, and run it across workers
