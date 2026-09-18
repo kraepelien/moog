@@ -5,6 +5,7 @@ import { StyledEngineProvider, ThemeProvider } from '@mui/material/styles'
 import { App } from './App.tsx'
 import { adoptLegacyHash } from './navigation/router.ts'
 import { applySkin } from './skin.ts'
+import { createDeviceNav } from './storage/deviceNav.ts'
 import { createDeviceRail } from './storage/deviceRail.ts'
 import { createDeviceSkin, type StorageLike } from './storage/deviceSkin.ts'
 import { theme } from './theme.ts'
@@ -46,6 +47,7 @@ function lastingStorage(): StorageLike | null {
    in which that could happen. */
 const device = createDeviceSkin(deviceStorage())
 const rail = createDeviceRail(lastingStorage())
+const nav = createDeviceNav(lastingStorage())
 const skin = device.read()
 applySkin(skin, document.documentElement)
 draw(skin)
@@ -66,6 +68,8 @@ function draw(skin: Skin) {
             keepSkin={(next) => device.write(next)}
             railCollapsed={rail.read()}
             keepRail={(next) => rail.write(next)}
+            navPreference={nav.read()}
+            keepNav={(next) => nav.write(next)}
           />
         </ThemeProvider>
       </StyledEngineProvider>
