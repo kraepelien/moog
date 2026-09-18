@@ -92,6 +92,18 @@ describe('the table itself', () => {
     expect(RAIL.every((entry) => (entry.rail ?? '').split(' ').length === 1)).toBe(true)
   })
 
+  /* Somebody's own screen rather than something an administrator sets, so no
+     privilege stands in front of it, and no row carries it: it is opened from
+     the account menu. A privilege added here would lock the one door with
+     nothing behind it worth gating, and the menu item would go on pointing at
+     a page that refuses. */
+  test('leaves preferences open to everybody, and out of the rail', () => {
+    const preferences = ROUTES.find((route) => route.name === 'preferences')!
+    expect(preferences.needs).toBeUndefined()
+    expect(preferences.rail).toBeUndefined()
+    expect(resolve('/preferences').route.name).toBe('preferences')
+  })
+
   test('names every page once', () => {
     expect(new Set(ROUTES.map((route) => route.name)).size).toBe(ROUTES.length)
     expect(new Set(ROUTES.map((route) => route.path)).size).toBe(ROUTES.length)
