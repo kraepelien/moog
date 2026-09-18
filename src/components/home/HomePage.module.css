@@ -201,14 +201,13 @@
   gap: 14px;
 }
 
+/* Nothing but the box is on the button: its internal layout is the one browsers
+   have disagreed about, so the stacking sits on .cardBody inside it. No height
+   either, a grid item filling its row being what the equal cards rest on. */
 .patch,
 .door {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 10px;
+  display: block;
   padding: 18px;
-  height: 100%;
   border: 1px solid var(--shell-edge);
   border-radius: 14px;
   background-color: var(--shell-card);
@@ -218,6 +217,15 @@
   transition:
     background-color 120ms ease,
     border-color 120ms ease;
+}
+
+/* Top of the card rather than the middle of it, which is what makes .patchTags'
+   min-height do its job: centred, a one-line name and a two-line one sit at
+   different heights however the rows below them are padded. */
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .patch:hover,
