@@ -64,12 +64,13 @@ describe('choosing a colour', () => {
 /* The picker is six digits and has no alpha channel, so a colour is taken apart
    on the way in and put back together on the way out. These are that seam. */
 describe('a colour with something showing through it', () => {
+  /* A row the card shows straight through, which is the one default that has to
+     survive the trip through a picker with no alpha channel to show it in. */
   test('shows the eight-digit default in the box', () => {
     renderPage()
-    openSection('Menu')
-    expect((hexBox('Menu background color on active page') as HTMLInputElement).value).toBe(
-      DEFAULT_SKIN.menuActiveBg!,
-    )
+    openSection('Content')
+    expect((hexBox('Row') as HTMLInputElement).value).toBe(DEFAULT_SKIN.contentRow1!)
+    expect(DEFAULT_SKIN.contentRow1!).toHaveLength(9)
   })
 
   test('keeps the opacity when the picker moves the colour', () => {

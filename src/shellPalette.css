@@ -39,15 +39,21 @@
      the range: the two below are the states that light up, so the resting one
      is the quiet one rather than a dimmed version of something brighter.
 
-     The active item ships fully transparent: the nav marks where you are
-     standing with white lettering and nothing behind it, so a fill here is an
-     addition somebody makes rather than one they have to undo. */
-  --menu-bg: #101012;
-  --menu-border: #1d1d24;
-  --menu-color: #8b8b95;
-  --menu-active-bg: #00000000;
-  --menu-active-color: #e9e9ec;
-  --menu-hover-bg: #ffffff08;
+     The nav is lifted off the page rather than sharing its black, and its edge
+     is the same value as its fill: what separates it from the content is the
+     step between the two, so a rule drawn in a third colour would be a line
+     across that step rather than the edge of it.
+
+     Where you are standing is said by the lettering going white, not by the
+     fill: the active item carries the nav's own colour, so the mark is the
+     contrast against the items around it. Hover is the one step that moves the
+     fill, which is why it is the only value here lighter than the bar. */
+  --menu-bg: #2a2a34;
+  --menu-border: #2a2a34;
+  --menu-color: #7b7b8e;
+  --menu-active-bg: #2a2a34;
+  --menu-active-color: #ffffff;
+  --menu-hover-bg: #363645;
   --menu-hover-color: #e9e9ec;
 
   /* The bar across the top, which is the background's colour until somebody
