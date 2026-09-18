@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { existsSync, readFileSync } from 'node:fs'
 import { exportPrompt, skinChanges } from '@admin/exportPrompt.ts'
-import { DEFAULT_SKIN, SKIN_SWATCHES } from '@/tones.ts'
+import { DEFAULT_SKIN, SKIN_SHEETS, SKIN_SWATCHES } from '@/tones.ts'
 
 /* The prompt is instructions for changing two files, so what stops it being
    wrong is not how it reads but whether the files still say what it claims.
@@ -48,7 +48,8 @@ describe('the prompt it writes', () => {
   )
 
   test('counts what it is asking for, and says it in the singular when it is one', () => {
-    expect(promptFor({ card: '#123456' })).toContain('Set these 1 of the 16 colours')
+    expect(promptFor({ card: '#123456' }))
+      .toContain(`Set these 1 of the ${SKIN_SWATCHES.length} colours`)
     expect(promptFor({ card: '#123456' })).toContain('Change the colour the moog app ships')
     expect(promptFor({ card: '#123456', blue: '#2266ff' })).toContain('Change the colours')
   })
@@ -73,16 +74,36 @@ describe('the files it tells somebody to edit', () => {
 
   test('hold the things it names inside them', () => {
     expect(readFileSync(repo('src/tones.ts'), 'utf8')).toContain('DEFAULT_SKIN')
-    expect(readFileSync(repo('src/shellPalette.css'), 'utf8')).toContain(':root')
+    for (const path of Object.values(SKIN_SHEETS)) {
+      expect([path, readFileSync(repo(path), 'utf8').includes(':root')]).toEqual([path, true])
+    }
+  })
+
+  /* The instrument's colours live in their own stylesheet, so a prompt that
+     always named the chrome's would send somebody to a file without the
+     property in it. */
+  test('name the stylesheet the changed colour is actually declared in', () => {
+    expect(promptFor({ card: '#123456' })).toContain(SKIN_SHEETS.shell)
+    expect(promptFor({ card: '#123456' })).not.toContain(SKIN_SHEETS.panel)
+
+    expect(promptFor({ capOrange: '#123456' })).toContain(SKIN_SHEETS.panel)
+    expect(promptFor({ capOrange: '#123456' })).not.toContain(SKIN_SHEETS.shell)
+
+    const both = promptFor({ card: '#123456', capOrange: '#123456' })
+    expect(both).toContain(SKIN_SHEETS.shell)
+    expect(both).toContain(SKIN_SHEETS.panel)
   })
 
   /* The whole reason both files are named: a change landing in one of them and
      not the other passes the eye and fails the suite. */
   test('each say the colour the prompt quotes as the old one', () => {
-    const css = readFileSync(repo('src/shellPalette.css'), 'utf8')
+    const sheets = Object.fromEntries(
+      Object.entries(SKIN_SHEETS).map(([name, path]) => [name, readFileSync(repo(path), 'utf8')]),
+    )
     const constant = readFileSync(repo('src/tones.ts'), 'utf8')
     for (const swatch of SKIN_SWATCHES) {
       const was = DEFAULT_SKIN[swatch.key]!
+      const css = sheets[swatch.sheet]!
       expect(promptFor({ [swatch.key]: '#123456' })).toContain(`${was} → #123456`)
       expect([swatch.key, css.includes(`${swatch.property}: ${was};`)]).toEqual([swatch.key, true])
       expect([swatch.key, constant.includes(`${swatch.key}: '${was}'`)]).toEqual([swatch.key, true])

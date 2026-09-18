@@ -54,3 +54,18 @@
   gap: 8px;
   margin-top: 10px;
 }
+
+.aside {
+  margin-top: 4px;
+  font-size: 0.8rem;
+}
+
+/* The panel brings its own black, so it is boxed off the card rather than
+   sitting on it — otherwise a pale skin leaves the instrument as a hole. */
+.instrument {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid;
+  border-color: inherit;
+  border-radius: 8px;
+}

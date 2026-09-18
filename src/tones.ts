@@ -78,44 +78,85 @@ export const SHELL = {
   star: 'var(--shell-star)',
   bar: 'var(--shell-bar)',
   barInk: 'var(--shell-bar-ink)',
+  hoverFaint: 'var(--shell-hover-faint)',
+  hoverStrong: 'var(--shell-hover-strong)',
 } as const
 
 /* Every colour a skin may set, in the order the page that edits them draws
    them, with the custom property each one writes and what it is for. One list:
    the admin page builds its fields from it, the export names them from it, and
    a stored preview is sifted against it, so none of the three can drift. */
+export const SKIN_GROUPS = ['Shell', 'Tones', 'Panel', 'Caps', 'Lamps', 'Keys'] as const
+export type SkinGroup = (typeof SKIN_GROUPS)[number]
+
+/* Where each default is declared. Two stylesheets, because the chrome's colours
+   and the instrument's are kept apart: the panel's were measured off the scans
+   and the chrome's were chosen. A swatch carries its own, so the export names
+   the file somebody actually has to edit rather than assuming one of them. */
+export const SKIN_SHEETS = {
+  shell: 'src/shellPalette.css',
+  panel: 'src/panelPalette.css',
+} as const
+export type SkinSheet = keyof typeof SKIN_SHEETS
+
 export interface SkinSwatch {
   readonly key: string
   readonly property: string
   readonly label: string
-  readonly group: 'Shell' | 'Tones'
+  readonly group: SkinGroup
   readonly hint: string
+  readonly sheet: SkinSheet
 }
 
 export const SKIN_SWATCHES: readonly SkinSwatch[] = [
-  { key: 'page', property: '--shell-page', label: 'Page', group: 'Shell', hint: 'Behind everything' },
-  { key: 'card', property: '--shell-card', label: 'Card', group: 'Shell', hint: 'Every panel and list' },
-  { key: 'field', property: '--shell-field', label: 'Field', group: 'Shell', hint: 'Inside a text box' },
-  { key: 'edge', property: '--shell-edge', label: 'Edge', group: 'Shell', hint: 'Every rule and border' },
-  { key: 'ink', property: '--shell-ink', label: 'Ink', group: 'Shell', hint: 'Body text' },
-  { key: 'inkDim', property: '--shell-ink-dim', label: 'Dim ink', group: 'Shell', hint: 'Captions and counts' },
-  { key: 'star', property: '--shell-star', label: 'Star', group: 'Shell', hint: "Everyone's rating" },
-  { key: 'bar', property: '--shell-bar', label: 'Top bar', group: 'Shell', hint: 'The header strip' },
-  { key: 'barInk', property: '--shell-bar-ink', label: 'Top bar ink', group: 'Shell', hint: 'Its tabs and icons' },
-  { key: 'red', property: '--tone-red-ink', label: 'Red', group: 'Tones', hint: 'Factory' },
-  { key: 'pink', property: '--tone-pink-ink', label: 'Pink', group: 'Tones', hint: 'Delete, and a tag' },
-  { key: 'amber', property: '--tone-amber-ink', label: 'Amber', group: 'Tones', hint: 'Unsaved, public, a tag' },
-  { key: 'green', property: '--tone-green-ink', label: 'Green', group: 'Tones', hint: 'Saved, synth, a tag' },
-  { key: 'blue', property: '--tone-blue-ink', label: 'Blue', group: 'Tones', hint: 'Yours, and a tag' },
-  { key: 'violet', property: '--tone-violet-ink', label: 'Violet', group: 'Tones', hint: "Somebody else's, and a tag" },
-  { key: 'grey', property: '--tone-grey-ink', label: 'Grey', group: 'Tones', hint: 'Said without emphasis' },
+  { key: 'page', property: '--shell-page', label: 'Page', group: 'Shell', hint: 'Behind everything', sheet: 'shell' },
+  { key: 'card', property: '--shell-card', label: 'Card', group: 'Shell', hint: 'Every panel and list', sheet: 'shell' },
+  { key: 'field', property: '--shell-field', label: 'Field', group: 'Shell', hint: 'Inside a text box', sheet: 'shell' },
+  { key: 'edge', property: '--shell-edge', label: 'Edge', group: 'Shell', hint: 'Every rule and border', sheet: 'shell' },
+  { key: 'ink', property: '--shell-ink', label: 'Ink', group: 'Shell', hint: 'Body text', sheet: 'shell' },
+  { key: 'inkDim', property: '--shell-ink-dim', label: 'Dim ink', group: 'Shell', hint: 'Captions and counts', sheet: 'shell' },
+  { key: 'star', property: '--shell-star', label: 'Star', group: 'Shell', hint: "Everyone's rating", sheet: 'shell' },
+  { key: 'bar', property: '--shell-bar', label: 'Top bar', group: 'Shell', hint: 'The header strip', sheet: 'shell' },
+  { key: 'barInk', property: '--shell-bar-ink', label: 'Top bar ink', group: 'Shell', hint: 'Its tabs and icons', sheet: 'shell' },
+  { key: 'red', property: '--tone-red-ink', label: 'Red', group: 'Tones', hint: 'Factory', sheet: 'shell' },
+  { key: 'pink', property: '--tone-pink-ink', label: 'Pink', group: 'Tones', hint: 'Delete, and a tag', sheet: 'shell' },
+  { key: 'amber', property: '--tone-amber-ink', label: 'Amber', group: 'Tones', hint: 'Unsaved, public, a tag', sheet: 'shell' },
+  { key: 'green', property: '--tone-green-ink', label: 'Green', group: 'Tones', hint: 'Saved, synth, a tag', sheet: 'shell' },
+  { key: 'blue', property: '--tone-blue-ink', label: 'Blue', group: 'Tones', hint: 'Yours, and a tag', sheet: 'shell' },
+  { key: 'violet', property: '--tone-violet-ink', label: 'Violet', group: 'Tones', hint: "Somebody else's, and a tag", sheet: 'shell' },
+  { key: 'grey', property: '--tone-grey-ink', label: 'Grey', group: 'Tones', hint: 'Said without emphasis', sheet: 'shell' },
+  { key: 'hover', property: '--shell-hover', label: 'Hover', group: 'Shell', hint: 'The wash under the pointer', sheet: 'shell' },
+
+  /* The instrument's own, from panelPalette.css. Measured off the scans rather
+     than chosen, so they ship as they were sampled — and every one is settable
+     anyway, because a skin is somebody playing rather than a correction. */
+  { key: 'panel', property: '--moog-panel', label: 'Panel', group: 'Panel', hint: 'The fascia', sheet: 'panel' },
+  { key: 'panelInk', property: '--moog-ink', label: 'Panel ink', group: 'Panel', hint: 'Legends and line art', sheet: 'panel' },
+  { key: 'capOrange', property: '--cap-orange', label: 'Orange cap', group: 'Caps', hint: 'Modulation and filter', sheet: 'panel' },
+  { key: 'capOrangeEdge', property: '--cap-orange-edge', label: 'Orange edge', group: 'Caps', hint: 'Its shadowed side', sheet: 'panel' },
+  { key: 'capBlue', property: '--cap-blue', label: 'Blue cap', group: 'Caps', hint: 'Mixer and output', sheet: 'panel' },
+  { key: 'capBlueEdge', property: '--cap-blue-edge', label: 'Blue edge', group: 'Caps', hint: 'Its shadowed side', sheet: 'panel' },
+  { key: 'capBlack', property: '--cap-black', label: 'Black cap', group: 'Caps', hint: 'Modulation source', sheet: 'panel' },
+  { key: 'capBlackEdge', property: '--cap-black-edge', label: 'Black edge', group: 'Caps', hint: 'Its shadowed side', sheet: 'panel' },
+  { key: 'capWhite', property: '--cap-white', label: 'White cap', group: 'Caps', hint: 'Glide and Decay', sheet: 'panel' },
+  { key: 'capWhiteEdge', property: '--cap-white-edge', label: 'White edge', group: 'Caps', hint: 'Its shadowed side', sheet: 'panel' },
+  { key: 'capRocker', property: '--cap-rocker', label: 'Rocker band', group: 'Caps', hint: 'Beside every switch', sheet: 'panel' },
+  { key: 'capRockerDark', property: '--cap-rocker-dark', label: 'Rocker, black cap', group: 'Caps', hint: 'The one dark band', sheet: 'panel' },
+  { key: 'lampRed', property: '--lamp-red', label: 'Pilot lamp', group: 'Lamps', hint: 'Lit whenever it is on', sheet: 'panel' },
+  { key: 'lampRedDark', property: '--lamp-red-dark', label: 'Pilot, unlit', group: 'Lamps', hint: 'Its glass with no lamp', sheet: 'panel' },
+  { key: 'lampAmber', property: '--lamp-amber', label: 'Overload lamp', group: 'Lamps', hint: 'Lit when it is driven', sheet: 'panel' },
+  { key: 'lampAmberDark', property: '--lamp-amber-dark', label: 'Overload, unlit', group: 'Lamps', hint: 'Its glass with no lamp', sheet: 'panel' },
+  { key: 'keyNatural', property: '--key-natural', label: 'Natural', group: 'Keys', hint: 'The long keys', sheet: 'panel' },
+  { key: 'keySharp', property: '--key-sharp', label: 'Sharp', group: 'Keys', hint: 'The short keys', sheet: 'panel' },
+  { key: 'keyNaturalHeld', property: '--key-natural-held', label: 'Natural, down', group: 'Keys', hint: 'While it is played', sheet: 'panel' },
+  { key: 'keySharpHeld', property: '--key-sharp-held', label: 'Sharp, down', group: 'Keys', hint: 'While it is played', sheet: 'panel' },
 ]
 
 export const SKIN_KEYS: readonly string[] = SKIN_SWATCHES.map((swatch) => swatch.key)
 
-/* What shellPalette.css declares, written out again so the page that edits a
-   skin can show what a field will fall back to and offer to put it back.
-   `test/tones.test.ts` fails if the two ever disagree. */
+/* What the stylesheets declare, written out again so the page that edits a skin
+   can show what a field will fall back to and offer to put it back.
+   `test/skin.test.ts` fails if a copy ever disagrees with its sheet. */
 export const DEFAULT_SKIN: Readonly<Record<string, string>> = {
   page: '#000000',
   card: '#101012',
@@ -133,6 +174,27 @@ export const DEFAULT_SKIN: Readonly<Record<string, string>> = {
   blue: '#74aaff',
   violet: '#b78bff',
   grey: '#9a9aa4',
+  hover: '#ffffff',
+  panel: '#000000',
+  panelInk: '#ffffff',
+  capOrange: '#f37c3e',
+  capOrangeEdge: '#b75c30',
+  capBlue: '#96c4d4',
+  capBlueEdge: '#6d94a1',
+  capBlack: '#626366',
+  capBlackEdge: '#4b4c4f',
+  capWhite: '#e8e7e3',
+  capWhiteEdge: '#c9c6c1',
+  capRocker: '#cbcdce',
+  capRockerDark: '#39383a',
+  lampRed: '#c64355',
+  lampRedDark: '#3a1016',
+  lampAmber: '#ff7a30',
+  lampAmberDark: '#3a1a0e',
+  keyNatural: '#ffffff',
+  keySharp: '#000000',
+  keyNaturalHeld: '#9a9a9a',
+  keySharpHeld: '#3a3a3a',
 }
 
 /* A skin is partial: a key it leaves out is the default, so a preview kept from

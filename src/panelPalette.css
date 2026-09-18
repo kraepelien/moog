@@ -1,11 +1,14 @@
 /* Sampled from reference/panel-controllers-oscbank.png and a photograph of a
-   Model D. Globals rather than a module because every control stylesheet reads
+   Model D. A skin may repaint any of them — every value here is a default and
+   not a constant — but none is mixed from another, because the cap edges and
+   the unlit lamps are not a uniform shade of their own colour and deriving them
+   would be estimating by eye what the scans already answer. Globals rather than a module because every control stylesheet reads
    them: the panel's sockets and lamps, the switch's rockers, and the knob and
    wheel line art, which is drawn in the ink the panel is printed in. */
 
 :root {
-  --moog-panel: #000;
-  --moog-ink: #fff;
+  --moog-panel: #000000;
+  --moog-ink: #ffffff;
 
   /* Orange routes modulation and the filter, blue feeds the mixer and the
      output, black picks a modulation source, white plays. */
@@ -28,4 +31,14 @@
   --lamp-red-dark: #3a1016;
   --lamp-amber: #ff7a30;
   --lamp-amber-dark: #3a1a0e;
+
+  /* The keys. Their own colours rather than the panel's ink, even though two of
+     them start out the same: a skin that darkens the lettering has no business
+     darkening the naturals with it. The held shades are the screen saying what
+     your hands would otherwise tell you — the instrument has no lamp on the
+     keyboard. */
+  --key-natural: #ffffff;
+  --key-sharp: #000000;
+  --key-natural-held: #9a9a9a;
+  --key-sharp-held: #3a3a3a;
 }

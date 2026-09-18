@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -5,10 +6,22 @@ import Paper from '@mui/material/Paper'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { ColourField } from './ColourField.tsx'
+import { FitToWidth } from '@components/FitToWidth.tsx'
+import { Panel } from '@components/Panel.tsx'
+import { panelRegistry } from '@controls/panel.ts'
+import { defaultValues } from '@controls/registry.ts'
+import type { ControlValue } from '@controls/types.ts'
 import { StarRating } from '@components/library/StarRating.tsx'
 import { ToneChip } from '@components/library/ToneChip.tsx'
 import { skinValue } from '@/skin.ts'
-import { DEFAULT_SKIN, SKIN_SWATCHES, TONE_COLOURS, TONES, type Skin } from '@/tones.ts'
+import {
+  DEFAULT_SKIN,
+  SKIN_GROUPS,
+  SKIN_SWATCHES,
+  TONE_COLOURS,
+  TONES,
+  type Skin,
+} from '@/tones.ts'
 import styles from './LayoutPage.module.css'
 
 /* Where the app's colours are tried out.
@@ -34,6 +47,12 @@ export function LayoutPage({
   keeping: boolean
   onSkin: (next: Skin) => void
 }) {
+  /* The panel below is the real component and therefore turnable. Its own
+     values, going nowhere: this page chooses colours, not patches. */
+  const [demo, setDemo] = useState<Record<string, ControlValue>>(() =>
+    defaultValues(panelRegistry),
+  )
+
   const set = (key: string, hex: string) => {
     /* A colour equal to the stylesheet's is an absence rather than a choice, so
        it is dropped: a skin holds only what somebody decided, and a default
@@ -43,8 +62,6 @@ export function LayoutPage({
     else next[key] = hex
     onSkin(next)
   }
-
-  const groups = ['Shell', 'Tones'] as const
 
   return (
     <Stack spacing={2}>
@@ -80,7 +97,7 @@ export function LayoutPage({
           </Alert>
         )}
 
-        {groups.map((group) => (
+        {SKIN_GROUPS.map((group) => (
           <Box key={group} className={styles.group}>
             <Typography variant="subtitle2" component="h3" className={styles.groupName}>
               {group}
@@ -118,6 +135,29 @@ export function LayoutPage({
         <Box className={styles.chips}>
           <StarRating rating={3.5} average={3.5} subject="this example" />
           <StarRating rating={null} average={2} subject="this example" />
+        </Box>
+      </Paper>
+
+      {/* The instrument is the one thing the page cannot show by being repainted
+          itself, because it is not on this page — so the real Panel is, with its
+          own throwaway values. A drawing of a panel would be the second thing to
+          keep in step that the rest of this page avoids. */}
+      <Paper variant="outlined" className={styles.page}>
+        <Typography variant="subtitle2" component="h3" className={styles.groupName}>
+          The instrument
+        </Typography>
+        <Typography color="text.secondary" className={styles.aside}>
+          Panel, Caps, Lamps and Keys are on show nowhere else here. Turn something
+          if you want to watch it move; nothing on it is saved as a patch.
+        </Typography>
+        <Box className={styles.instrument}>
+          <FitToWidth>
+            <Panel
+              registry={panelRegistry}
+              values={demo}
+              onChange={(id, value) => setDemo((held) => ({ ...held, [id]: value }))}
+            />
+          </FitToWidth>
         </Box>
       </Paper>
     </Stack>

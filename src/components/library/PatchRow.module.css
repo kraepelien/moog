@@ -16,7 +16,7 @@
 /* Faint, because the line is no longer a target: it is there to hold the eye on
    one row of five columns, and the name lights separately to say where to aim. */
 .row:hover {
-  background: rgb(255 255 255 / 3%);
+  background: var(--shell-hover-faint);
 }
 
 /* The row the editor is showing. A rule down its edge rather than a fill: a
@@ -55,7 +55,7 @@
 
 .name:hover,
 .name:focus-visible {
-  background: rgb(255 255 255 / 10%);
+  background: var(--shell-hover-strong);
 }
 
 .name:hover .nameText {
