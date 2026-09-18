@@ -41,9 +41,13 @@ worktree it came from is a guess.
 
 Nothing else goes in it: no versions, no dates, no grouping. The order it landed in is the history.
 
-The line is written after the merge, on a `main` that already has it, and never on the branch being
-merged: on the branch it conflicts with every other branch adding its own line, and a commit pushed
-to a branch whose pull request has already merged is stranded.
+The branch writes its own line as it goes, without the link: a pull request has no number to point
+at until it is opened, and a line naming one would be pointing at somebody else's. After the merge,
+on a `main` that already has the change, the line is rewritten with the link.
+
+Two branches both adding a line collide on the same first line of the list. Both are wanted, so the
+conflict is settled by keeping both, in the order they landed. The rewrite never goes to the branch:
+a commit pushed to a branch whose pull request has already merged is stranded.
 
 ## Names in a saved patch are a published interface
 
