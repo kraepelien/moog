@@ -54,6 +54,7 @@ import { StoreError, type PatchSummary } from './storage/types.ts'
 import { createBundle, parseBundle, serializeBundle } from './transfer/bundle.ts'
 import { useLocation, useNavigationBlock, useRoute } from './navigation/router.ts'
 import { pathFor } from './navigation/routes.ts'
+import { useDocumentTitle } from './navigation/title.ts'
 
 const store = createHttpStore()
 
@@ -98,6 +99,8 @@ export function App({
   const { session, refresh } = useSession()
   const [{ route }] = useRoute()
   const here = useLocation()
+
+  useDocumentTitle()
 
   if (!session) return <Typography sx={{ p: 2 }}>Loading…</Typography>
   if (!session.signedIn) {
