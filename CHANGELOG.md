@@ -3,6 +3,7 @@
 Everything that has landed on `main`, newest first. A pull request carries its link; a commit pushed
 straight to `main` has none to carry.
 
+- Give the nav its own colour, and stripe the library
 - [Give the shell a vocabulary and the colours to go with it](https://github.com/kraepelien/moog/pull/99)
 - [Give revoking a box of its own, and draw the revokes that are refused as locked](https://github.com/kraepelien/moog/pull/98)
 - [Pin the preferences page open to everybody, where a privilege would lock it](https://github.com/kraepelien/moog/pull/97)

@@ -13,14 +13,27 @@
   border-color: inherit;
 }
 
+/* Every other line, to carry the eye across five columns to a rating at the far
+   end. Before the two rules below, which match at the same specificity and so
+   are decided by order. */
+.row:nth-child(even) {
+  background-color: var(--shell-alternate);
+}
+
 /* Faint, because the line is no longer a target: it is there to hold the eye on
-   one row of five columns, and the name lights separately to say where to aim. */
+   one row of five columns, and the name lights separately to say where to aim.
+
+   An image rather than a colour, so it lies over the stripe instead of
+   replacing it: the two wash to about the same value, and a hover that swapped
+   one for the other left every second row looking untouched. */
 .row:hover {
-  background: var(--shell-hover-faint);
+  background-image: linear-gradient(var(--shell-hover-faint), var(--shell-hover-faint));
 }
 
 /* The row the editor is showing. A rule down its edge rather than a fill: a
-   filled row reads as hovered, and the list is hovered all the time. */
+   filled row reads as hovered, and the list is hovered all the time. The
+   shorthand is deliberate — it clears both the stripe and the hover, so the one
+   open row is the one row drawn in a single colour. */
 .row[data-open] {
   background: var(--tone-green-field);
   box-shadow: inset 3px 0 0 var(--shell-success);
