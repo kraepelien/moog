@@ -40,7 +40,8 @@ Hardware values reported to us live in `reference/control-values.md`. The recurr
 ```
 src/
   controls/   registry.ts (generic machinery) · types.ts (contracts) · placeholder.ts · panel.ts (the panel)
-  components/ Panel.tsx renders whatever the registry holds · SideRail.tsx (the navigation)
+  components/ Panel.tsx renders whatever the registry holds · PageNav.tsx (the navigation, down
+              the left or across the top) · navPlacement.ts (which of the two)
   components/library/ the patch library: search, filter chips, rows, the patch header
   patch/      schema.ts (Patch + structural parse) · migrate.ts (version chain) · resolve.ts (load
               policy) · copy.ts (copying anything you may not write over)
@@ -49,7 +50,8 @@ src/
   components/midi/ the MIDI desk: a file, a sound per part, and saving the two together
   navigation/ routes.ts (the page table) · router.ts (the address)
   storage/    types.ts (the adapter interface) · httpStore.ts (the API) · deviceSkin.ts (the colour
-              preview) · deviceRail.ts (whether the rail is folded)
+              preview) · deviceRail.ts (whether the rail is folded) · deviceNav.ts (whether the
+              menu was asked to stay on top)
   transfer/   bundle.ts (JSON import/export)
   audio/      calibration.ts (every dial-to-physical number) · settings.ts (the panel read as
               an instrument) · engine.ts (the Web Audio graph)
@@ -239,7 +241,7 @@ rather than collecting by id, so registry order stays authoritative.
 
 ## The library and the patch header
 
-Two views, switched in the side rail: the editor is the panel, the library is
+Two views, switched in the nav: the editor is the panel, the library is
 everything saved. `src/components/library/` holds both the library and the bar
 the editor prints above the panel, because they are drawn from the same fields.
 
@@ -729,12 +731,30 @@ yet: that is what makes adding a page like `/patch/:id` a row in the table rathe
 There is no router dependency. What one would buy here is `useBlocker`, nested layouts, loaders and
 route-level code splitting, and only the first had a use — it is `useNavigationBlock` now.
 
-### The side rail
+### The page nav
 
-`SideRail.tsx` is the only way to any page, down the left of every one of them. A route is in it by
-carrying a `rail` label, and that label is a single word rather than the route's title: the rail is
-as wide as its widest label, and "Patch library" over two lines is what a title would cost. The
-title is still what the row is named to a reader, so folding the words away takes nothing with it.
+`PageNav.tsx` is the only way to any page, and it is one nav in two placements: a rail down the left
+of a window with room for one, a bar across the top of a window without. The same rows in the same
+order either way; what the placement changes is the direction they run in, which is the stylesheet's
+business. A route is in it by carrying a `rail` label, and that label is a single word rather than
+the route's title: the rail is as wide as its widest label, and "Patch library" over two lines is
+what a title would cost. The title is still what the row is named to a reader, so dropping the words
+takes nothing with it.
+
+`navPlacement.ts` decides between the two and holds the one width the decision turns on: under
+900px a window cannot spare 96px of itself for a rail, so the bar goes on top whatever anybody has
+chosen. It is a media query read through `useSyncExternalStore` rather than a resize listener, so
+the first render already knows (a rail drawn for one frame on a phone is the page reflowing under
+somebody's thumb), and the nav moves as a window is dragged across the width rather than waiting for
+a reload. The stylesheet has a second query, at 560px, and it is about a bar that is already up: the
+words come off the rows, the glyphs stay, and a tooltip and the row's own name carry what they said.
+
+Somebody who wants the bar on a wide screen too asks for it on the preferences page, and
+`storage/deviceNav.ts` keeps the answer in `localStorage` beside the folded rail. Only the choice is
+kept, never what is on the screen: a narrow window puts the bar up whatever is stored, so writing
+"rail" on a phone would be recording a layout it cannot have. The bar is `position: sticky`, which
+is the point of asking for it: the way to every other page stays under your thumb down a long
+library.
 
 Settings is not a row in that table. It is drawn from the first administration page this account can
 open, because the administration privileges are held independently — somebody may keep the user list
@@ -745,11 +765,12 @@ Folding leaves the glyphs and takes the words rather than taking the rail away a
 that could be dismissed entirely needs a second control to bring it back, and there is nowhere left
 to put one. Whether it is folded is `storage/deviceRail.ts`, in `localStorage` rather than the
 `sessionStorage` a previewed skin uses: it is how somebody wants their window laid out, not
-something they are in the middle of trying.
+something they are in the middle of trying. The bar has no fold and draws no arrow for one: its rows
+are a glyph and a word on a single line, and a narrow window takes the words itself.
 
 The home page at `/` is a placeholder for a dashboard. It is the address the app opens at and the
 one an unrecognised address falls back to, so it says what the pages are rather than being blank —
-but it holds nothing of its own yet. It is not a row: the mark at the top of the rail goes there,
+but it holds nothing of its own yet. It is not a row: the mark at the head of the nav goes there,
 which is where a logo already takes everybody who presses one, and a row as well would be two ways
 to the same page an inch apart. `HOME_ROUTE` is what the mark aims at, named separately from
 `DEFAULT_ROUTE` although they are the same page today — one is where the logo leads and the other is
@@ -757,9 +778,10 @@ where an unrecognised address lands.
 
 The mark is two drawings. `public/patchdb.svg` is the lockup — the logo with PatchDB under it — and
 it is what the rail shows unfolded and what the sign-in page shows. `public/logo.svg` is the logo on
-its own, and it is what the rail shows folded: the name is a word like any other, and at 60px the
-lockup would be a wordmark eight pixels tall. Both are named PatchDB to a reader, so the heading
-reads the same whichever is up.
+its own, and it is what the rail shows folded and what the bar shows at any width: the name is a
+word like any other, and at 60px, or in a bar barely taller than that, the lockup would be a
+wordmark eight pixels tall. Both are named PatchDB to a reader, so the heading reads the same
+whichever is up.
 
 Both draw the logo whole, tile and all, rather than lifting the keys out of it. The page does not
 supply a backdrop for the mark any more than a launcher does — the logo is a tile with keys on it,
@@ -780,6 +802,17 @@ configured. svgr runs in Vite and not in Bun, so an imported file would be a com
 cannot render — and the rail is the part of the app with no other way to be tested. The paths are
 the exports in `reference/` verbatim; the only edit is the fill, which is `currentColor` so one rule
 lights the row you are standing on.
+
+### Preferences
+
+`/preferences` is what somebody sets for their own screen, as against the administration pages,
+which are what somebody sets for everybody. It needs no privilege and it is not a row in the nav: it
+is opened once and left, so it hangs off the account menu where the rest of what belongs to a person
+already is. Nothing on it reaches the server: these are choices about a browser, and the browser is
+where they are kept.
+
+It says when the window is too narrow for what was chosen, because choosing the rail on a phone
+changes nothing on the screen, and a setting that appears not to work reads as a broken setting.
 
 ### Leaving a page with unsaved changes
 
@@ -981,7 +1014,8 @@ upside-down AND mask.
 
 `public/icon.svg` and `public/logo.svg` are not rasterised at all — they are the drawing itself,
 copied. A browser that takes an SVG favicon draws it at whatever size it wants instead of picking
-the nearest bitmap, and the folded rail draws the same file at 34px, so between them they are the
+the nearest bitmap, and the folded rail and the top bar draw the same file at 34px, so between
+them they are the
 only places the artwork reaches a screen as it was drawn. The script does the copying rather than
 anyone doing it by hand: `public/` is what is served and `reference/` is not, and a copy made by
 hand is a drawing that drifts from the one every PNG beside it was baked from.

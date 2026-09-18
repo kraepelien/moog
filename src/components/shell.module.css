@@ -1,10 +1,16 @@
-/* The rail and the page beside it. The rail sets its own width; this is only
-   what puts the two in a row and stops the page growing past the window. */
+/* The nav and the page. The nav sets its own size; this is only what puts the
+   two the right way round and stops the page growing past the window. */
 
 .shell {
   display: flex;
   align-items: flex-start;
   min-height: 100vh;
+}
+
+/* The nav is across the top, so the page goes under it rather than beside it. */
+.shell[data-nav='top'] {
+  flex-direction: column;
+  align-items: stretch;
 }
 
 .page {

@@ -1,36 +1,53 @@
 /* Structure only — the colours are the shell's custom properties, so a skin an
-   administrator saves repaints the rail with nothing here to change. */
+   administrator saves repaints the nav with nothing here to change.
 
-.rail {
+   Two placements of one nav. Everything both of them agree on is written once,
+   below; what turns the rail on its side is the `data-placement` block. */
+
+.nav {
   position: sticky;
   top: 0;
+  box-sizing: border-box;
+  display: flex;
+  background-color: var(--shell-card);
+  /* The toggle hangs half over the page, and the page is drawn after this in
+     the document; without a layer of its own the nav would be painted under
+     whatever the open page starts with. */
+  z-index: 1;
+}
+
+.nav[data-placement='rail'] {
   flex: none;
   align-self: flex-start;
-  box-sizing: border-box;
   height: 100vh;
-  display: flex;
   flex-direction: column;
   align-items: center;
   gap: 28px;
   width: 96px;
   padding: 52px 8px 20px;
-  background-color: var(--shell-card);
   border-inline-end: 1px solid var(--shell-edge);
-  /* The toggle hangs half over the page, and the page is drawn after this in
-     the document; without a layer of its own the rail would be painted under
-     whatever the open page starts with. */
-  z-index: 1;
   /* Only the width, and only this long: the page under it reflows as the rail
      folds, and anything slower leaves the panel visibly catching up. */
   transition: width 140ms ease;
 }
 
-.rail[data-collapsed='true'] {
+.nav[data-placement='rail'][data-collapsed='true'] {
   width: 60px;
 }
 
+/* Across the top, and stuck there: the whole point of asking for it is that the
+   way to every other page stays under your thumb down a long library. */
+.nav[data-placement='top'] {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 6px 12px;
+  border-block-end: 1px solid var(--shell-edge);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .rail {
+  .nav {
     transition: none;
   }
 }
@@ -56,7 +73,7 @@
   color: var(--shell-ink);
 }
 
-.rail[data-collapsed='true'] .toggle {
+.nav[data-collapsed='true'] .toggle {
   transform: rotate(180deg);
 }
 
@@ -87,25 +104,48 @@
 .group,
 .foot {
   display: flex;
+  gap: 4px;
+}
+
+.nav[data-placement='rail'] .group,
+.nav[data-placement='rail'] .foot {
   flex-direction: column;
   align-items: stretch;
-  gap: 4px;
   align-self: stretch;
 }
 
-/* What puts Settings and the account at the bottom of the rail whatever the
-   window's height, without a spacer element between the two groups. */
-.foot {
+.nav[data-placement='top'] .group,
+.nav[data-placement='top'] .foot {
+  flex-direction: row;
+  align-items: center;
+}
+
+/* What puts Settings and the account at the far end of the nav whatever the
+   window's size, without a spacer element between the two groups. */
+.nav[data-placement='rail'] .foot {
   margin-block-start: auto;
 }
 
+.nav[data-placement='top'] .foot {
+  margin-inline-start: auto;
+}
+
 .item {
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px 2px;
   border-radius: 10px;
   color: var(--shell-ink-dim);
   transition: color 120ms ease;
+}
+
+.nav[data-placement='rail'] .item {
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 2px;
+}
+
+.nav[data-placement='top'] .item {
+  flex-direction: row;
+  gap: 8px;
+  padding: 8px 10px;
 }
 
 .item:hover {
@@ -113,7 +153,7 @@
   background-color: var(--shell-hover-faint);
 }
 
-/* White, and only here: the rail has no other mark for where you are standing,
+/* White, and only here: the nav has no other mark for where you are standing,
    so the glyph and its word carry it between them. */
 .item[aria-current='page'] {
   color: var(--shell-ink);
@@ -137,6 +177,30 @@
   line-height: 1;
 }
 
-.rail[data-collapsed='true'] .label {
+.nav[data-placement='top'] .label {
+  font-size: 0.66rem;
+}
+
+/* Folding is the rail's alone: the flag is still on the element when the bar is
+   up, because it is where the rail was left rather than anything about the bar. */
+.nav[data-placement='rail'][data-collapsed='true'] .label {
   display: none;
+}
+
+/* Five words, a logo and the account across a phone do not fit, and a nav that
+   scrolled sideways is a nav half of which nobody finds. The glyphs stay, each
+   row still named to a reader and under a tooltip. `navPlacement.ts` carries the
+   width above this one, where the bar takes over from the rail. */
+@media (max-width: 559px) {
+  .nav[data-placement='top'] .label {
+    display: none;
+  }
+
+  .nav[data-placement='top'] {
+    gap: 4px;
+  }
+
+  .nav[data-placement='top'] .item {
+    padding: 8px;
+  }
 }

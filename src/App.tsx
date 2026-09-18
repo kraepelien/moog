@@ -19,7 +19,9 @@ import { HomePage } from './components/home/HomePage.tsx'
 import { MidiHelp } from './components/MidiHelp.tsx'
 import { PatchBar, type PatchBarButton } from './components/PatchBar.tsx'
 import { PreviewBanner } from './components/PreviewBanner.tsx'
-import { SideRail, type RailAction } from './components/SideRail.tsx'
+import { PageNav, type NavAction } from './components/PageNav.tsx'
+import { useNavPlacement } from './components/navPlacement.ts'
+import { PreferencesPage } from './components/PreferencesPage.tsx'
 import shell from './components/shell.module.css'
 import surface from './components/controlSurface.module.css'
 import { PatchLibrary } from './components/library/PatchLibrary.tsx'
@@ -49,6 +51,7 @@ import { copyOf } from './patch/copy.ts'
 import { createPatch, type Patch } from './patch/schema.ts'
 import { applySkin } from './skin.ts'
 import type { Skin } from './tones.ts'
+import type { NavPreference } from './storage/deviceNav.ts'
 import { createHttpStore } from './storage/httpStore.ts'
 import { StoreError, type PatchSummary } from './storage/types.ts'
 import { createBundle, parseBundle, serializeBundle } from './transfer/bundle.ts'
@@ -90,11 +93,15 @@ export function App({
   keepSkin,
   railCollapsed,
   keepRail,
+  navPreference,
+  keepNav,
 }: {
   skin: Skin
   keepSkin: (next: Skin) => boolean
   railCollapsed: boolean
   keepRail: (next: boolean) => void
+  navPreference: NavPreference
+  keepNav: (next: NavPreference) => void
 }) {
   const { session, refresh } = useSession()
   const [{ route }] = useRoute()
@@ -119,6 +126,8 @@ export function App({
         keepSkin={keepSkin}
         railCollapsed={railCollapsed}
         keepRail={keepRail}
+        navPreference={navPreference}
+        keepNav={keepNav}
       />
     </AccessProvider>
   )
@@ -131,6 +140,8 @@ function Workspace({
   keepSkin,
   railCollapsed,
   keepRail,
+  navPreference,
+  keepNav,
 }: {
   session: Session
   refreshSession: () => void
@@ -147,8 +158,15 @@ function Workspace({
      start unfolded for a frame before this arrived. */
   railCollapsed: boolean
   keepRail: (next: boolean) => void
+  /* Which way the nav was asked to run, and where to write it when it is asked
+     again. Held here beside the folded rail, and for the same reason: a page
+     that read its own would draw the rail for a frame before this arrived. */
+  navPreference: NavPreference
+  keepNav: (next: NavPreference) => void
 }) {
   const [collapsed, setCollapsed] = useState(railCollapsed)
+  const [nav, setNav] = useState(navPreference)
+  const placement = useNavPlacement(nav)
   const [draft, setDraft] = useState<Patch | null>(null)
   const [saved, setSaved] = useState<readonly PatchSummary[]>([])
   const [library, setLibrary] = useState<readonly LibraryEntry[]>([])
@@ -554,7 +572,7 @@ function Workspace({
     },
   ]
 
-  const menu: RailAction[] = [
+  const menu: NavAction[] = [
     { label: 'Import a file…', onSelect: () => importing.current?.click() },
     /* Discoverable from here because there is nowhere on the instrument it
        could go: a Model D has no MIDI socket to label. A browser without Web
@@ -571,6 +589,11 @@ function Workspace({
           const present = all.filter((patch): patch is Patch => patch !== null)
           downloadJson('all-patches.moogpatch.json', serializeBundle(createBundle(present)))
         }),
+    },
+    {
+      label: 'Preferences…',
+      separated: true,
+      onSelect: () => navigate(pathFor('preferences')),
     },
     ...(session?.mode === 'oauth'
       ? [
@@ -589,11 +612,12 @@ function Workspace({
 
   return (
     <>
-      <Box className={shell.shell}>
-        <SideRail
+      <Box className={shell.shell} data-nav={placement}>
+        <PageNav
           route={route}
           onNavigate={navigate}
           actions={menu}
+          placement={placement}
           collapsed={collapsed}
           onCollapse={(next) => {
             setCollapsed(next)
@@ -689,6 +713,17 @@ function Workspace({
                     await refresh()
                   })
                 }
+              />
+            )}
+
+            {route.name === 'preferences' && (
+              <PreferencesPage
+                nav={nav}
+                placement={placement}
+                onNav={(next) => {
+                  setNav(next)
+                  keepNav(next)
+                }}
               />
             )}
 
