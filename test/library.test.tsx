@@ -130,8 +130,8 @@ describe('finding a patch', () => {
   })
 
   /* A saved patch carries its own tags now that the summary does, so a chip has
-     to reach it as readily as it reaches a preset. */
-  test('a category chip reaches a saved patch as well as a preset', () => {
+     to reach it as readily as it reaches a factory one. */
+  test('a category chip reaches a saved patch as well as a factory one', () => {
     renderLibrary()
     fireEvent.click(screen.getByRole('button', { name: 'bass' }))
     expect(rowNames()).toEqual(['Sub Bass', 'My Patch'])

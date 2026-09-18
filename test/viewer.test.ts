@@ -151,10 +151,10 @@ describe('a rating belongs to whoever gave it', () => {
     expect(store.ratings.of(user.id)).toEqual({})
   })
 
-  test('a factory preset is rated by its slug', () => {
+  test('a factory patch is rated by its slug', () => {
     const { db, store } = server()
     const user = createUsers(db).ensure({ uid: 'u1', provider: 'test', subject: '1' })
-    store.patches.putPreset('sub-bass', { ...aPatch('Sub Bass'), visibility: 'public' })
+    store.patches.putFactory('sub-bass', { ...aPatch('Sub Bass'), visibility: 'public' })
 
     store.ratings.set(user.id, 'sub-bass', 5)
     expect(store.ratings.of(user.id)).toEqual({ 'sub-bass': 5 })

@@ -11,13 +11,13 @@
    orphaned *revoke* stops applying while the gate lives on under the new name —
    so restore the old name rather than edit the lock.
 
-   A **role** is a preset: a named set of privileges, stored against a user. It
-   is stored rather than stamped out as individual grants because that is what
-   keeps a preset live — changing a rung below reaches everyone who holds the
-   role, with no write. Role names are stored too; add roles, never rename one.
+   A **role** is a named set of privileges, stored against a user. It is stored
+   rather than stamped out as individual grants because that is what keeps it
+   live — changing a rung below reaches everyone who holds the role, with no
+   write. Role names are stored too; add roles, never rename one.
 
-   An **override** is one person's answer for one privilege, and beats the
-   preset either way. */
+   An **override** is one person's answer for one privilege, and beats the role
+   either way. */
 
 export const PRIVILEGE = {
   /* The administration area at all. Holding it opens the door; what is behind
@@ -53,7 +53,7 @@ export const DESCRIPTION: Record<Privilege, string> = {
   AdminLayout:
     'Open the Layout page, try the app’s colours out on this browser, and export a prompt that changes the ones it ships with. Nothing done there repaints the app for anybody else.',
   AdminPatches:
-    'Edit, delete or unpublish a patch belonging to somebody else. Factory presets stay read-only for everyone.',
+    'Edit, delete or unpublish a patch belonging to somebody else. Factory patches stay read-only for everyone.',
   StoreMidi:
     'Save a MIDI file together with the sound put on each of its parts, and open it again later.',
 }
@@ -94,7 +94,7 @@ export function isAssignable(role: Role): boolean {
 export const ROLE_LADDER: readonly Role[] = [ROLE.member, ROLE.tester, ROLE.admin]
 
 /* What each rung *adds*, never what it ends up with. Re-listing an inherited
-   privilege is how the two drift: the admin preset used to repeat StoreMidi,
+   privilege is how the two drift: the admin role used to repeat StoreMidi,
    and the day a second one was given to members it would not have been
    repeated. */
 const ADDS: Record<Role, readonly Privilege[]> = {
@@ -115,7 +115,7 @@ const ADDS: Record<Role, readonly Privilege[]> = {
 /* Everything up to and including this rung. An unknown role is nothing rather
    than a throw: it can only arrive from a column a newer build wrote, and the
    rest of this file drops those too. */
-export function presetFor(role: Role): readonly Privilege[] {
+export function privilegesOf(role: Role): readonly Privilege[] {
   const rung = ROLE_LADDER.indexOf(role)
   if (rung < 0) return []
 
@@ -206,8 +206,8 @@ export interface Overrides {
 export function resolve(roles: readonly Role[], overrides: Overrides = {}): Privilege[] {
   /* Member first and unconditionally: it is not stored, so it does not arrive
      in `roles`, and every signed-in account is one. */
-  const held = new Set<Privilege>(presetFor(ROLE.member))
-  for (const role of roles) for (const privilege of presetFor(role)) held.add(privilege)
+  const held = new Set<Privilege>(privilegesOf(ROLE.member))
+  for (const role of roles) for (const privilege of privilegesOf(role)) held.add(privilege)
   for (const privilege of overrides.granted ?? []) held.add(privilege)
   for (const privilege of overrides.revoked ?? []) held.delete(privilege)
 
@@ -231,7 +231,7 @@ export function resolve(roles: readonly Role[], overrides: Overrides = {}): Priv
 }
 
 /* Where an answer came from, which is what the editor shows under each row. */
-export type Source = 'preset' | 'granted' | 'revoked' | 'none'
+export type Source = 'role' | 'granted' | 'revoked' | 'none'
 
 export function sourceOf(
   roles: readonly Role[],
@@ -240,11 +240,11 @@ export function sourceOf(
 ): Source {
   if ((overrides.revoked ?? []).includes(privilege)) return 'revoked'
   if ((overrides.granted ?? []).includes(privilege)) return 'granted'
-  return fromPreset(roles, privilege) ? 'preset' : 'none'
+  return fromRole(roles, privilege) ? 'role' : 'none'
 }
 
-export function fromPreset(roles: readonly Role[], privilege: Privilege): boolean {
+export function fromRole(roles: readonly Role[], privilege: Privilege): boolean {
   /* Member is checked whatever was passed, because everybody is one. */
-  if (presetFor(ROLE.member).includes(privilege)) return true
-  return roles.some((role) => presetFor(role).includes(privilege))
+  if (privilegesOf(ROLE.member).includes(privilege)) return true
+  return roles.some((role) => privilegesOf(role).includes(privilege))
 }

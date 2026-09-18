@@ -9,7 +9,7 @@ import { createPatches } from './repositories/patches.ts'
    rather than re-asserted: a slug the database already holds is left exactly as
    it is.
 
-   That is what makes a factory preset editable. The rows are the live bank now,
+   That is what makes a factory patch editable. The rows are the live bank now,
    so an administrator correcting one has somewhere to put the correction that a
    restart will not undo — the alternative was a bank that came back from the
    image every boot and an edit that appeared to work until the next deploy.
@@ -66,7 +66,7 @@ export function loadFactory(
 
       /* Seeded, not synced. A row that is already here is the live bank, edits
          and all, and the file is only where it started. */
-      if (!options.reseed && patches.hasPreset(slug)) {
+      if (!options.reseed && patches.hasFactory(slug)) {
         kept++
         continue
       }
@@ -75,7 +75,7 @@ export function loadFactory(
       /* Loudly, at startup: a bank file that will not parse is a mistake in the
          repo, not something a user can fix by reloading. */
       if (!parsed.ok) throw new Error(`${file}: ${parsed.error}`)
-      patches.putPreset(slug, parsed.value)
+      patches.putFactory(slug, parsed.value)
       loaded++
     }
   })()

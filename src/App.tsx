@@ -41,8 +41,8 @@ import { panelRegistry } from './controls/panel.ts'
 import { isRecalled } from './controls/recall.ts'
 import type { ControlValue } from './controls/types.ts'
 import { mergeValues, resolvePatch, reportHasWarnings, type ResolveReport } from './patch/resolve.ts'
+import { copyOf } from './patch/copy.ts'
 import { createPatch, type Patch } from './patch/schema.ts'
-import { copyOf } from './presets/preset.ts'
 import { applySkin } from './skin.ts'
 import type { Skin } from './tones.ts'
 import { createHttpStore } from './storage/httpStore.ts'
@@ -124,7 +124,6 @@ function Workspace({
 }) {
   const [draft, setDraft] = useState<Patch | null>(null)
   const [saved, setSaved] = useState<readonly PatchSummary[]>([])
-  const [presets, setPresets] = useState<readonly Patch[]>([])
   const [library, setLibrary] = useState<readonly LibraryEntry[]>([])
   /* The categories an admin keeps, which is what the save form offers — not the
      tags patches happen to wear, or a bank nothing is tagged in yet could never
@@ -144,7 +143,7 @@ function Workspace({
      against it is what tells the user there is something unsaved. */
   const [clean, setClean] = useState('')
   /* Whether the server has this draft *and* will let me write it back. A patch
-     of my own is written over; anything else — a factory preset, somebody
+     of my own is written over; anything else — a factory patch, somebody
      else's — is created afresh, and only the server ever mints an id. */
   const [stored, setStored] = useState(false)
   /* What the draft was copied from, until it has been saved once. */
@@ -182,14 +181,12 @@ function Workspace({
   const tagPalette = useMemo(() => paletteOf(tags), [tags])
 
   const refresh = useCallback(async () => {
-    const [patches, bank, shelf, categories] = await Promise.all([
+    const [patches, shelf, categories] = await Promise.all([
       store.list(),
-      store.listPresets(),
       store.library(),
       store.listTags(),
     ])
     setSaved(patches)
-    setPresets(bank)
     setLibrary(shelf)
     setTags(categories)
   }, [])
@@ -416,24 +413,16 @@ function Workspace({
     [],
   )
 
-  /* A preset is already in hand; a saved patch has to be fetched, because its
-     summary carries no values. */
-  const fetchEntry = useCallback(
-    async (entry: LibraryEntry): Promise<Patch | null> =>
-      entry.origin === 'factory'
-        ? (presets.find((preset) => preset.id === entry.id) ?? null)
-        : await store.get(entry.id),
-    [presets],
-  )
-
   /* Opening is the row's whole job, so it loads and moves to the editor in one
-     go rather than loading in place and leaving you on the list. A preset opens
-     as a copy, because saving afterwards must not write back over it; a patch of
-     your own opens as itself, so saving updates the one you picked. */
+     go rather than loading in place and leaving you on the list. A factory patch
+     opens as a copy, because saving afterwards must not write back over it; a
+     patch of your own opens as itself, so saving updates the one you picked. */
   const openEntry = useCallback(
     (entry: LibraryEntry) =>
       void run(async () => {
-        const patch = await fetchEntry(entry)
+        /* Fetched whatever it is: a row carries no values, and a factory patch
+           is read through the same call as any other. */
+        const patch = await store.get(entry.id)
         if (!patch) return
         const factory = entry.origin === 'factory'
         const writable = !factory && entry.mine
@@ -447,7 +436,7 @@ function Workspace({
         )
         navigate(pathFor('editor'))
       }),
-    [adopt, fetchEntry, navigate, run],
+    [adopt, navigate, run],
   )
 
   if (!draft) return <Typography sx={{ p: 2 }}>Loading…</Typography>
@@ -461,7 +450,7 @@ function Workspace({
 
   /* The library row for what the editor is showing: a patch of mine is its own
      row, and a copy not saved yet still points at what it was opened from — a
-     factory preset is rated by the person who has just played it, not by whoever
+     factory patch is rated by the person who has just played it, not by whoever
      keeps a copy. It is where the stars in the save form live, and it is what
      the library marks so the list says which one is loaded. A first draft
      matches nothing and can be neither rated nor pointed at. */
@@ -646,7 +635,7 @@ function Workspace({
         {route.name === 'midi' && (
           <PlayMidi
             entries={library}
-            loadPatch={fetchEntry}
+            loadPatch={(id) => store.get(id)}
             desk={desk}
             onProblem={setProblem}
           />
@@ -782,7 +771,7 @@ function Workspace({
             const edited = { ...draft, ...fields, tags: [...fields.tags] }
             /* Only the server mints an id, so a draft it has never seen is
                created rather than written over — which is what makes saving a
-               loaded preset impossible to do over the top. */
+               loaded factory patch impossible to do over the top. */
             const kept = stored
               ? await store.save({ ...edited, updatedAt: new Date().toISOString() })
               : await store.create(edited, copiedFrom ?? undefined)

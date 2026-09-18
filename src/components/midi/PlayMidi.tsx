@@ -100,7 +100,7 @@ export function PlayMidi({
   entries: readonly LibraryEntry[]
   /* The library holds summaries; playing needs the values, so the page that has
      a store hands this down rather than this one reaching for it. */
-  loadPatch: (entry: LibraryEntry) => Promise<Patch | null>
+  loadPatch: (id: string) => Promise<Patch | null>
   /* Saving and reopening, for whoever the server grants StoreMidi. The buttons
      below are hidden without it and the routes refuse without it, so this is
      handed down unconditionally rather than being a privilege in two places. */
@@ -187,7 +187,7 @@ export function PlayMidi({
     (part: MidiChannel, entry: LibraryEntry) => {
       setPicking(null)
       void (async () => {
-        const patch = await loadPatch(entry)
+        const patch = await loadPatch(entry.id)
         if (!patch) return
         chooseSound(part.channel, { entryId: entry.id, name: entry.name, patch })
       })()

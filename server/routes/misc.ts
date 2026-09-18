@@ -1,4 +1,4 @@
-import { badRequest, json, notFound, readBody } from '@server/http.ts'
+import { badRequest, json, readBody } from '@server/http.ts'
 import { route, type Route } from './table.ts'
 
 /* The routes with no rules of their own: each one reads its repository and
@@ -67,39 +67,4 @@ export const miscRoutes: readonly Route[] = [
         ),
       ),
   }),
-
-  /* The bank is read-only to every route: it comes from the image, and a change
-     here would be overwritten at the next start. Saving one is always a copy,
-     which is POST /api/patches. One of them is read through /api/patches, like
-     anything else, so there is no `/presets/:slug`. */
-  route({
-    method: 'GET',
-    path: '/presets',
-    open: true,
-    handle: ({ services }) => json(services.repositories.patches.listPresets()),
-  }),
-
-  route({
-    method: 'GET',
-    path: '/presets/:slug',
-    open: true,
-    handle: () => notFound(),
-  }),
-
-  ...readOnly('/presets'),
-  ...readOnly('/presets/:slug'),
 ]
-
-/* Spelled out rather than left to fall through as a 405, because "the method is
-   wrong here" and "this can never be written by anyone" are different answers
-   and only the second one is true. */
-function readOnly(path: string): Route[] {
-  return (['POST', 'PUT', 'DELETE'] as const).map((method) =>
-    route({
-      method,
-      path,
-      open: true,
-      handle: () => json({ error: 'factory presets are read-only' }, 403),
-    }),
-  )
-}

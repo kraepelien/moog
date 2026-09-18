@@ -9,7 +9,6 @@
       "@instruments/*": ["./src/instruments/*"],
       "@navigation/*": ["./src/navigation/*"],
       "@patch/*": ["./src/patch/*"],
-      "@presets/*": ["./src/presets/*"],
       "@session/*": ["./src/session/*"],
       "@storage/*": ["./src/storage/*"],
       "@transfer/*": ["./src/transfer/*"],

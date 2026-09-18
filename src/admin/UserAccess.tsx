@@ -9,7 +9,7 @@ import {
   ASSIGNABLE_ROLES,
   DESCRIPTION,
   effectiveRoles,
-  fromPreset,
+  fromRole,
   requiredBy,
   sourceOf,
   PRIVILEGES,
@@ -39,7 +39,7 @@ import styles from './UserAccess.module.css'
 export type Decision = 'granted' | 'inherited' | 'revoked'
 
 const SAYS: Record<Source, string> = {
-  preset: 'from a role',
+  role: 'from a role',
   granted: 'granted to this account',
   revoked: 'revoked for this account',
   none: 'no role gives this',
@@ -131,12 +131,12 @@ export function UserAccess({
 
             /* A grant that says nothing today, and would only start meaning
                something once the role that covers it goes away. */
-            const redundant = source === 'granted' && fromPreset(roles, privilege)
+            const redundant = source === 'granted' && fromRole(roles, privilege)
             /* Something gives it and the account still does not have it, because
                what it is conditional on is missing. */
             const waiting = requiredBy(privilege)
             const inert =
-              (source === 'granted' || source === 'preset') &&
+              (source === 'granted' || source === 'role') &&
               waiting !== null &&
               !user.privileges.includes(privilege)
 

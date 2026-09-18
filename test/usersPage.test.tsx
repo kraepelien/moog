@@ -148,7 +148,7 @@ describe('the editor', () => {
     expect(faded(PRIVILEGE.AccessAdmin)).toBe(false)
   })
 
-  test('reads an explicit answer off the account rather than the preset', () => {
+  test('reads an explicit answer off the account rather than the role', () => {
     show([user({ uid: 'ada', name: 'Ada', revoked: [PRIVILEGE.StoreMidi], privileges: [] })])
     open('Ada')
 

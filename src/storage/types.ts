@@ -44,7 +44,11 @@ export class StoreError extends Error {
 }
 
 /* Summaries rather than patches: a UI expecting every value up front is what
-   would make paginating this expensive later. */
+   would make paginating this expensive later.
+
+   One store for every patch, factory or saved. A factory one is addressed by
+   its slug instead of a uid and `save` is refused on it, which is the whole of
+   the difference — a second store would have been a second vocabulary for it. */
 export interface PatchStore {
   list(): Promise<readonly PatchSummary[]>
   get(id: string): Promise<Patch | null>
@@ -57,8 +61,6 @@ export interface PatchStore {
   delete(id: string): Promise<void>
 }
 
-/* Read-only: the bank comes from the image, so saving one is always a copy,
-   which is an ordinary patch. Listed whole because it is small. */
 /* The categories an admin keeps, apart from PatchStore because they are not a
    patch and outlive any one of them. A patch stores the name as a plain string,
    so this list says what may be offered, never what a patch means. */
@@ -89,10 +91,6 @@ export interface UserStore {
   setUserPrivilege(uid: string, privilege: string, granted: boolean): Promise<AdminUser>
   /* Back to whatever the roles say. */
   clearUserPrivilege(uid: string, privilege: string): Promise<AdminUser>
-}
-
-export interface PresetStore {
-  listPresets(): Promise<readonly Patch[]>
 }
 
 /* A MIDI file and the sounds put on its parts. Refused with `forbidden` for

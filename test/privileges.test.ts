@@ -6,10 +6,10 @@ import {
   DESCRIPTION,
   effectiveRoles,
   formatRoles,
-  fromPreset,
+  fromRole,
   isPrivilege,
   parseRoles,
-  presetFor,
+  privilegesOf,
   requiredBy,
   resolve,
   sourceOf,
@@ -90,7 +90,7 @@ describe('resolving what somebody may do', () => {
     expect(resolve([])).toEqual([PRIVILEGE.StoreMidi])
   })
 
-  test('gives an admin the whole preset', () => {
+  test('gives an admin everything the role holds', () => {
     const held = resolve([ROLE.member, ROLE.admin])
     expect(held).toContain(PRIVILEGE.AccessAdmin)
     expect(held).toContain(PRIVILEGE.AdminUsers)
@@ -104,7 +104,7 @@ describe('resolving what somebody may do', () => {
   })
 
   /* The whole point of a revoke: one privilege off, everything else intact. */
-  test('takes back what was revoked, even from a preset', () => {
+  test('takes back what was revoked, even from a role', () => {
     const held = resolve([ROLE.member, ROLE.admin], { revoked: [PRIVILEGE.AdminTags] })
     expect(held).not.toContain(PRIVILEGE.AdminTags)
     expect(held).toContain(PRIVILEGE.AccessAdmin)
@@ -129,7 +129,7 @@ describe('resolving what somebody may do', () => {
    privileges do not apply at all, so revoking it de-administers somebody
    everywhere rather than hiding pages whose routes would still have answered. */
 describe('what AccessAdmin is conditional on', () => {
-  test('drops every administration privilege the admin preset gives', () => {
+  test('drops every administration privilege the admin role gives', () => {
     const held = resolve([ROLE.member, ROLE.admin], { revoked: [PRIVILEGE.AccessAdmin] })
 
     expect(held).toEqual([PRIVILEGE.StoreMidi])
@@ -172,9 +172,9 @@ describe('what AccessAdmin is conditional on', () => {
 })
 
 describe('where an answer came from', () => {
-  test('says the preset when nothing was said about this account', () => {
-    expect(sourceOf([ROLE.admin], PRIVILEGE.AdminTags)).toBe('preset')
-    expect(sourceOf([], PRIVILEGE.StoreMidi)).toBe('preset')
+  test('says the role when nothing was said about this account', () => {
+    expect(sourceOf([ROLE.admin], PRIVILEGE.AdminTags)).toBe('role')
+    expect(sourceOf([], PRIVILEGE.StoreMidi)).toBe('role')
   })
 
   test('says nothing gives it, where nothing does', () => {
@@ -190,9 +190,9 @@ describe('where an answer came from', () => {
 
   /* What the editor flags as saying nothing: granting something the role
      already gives is only visible once the role goes away. */
-  test('can tell a grant that duplicates a preset', () => {
-    expect(fromPreset([ROLE.admin], PRIVILEGE.AdminTags)).toBe(true)
-    expect(fromPreset([], PRIVILEGE.AdminTags)).toBe(false)
+  test('can tell a grant that duplicates a role', () => {
+    expect(fromRole([ROLE.admin], PRIVILEGE.AdminTags)).toBe(true)
+    expect(fromRole([], PRIVILEGE.AdminTags)).toBe(false)
   })
 })
 
@@ -209,25 +209,25 @@ describe('the catalogue', () => {
     expect(isPrivilege(null)).toBe(false)
   })
 
-  test('has a preset for every role', () => {
-    for (const role of ROLES) expect(Array.isArray(presetFor(role))).toBe(true)
+  test('has a privilege list for every role', () => {
+    for (const role of ROLES) expect(Array.isArray(privilegesOf(role))).toBe(true)
   })
 })
 
 /* The rungs. A role holds what the rungs below it hold, so unlocking a feature
    for members is one line and reaches testers and admins with it — which
-   matters because the presets are code: it takes a deploy either way, and the
+   matters because the roles are code: it takes a deploy either way, and the
    deploy should not also need each higher role edited to match. */
 describe('a role inheriting from the ones below it', () => {
   test('gives an admin everything a member has', () => {
-    for (const privilege of presetFor(ROLE.member)) {
-      expect(presetFor(ROLE.admin)).toContain(privilege)
+    for (const privilege of privilegesOf(ROLE.member)) {
+      expect(privilegesOf(ROLE.admin)).toContain(privilege)
     }
   })
 
   test('gives a tester everything a member has', () => {
-    for (const privilege of presetFor(ROLE.member)) {
-      expect(presetFor(ROLE.tester)).toContain(privilege)
+    for (const privilege of privilegesOf(ROLE.member)) {
+      expect(privilegesOf(ROLE.tester)).toContain(privilege)
     }
   })
 
@@ -236,8 +236,8 @@ describe('a role inheriting from the ones below it', () => {
   test('holds for every step of the ladder', () => {
     ROLE_LADDER.forEach((role, rung) => {
       if (rung === 0) return
-      const below = presetFor(ROLE_LADDER[rung - 1]!)
-      for (const privilege of below) expect(presetFor(role)).toContain(privilege)
+      const below = privilegesOf(ROLE_LADDER[rung - 1]!)
+      for (const privilege of below) expect(privilegesOf(role)).toContain(privilege)
     })
   })
 

@@ -373,7 +373,7 @@ describe('the rules that keep an install reachable', () => {
 })
 
 describe('roles', () => {
-  test('are assigned as presets and resolve to their privileges', async () => {
+  test('are assigned as roles and resolve to their privileges', async () => {
     const { person } = await world()
     const boss = await person('u-boss')
     await person('u-punter')

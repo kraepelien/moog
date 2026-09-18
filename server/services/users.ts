@@ -159,7 +159,7 @@ export function createUserService(repositories: Repositories, config: AuthConfig
   }
 
   /* Resolved per account rather than counted in SQL. Who holds a privilege
-     depends on the presets and on one privilege being conditional on another,
+     depends on the roles and on one privilege being conditional on another,
      and a second copy of those rules in SQL is a copy that drifts — this asks
      the same `resolve` every request asks. The table is small and this runs
      only on a write. */

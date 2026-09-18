@@ -25,10 +25,10 @@ export default defineConfig({
   plugins: [
     react(),
     svgr(),
-    /* Patches and presets are files on disk, served over /api by the dev server
-       so there is no second process to run while working. `presets/` is the
+    /* The patches are a database on disk, served over /api by the dev server so
+       there is no second process to run while working. `bank/` is the factory
        bank kept in the repo; `data/` is the working copy, and is gitignored. */
-    patchApi({ root: 'data', seed: 'presets' }),
+    patchApi({ root: 'data', seed: 'bank' }),
   ],
   resolve: { alias },
   server: {

@@ -30,7 +30,8 @@ export interface Patch {
   readonly visibility: Visibility
   /* Set when the values are a reconstruction rather than settings read off an
      instrument, so the UI can say so rather than letting a guess pass for a
-     measurement. Was a preset-only field; a preset is a patch now. */
+     measurement. It is on every patch, factory or saved: the reconstruction is
+     a fact about the values, not about where they came from. */
   readonly approximate: boolean
   /* What this was copied from, if anything. */
   readonly derivedFrom: Provenance | null

@@ -70,7 +70,7 @@ remapping every saved patch.
 - **One privilege is written at a time, never the set.** A whole-set write deletes override rows
   naming privileges the writing build does not know, and a silently deleted revoke is somebody
   getting access back. `resolve()` in `src/access/privileges.ts` is the only place the order
-  preset → grant → revoke → prerequisite exists; the reasons a particular revoke may not be
+  role → grant → revoke → prerequisite exists; the reasons a particular revoke may not be
   *written* live in `server/services/users.ts`, so the resolution order stays a rule without
   exceptions.
 - **A new `Admin*` privilege needs an entry in `REQUIRES`.** Everything administrative is

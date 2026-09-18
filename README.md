@@ -1,7 +1,7 @@
 # Minimoog Model D — Patch Editor
 
 An interactive patch sheet for the Minimoog Model D. Every knob and switch on the panel holds a
-value; a patch is that set of values plus a name and notes. Load factory presets, save your own
+value; a patch is that set of values plus a name and notes. Load the factory patches, save your own
 patches, and move them between machines as JSON files.
 
 Package manager is [Bun](https://bun.com). Never npm, npx, yarn or pnpm.
@@ -42,13 +42,13 @@ src/
   controls/   registry.ts (generic machinery) · types.ts (contracts) · placeholder.ts · panel.ts (the panel)
   components/ Panel.tsx renders whatever the registry holds
   components/library/ the patch library: search, filter chips, rows, the patch header
-  patch/      schema.ts (Patch + structural parse) · migrate.ts (version chain) · resolve.ts (load policy)
+  patch/      schema.ts (Patch + structural parse) · migrate.ts (version chain) · resolve.ts (load
+              policy) · copy.ts (copying anything you may not write over)
   access/     privileges.ts (the vocabulary and the one resolve()) · Can.tsx (the guards)
   admin/      UsersPage.tsx (everyone with an account) · UserAccess.tsx (one person's privileges)
   components/midi/ the MIDI desk: a file, a sound per part, and saving the two together
   navigation/ routes.ts (the page table) · router.ts (the address)
   storage/    types.ts (the adapter interface) · httpStore.ts (the API) · deviceSkin.ts (the colour preview)
-  presets/    factory.ts (placeholder presets)
   transfer/   bundle.ts (JSON import/export)
   audio/      calibration.ts (every dial-to-physical number) · settings.ts (the panel read as
               an instrument) · engine.ts (the Web Audio graph)
@@ -57,6 +57,7 @@ server/
   services/     the rules — who may write a patch, what a tag may be called
   routes/       table.ts (the dispatcher and its guard) · one module per resource
   api.ts        wiring: origin, viewer, rate limit, dispatch
+bank/         the factory patches, one JSON file each, seeded into the database on a first start
 test/         fixtures.ts defines fake control types; nothing here ships
 reference/    manual scans, recovered geometry, the hand-drawn knob SVG
 tools/        artwork measurement script · audio-check.html (what the engine sounds like) ·
@@ -238,10 +239,9 @@ everything saved. `src/components/library/` holds both the library and the bar
 the editor prints above the panel, because they are drawn from the same fields.
 
 A `LibraryEntry` is what one line needs, and it is deliberately not a `Patch`.
-Presets arrive whole from `listPresets`; saved patches arrive as `PatchSummary`,
-which carries `tags`, `instrument` and `visibility` alongside the name and its
-timestamps so that both sources supply the same fields and every line draws the
-same chips.
+It carries `tags`, `instrument` and `visibility` alongside the name and its
+timestamps, so a line draws its chips without anything fetching values — and it
+is assembled on the server, because the ratings on it are.
 
 Those three are in the summary because they are **metadata, not values**. The
 warning further down about not fattening the summary is about `values`: pulling
@@ -274,7 +274,7 @@ why the row is a grid of fixed cells rather than one run of chips.
 
 **A bank is not a field on the patch.** `origin` is the store a patch came from,
 `factory` or `user`, and it says the same thing to everybody. The bank is
-`bankOf`: a preset is Factory, and a saved patch is User to whoever saved it and
+`bankOf`: a factory patch is Factory, and a saved one is User to whoever saved it and
 Custom to everyone else — so two people open the same library and one row reads
 differently to each of them. That is the distinction worth browsing by, and it
 is free, because the server already sends `mine` per viewer to draw your own
@@ -289,7 +289,7 @@ lead, on a Model D" is sayable. An empty row filters nothing rather than matchin
 nothing, or opening the library would show an empty list.
 
 Opening a row loads the patch and switches to the editor in one go. A factory
-preset opens as a **copy**, so saving afterwards cannot write back over it; a
+patch opens as a **copy**, so saving afterwards cannot write back over it; a
 patch of your own opens as itself, so saving updates the one you picked.
 
 Saving is a form, not a button. **Save** opens `SavePatchDialog`, which collects
@@ -495,9 +495,9 @@ server and the browser cannot disagree about what a name means.
 Each of these was a real choice, and the rejected half is written down because the reason it was
 rejected is the reason the current shape looks odd if you meet it cold.
 
-- **A role is stored, rather than stamped out as grants.** Applying a preset could have written one
+- **A role is stored, rather than stamped out as grants.** Applying a role could have written one
   grant row per privilege. That makes the role a dead shortcut: change what `tester` means and
-  nobody already marked one is affected. Stored, a preset stays live.
+  nobody already marked one is affected. Stored, a role stays live.
 - **Only `tester` is stored.** `member` was, briefly — every row then had to be backfilled correctly
   or the account had no privileges at all. `admin` was too, alongside `MOOG_ADMINS`, which gave one
   fact two sources: a column could go on claiming an administrator the environment had stopped
@@ -525,11 +525,11 @@ A **privilege** is a thing the code can do — `AccessAdmin`, `AdminUsers`, `Adm
 `AdminLayout`, `AdminPatches`, `StoreMidi`. Adding one is that file plus the route that asks for it:
 never a migration.
 
-A **role** is a preset — a named set of privileges, stored against a user. It is stored rather than
-stamped out as individual grants because that is what keeps a preset *live*: changing what `tester`
+A **role** is a named set of privileges, stored against a user. It is stored rather than
+stamped out as individual grants because that is what keeps it *live*: changing what `tester`
 means in code reaches everyone already marked a tester, with no write.
 
-An **override** is one person's answer for one privilege, and beats the preset either way.
+An **override** is one person's answer for one privilege, and beats the role either way.
 
 **`tester` is the only role anybody is given.** The other two are facts rather than decisions, and
 neither is ever written to a row:
@@ -546,10 +546,10 @@ migration takes it out of the column, so the page stops showing a role nobody is
 
 **The roles are a ladder** — `member`, then `tester`, then `admin` — and each rung holds what the
 rungs below it hold. `ROLE_LADDER` states that order, and each role lists only what it *adds*.
-Re-listing an inherited privilege is how the two drift: the admin preset used to repeat `StoreMidi`,
+Re-listing an inherited privilege is how the two drift: the admin role used to repeat `StoreMidi`,
 and the day a second privilege was given to members it would not have been repeated there.
 
-The presets are code, so unlocking a feature takes a deploy either way. What the ladder buys is that
+The roles are code, so unlocking a feature takes a deploy either way. What the ladder buys is that
 the deploy is **one line**: give it to `member` and testers and admins have it too, with no per-user
 writes and no matching edit on the rungs above.
 
@@ -772,22 +772,27 @@ overwritten, never listed, and plausibly still client-side on the day saved patc
   easy to write screens with no pending or error states and only discover it when a network sits
   behind the adapter.
 
-## Presets
+## The factory bank
 
-Factory presets ship with the app and are read-only. They share the patch schema minus `id` and
-timestamps, which belong to a stored patch. Loading one produces a fresh unsaved patch with a new
-id, so saving afterwards can never write back over a preset.
+**A factory patch is a patch.** Same table, same schema, same `GET /api/patches/:id`, and the
+library draws it from the same `listVisible`. Two things differ: it is addressed by the `slug` it is
+filed under in the repo rather than by a minted uid, and `mayWrite` refuses it for everybody. There
+is no second store, no second route and no second word for it — the vocabulary used to say
+"preset", and that was the only thing suggesting it was a different kind of thing.
+
+Opening one produces a fresh unsaved patch with a new id, so saving afterwards can never write back
+over it.
 
 **The bank is seeded, not synced.** `loadFactory` writes a file into the database only when that
 slug is not there yet; a row it already holds is left exactly as it is. That is what makes a factory
-preset editable at all — the rows are the live bank, so a correction has somewhere to live that a
-restart will not undo. It also means a preset that was retired stays retired rather than walking
-back in because its file is still in the image.
+patch editable at all — the rows are the live bank, so a correction has somewhere to live that a
+restart will not undo. It also means one that was retired stays retired rather than walking back in
+because its file is still in the image.
 
 To put the repo's copy back over the rows, start once with `MOOG_RESEED=1`. It overwrites every
-preset and discards whatever was edited, which is the point of having to ask for it; nothing does it
-on its own, and the flag is read per start rather than stored, so leaving it in a compose file would
-quietly undo every correction at the next restart.
+factory patch and discards whatever was edited, which is the point of having to ask for it; nothing
+does it on its own, and the flag is read per start rather than stored, so leaving it in a compose
+file would quietly undo every correction at the next restart.
 
 ```bash
 # on the NAS, with the stack stopped
@@ -795,7 +800,7 @@ docker compose run --rm -e MOOG_RESEED=1 moog bun server/serve.ts   # or just re
 docker compose up -d
 ```
 
-A preset file is one patch, named after the slug inside it, and a control you have no real value
+A file in `bank/` is one patch, named after the slug inside it, and a control you have no real value
 for is **omitted** rather than guessed — an omission is honest and a guess is not:
 
 ```jsonc
@@ -803,9 +808,9 @@ for is **omitted** rather than guessed — an omission is honest and a guess is 
 ```
 
 **But an omission is a reference to the registry default, so moving a default re-voices the bank.**
-Every preset here is sparse, and most of them lean on a dozen defaults each. When the panel's
+Every file here is sparse, and most of them lean on a dozen defaults each. When the panel's
 starting positions changed to the Init patch's, every control whose default moved *and* whose old
-value a preset could be heard to depend on was written into that preset's file explicitly — decided
+value a patch could be heard to depend on was written into that patch's file explicitly — decided
 by resolving each patch both ways and comparing `settingsFrom`, with the mod wheel down and wide
 open so a routing switch that only matters once the wheel is moved was kept rather than pruned as
 inaudible. Anything that made no difference to the sound was left out, which is why the files are

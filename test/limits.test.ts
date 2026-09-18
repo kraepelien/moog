@@ -241,9 +241,9 @@ describe('taking something out of the shared library', () => {
     expect((await mine('POST', `/api/patches/${patch.id}/unpublish`))!.status).toBe(200)
   })
 
-  test('cannot reach a factory preset', async () => {
+  test('cannot reach a factory patch', async () => {
     const { store, person } = await world()
-    store.patches.putPreset('sub-bass', { ...createPatch({ name: 'Sub Bass' }), id: 'sub-bass' })
+    store.patches.putFactory('sub-bass', { ...createPatch({ name: 'Sub Bass' }), id: 'sub-bass' })
     const boss = await person('u-boss', 'boss@example.com')
 
     expect((await boss('POST', '/api/patches/sub-bass/unpublish'))!.status).toBe(403)

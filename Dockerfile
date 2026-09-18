@@ -25,7 +25,7 @@ WORKDIR /app
 # 65536 — the group the data folder belongs to, not that account's primary group
 # of 100. Matching the folder's group is what gives the container write access;
 # with gid 100 it would match neither owner nor group, fall through to "other",
-# list the presets happily and fail every save. Override both for a different
+# list the bank happily and fail every save. Override both for a different
 # host.
 ARG UID=1027
 ARG GID=65536
@@ -49,12 +49,13 @@ COPY --from=build /app/tsconfig.paths.json ./tsconfig.paths.json
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
 
-# The bank shipped with this image, reloaded into the database on every start,
-# so a preset added or corrected here reaches an existing install.
-COPY --from=build /app/presets ./presets
+# The bank shipped with this image, seeded into the database on a first start,
+# so a patch added here reaches an existing install without overwriting one an
+# administrator has corrected.
+COPY --from=build /app/bank ./bank
 
 ENV MOOG_DATA=/data \
-    MOOG_PRESETS=/app/presets \
+    MOOG_BANK=/app/bank \
     MOOG_DIST=/app/dist \
     PORT=8080
 

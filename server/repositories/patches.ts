@@ -2,8 +2,9 @@ import type { Database } from 'bun:sqlite'
 import { DEFAULT_INSTRUMENT } from '@instruments/instruments.ts'
 import { PATCH_SCHEMA_VERSION, type Patch } from '@patch/schema.ts'
 
-/* Patches and factory presets are rows in one table, told apart by whether they
-   came from the repo — a factory row is the one with a slug. Everything the
+/* A factory patch and a saved one are rows in the same table, told apart by
+   whether they came from the repo — a factory row is the one with a slug, and
+   nothing else about it is different. Everything the
    library will ask — whose is this, who may see it, what is it rated — is a
    column or a join, which a folder of JSON files could not answer without
    reading all of them.
@@ -188,34 +189,34 @@ export function createPatches(db: Database) {
 
     /* Addressed by the slug they are filed under in the repo rather than by a
        uid, which would differ between installs of the same bank. */
-    listPresets(): Patch[] {
+    listFactory(): Patch[] {
       return db
         .query<PatchRow, []>(`${SELECT} and p.slug is not null order by p.name`)
         .all()
         .map(toPatch)
     },
 
-    /* Whether the bank already holds this one, deleted or not: a preset an
+    /* Whether the bank already holds this one, deleted or not: a patch an
        administrator retired must not come back at the next start just because
        its file is still in the image. */
-    hasPreset(slug: string): boolean {
-      if (!isSafeName(slug)) throw new Error(`Unsafe preset slug: ${slug}`)
+    hasFactory(slug: string): boolean {
+      if (!isSafeName(slug)) throw new Error(`Unsafe factory slug: ${slug}`)
       return (
         db.query<{ n: number }, [string]>(`select count(*) as n from patches where slug = ?`)
           .get(slug)?.n === 1
       )
     },
 
-    putPreset(slug: string, patch: Patch): void {
-      if (!isSafeName(slug)) throw new Error(`Unsafe preset slug: ${slug}`)
+    putFactory(slug: string, patch: Patch): void {
+      if (!isSafeName(slug)) throw new Error(`Unsafe factory slug: ${slug}`)
       const existing = db
         .query<{ uid: string }, [string]>(`select uid from patches where slug = ?`)
         .get(slug)
       write({ ...patch, id: existing?.uid ?? patch.id }, { slug })
     },
 
-    deletePreset(slug: string): void {
-      if (!isSafeName(slug)) throw new Error(`Unsafe preset slug: ${slug}`)
+    deleteFactory(slug: string): void {
+      if (!isSafeName(slug)) throw new Error(`Unsafe factory slug: ${slug}`)
       db.run(`update patches set deleted_at = ? where slug = ?`, [new Date().toISOString(), slug])
     },
 

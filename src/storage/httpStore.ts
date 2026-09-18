@@ -16,7 +16,6 @@ import {
   type LibraryStore,
   type PatchStore,
   type PatchSummary,
-  type PresetStore,
   type TagStore,
 } from './types.ts'
 
@@ -71,7 +70,7 @@ export async function requestWith(
     throw new StoreError('unauthenticated', 'Sign in to do that.')
   }
   /* The server says why, and the reasons differ: somebody else's patch, a
-     factory preset, or a privilege this account does not hold. A single
+     factory patch, or a privilege this account does not hold. A single
      invented sentence here was wrong for two of the three. */
   if (response.status === 403) {
     const said = readError(await response.text().catch(() => ''))
@@ -110,7 +109,6 @@ function toPatch(raw: unknown): Patch | null {
 export function createHttpStore(
   doFetch: Fetch = (path, init) => fetch(path, init),
 ): PatchStore &
-  PresetStore &
   LibraryStore &
   TagStore &
   AdminStore &
@@ -193,11 +191,6 @@ export function createHttpStore(
 
     async removeTag(id: number): Promise<void> {
       await request(`/tags/${id}`, { method: 'DELETE' })
-    },
-
-    async listPresets(): Promise<readonly Patch[]> {
-      const raw = (await request('/presets')) as unknown[]
-      return raw.map(toPatch).filter((patch): patch is Patch => patch !== null)
     },
 
     async listArrangements(): Promise<readonly ArrangementSummary[]> {

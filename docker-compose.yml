@@ -23,7 +23,7 @@ services:
     user: "${MOOG_UID:-1027}:${MOOG_GID:-65536}"
 
     # Every key of the .env beside this file, so a setting added there needs no
-    # change here. A key the image already sets (PORT, MOOG_DATA, MOOG_PRESETS,
+    # change here. A key the image already sets (PORT, MOOG_DATA, MOOG_BANK,
     # MOOG_DIST) wins over its value, so keep container paths out of the .env.
     env_file: .env
 
@@ -34,7 +34,7 @@ services:
       - "${MOOG_PORT:-10072}:8080"
 
     volumes:
-      # Everything the editor writes: the active presets and the saved patches.
-      # The bank shipped in the image is copied in here the first time, and from
-      # then on this folder is the truth.
+      # Everything the editor writes: every patch, factory or saved. The bank
+      # shipped in the image is seeded in here the first time, and from then on
+      # this folder is the truth.
       - ${MOOG_DATA_DIR:-/volume1/docker/moog/data}:/data
