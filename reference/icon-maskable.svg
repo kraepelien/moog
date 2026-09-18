@@ -1,25 +1,40 @@
 <!-- The same icon for a launcher that supplies its own mask.
 
      Two things differ from icon.svg, and both are what "maskable" means. The
-     tile has no rounded corners, because the platform cuts its own shape and a
-     rounded tile under a circle leaves transparent slivers at the edge. And the
-     mark is smaller — 50% of the canvas rather than 60% — so that it stays
-     inside the safe zone, the centred circle of 80% diameter that is all a
-     mask is guaranteed to keep. A 256 square has a half-diagonal of 181 against
-     the zone's radius of 205; at 60% it would be 217 and the corners of the
-     outer keys would be shaved off on a round launcher. -->
-<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+     tile is a plain square, because the platform cuts its own shape and the
+     drawn tile's rounded corners under a circle leave transparent slivers at
+     the edge. And everything inside it is 80% of its drawn size, so it stays
+     inside the safe zone - the centred circle of 80% diameter that is all a
+     mask is guaranteed to keep. The panel's rounded corner sits 498 units from
+     the centre against the zone's radius of 409.6, so at full size a round
+     launcher would shave the panel and the outer keys with it.
+
+     The scale is applied about the centre and the gradients keep the
+     coordinates they were drawn in: `userSpaceOnUse` resolves against the space
+     the gradient is referenced from, which is inside the transform, so the
+     0-to-1024 run is carried onto the artwork by the same scale. Rewritten into
+     the scaled coordinates, as looked obvious, the tile came out flat blue. -->
+<svg width="512" height="512" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="keys" x1="14" y1="0" x2="14" y2="28" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#81A0FF"/>
-      <stop offset="0.496726" stop-color="#FFAEEF"/>
-      <stop offset="1" stop-color="#FFA372"/>
+    <linearGradient id="tile" x1="512" y1="0" x2="512" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4171FF"/>
+      <stop offset="0.496726" stop-color="#FF53DD"/>
+      <stop offset="1" stop-color="#FFB650"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="512" y1="182" x2="512" y2="842" gradientUnits="userSpaceOnUse">
+      <stop stop-color="white" stop-opacity="0.1"/>
+      <stop offset="1" stop-color="white" stop-opacity="0.2"/>
+    </linearGradient>
+    <linearGradient id="keys" x1="512" y1="252" x2="512" y2="772" gradientUnits="userSpaceOnUse">
+      <stop stop-color="white"/>
+      <stop offset="1" stop-color="#CDD9E6"/>
     </linearGradient>
   </defs>
 
-  <rect width="512" height="512" fill="#000000"/>
+  <rect width="1024" height="1024" fill="url(#tile)"/>
 
-  <g transform="translate(128 128) scale(9.1428)">
-    <path d="M0 4C0 1.79086 1.79086 0 4 0H6V18H8V28H4C1.79086 28 0 26.2091 0 24V4ZM12 18V0H16V18H18V28H10V18H12ZM20 28H24C26.2091 28 28 26.2091 28 24V4C28 1.79086 26.2091 0 24 0H22V18H20V28Z" fill="url(#keys)"/>
+  <g transform="translate(102.4 102.4) scale(0.8)">
+    <rect opacity="0.7" x="102" y="172" width="820" height="680" rx="110" fill="black" fill-opacity="0.75" stroke="url(#edge)" stroke-width="20"/>
+    <path d="M232 262H313.429V596.286H360.571V762H232C209.909 762 192 744.091 192 722V302C192 279.909 209.909 262 232 262ZM792 262C814.091 262 832 279.909 832 302V722C832 744.091 814.091 762 792 762H663.429V596.286H710.571V262H792ZM549.143 262V596.286H596.286V762H427.714V596.286H474.857V262H549.143Z" fill="url(#keys)" stroke="white" stroke-width="20"/>
   </g>
 </svg>
