@@ -165,7 +165,7 @@ export const SKIN_SWATCHES: readonly SkinSwatch[] = [
      spends its time, so it takes the family's plain name and the two that light
      up say which state they are. */
   { key: 'menuBg', property: '--menu-bg', label: 'Menu background color', group: 'Menu', hint: 'The nav, rail or top', sheet: 'shell' },
-  { key: 'menuBorder', property: '--menu-border', label: 'Menu border', group: 'Menu', hint: 'The rule against the page', sheet: 'shell' },
+  { key: 'menuBorder', property: '--menu-border', label: 'Menu border color', group: 'Menu', hint: 'The rule against the page', sheet: 'shell' },
   { key: 'menuColor', property: '--menu-color', label: 'Menu color', group: 'Menu', hint: 'The pages you are not on', sheet: 'shell' },
   { key: 'menuActiveBg', property: '--menu-active-bg', label: 'Menu background color on active page', group: 'Menu', hint: 'Behind where you are standing', sheet: 'shell' },
   { key: 'menuActiveColor', property: '--menu-active-color', label: 'Menu color on active page', group: 'Menu', hint: 'The page you are on', sheet: 'shell' },
