@@ -20,9 +20,9 @@
   transform: scale(1.04);
 }
 
-/* No rounding: the mark is the keys themselves on nothing, so there is no tile
-   whose corners could be cut — and a radius on the box would clip the outer two
-   keys where they are already square. */
+/* No rounding: the logo is drawn on its own tile and that tile's corners are
+   already curved in the path. A radius here would cut a second curve inside the
+   first, and it would cut the wordmark's box rather than the tile's. */
 .logo {
   display: block;
 }
