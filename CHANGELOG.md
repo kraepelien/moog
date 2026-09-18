@@ -3,11 +3,13 @@
 Everything that has landed on `main`, newest first. A pull request carries its link; a commit pushed
 straight to `main` has none to carry.
 
-- Take the new logo whole, and cut the icons and the marks out of it
-- Call the app PATCHDB
-- Let a commit pushed to main take a line of its own
+- [Take the new logo whole, and cut the icons and the marks out of it](https://github.com/kraepelien/moog/pull/84)
+- [Say in the menu when the browser has no Web MIDI to offer](https://github.com/kraepelien/moog/pull/83)
+- [A home page that shows the bank rather than describing it](https://github.com/kraepelien/moog/pull/82)
+- [Call the app PATCHDB](https://github.com/kraepelien/moog/pull/79)
+- [Let a commit pushed to main take a line of its own](https://github.com/kraepelien/moog/pull/80)
+- [Stop the suite waiting on a dialog fade, and run it across workers](https://github.com/kraepelien/moog/pull/81)
 - Add the two that merged after the list was written
-- Stop the suite waiting on a dialog fade, and run it across workers
 - [Cut the icons from the new mark, on a tile](https://github.com/kraepelien/moog/pull/78)
 - [Draw the mark from the new logo](https://github.com/kraepelien/moog/pull/77)
 - [Home on the mark, and a tag's picker on the colour it is wearing](https://github.com/kraepelien/moog/pull/76)
