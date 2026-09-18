@@ -95,7 +95,9 @@ export function patchApi(options: PatchApiOptions): Plugin {
       server.config.logger.info(
         reseed
           ? `  ➜  Factory bank: ${factory.loaded} patches reseeded from ${options.seed}`
-          : `  ➜  Factory bank: ${factory.loaded} new, ${factory.kept} kept`,
+          : factory.refreshed
+            ? `  ➜  Factory bank: ${factory.loaded} patches refreshed from ${options.seed} (a one-off)`
+            : `  ➜  Factory bank: ${factory.loaded} new, ${factory.kept} kept`,
       )
 
       /* Without this, a .env the server cannot see looks exactly like no .env at

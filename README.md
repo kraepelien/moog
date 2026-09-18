@@ -800,14 +800,26 @@ patch editable at all — the rows are the live bank, so a correction has somewh
 restart will not undo. It also means one that was retired stays retired rather than walking back in
 because its file is still in the image.
 
-To put the repo's copy back over the rows, start once with `MOOG_RESEED=1`. It overwrites every
-factory patch and discards whatever was edited, which is the point of having to ask for it; nothing
-does it on its own, and the flag is read per start rather than stored, so leaving it in a compose
+**Seeding has a cost, and `BANK_REFRESH` is how it is paid.** A database that already holds a slug
+never hears about a change to its file, so a correction shipped in the image cannot reach a bank
+that is already running. `BANK_REFRESH` in `server/factory.ts` is a number the database remembers
+having done: raise it and the next start writes every file over its row, once, and records that it
+has. Every start after that seeds again, so an edit outlives every deploy that does not raise the
+number.
+
+It is not a migration and not a habit. Raise it only when the shipped bank has changed in a way that
+has to reach rows somebody may have edited — it was raised to 1 when the bank was transcribed from
+the manual — and say in the pull request that it discards their edits to those patches. A deploy
+carries it; nobody has to remember an environment variable at the right moment, which is the whole
+point.
+
+`MOOG_RESEED=1` is the same thing by hand, for when the files have not changed but the rows should
+go back to them anyway. The flag is read per start rather than stored, so leaving it in a compose
 file would quietly undo every correction at the next restart.
 
 ```bash
-# on the NAS, with the stack stopped
-docker compose run --rm -e MOOG_RESEED=1 moog bun server/serve.ts   # or just restart with it set
+# on the NAS, only when the files have not changed and the rows should go back to them
+docker compose run --rm -e MOOG_RESEED=1 moog bun server/serve.ts
 docker compose up -d
 ```
 
