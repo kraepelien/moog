@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+
 /* The rail's glyphs, from the exports in `reference/`. The paths are the
    designer's verbatim; the only edit is the fill, which was a literal grey in
    every file and is `currentColor` here so one rule in the stylesheet lights
@@ -119,4 +121,25 @@ export function CollapseGlyph() {
       />
     </svg>
   )
+}
+
+/* Which glyph a page wears, keyed by route name rather than carried in the
+   route table: the table is read by the router and by tests that have no DOM,
+   and a glyph in it would drag JSX into both.
+
+   A component rather than the record it wraps, because a record of elements is
+   the one export that turns this file into something Fast Refresh cannot
+   reload. A page with no glyph draws nothing, which is what the rail wants of
+   a row that is only a word.
+
+   Here rather than in the rail, because the rail is no longer the only place a
+   page is drawn as a door: the home page opens the same three. */
+const GLYPHS: Readonly<Record<string, ReactNode>> = {
+  library: <LibraryGlyph />,
+  editor: <EditorGlyph />,
+  midi: <PlayGlyph />,
+}
+
+export function RouteGlyph({ route }: { route: string }) {
+  return GLYPHS[route] ?? null
 }

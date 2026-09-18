@@ -1,0 +1,275 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  padding-block: 8px 32px;
+}
+
+/* The hero */
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+  align-items: center;
+  gap: 32px;
+  padding: 48px;
+  border: 1px solid var(--shell-edge);
+  border-radius: 20px;
+  /* A wash of the panel's own amber off the corner the curve sweeps under,
+     over the card colour. Two layers rather than a gradient on the background
+     colour, so a skin setting the card repaints under the glow. */
+  background-image: radial-gradient(
+    120% 90% at 78% 82%,
+    color-mix(in srgb, var(--shell-star) 12%, transparent),
+    transparent 62%
+  );
+  background-color: var(--shell-card);
+}
+
+@media (max-width: 860px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 32px 24px;
+  }
+}
+
+.heroText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--shell-ink-dim);
+}
+
+.headline {
+  margin: 0;
+  /* Falls with the window rather than at a breakpoint: the rail can be open or
+     collapsed at any width, so the column this sits in is not the window's. */
+  font-size: clamp(2rem, 4.4vw, 3.4rem);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+}
+
+.standfirst {
+  margin: 0;
+  max-width: 46ch;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--shell-ink-dim);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-block-start: 10px;
+}
+
+.primary,
+.secondary {
+  padding: 12px 22px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: background-color 120ms ease;
+}
+
+.primary {
+  background-color: var(--shell-star);
+  color: var(--shell-on-tone);
+}
+
+.primary:hover {
+  background-color: color-mix(in srgb, var(--shell-star) 82%, var(--shell-ink));
+}
+
+.secondary {
+  border: 1px solid var(--shell-edge);
+  color: var(--shell-ink);
+}
+
+.secondary:hover {
+  background-color: var(--shell-hover-strong);
+}
+
+.heroArt {
+  min-width: 0;
+}
+
+@media (max-width: 860px) {
+  .heroArt {
+    display: none;
+  }
+}
+
+/* The figures */
+
+.figures {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 28px;
+  margin: 0;
+}
+
+@media (max-width: 860px) {
+  .figures {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* The rule is the column's, not a divider between columns: it sits over each
+   one at its own width, which is what gives the strip its comb. */
+.figure {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-block-start: 14px;
+  border-block-start: 1px solid var(--shell-edge);
+}
+
+.kicker {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--shell-ink-dim);
+}
+
+.value {
+  margin: 0;
+  font-size: clamp(2rem, 3.4vw, 2.9rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The mark for a column with no number yet. Set down at body weight so the
+   strip stays a strip: an em dash in the figures' own size is a rule struck
+   through the column rather than a missing value. */
+.blank {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--shell-ink-dim);
+  opacity: 0.55;
+  /* Holds the height a figure would have taken, so the caption under an empty
+     column still lines up with the captions either side of it. */
+  display: flex;
+  align-items: center;
+  min-height: clamp(2rem, 3.4vw, 2.9rem);
+}
+
+.caption {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--shell-ink-dim);
+}
+
+/* The shelves */
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.blockTitle {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--shell-ink-dim);
+}
+
+.shelf {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+}
+
+.patch,
+.door {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 18px;
+  height: 100%;
+  border: 1px solid var(--shell-edge);
+  border-radius: 14px;
+  background-color: var(--shell-card);
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.patch:hover,
+.door:hover {
+  background-color: var(--shell-field);
+  border-color: color-mix(in srgb, var(--shell-ink) 22%, transparent);
+}
+
+.patchHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.patchName {
+  font-size: 1.02rem;
+  font-weight: 600;
+  line-height: 1.3;
+  /* A card is as tall as the tallest on its row whatever this says, so a long
+     name wraps twice and then stops rather than setting the height of four. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.patchTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  /* Holds the row of chips' height whether or not a patch wears any, so cards
+     with tags and cards without still line their names up. */
+  min-height: 24px;
+}
+
+.doorGlyph {
+  display: flex;
+  color: var(--shell-ink-dim);
+}
+
+.door:hover .doorGlyph {
+  color: var(--shell-star);
+}
+
+.doorTitle {
+  font-size: 1.02rem;
+  font-weight: 600;
+}
+
+.doorBlurb {
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--shell-ink-dim);
+}
