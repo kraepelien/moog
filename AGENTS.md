@@ -85,6 +85,13 @@ remapping every saved patch.
 - **SQL lives in a repository, rules live in a service.** A repository that also refused would be a
   second place for the rules to live. A route with no rules of its own talks to its repository
   rather than to a service that would only forward the call.
+- **The bank in `bank/` seeds and never overwrites.** A row the database already holds is the live
+  bank, and an administrator editing it is the only thing that changes a factory patch, so a change
+  to a file reaches a fresh database and nothing else. Do not add a flag, route or environment
+  variable that writes files back over rows: every one of them is a way to discard corrections
+  somebody made on purpose. `BANK_REFRESH` in `server/factory.ts` was the one exception and is
+  spent, and `test/factoryBank.test.ts` fails if the number moves.
+
 - **There is one schema step and it is the whole schema.** Nothing is deployed, so a change edits
   that step and the database is recreated: a new column goes into the table it belongs to, and
   something that turned out to be a mistake comes back out of the table that had it. Do not add a

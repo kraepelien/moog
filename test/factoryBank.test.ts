@@ -117,6 +117,18 @@ describe('loading the bank into the database', () => {
      rather than by editing the constant — what is under test is that it fires
      exactly once, not what it currently equals. */
   const forget = (db: typeof api.db) => db.run(`delete from meta where key = 'bank_refresh'`)
+  const remembers = (db: typeof api.db) =>
+    db.query(`select value from meta where key = 'bank_refresh'`).get() !== null
+
+  /* A first start writes every file too, and it is not a refresh: reporting one
+     would announce the exception on an ordinary empty database. */
+  test('a first start is a seed and does not call itself a refresh', () => {
+    const bank = aBank(join(api.root, 'bank'), { one: aFactoryPatch('one') })
+    const first = loadFactory(api.db, bank)
+
+    expect([first.loaded, first.kept, first.refreshed]).toEqual([1, 0, false])
+    expect(remembers(api.db)).toBe(true)
+  })
 
   test('a raised refresh number rewrites rows that are already there, once', async () => {
     const bank = aBank(join(api.root, 'bank'), { one: aFactoryPatch('one', 'First') })
@@ -150,25 +162,20 @@ describe('loading the bank into the database', () => {
     forget(api.db)
     expect(() => loadFactory(api.db, bank)).toThrow(/broken.json/)
 
+    expect(remembers(api.db)).toBe(false)
+
     rmSync(join(bank, 'broken.json'))
     const retry = loadFactory(api.db, bank)
-    expect(retry.refreshed).toBe(true)
+    expect([retry.loaded, remembers(api.db)]).toEqual([1, true])
   })
 
-  /* Asked for out loud, and destructive on purpose: it is how the repo's copy
-     is put back over whatever the rows have become. */
-  test('reseeding writes the file back over the row', async () => {
-    const bank = aBank(join(api.root, 'bank'), { one: aFactoryPatch('one', 'First') })
-    loadFactory(api.db, bank)
-
-    aBank(bank, { one: { ...aFactoryPatch('one', 'Second'), values: { glide: 9 } } })
-    const again = loadFactory(api.db, bank, { reseed: true })
-
-    expect([again.loaded, again.kept]).toEqual([1, 0])
-    const rows = createRepositories(api.db).patches.listFactory()
-    expect(rows).toHaveLength(1)
-    expect(rows[0]!.name).toBe('Second')
-    expect(rows[0]!.values).toEqual({ glide: 9 })
+  /* Raising it is the last way a file can reach a row that already exists, and
+     doing so throws away corrections an administrator made on purpose. Moving
+     the number is a decision rather than a refactor, so it has to be made here
+     as well. */
+  test('the refresh number stays spent', () => {
+    const source = readFileSync('server/factory.ts', 'utf8')
+    expect(source.match(/const BANK_REFRESH = (\d+)/)?.[1]).toBe('1')
   })
 
   /* A patch taken out of the bank on purpose must not walk back in at the next

@@ -23,21 +23,13 @@ const dist = process.env.MOOG_DIST ?? 'dist'
 const port = Number(process.env.PORT ?? 5174)
 
 const db = openDatabase(join(root, 'moog.db'))
-/* Off unless asked for, and asked for per start rather than stored: the whole
-   value of a reseed is that it is a decision somebody makes out loud, and a
-   flag left in a compose file would quietly undo every correction at the next
-   restart. */
-const reseed = process.env.MOOG_RESEED === '1'
-const factory = loadFactory(db, seed, { reseed })
+const factory = loadFactory(db, seed)
 seedTags(db)
 console.log(
-  reseed
-    ? `Factory bank: ${factory.loaded} patches RESEEDED from ${seed}, ${factory.retired} retired`
-    : factory.refreshed
-      ? `Factory bank: ${factory.loaded} patches refreshed from ${seed} — a one-off, and the last one until the number is raised again`
-      : `Factory bank: ${factory.loaded} new, ${factory.kept} kept, ${factory.retired} retired`,
+  factory.refreshed
+    ? `Factory bank: ${factory.loaded} patches refreshed from ${seed}, the one-off, and there is no second one`
+    : `Factory bank: ${factory.loaded} new, ${factory.kept} kept, ${factory.retired} retired`,
 )
-if (reseed) console.warn('MOOG_RESEED=1 was set: any edits to factory patches have been overwritten.')
 console.log(`Sign-in: ${describeAuth(authConfigFromEnv(process.env))}`)
 const envTroubleFound = envTrouble(dirAt(process.cwd()), process.env)
 if (envTroubleFound) console.warn(envTroubleFound)
