@@ -81,7 +81,7 @@ export function UsersPage({
             {users.length === 0 ? 'Nobody has signed in yet.' : 'Nobody by that name.'}
           </Typography>
         ) : (
-          <TableContainer>
+          <TableContainer className={styles.table}>
             <Table size="small">
               <TableHead>
                 <TableRow>
