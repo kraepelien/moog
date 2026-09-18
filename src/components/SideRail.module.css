@@ -1,0 +1,128 @@
+/* Structure only — the colours are the shell's custom properties, so a skin an
+   administrator saves repaints the rail with nothing here to change. */
+
+.rail {
+  position: sticky;
+  top: 0;
+  flex: none;
+  align-self: flex-start;
+  box-sizing: border-box;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  width: 96px;
+  padding: 52px 8px 20px;
+  background-color: var(--shell-card);
+  border-inline-end: 1px solid var(--shell-edge);
+  /* The toggle hangs half over the page, and the page is drawn after this in
+     the document; without a layer of its own the rail would be painted under
+     whatever the open page starts with. */
+  z-index: 1;
+  /* Only the width, and only this long: the page under it reflows as the rail
+     folds, and anything slower leaves the panel visibly catching up. */
+  transition: width 140ms ease;
+}
+
+.rail[data-collapsed='true'] {
+  width: 60px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail {
+    transition: none;
+  }
+}
+
+/* Centred on the rail's own edge, half of it over the page. Filled with the
+   page's colour rather than the rail's, so the rail's fill is interrupted
+   instead of drawn behind: that is what makes it a notch bitten out of the edge
+   rather than a button parked next to it, and it is why the circle needs no
+   outline to be told from either side. */
+.toggle {
+  position: absolute;
+  top: 20px;
+  inset-inline-end: -12px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 50%;
+  background-color: var(--shell-page);
+  color: var(--shell-ink-dim);
+}
+
+.toggle:hover {
+  color: var(--shell-ink);
+}
+
+.rail[data-collapsed='true'] .toggle {
+  transform: rotate(180deg);
+}
+
+.mark {
+  margin: 0;
+  display: flex;
+}
+
+.logo {
+  border-radius: 8px;
+  display: block;
+}
+
+.group,
+.foot {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  align-self: stretch;
+}
+
+/* What puts Settings and the account at the bottom of the rail whatever the
+   window's height, without a spacer element between the two groups. */
+.foot {
+  margin-block-start: auto;
+}
+
+.item {
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 2px;
+  border-radius: 10px;
+  color: var(--shell-ink-dim);
+  transition: color 120ms ease;
+}
+
+.item:hover {
+  color: var(--shell-ink);
+  background-color: var(--shell-hover-faint);
+}
+
+/* White, and only here: the rail has no other mark for where you are standing,
+   so the glyph and its word carry it between them. */
+.item[aria-current='page'] {
+  color: var(--shell-ink);
+}
+
+.glyph {
+  display: flex;
+  /* A fixed box, because the exports are between 19 and 24 units wide and a row
+     that sized itself to its own glyph would put the words on four different
+     baselines. */
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+}
+
+.label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.rail[data-collapsed='true'] .label {
+  display: none;
+}

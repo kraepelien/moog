@@ -1,0 +1,16 @@
+/* The rail and the page beside it. The rail sets its own width; this is only
+   what puts the two in a row and stops the page growing past the window. */
+
+.shell {
+  display: flex;
+  align-items: flex-start;
+  min-height: 100vh;
+}
+
+.page {
+  flex: 1 1 0;
+  /* Without this the panel, which is wider than most windows, sets the flex
+     item's floor and pushes the rail off the left edge instead of scrolling
+     under it. */
+  min-width: 0;
+}

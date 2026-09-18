@@ -5,6 +5,7 @@ import { StyledEngineProvider, ThemeProvider } from '@mui/material/styles'
 import { App } from './App.tsx'
 import { adoptLegacyHash } from './navigation/router.ts'
 import { applySkin } from './skin.ts'
+import { createDeviceRail } from './storage/deviceRail.ts'
 import { createDeviceSkin, type StorageLike } from './storage/deviceSkin.ts'
 import { theme } from './theme.ts'
 import type { Skin } from './tones.ts'
@@ -29,11 +30,22 @@ function deviceStorage(): StorageLike | null {
   }
 }
 
+/* The rail is folded for as long as somebody wants it folded, which outlives the
+   tab a previewed skin belongs to. */
+function lastingStorage(): StorageLike | null {
+  try {
+    return window.localStorage
+  } catch {
+    return null
+  }
+}
+
 /* Also before anything renders: a preview somebody is in the middle of is the
    app's colours on the sign-in page too, and painting after the first frame
    would show them the defaults flashing past. Synchronous, so there is no frame
    in which that could happen. */
 const device = createDeviceSkin(deviceStorage())
+const rail = createDeviceRail(lastingStorage())
 const skin = device.read()
 applySkin(skin, document.documentElement)
 draw(skin)
@@ -49,7 +61,12 @@ function draw(skin: Skin) {
       <StyledEngineProvider injectFirst>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          <App skin={skin} keepSkin={(next) => device.write(next)} />
+          <App
+            skin={skin}
+            keepSkin={(next) => device.write(next)}
+            railCollapsed={rail.read()}
+            keepRail={(next) => rail.write(next)}
+          />
         </ThemeProvider>
       </StyledEngineProvider>
     </StrictMode>,

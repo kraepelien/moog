@@ -1,0 +1,35 @@
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* Capitals as the sheet draws them, and here rather than in the data: a patch
+   called “Sub Bass” is stored as “Sub Bass” and printed as “SUB BASS”. */
+.title {
+  flex: 1 1 auto;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.buttons {
+  display: flex;
+  flex: none;
+  gap: 8px;
+}
+
+.button {
+  flex: none;
+  min-width: 0;
+  padding: 2px 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}

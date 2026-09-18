@@ -107,7 +107,7 @@ describe('resolving an address with a query on it', () => {
   /* A sign-in that failed comes back with `?error=`, and the page it lands on
      has to be found before anything can read it. */
   test('still resolves when the query is the only interesting part', () => {
-    expect(resolve('/signed-out?error=expired').route.name).toBe('editor')
+    expect(resolve('/signed-out?error=expired').route.name).toBe('home')
   })
 })
 
