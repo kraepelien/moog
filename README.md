@@ -62,7 +62,8 @@ server/
   api.ts        wiring: origin, viewer, rate limit, dispatch
 bank/         the factory patches, one JSON file each, seeded into the database on a first start
 test/         fixtures.ts defines fake control types; nothing here ships
-reference/    manual scans, recovered geometry, the hand-drawn knob SVG, the mark and the icons
+reference/    manual scans, recovered geometry, the hand-drawn exports in artwork/, the rail's
+              drawings, the mark and the icons
 tools/        artwork measurement script · make-icons.ts (public/'s icons) · audio-check.html
               (what the engine sounds like) · midi-check.html and midi-send.html (see MIDI.md)
 ```
@@ -976,8 +977,13 @@ geometry recovered from the manual scans with `tools/measure-artwork.py` — det
 angles, the palette, and the deliberate ±7-vs-±8 scale compromise. Measured, not estimated; re-run
 the tool rather than guessing by eye.
 
-`knob-export.svg` is hand-drawn. Reuse the paths verbatim and change only grouping and colour
-references.
+The hand-drawn exports are in `artwork/`, and its README names what was taken from each drawing and
+where that geometry lives now — including the three nothing is taken from any more, which are kept
+because a claim of "lifted verbatim" that cannot be checked against the drawing is just a claim.
+Reuse the paths verbatim and change only grouping and colour references.
+
+The rail's glyphs sit beside them rather than in `artwork/`, which is the panel's: they are the
+navigation's drawings, and `side-rail-design.png` is the design they were cut from.
 
 ### The icons
 
@@ -1053,3 +1059,20 @@ the suite type-stripped, so `bun run build` is where a broken test type shows up
 `test/fixtures.ts` defines two **fake** control types. They exist to prove the registry, resolver
 and importer are generic over control types. Neither is a proposal for a real Minimoog control, and
 nothing in `test/` ships.
+
+## Attribution
+
+Almost none of the reference material is ours. The scans under `reference/` are pages of Moog's
+Minimoog Model D owner's manual, kept because the geometry in `measurements.md` is recovered from
+them and a measurement whose source has gone is a number nobody can check. The 44 names and
+performance tips in `bank/` are that manual's patch sheets, and since the re-transcription the knob
+values are too. The two `.mid` files each credit their author inside the file.
+
+The instrument, the panel layout and the marks "Moog" and "Minimoog" are Moog Music's. PatchDB is an
+editor for the instrument and is not from, endorsed by or affiliated with them. What it takes from
+the manual is the measurements and the patch sheets, which is the part an editor cannot invent.
+
+**This is carried over unsettled from the proof of concept, and it is what to settle before the app
+is somewhere public.** The layout and the code are ours to build; the scans and the written
+patch-sheet material are not. A deployment anybody can reach is where that stops being a private
+question, and the app says none of the above on any page it draws.

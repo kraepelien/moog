@@ -88,8 +88,7 @@ radius so they scale:
 Both are hand-drawn exports now, and they are different drawings: the selector
 is `artwork/OSC. 1 (1).svg`, transcribed into `knob/artwork.ts`, and every
 continuous knob is `artwork/KNOB 5.svg` in `knob/dialArtwork.ts`, scaled for the
-large one rather than re-pathed. `knob-export.svg` beside this file is the early
-study both replaced and nothing imports it.
+large one rather than re-pathed.
 
 ## A note on the tool's output
 
