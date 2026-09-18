@@ -1,0 +1,29 @@
+<!-- The app icon: the mark from logo.svg on a tile of its own.
+
+     The mark is the keys and nothing else, so on a page it takes the page's
+     black for the gaps between them. An icon has no page to take anything from
+     — a browser tab, a dock and a launcher each supply their own backdrop, and
+     a light one would put the gaps through the middle of the keys. The tile is
+     that backdrop, brought along.
+
+     The keys path is reference/logo.svg's, verbatim, scaled from its own 28
+     units to 60% of the canvas and centred. So is the gradient, coordinates and
+     all: `userSpaceOnUse` resolves against the space the gradient is referenced
+     from, which is inside that transform, so its 0-to-28 run is carried onto
+     the keys by the same scale rather than needing the tile's numbers. Given
+     the tile's instead, the whole mark came out flat blue. -->
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="keys" x1="14" y1="0" x2="14" y2="28" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#81A0FF"/>
+      <stop offset="0.496726" stop-color="#FFAEEF"/>
+      <stop offset="1" stop-color="#FFA372"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="115" fill="#000000"/>
+
+  <g transform="translate(102.4 102.4) scale(10.9714)">
+    <path d="M0 4C0 1.79086 1.79086 0 4 0H6V18H8V28H4C1.79086 28 0 26.2091 0 24V4ZM12 18V0H16V18H18V28H10V18H12ZM20 28H24C26.2091 28 28 26.2091 28 24V4C28 1.79086 26.2091 0 24 0H22V18H20V28Z" fill="url(#keys)"/>
+  </g>
+</svg>

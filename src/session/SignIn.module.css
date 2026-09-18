@@ -20,8 +20,10 @@
   transform: scale(1.04);
 }
 
+/* No rounding: the mark is the keys themselves on nothing, so there is no tile
+   whose corners could be cut — and a radius on the box would clip the outer two
+   keys where they are already square. */
 .logo {
-  border-radius: 18px;
   display: block;
 }
 

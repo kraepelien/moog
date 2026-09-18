@@ -60,9 +60,9 @@ server/
   api.ts        wiring: origin, viewer, rate limit, dispatch
 bank/         the factory patches, one JSON file each, seeded into the database on a first start
 test/         fixtures.ts defines fake control types; nothing here ships
-reference/    manual scans, recovered geometry, the hand-drawn knob SVG
-tools/        artwork measurement script · audio-check.html (what the engine sounds like) ·
-              midi-check.html and midi-send.html (see MIDI.md)
+reference/    manual scans, recovered geometry, the hand-drawn knob SVG, the mark and the icons
+tools/        artwork measurement script · make-icons.ts (public/'s icons) · audio-check.html
+              (what the engine sounds like) · midi-check.html and midi-send.html (see MIDI.md)
 ```
 
 Each of those directories has an import alias — `@patch/schema.ts`, `@controls/registry.ts`,
@@ -751,6 +751,19 @@ to the same page an inch apart. `HOME_ROUTE` is what the mark aims at, named sep
 `DEFAULT_ROUTE` although they are the same page today — one is where the logo leads and the other is
 where an unrecognised address lands.
 
+The mark is two drawings. `public/patchdb.svg` is the lockup — the keys with PATCHDB under them —
+and it is what the rail shows unfolded and what the sign-in page shows. `public/logo.svg` is the
+keys alone, and it is what the rail shows folded: the name is a word like any other, and at 60px the
+lockup would be a wordmark eight pixels tall. Both are named PATCHDB to a reader, so the heading
+reads the same whichever is up.
+
+Both are drawn through an `<img>` rather than inlined like the glyphs. They carry gradients, and a
+gradient's id is document-global: inlined in two places those ids would collide, and the second mark
+would be painted with the first one's fill. An external file is its own document, so the id stays
+inside it. The keys are the mark — there is no tile behind them on a page — which is why neither
+`.logo` rule rounds its corners; the tile belongs to the icons, and `reference/icon.svg` brings its
+own.
+
 The glyphs are inline components in `railIcons.tsx`, not `*.svg?react` imports, although `svgr` is
 configured. svgr runs in Vite and not in Bun, so an imported file would be a component the suite
 cannot render — and the rail is the part of the app with no other way to be tested. The paths are
@@ -921,6 +934,32 @@ the tool rather than guessing by eye.
 
 `knob-export.svg` is hand-drawn. Reuse the paths verbatim and change only grouping and colour
 references.
+
+### The icons
+
+`logo.svg` is the mark: the keys and nothing else. Everything in `public/` that a browser, a dock or
+a launcher asks for is baked out of `icon.svg` and `icon-maskable.svg` beside it by
+`bun tools/make-icons.ts`, which drives headless Chrome — nothing else on a machine here rasterises
+SVG, and a dependency that did would be a rasteriser in every install of the app for a script run a
+few times a year. Run it when either source changes; the PNGs are committed, because the build
+serves `public/` as it stands and a deploy machine has no browser.
+
+The tile is what the sources add to the mark. On a page the gaps between the keys take the page's
+black; an icon has no page, and a light backdrop would put those gaps through the middle of the
+keys, so the icon brings its own. The maskable one differs twice over, and both are what maskable
+means: square corners, because a launcher cuts its own shape and a rounded tile under a circle
+leaves transparent slivers; and a smaller mark, 50% of the canvas against 60%, so it stays inside
+the safe zone a mask is guaranteed to keep.
+
+Both sources scale the keys path out of `logo.svg` verbatim, and take its gradient with them
+unchanged — `userSpaceOnUse` resolves against the space the gradient is *referenced* from, which is
+inside that transform, so the 0-to-28 run is carried onto the keys by the same scale. Rewritten into
+the tile's own 512 coordinates, as looked obvious, the mark came out flat blue.
+
+`favicon.ico` is packed by the same script: a header, one directory entry per size, and a whole PNG
+per entry rather than a bitmap. Every browser that still asks for an `.ico` by name has read
+PNG-in-ICO for fifteen years, and the bitmap form would mean writing a BMP encoder and its
+upside-down AND mask.
 
 The two `.mid` files are there to be opened by the MIDI page, and are what its parsing was checked
 against: `Wily1st1.mid` names its parts and carries six tracks of text that play nothing, and
