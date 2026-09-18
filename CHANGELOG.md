@@ -3,8 +3,9 @@
 Everything that has landed on `main`, newest first. A pull request carries its link; a commit pushed
 straight to `main` has none to carry.
 
-- Write the offset every gradient stop is supposed to carry
-- Offer the drawing itself to a browser that reads SVG
+- [Write the offset every gradient stop is supposed to carry](https://github.com/kraepelien/moog/pull/87)
+- Add the latest logo
+- [Offer the drawing itself to a browser that reads SVG](https://github.com/kraepelien/moog/pull/85)
 - [Take the new logo whole, and cut the icons and the marks out of it](https://github.com/kraepelien/moog/pull/84)
 - [Say in the menu when the browser has no Web MIDI to offer](https://github.com/kraepelien/moog/pull/83)
 - [A home page that shows the bank rather than describing it](https://github.com/kraepelien/moog/pull/82)
