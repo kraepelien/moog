@@ -19,7 +19,7 @@ start, but not every Vite plugin is happy there, so it stays opt-in per command.
 
 ## State of play
 
-**All 43 controls are specified and built**, plus 8 decorations that are drawn but hold no value.
+**All 47 controls are specified and built**, plus 5 decorations that are drawn but hold no value.
 Five control types cover the instrument: step knob, two-position switch, continuous knob, time knob
 and wheel.
 
@@ -89,8 +89,12 @@ one breaks people's data. Treat them as a public interface.
 
 The registry holds one ordered list of **panel items**: controls, which hold a value, and
 **decorations**, which do not. A decoration is drawn in its place on the panel and never appears in
-a patch — the Overload indicator, the phones socket, the pilot lamp, and the whole of Output and
-Power, whose settings say nothing about how a sound is made.
+a patch — the Overload indicator, the phones socket, the keyboard, and the whole of Power, whose
+pilot lamp and switch say nothing about how a sound is made.
+
+Output is not among them, although it sits beside Power and reads like it should be: Volume, Main
+Output and A-440 are controls that a patch stores, and only the phones socket drawn next to them is
+a decoration.
 
 They are kept out of `registry.controls` rather than flagged inside it, so `resolvePatch`,
 `defaultValues` and the patch schema need no awareness of them at all. One list rather than two,

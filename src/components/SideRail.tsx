@@ -7,25 +7,8 @@ import MenuItem from '@mui/material/MenuItem'
 import Tooltip from '@mui/material/Tooltip'
 import { usePrivileges } from '@access/context.ts'
 import { ADMIN_ROUTES, HOME_ROUTE, RAIL, type RouteDef } from '@navigation/routes.ts'
-import {
-  AccountGlyph,
-  CollapseGlyph,
-  EditorGlyph,
-  LibraryGlyph,
-  PlayGlyph,
-  SettingsGlyph,
-} from './railIcons.tsx'
+import { AccountGlyph, CollapseGlyph, RouteGlyph, SettingsGlyph } from './railIcons.tsx'
 import styles from './SideRail.module.css'
-
-/* Keyed by route name rather than carried in the route table: the table is read
-   by the router and by tests that have no DOM, and a glyph in it would drag JSX
-   into both. A page added to the rail with no glyph here is a mistake worth
-   seeing, so this is exhaustive rather than defaulted. */
-const GLYPHS: Readonly<Record<string, ReactNode>> = {
-  library: <LibraryGlyph />,
-  editor: <EditorGlyph />,
-  midi: <PlayGlyph />,
-}
 
 export interface RailAction {
   readonly label: string
@@ -155,7 +138,7 @@ export function SideRail({
             key={entry.name}
             label={entry.rail!}
             title={entry.title}
-            glyph={GLYPHS[entry.name]}
+            glyph={<RouteGlyph route={entry.name} />}
             on={entry.name === route.name}
             collapsed={collapsed}
             onSelect={() => onNavigate(entry.path)}

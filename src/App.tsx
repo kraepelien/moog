@@ -15,7 +15,7 @@ import type { Decision } from './admin/UserAccess.tsx'
 import type { AdminUser } from './admin/users.ts'
 import { paletteOf, type Tag, type TagInUse } from './admin/tags.ts'
 import { FitToWidth } from './components/FitToWidth.tsx'
-import { HomePage } from './components/HomePage.tsx'
+import { HomePage } from './components/home/HomePage.tsx'
 import { MidiHelp } from './components/MidiHelp.tsx'
 import { PatchBar, type PatchBarButton } from './components/PatchBar.tsx'
 import { PreviewBanner } from './components/PreviewBanner.tsx'
@@ -615,7 +615,14 @@ function Workspace({
               <PatchBar title={{ text: draft.name, unsaved: dirty }} buttons={editorButtons} />
             )}
 
-            {route.name === 'home' && <HomePage onNavigate={navigate} patches={library.length} />}
+            {route.name === 'home' && (
+              <HomePage
+                entries={library}
+                tagPalette={tagPalette}
+                onNavigate={navigate}
+                onOpen={openEntry}
+              />
+            )}
 
             {failed && (
               <Alert severity="error">

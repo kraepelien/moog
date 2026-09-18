@@ -1,0 +1,52 @@
+.signature {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.harmonics {
+  fill: var(--shell-ink);
+  opacity: 0.22;
+}
+
+.floor {
+  stroke: var(--shell-ink);
+  stroke-width: 1;
+  opacity: 0.12;
+}
+
+.curve {
+  fill: none;
+  stroke: var(--shell-star);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.wash {
+  fill: url(#homeSignatureWash);
+  stroke: none;
+}
+
+/* Turning the cutoff knob, which is what the picture is of. Alternating rather
+   than looping: a sweep that jumps back to the left is a knob nobody turned. */
+.sweep {
+  animation: sweep 11s ease-in-out infinite alternate;
+}
+
+@keyframes sweep {
+  from {
+    transform: translateX(-90px);
+  }
+  to {
+    transform: translateX(90px);
+  }
+}
+
+/* Parked where the resonant peak sits over the harmonics it is cutting, so the
+   still picture is the same picture. */
+@media (prefers-reduced-motion: reduce) {
+  .sweep {
+    animation: none;
+  }
+}
