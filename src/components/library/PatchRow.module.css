@@ -27,15 +27,30 @@
 }
 
 /* The columns collapse rather than shrink: at this width the chips have stopped
-   being readable, and the name and its rating are what the line is for. */
-@media (max-width: 880px) {
+   being readable, and the name and its rating are what the line is for.
+
+   Measured against the list rather than the window, because the two stopped
+   agreeing: the navigation is a rail beside the page above 900px and a bar over
+   it below, so the window crossing that width hands the list 96px back, and a
+   query on the window collapsed rows that had just been given the room to fit.
+   The list is also drawn inside the MIDI page's picker, where the window says
+   nothing about it at all.
+
+   The synth column sets the number, being the one with a fixed longest label:
+   "MINIMOOG MODEL D" starts losing its tail to the ellipsis just under this, and
+   the two bank chips stop sharing a line at about the same place. */
+@container (max-width: 790px) {
   .row {
     grid-template-columns: 1fr auto;
   }
 
-  .tags,
-  .instrument,
-  .bank {
+  /* Through .row, and not because these are ever anywhere else: a query adds no
+     specificity, so a bare `.tags` here loses to the `.tags` further down the
+     file that makes it a flex row, and the columns stay on the page and stack.
+     Keep the parent, or this rule goes quiet. */
+  .row .tags,
+  .row .instrument,
+  .row .bank {
     display: none;
   }
 }
