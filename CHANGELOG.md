@@ -4,8 +4,9 @@ Everything that has landed on `main`, newest first. A pull request carries its l
 straight to `main` has none to carry.
 
 - Put the menu across the top where the window is narrow, or wherever it is asked for
-- Open a page at its top, the way following a link does
-- Stack the home cards inside the button rather than on it
+- [Ask for a pull request and get it merged, not just opened](https://github.com/kraepelien/moog/pull/92)
+- [Open a page at its top, the way following a link does](https://github.com/kraepelien/moog/pull/91)
+- [Stack the home cards inside the button rather than on it](https://github.com/kraepelien/moog/pull/90)
 - [Name the tab after the page it is showing](https://github.com/kraepelien/moog/pull/88)
 - [Show the logo itself in the rail and on the sign-in page, tile and all](https://github.com/kraepelien/moog/pull/86)
 - [Write the offset every gradient stop is supposed to carry](https://github.com/kraepelien/moog/pull/87)
