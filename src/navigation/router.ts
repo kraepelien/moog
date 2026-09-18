@@ -100,6 +100,10 @@ export async function navigate(path: string): Promise<void> {
   window.history.pushState(null, '', path)
   current = path
   announce()
+  /* A page opened from a link starts at its top, the way a document navigation
+     would. Not on `popstate`: what the browser saved for that entry is where
+     somebody left the page they are going back to. */
+  window.scrollTo(0, 0)
 }
 
 export function useRoute(): [Match, (path: string) => void] {

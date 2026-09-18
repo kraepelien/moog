@@ -38,6 +38,30 @@ describe('navigating', () => {
     navigate('/library')
     expect(window.history.length).toBe(depth)
   })
+
+  /* Opening a patch from halfway down the library used to arrive at the editor
+     already scrolled past its top. */
+  test('puts the new page at its top', () => {
+    navigate('/library')
+    document.documentElement.scrollTop = 400
+
+    navigate('/editor')
+    expect(window.scrollY).toBe(0)
+  })
+
+  /* Coming back to a long page lands where it was left, which is the browser's
+     own restoration and not something to scroll over. */
+  test('leaves where Back lands alone', async () => {
+    navigate('/library')
+    navigate('/editor')
+    document.documentElement.scrollTop = 400
+
+    window.history.back()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(window.scrollY).toBe(400)
+  })
 })
 
 /* Nothing else can stop a navigation: five places call `navigate`, and a sixth

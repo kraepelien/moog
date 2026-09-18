@@ -3,6 +3,7 @@
 Everything that has landed on `main`, newest first. A pull request carries its link; a commit pushed
 straight to `main` has none to carry.
 
+- Open a page at its top, the way following a link does
 - Stack the home cards inside the button rather than on it
 - [Name the tab after the page it is showing](https://github.com/kraepelien/moog/pull/88)
 - [Show the logo itself in the rail and on the sign-in page, tile and all](https://github.com/kraepelien/moog/pull/86)
