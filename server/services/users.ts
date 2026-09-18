@@ -2,12 +2,12 @@ import {
   effectiveRoles,
   isPrivilege,
   isAssignable,
+  isProtected,
   isRole,
   resolve,
   ROLE,
   PRIVILEGE,
   type Privilege,
-
 } from '@access/privileges.ts'
 import type { AdminUser } from '@admin/users.ts'
 import { isEnvAdmin, type AuthConfig } from '@server/identity.ts'
@@ -23,12 +23,6 @@ import type { Refusal } from './refusal.ts'
  * `src/access/privileges.ts` stays a rule without exceptions, and the reasons
  * somebody may not write a particular revoke live here, where they can explain
  * themselves. */
-
-/* Taking either of these away is what strands somebody. AccessAdmin because
-   every administration privilege is conditional on it, so losing it loses the
-   lot; AdminUsers because it is the one that can put them back. */
-const DOORS: readonly Privilege[] = [PRIVILEGE.AccessAdmin, PRIVILEGE.AdminUsers]
-
 
 export function createUserService(repositories: Repositories, config: AuthConfig) {
   const { users, db } = repositories
@@ -135,7 +129,7 @@ export function createUserService(repositories: Repositories, config: AuthConfig
   }
 
   function mayRevoke(target: UserRow, privilege: Privilege, actor: Viewer): Refusal | null {
-    if (!DOORS.includes(privilege)) return null
+    if (!isProtected(privilege)) return null
 
     /* Yourself, because the page you would need to undo it is the one you are
        standing on. Somebody else may still take it from you. */

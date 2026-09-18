@@ -3,6 +3,7 @@
 Everything that has landed on `main`, newest first. A pull request carries its link; a commit pushed
 straight to `main` has none to carry.
 
+- Give revoking a box of its own, and draw the revokes that are refused as locked
 - [Pin the preferences page open to everybody, where a privilege would lock it](https://github.com/kraepelien/moog/pull/97)
 - [Measure a row against its list rather than against the window](https://github.com/kraepelien/moog/pull/96)
 - [Let a session merge the pull request it opened](https://github.com/kraepelien/moog/pull/95)

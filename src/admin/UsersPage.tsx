@@ -31,10 +31,15 @@ function when(iso: string): string {
 
 export function UsersPage({
   users,
+  viewerUid,
   onDecide,
   onRoles,
 }: {
   users: readonly AdminUser[]
+  /* Passed through rather than read here: the editor draws the two privileges
+     nobody may take off their own account, and which account that is is the
+     only thing it needs to know about who is looking. */
+  viewerUid: string | null
   onDecide: (user: AdminUser, privilege: Privilege, decision: Decision) => void
   onRoles: (user: AdminUser, roles: readonly Role[]) => void
 }) {
@@ -58,6 +63,7 @@ export function UsersPage({
         </Box>
         <UserAccess
           user={opened}
+          viewerUid={viewerUid}
           onDecide={(privilege, decision) => onDecide(opened, privilege, decision)}
           onRoles={(roles) => onRoles(opened, roles)}
         />
