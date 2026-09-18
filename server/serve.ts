@@ -1,4 +1,4 @@
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { createApi } from './api.ts'
 import { backupTo, openDatabase } from './db.ts'
 import { loadFactory } from './factory.ts'
@@ -92,4 +92,8 @@ Bun.serve({
   },
 })
 
-console.log(`Minimoog patch editor on http://localhost:${port}  (data in ./${root})`)
+/* Resolved rather than printed with a `./` in front, which assumed `root` was
+   relative and collided as `.//data` against the container's own MOOG_DATA. An
+   absolute path also says *which* checkout this is, the same reason the port is
+   worth quoting when two worktrees are running. */
+console.log(`Minimoog patch editor on http://localhost:${port}  (data in ${resolve(root)})`)
