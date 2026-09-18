@@ -5,41 +5,28 @@ import { INSTRUMENTS } from '@instruments/instruments.ts'
 import { parsePatch } from '@patch/schema.ts'
 import { createPatches } from './repositories/patches.ts'
 
-/* The bank in the repo is where factory content comes from, and it is **seeded**
-   rather than re-asserted: a slug the database already holds is left exactly as
-   it is.
+/* The bank in the repo seeds a database that does not hold a patch yet, and
+   never writes over one that does. From a database's first start its rows are
+   the live bank, so the only thing that changes a factory patch is an
+   administrator editing it, and that edit outlives every deploy.
 
-   That is what makes a factory patch editable. The rows are the live bank now,
-   so an administrator correcting one has somewhere to put the correction that a
-   restart will not undo — the alternative was a bank that came back from the
-   image every boot and an edit that appeared to work until the next deploy.
+   There is deliberately no lever for pushing a file back over a row. A file
+   that disagrees with the database is the file being out of date, and anything
+   offering to put the repo's copy back is a way to discard somebody's
+   corrections by accident. The files are what a fresh database is built from,
+   and the record of what was transcribed, and nothing beyond that.
 
-   The files stay the starting point, and `reseed` is how to go back to them:
-   it writes every file over the row, losing edits, which is the whole point of
-   asking for it. Nothing does that on its own.
-
-   Nothing except a **one-off**, which is the exception and is numbered. Seeding
-   has a cost the overwriting it replaced did not have: a database that already
-   holds a slug never hears about a change to its file, so a correction shipped
-   in the image cannot reach a bank that is already running. Once, when the whole
-   bank was re-transcribed from the manual and every row in every deployment was
-   wrong, that had to be pushed through — and asking somebody to remember an
-   environment variable at the right deploy is a worse plan than doing it.
-
-   So `BANK_REFRESH` is a number the database remembers having done. Raise it and
-   the next start writes every file over its row, once, and records that it has.
-   It is not a migration and not a habit: raise it only when the shipped bank has
-   changed in a way that has to reach rows somebody may have edited, and say in
-   the pull request that it will discard their edits to those patches. Every
-   start after it seeds again, so an administrator's edit outlives every deploy
-   that does not raise this number. */
-
-/* Raised to 1 when the bank was transcribed from the manual's patch sheets. */
+   `BANK_REFRESH` is the one exception and it is spent. A database that already
+   holds a slug never hears about a change to its file, so re-transcribing the
+   whole bank from the manual had to reach rows that already existed, once. It
+   is a number the database remembers having done, raised to 1 for that and not
+   raised again: every value after this one discards edits somebody made on
+   purpose. `test/factoryBank.test.ts` pins it. */
 const BANK_REFRESH = 1
 
 /* The `meta` table is already where `db_version` lives, so remembering this
-   needs no column and therefore no recreated database — which matters, because
-   a recreated database is exactly the manual step this exists to avoid. */
+   needs no column and therefore no recreated database, which matters because a
+   recreated database is exactly the manual step this exists to avoid. */
 function refreshDone(db: Database): number {
   db.run(`create table if not exists meta (key text primary key, value text not null)`)
   const row = db
@@ -63,16 +50,10 @@ export interface FactoryLoad {
   /* Already there and left alone. */
   readonly kept: number
   readonly retired: number
-  /* Whether this start was the one that pushed a raised BANK_REFRESH through,
-     so the line it prints can say so rather than reporting a suspicious number
-     of writes on a database that was already full. */
+  /* Whether this start pushed BANK_REFRESH through over rows that were already
+     there. A first start writes the whole bank too, and calling that a refresh
+     would announce an exceptional event on an ordinary empty database. */
   readonly refreshed: boolean
-}
-
-export interface FactoryOptions {
-  /* Write every file over the row it matches, discarding whatever an
-     administrator has changed. */
-  readonly reseed?: boolean
 }
 
 export function syncInstruments(db: Database): void {
@@ -83,11 +64,7 @@ export function syncInstruments(db: Database): void {
   for (const instrument of INSTRUMENTS) upsert.run(instrument.id, instrument.name)
 }
 
-export function loadFactory(
-  db: Database,
-  bank: string,
-  options: FactoryOptions = {},
-): FactoryLoad {
+export function loadFactory(db: Database, bank: string): FactoryLoad {
   syncInstruments(db)
   const patches = createPatches(db)
 
@@ -98,22 +75,25 @@ export function loadFactory(
     return { loaded: 0, kept: 0, retired: 0, refreshed: false }
   }
 
-  const refreshed = refreshDone(db) < BANK_REFRESH
-  const overwrite = options.reseed === true || refreshed
+  const refreshing = refreshDone(db) < BANK_REFRESH
 
   const slugs: string[] = []
   let loaded = 0
   let kept = 0
+  let overwritten = 0
   db.transaction(() => {
     for (const file of files) {
       const slug = file.slice(0, -'.json'.length)
       slugs.push(slug)
 
-      /* Seeded, not synced. A row that is already here is the live bank, edits
-         and all, and the file is only where it started. */
-      if (!overwrite && patches.hasFactory(slug)) {
-        kept++
-        continue
+      if (patches.hasFactory(slug)) {
+        /* Seeded, not synced. A row that is already here is the live bank,
+           edits and all, and the file is only where it started. */
+        if (!refreshing) {
+          kept++
+          continue
+        }
+        overwritten++
       }
 
       const parsed = parsePatch(JSON.parse(readFileSync(join(bank, file), 'utf8')))
@@ -125,7 +105,7 @@ export function loadFactory(
     }
     /* Inside the transaction: a start that wrote half the bank and then failed
        must not be remembered as having done it. */
-    if (refreshed) recordRefresh(db)
+    if (refreshing) recordRefresh(db)
   })()
 
   /* Anything the image no longer ships. Soft-deleted rather than dropped so a
@@ -138,5 +118,5 @@ export function loadFactory(
     [new Date().toISOString(), ...slugs],
   )
 
-  return { loaded, kept, retired: retired.changes, refreshed }
+  return { loaded, kept, retired: retired.changes, refreshed: overwritten > 0 }
 }

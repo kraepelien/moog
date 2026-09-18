@@ -89,15 +89,12 @@ export function patchApi(options: PatchApiOptions): Plugin {
       watchServerSources(server)
 
       const db = openDatabase(join(options.root, 'moog.db'))
-      const reseed = process.env.MOOG_RESEED === '1'
-      const factory = loadFactory(db, options.seed, { reseed })
+      const factory = loadFactory(db, options.seed)
       seedTags(db)
       server.config.logger.info(
-        reseed
-          ? `  ➜  Factory bank: ${factory.loaded} patches reseeded from ${options.seed}`
-          : factory.refreshed
-            ? `  ➜  Factory bank: ${factory.loaded} patches refreshed from ${options.seed} (a one-off)`
-            : `  ➜  Factory bank: ${factory.loaded} new, ${factory.kept} kept`,
+        factory.refreshed
+          ? `  ➜  Factory bank: ${factory.loaded} patches refreshed from ${options.seed} (the one-off)`
+          : `  ➜  Factory bank: ${factory.loaded} new, ${factory.kept} kept`,
       )
 
       /* Without this, a .env the server cannot see looks exactly like no .env at

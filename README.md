@@ -800,28 +800,21 @@ patch editable at all — the rows are the live bank, so a correction has somewh
 restart will not undo. It also means one that was retired stays retired rather than walking back in
 because its file is still in the image.
 
-**Seeding has a cost, and `BANK_REFRESH` is how it is paid.** A database that already holds a slug
-never hears about a change to its file, so a correction shipped in the image cannot reach a bank
-that is already running. `BANK_REFRESH` in `server/factory.ts` is a number the database remembers
-having done: raise it and the next start writes every file over its row, once, and records that it
-has. Every start after that seeds again, so an edit outlives every deploy that does not raise the
-number.
+**A file never reaches a row that already exists.** A database holding a slug never hears about a
+change to its file, and there is no flag, route or environment variable that pushes one through. A
+file that disagrees with the database is the file being out of date: the rows are the bank, and an
+administrator's correction is the only thing that changes one. Anything offering to put the repo's
+copy back would only ever be a way to discard those corrections by accident.
 
-It is not a migration and not a habit. Raise it only when the shipped bank has changed in a way that
-has to reach rows somebody may have edited — it was raised to 1 when the bank was transcribed from
-the manual — and say in the pull request that it discards their edits to those patches. A deploy
-carries it; nobody has to remember an environment variable at the right moment, which is the whole
-point.
+`BANK_REFRESH` in `server/factory.ts` is the single exception, and it is spent. It is a number the
+database remembers having done, raised to 1 when the bank was re-transcribed from the manual and
+every row in every deployment was wrong, so that one correction reached rows that already existed
+without anybody having to remember a flag at the right deploy. It is not raised again, and
+`test/factoryBank.test.ts` fails if it is.
 
-`MOOG_RESEED=1` is the same thing by hand, for when the files have not changed but the rows should
-go back to them anyway. The flag is read per start rather than stored, so leaving it in a compose
-file would quietly undo every correction at the next restart.
-
-```bash
-# on the NAS, only when the files have not changed and the rows should go back to them
-docker compose run --rm -e MOOG_RESEED=1 moog bun server/serve.ts
-docker compose up -d
-```
+That leaves `bank/` as two things and not a third: what a **fresh** database is built from, and the
+record of what was transcribed. It is not a way to edit a bank that is running, and editing a file
+there will not change one.
 
 A file in `bank/` is one patch, named after the slug inside it, and a control you have no real value
 for is **omitted** rather than guessed — an omission is honest and a guess is not:
