@@ -53,7 +53,9 @@ describe('registry', () => {
       'filterContour',
       'loudnessContour',
     ])
-    expect(runs.flatMap((run) => run.items)).toEqual(panelRegistry.itemsInSection('modifiers'))
+    expect(runs.flatMap((run) => run.items)).toEqual([
+      ...panelRegistry.itemsInSection('modifiers'),
+    ])
   })
 
   test('rejects duplicate ids', () => {

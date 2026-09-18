@@ -281,6 +281,9 @@ describe('what a file plays', () => {
   const sessionWith = (over: Partial<MidiSession> = {}): MidiSession => ({
     file: FILE,
     fileName: 'song.mid',
+    bytes: null,
+    name: '',
+    storedId: null,
     trouble: null,
     chosen: { 1: sound('Lead'), 2: sound('Bass') },
     bpm: '120',

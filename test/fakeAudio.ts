@@ -20,11 +20,15 @@ export class FakeParam {
   value = 0
   readonly calls: Call[] = []
 
-  constructor(
-    readonly owner: string,
-    readonly name: string,
-    private readonly log: Call[],
-  ) {}
+  readonly owner: string
+  readonly name: string
+  private readonly log: Call[]
+
+  constructor(owner: string, name: string, log: Call[]) {
+    this.owner = owner
+    this.name = name
+    this.log = log
+  }
 
   private record(method: string, value: number, time: number) {
     const call = { param: this, method, value, time }
@@ -71,7 +75,11 @@ class FakeNode {
   started = 0
   stopped = 0
 
-  constructor(readonly kind: string) {}
+  readonly kind: string
+
+  constructor(kind: string) {
+    this.kind = kind
+  }
 
   connect(target: FakeNode | FakeParam) {
     this.connected.push(target as FakeNode)
