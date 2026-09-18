@@ -147,6 +147,17 @@ export function requiredBy(privilege: Privilege): Privilege | null {
   return REQUIRES[privilege] ?? null
 }
 
+/* The two that must not be revoked away from everybody: `AccessAdmin` because
+   every administrative privilege is conditional on it, `AdminUsers` because it
+   is the one that can put the rest back. Which writes are actually refused, and
+   why, is the server's to say; the list is here because the editor has to draw
+   them locked, and a second copy of it is one that drifts. */
+export const PROTECTED: readonly Privilege[] = [PRIVILEGE.AccessAdmin, PRIVILEGE.AdminUsers]
+
+export function isProtected(privilege: Privilege): boolean {
+  return PROTECTED.includes(privilege)
+}
+
 export function isRole(value: unknown): value is Role {
   return typeof value === 'string' && (ROLES as readonly string[]).includes(value)
 }
