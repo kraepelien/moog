@@ -35,6 +35,7 @@ import {
 } from './components/library/SavePatchDialog.tsx'
 import type { LibraryEntry } from './components/library/entry.ts'
 import { Panel, PanelChecklist } from './components/Panel.tsx'
+import { PatchNotes } from './components/library/PatchNotes.tsx'
 import { PatchPage } from './components/patch/PatchPage.tsx'
 import { useConfirm } from './components/useConfirm.tsx'
 import { SignIn } from './session/SignIn.tsx'
@@ -732,6 +733,11 @@ function Workspace({
                 />
               </FitToWidth>
             )}
+
+            {/* The draft's own, not the resolved panel's: notes are written in
+                the save form and read here, and a patch that has none draws
+                nothing rather than an empty box. */}
+            {route.name === 'editor' && <PatchNotes notes={draft.notes} />}
 
             {route.name === 'midi' && (
               <PlayMidi

@@ -4,6 +4,7 @@ import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
 import { FieldRow } from '@components/library/FieldRow.tsx'
 import { FilterRow } from '@components/library/FilterRow.tsx'
+import { PatchNotes } from '@components/library/PatchNotes.tsx'
 import { StarRating } from '@components/library/StarRating.tsx'
 import { PatchBar } from '@components/PatchBar.tsx'
 import { FitToWidth } from '@components/FitToWidth.tsx'
@@ -164,6 +165,9 @@ export function PatchPage({
           readOnly
         />
       </FitToWidth>
+
+      {/* Under the panel, which is where the manual's own sheets print theirs. */}
+      <PatchNotes notes={patch.notes} />
     </div>
   )
 }
