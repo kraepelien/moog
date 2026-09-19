@@ -222,6 +222,13 @@ Three resolvers have to agree on the map, and only two of them fail loudly:
   `src/` for the patch schema, the instruments and the tag rules. Leaving one out is a crashloop, not
   a build error. `test/image.test.ts` walks that graph against the Dockerfile's runtime stage, and
   the deploy workflow starts the built image and calls `/api/health` before pushing it.
+- **`bun run dev` does not reload `server/`.** Vite hot-reloads the page and goes on serving the API
+  modules the process started with, so a dev server left running across a `git pull` serves the old
+  routes to the new page. `watchServerSources` warns once per changed file, which is all it can do,
+  and that warning is easy to lose in a pull's worth of output. It presents as three unrelated
+  faults at once: a route answering 404, a field missing from a response, and a page crashing on the
+  shape it got. Restart the server. The page says so itself now, because `httpStore` reads a 404
+  from a route that returns a collection as a server a build behind rather than as an empty list.
 - **SVG text does not inherit `font-family`** the way HTML does; `svg { font-family: inherit }` is
   what carries the face into dials and switch legends.
 

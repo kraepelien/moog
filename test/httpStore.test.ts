@@ -94,3 +94,57 @@ describe('what the app sends', () => {
     expect(calls[0]!.init?.credentials).toBe('same-origin')
   })
 })
+
+/* What a server a build behind looks like from the page, which is what a dev
+   server left running across a pull is: Vite hot-reloads the page and the API
+   keeps serving the modules it started with. */
+describe('a server older than the page talking to it', () => {
+  /* To `get` a 404 is "no such patch", which is data. To a collection it is
+     "no such route", which never is: an install with nothing in it answers with
+     an empty list. Swallowed, it drew an empty page with nothing to explain it,
+     and the three routes added last did not even swallow it, so `records` went
+     null and took the whole page down. */
+  test('a list route that answers 404 says the server is old, rather than looking empty', async () => {
+    const { store } = storeAnswering(() => json({ error: 'not found' }, 404))
+
+    await expect(store.listEveryPatch()).rejects.toMatchObject({ kind: 'io' })
+    await expect(store.listEveryPatch()).rejects.toThrow(/older build/)
+  })
+
+  test('and does so for every collection, not only the newest ones', async () => {
+    const { store } = storeAnswering(() => json({ error: 'not found' }, 404))
+
+    await expect(store.listTrash()).rejects.toThrow(/older build/)
+    await expect(store.ops()).rejects.toThrow(/older build/)
+    await expect(store.listUsers()).rejects.toThrow(/older build/)
+    await expect(store.library()).rejects.toThrow(/older build/)
+    await expect(store.listTags()).rejects.toThrow(/older build/)
+    await expect(store.listArrangements()).rejects.toThrow(/older build/)
+  })
+
+  /* A patch that is genuinely not there still answers null rather than
+     throwing: that is the half of 404 that is an answer. */
+  test('while a missing patch is still simply missing', async () => {
+    const { store } = storeAnswering(() => json({ error: 'not found' }, 404))
+    expect(await store.get('never-saved')).toBeNull()
+  })
+
+  /* The other half of the same morning: a server that has `/users` but not yet
+     the audit field it grew, which took the access editor down on `.map`. */
+  test('an account with no decisions on it arrives with an empty list, not undefined', async () => {
+    const { store } = storeAnswering(() =>
+      json([{ uid: 'u-1', name: 'Ada', roles: [], privileges: [], granted: [], revoked: [] }]),
+    )
+
+    const [user] = await store.listUsers()
+    expect(user!.decisions).toEqual([])
+  })
+
+  test('and so does one that comes back from a write', async () => {
+    const { store } = storeAnswering(() => json({ uid: 'u-1', name: 'Ada', roles: [] }))
+
+    expect((await store.setUserRoles('u-1', ['tester'])).decisions).toEqual([])
+    expect((await store.setUserPrivilege('u-1', 'AdminTags', true)).decisions).toEqual([])
+    expect((await store.clearUserPrivilege('u-1', 'AdminTags')).decisions).toEqual([])
+  })
+})
