@@ -200,21 +200,21 @@ This is where the rest of it goes.
 
 - **An element is styled in one place.** Everything it needs as MUI props and it carries no class;
   anything a stylesheet does better and it carries a class, which then carries the gap and the
-  padding too. Split across both, one box takes two files to read — and `injectFirst` puts the
+  padding too. Split across both, one box takes two files to read, and `injectFirst` puts the
   stylesheet after MUI in the document, so a module rule beats an `sx` of equal specificity and the
   `sx` line would not even be the answer. A colour the component computes is the exception; the
   skin convention already puts that inline.
 - **`<Stack direction spacing>` when that is the whole rule.** A `Stack` or `Box` whose class is
   only `display: flex`, a direction and a `gap` is a `Stack` with its props written in another file.
-  MUI 9 has no shorthand layout props — `Stack` takes `direction`, `spacing`, `divider`,
-  `useFlexGap`, `sx` and nothing else, and `Box` takes only `sx` — so an element that also wants
+  MUI 9 has no shorthand layout props (`Stack` takes `direction`, `spacing`, `divider`,
+  `useFlexGap`, `sx` and nothing else, and `Box` takes only `sx`), so an element that also wants
   `align-items`, `flex-wrap`, `min-width` or padding keeps its class, gap included.
 - **A gap off the 8px grid keeps its class.** `spacing={n}` is n × 8px. The stylesheets use
   twenty-one distinct spacing values and most are off that grid; `spacing={1.25}` states a 10px
   rhythm less clearly than `gap: 10px` does, and re-basing `theme.spacing` to fit them would
   silently move all forty-one spacings already written as `sx`.
 - **A stylesheet earns its place** with `[data-*]` state, `@container` and `@media`, `:hover` and
-  `:focus-visible`, `::before`, `@keyframes`, `composes` and SVG paint — the rules that describe a
+  `:focus-visible`, `::before`, `@keyframes`, `composes` and SVG paint: the rules that describe a
   *relationship*, between states, between siblings, against the container, which a prop on one
   element cannot state. Where a media query or a grid template already owns a box, its gap stays
   with them: `HomePage.module.css` and `PageNav.module.css` are both that case.
