@@ -305,6 +305,34 @@ Within a filter row the chips are an OR and the rows are an AND, so "bass or
 lead, on a Model D" is sayable. An empty row filters nothing rather than matching
 nothing, or opening the library would show an empty list.
 
+**Order is a fourth row and a choice of one.** Name, Rating, Updated, each
+carrying the one direction anybody wants of it, so there is no second control
+for ascending against descending. Pressing the chip already on does nothing:
+the row has no off state to fall to. It wears a single tone, because the three
+are a closed set whose words are the distinction. Name is the order the rows
+arrive in, `order by p.name collate nocase` from the server, so the chip
+re-sorts nothing; the others break their ties on recency and then name.
+
+The order is held beside the filters rather than inside them, since an order is
+not a filter and folding it in would leave "clear the filters" with two things
+it could mean. And it is applied to the whole list before a page is sliced out
+of it: ordering the visible page instead would rank a hundred rows against each
+other and leave the best of the bank sitting on page two.
+
+**Rating means what the home shelf means by best.** `scoreOf` in
+`components/library/entry.ts` is the one definition, read by both: every patch
+is scored as though it already carried three imagined middling ratings, so one
+delighted rating cannot beat what a crowd settled high, and unrated sits at the
+middle rather than last. It lives in the library's own file rather than beside
+the shelf that first wanted it, so the two cannot drift apart.
+
+The search box covers names, categories and synths, and says only that. Stars
+are deliberately not searchable: a bare `4` would also match every patch whose
+name carries a digit, and there are three of those in the bank, so the list
+would jump for a reason nobody could see. A `stars:` prefix would be a query
+language for one field. The Order row is the honest answer to caring about
+ratings.
+
 Opening a row goes to that patch's own address, `/patch/:id`, which is the one
 page in the app with an address per thing it shows. See **The patch sheet**.
 
