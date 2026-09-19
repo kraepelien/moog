@@ -4,6 +4,8 @@ Everything that has landed on `main`, newest first. A pull request carries its l
 straight to `main` has none to carry.
 
 - [Print the patch sheet, at the paper's scale rather than the window's](https://github.com/kraepelien/moog/pull/112)
+- [Say who decided an override and when, which every write has recorded since the schema was written](https://github.com/kraepelien/moog/pull/113)
+- [Order the library by name, rating or when it was last touched, search the synth the box always claimed to, and stop claiming stars](https://github.com/kraepelien/moog/pull/111)
 - [Show a patch's notes, which have been collected and never read back since they were added](https://github.com/kraepelien/moog/pull/110)
 - [Give every privilege one control with three positions, put what it means behind an info icon, and move StoreMidi onto the tester rung](https://github.com/kraepelien/moog/pull/109)
 - [Give every patch an address of its own, and stop opening one from costing you the draft](https://github.com/kraepelien/moog/pull/108)

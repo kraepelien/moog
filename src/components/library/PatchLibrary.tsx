@@ -9,12 +9,15 @@ import { PatchRow } from './PatchRow.tsx'
 import { SearchField } from './SearchField.tsx'
 import {
   matchesFilters,
+  sortedBy,
   withFilter,
   BANK_TONES,
+  DEFAULT_SORT,
   NO_FILTERS,
   type Bank,
   type LibraryEntry,
   type LibraryFilters,
+  type LibrarySort,
 } from './entry.ts'
 import { instrumentName } from '@instruments/instruments.ts'
 import { tagColour, type TagPalette } from '@/tones.ts'
@@ -61,6 +64,15 @@ const BANK_CHOICES: readonly FilterChoice[] = [
   { value: 'public', label: 'Public', tone: 'amber' },
 ]
 
+/* One tone for the whole row, unlike the rows above it: these three are a closed
+   set where the words are the distinction, so a colour apiece would only suggest
+   each one filters something the others do not. */
+const SORT_CHOICES: readonly FilterChoice[] = [
+  { value: 'name', label: 'Name', tone: 'grey' },
+  { value: 'rating', label: 'Rating', tone: 'grey' },
+  { value: 'updated', label: 'Updated', tone: 'grey' },
+]
+
 export function PatchLibrary({
   entries,
   openId,
@@ -77,12 +89,19 @@ export function PatchLibrary({
   onRate?: (entry: LibraryEntry, stars: number) => void
 }) {
   const [filters, setFilters] = useState<LibraryFilters>(NO_FILTERS)
+  /* Beside the filters rather than inside them: an order is not a filter, and
+     folding it in would leave "clear the filters" with two things it could
+     mean. */
+  const [sort, setSort] = useState<LibrarySort>(DEFAULT_SORT)
   const [wantedPage, setPage] = useState(1)
 
   const choices = useMemo(() => choicesFrom(entries, tagPalette), [entries, tagPalette])
+  /* Ordered before a page is sliced out of it. Sorting `visible` instead would
+     rank a hundred rows against each other and leave the best of the bank sitting
+     on page two. */
   const shown = useMemo(
-    () => entries.filter((entry) => matchesFilters(entry, filters)),
-    [entries, filters],
+    () => sortedBy(entries.filter((entry) => matchesFilters(entry, filters)), sort),
+    [entries, filters, sort],
   )
 
   const pages = Math.max(1, Math.ceil(shown.length / PER_PAGE))
@@ -99,6 +118,15 @@ export function PatchLibrary({
     setPage(1)
   }
 
+  const reorder = (next: LibrarySort) => {
+    /* Pressing the chip already on does nothing. The row is a choice of one, so
+       there is no off state for it to fall to, and a chip that reversed itself
+       would be an ascending toggle hiding inside a filter chip. */
+    if (next === sort) return
+    setSort(next)
+    setPage(1)
+  }
+
   return (
     <Stack className={styles.library}>
       <Paper variant="outlined" className={styles.card}>
@@ -106,7 +134,7 @@ export function PatchLibrary({
           <SearchField
             value={filters.text}
             onChange={(text) => change({ ...filters, text })}
-            placeholder="Search for names, categories, synths or stars"
+            placeholder="Search names, categories or synths"
           />
         </Box>
 
@@ -137,6 +165,12 @@ export function PatchLibrary({
                 ),
               )
             }
+          />
+          <FilterRow
+            label="Order"
+            choices={SORT_CHOICES}
+            selected={[sort]}
+            onToggle={(value) => reorder(value as LibrarySort)}
           />
         </Stack>
       </Paper>

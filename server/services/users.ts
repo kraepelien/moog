@@ -9,10 +9,10 @@ import {
   PRIVILEGE,
   type Privilege,
 } from '@access/privileges.ts'
-import type { AdminUser } from '@admin/users.ts'
+import type { AdminUser, Decided } from '@admin/users.ts'
 import { isEnvAdmin, type AuthConfig } from '@server/identity.ts'
 import type { Repositories } from '@server/repositories/index.ts'
-import type { UserRow } from '@server/repositories/users.ts'
+import { sortOverrides, type UserRow } from '@server/repositories/users.ts'
 import type { Viewer } from './access.ts'
 import type { Refusal } from './refusal.ts'
 
@@ -29,10 +29,17 @@ export function createUserService(repositories: Repositories, config: AuthConfig
 
   const listed = (user: UserRow): boolean => isEnvAdmin(user.email, config)
 
-  const describe = (user: UserRow, stats: AdminUser['stats']): AdminUser => {
+  /* The decisions are passed in rather than read here, so the list can take
+     everybody's in one query. Sorting them into the three buckets is the same
+     answer `overridesOf` gives, from the rows already in hand. */
+  const describe = (
+    user: UserRow,
+    stats: AdminUser['stats'],
+    decisions: readonly Decided[],
+  ): AdminUser => {
     const envAdmin = listed(user)
     const stored = users.rolesOf(user)
-    const overrides = users.overridesOf(user.id)
+    const overrides = sortOverrides(decisions)
 
     return {
       uid: user.uid,
@@ -46,6 +53,7 @@ export function createUserService(repositories: Repositories, config: AuthConfig
       granted: overrides.granted,
       revoked: overrides.revoked,
       unknown: overrides.unknown,
+      decisions,
       stats,
       createdAt: user.created_at,
       lastSeenAt: user.last_seen_at,
@@ -54,25 +62,32 @@ export function createUserService(repositories: Repositories, config: AuthConfig
 
   const service = {
     list(): AdminUser[] {
-      return users
-        .list()
-        .map((row) =>
-          describe(row, {
+      const decisions = users.decisionsAll()
+      return users.list().map((row) =>
+        describe(
+          row,
+          {
             patches: row.patches,
             arrangements: row.arrangements,
             ratings: row.ratings,
-          }),
-        )
+          },
+          decisions.get(row.id) ?? [],
+        ),
+      )
     },
 
     get(uid: string): AdminUser | Refusal {
       const found = users.findWithStats(uid)
       if (!found) return { error: 'not found', status: 404 }
-      return describe(found, {
-        patches: found.patches,
-        arrangements: found.arrangements,
-        ratings: found.ratings,
-      })
+      return describe(
+        found,
+        {
+          patches: found.patches,
+          arrangements: found.arrangements,
+          ratings: found.ratings,
+        },
+        users.decisionsOf(found.id),
+      )
     },
 
     setRoles(uid: string, given: unknown): AdminUser | Refusal {

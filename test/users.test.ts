@@ -204,6 +204,91 @@ describe('changing one privilege', () => {
   })
 })
 
+/* The columns every write has always filled, read back for the first time.
+   They are the one audit trail the app has. */
+describe('the stamp on an override', () => {
+  const stamp = (user: AdminUser, privilege: string) =>
+    user.decisions.find((one) => one.privilege === privilege)
+
+  test('names the administrator who wrote it, and when', async () => {
+    const { person } = await world()
+    const boss = await person('u-boss')
+    await person('u-punter')
+
+    const before = Date.now()
+    const after = await body<AdminUser>(
+      await boss('PUT', '/api/users/u-punter/privileges/AdminTags', { granted: true }),
+    )
+
+    const written = stamp(after, PRIVILEGE.AdminTags)!
+    expect(written.granted).toBe(true)
+    expect(written.by).toMatchObject({ uid: 'u-boss', name: 'u-boss' })
+    expect(Date.parse(written.at)).toBeGreaterThanOrEqual(before)
+  })
+
+  /* `by_user_id` is `on delete set null`, and the install writes rows with no
+     actor of its own. Neither can be told from the other, and neither may be
+     given a name. */
+  test('comes back null where no actor was written', async () => {
+    const { person, repositories } = await world()
+    const boss = await person('u-boss')
+    await person('u-punter')
+
+    const row = repositories.users.find('u-punter')!
+    repositories.users.setOverride(row.id, PRIVILEGE.AdminTags, true, null)
+
+    const list = await body<AdminUser[]>(await boss('GET', '/api/users'))
+    expect(stamp(found(list, 'u-punter'), PRIVILEGE.AdminTags)!.by).toBeNull()
+  })
+
+  test('goes with the row when the override is cleared', async () => {
+    const { person } = await world()
+    const boss = await person('u-boss')
+    await person('u-punter')
+
+    await boss('PUT', '/api/users/u-punter/privileges/AdminTags', { granted: true })
+    const after = await body<AdminUser>(
+      await boss('DELETE', '/api/users/u-punter/privileges/AdminTags'),
+    )
+
+    expect(after.decisions).toEqual([])
+  })
+
+  /* One privilege is written at a time, so a name this build has never heard
+     of keeps its own stamp through a write to something else. */
+  test('survives, for an unknown name, a write to a different privilege', async () => {
+    const { person, repositories } = await world()
+    const boss = await person('u-boss')
+    await person('u-punter')
+
+    const row = repositories.users.find('u-punter')!
+    repositories.users.setOverride(row.id, 'AdminEverything', false, row.id)
+
+    const after = await body<AdminUser>(
+      await boss('PUT', '/api/users/u-punter/privileges/AdminTags', { granted: true }),
+    )
+
+    const kept = stamp(after, 'AdminEverything')!
+    expect(kept.granted).toBe(false)
+    expect(kept.by).toMatchObject({ uid: 'u-punter' })
+  })
+
+  /* The regression this shape was chosen to avoid: the stamps ride beside the
+     two lists rather than inside them, so what a viewer ends up holding is
+     still `resolve(roles, overridesOf(id))` and nothing else. */
+  test('changes nothing about what anybody is resolved to hold', async () => {
+    const { person } = await world()
+    const boss = await person('u-boss')
+    const other = await person('u-other', [ROLE.tester])
+
+    await boss('PUT', '/api/users/u-other/privileges/AccessAdmin', { granted: true })
+    await boss('PUT', '/api/users/u-other/privileges/StoreMidi', { granted: false })
+
+    const said = await body<{ privileges: string[] }>(await other('GET', '/api/session'))
+    expect(said.privileges).toEqual([PRIVILEGE.AccessAdmin])
+  })
+})
+
 describe('an override row naming a privilege this build does not know', () => {
   test('is reported rather than acted on, and is not deleted by a write', async () => {
     const { person, repositories } = await world()

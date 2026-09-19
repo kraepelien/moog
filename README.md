@@ -305,6 +305,34 @@ Within a filter row the chips are an OR and the rows are an AND, so "bass or
 lead, on a Model D" is sayable. An empty row filters nothing rather than matching
 nothing, or opening the library would show an empty list.
 
+**Order is a fourth row and a choice of one.** Name, Rating, Updated, each
+carrying the one direction anybody wants of it, so there is no second control
+for ascending against descending. Pressing the chip already on does nothing:
+the row has no off state to fall to. It wears a single tone, because the three
+are a closed set whose words are the distinction. Name is the order the rows
+arrive in, `order by p.name collate nocase` from the server, so the chip
+re-sorts nothing; the others break their ties on recency and then name.
+
+The order is held beside the filters rather than inside them, since an order is
+not a filter and folding it in would leave "clear the filters" with two things
+it could mean. And it is applied to the whole list before a page is sliced out
+of it: ordering the visible page instead would rank a hundred rows against each
+other and leave the best of the bank sitting on page two.
+
+**Rating means what the home shelf means by best.** `scoreOf` in
+`components/library/entry.ts` is the one definition, read by both: every patch
+is scored as though it already carried three imagined middling ratings, so one
+delighted rating cannot beat what a crowd settled high, and unrated sits at the
+middle rather than last. It lives in the library's own file rather than beside
+the shelf that first wanted it, so the two cannot drift apart.
+
+The search box covers names, categories and synths, and says only that. Stars
+are deliberately not searchable: a bare `4` would also match every patch whose
+name carries a digit, and there are three of those in the bank, so the list
+would jump for a reason nobody could see. A `stars:` prefix would be a query
+language for one field. The Order row is the honest answer to caring about
+ratings.
+
 Opening a row goes to that patch's own address, `/patch/:id`, which is the one
 page in the app with an address per thing it shows. See **The patch sheet**.
 
@@ -686,23 +714,33 @@ write, since otherwise the page would be lying about the person pressing the but
 
 ### Administering people
 
-`/admin/users` lists everyone with an account, searchable, with what each has made. Opening one
-shows every privilege with a plain description and a checkbox.
+`/admin/users` lists everyone with an account, searchable, with what each has made, when they
+joined and when they were last seen. Opening one shows every privilege in words, with the stored
+name beside it and the long description behind an info icon.
 
-**The box says whether they have it; how solid it is says where that came from.** Full strength
-means somebody decided it about this account and there is a row to prove it. Faded means nothing is
-stored and a role is answering. Fading the weaker state rather than recolouring it is how the
-library's filter chips already read, and for the same reason: the two have to be told apart at a
-glance down a column.
-
-Ticking or clearing writes a row saying yes or no. Going back to the roles' answer is *deleting*
-that row, which is a rarer thing to want, so it is a **Use default** button that appears only where
-there is something to clear rather than a third state to aim at in every row. Which came from where
-is an attribute on the row, and the stylesheet fades from it — so the state is in the DOM rather
-than inferred from a colour.
+**Each privilege has one control with three positions**, because there are three answers and only
+three: this account is handed it, this account is refused it, or neither and the roles decide. A
+revoke is its own position rather than the absence of a grant, since it outlives a role being added
+later, and going back to the roles is a position rather than a button because that is what deleting
+the row means. Which of the three a row sits in is an attribute on the row, and the stylesheet
+reads that, so the state is in the DOM rather than inferred from a colour.
 
 Each change writes on its own: there is no Save, because one click puts it back, and no whole-set
 write, because that would delete an override naming a privilege this build has never heard of.
+
+**A stored row says who decided it and when.** `user_privileges` has carried `at` and `by_user_id`
+since the schema was written and every write fills them, so the one audit trail the app has was
+there all along with nothing reading it back. The stamp is drawn only where there is a row to
+stamp: a role answering has nobody and no moment to name. A null actor is both a row the install
+wrote itself and one whose author has since been deleted, because `by_user_id` is
+`on delete set null` and nothing can tell the two apart, so it reads as not recorded rather than
+picking one. An override naming a privilege this build does not know carries the same stamp, which
+is the row where it matters most: nothing here can say what it means, so who wrote it is all there
+is to go on.
+
+The deciding account's name comes from a second repository method rather than a join added to
+`overridesOf`, which runs on every authenticated request through the viewer lookup: one
+administration page asks who decided something, and every page load would otherwise pay for it.
 
 It is its own route with its own privilege rather than nesting behind `AccessAdmin`, so the two can
 be held apart — which is what the rules above assume.

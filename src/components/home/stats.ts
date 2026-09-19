@@ -1,4 +1,4 @@
-import { bankOf, type LibraryEntry } from '@components/library/entry.ts'
+import { bankOf, scoreOf, type LibraryEntry } from '@components/library/entry.ts'
 
 /* What the home page can say without asking the server for anything. The
    library rows are already loaded for the rail's count, and the registry is a
@@ -104,30 +104,8 @@ export function recent(entries: readonly LibraryEntry[], count: number): readonl
   return [...entries].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, count)
 }
 
-/* Every patch is scored as though it already carried PRIOR ratings at NEUTRAL,
-   and its real ratings are added to those. Three imagined middling ones is
-   enough that a single delighted rating cannot beat what a crowd settled high,
-   and few enough that a handful of real ones still moves a patch.
-
-   The imagined ratings sit at the middle of the scale rather than at the
-   library's own mean, which is the usual anchor: almost nothing here is rated
-   yet, so that mean is one or two patches' opinion of themselves, and anchoring
-   to it ties every unrated patch with the best-rated one. */
-const PRIOR = 3
-const NEUTRAL = 3
-
-/* Unrated scores NEUTRAL exactly: unheard is an unknown, not a bad one, so it
-   sits above a patch somebody actively disliked and below one people liked. */
-function scoreOf(entry: LibraryEntry): number {
-  if (entry.averageRating === null) return NEUTRAL
-  /* An average exists, so at least one rating does. The two arrive from
-     separate subqueries, and a count that went missing would otherwise flatten
-     a genuinely rated patch onto NEUTRAL. */
-  const count = Math.max(entry.ratingCount, 1)
-  return (count * entry.averageRating + PRIOR * NEUTRAL) / (count + PRIOR)
-}
-
-/* Best first, by that weighted score. Ties break on recency and then on name,
+/* Best first, by the same weighted score the library's Order row reads, which
+   is why it lives in `entry.ts`. Ties break on recency and then on name,
    so a shelf of patches nobody has rated is at least the same shelf on every
    load rather than whatever order the rows arrived in. */
 export function ranked(entries: readonly LibraryEntry[], count: number): readonly LibraryEntry[] {

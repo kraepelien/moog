@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { HomePage } from '@components/home/HomePage.tsx'
 import { factsOf, figuresOf, ranked, recent, shelfOf } from '@components/home/stats.ts'
-import type { LibraryEntry } from '@components/library/entry.ts'
+import { sortedBy, type LibraryEntry } from '@components/library/entry.ts'
 import { SILENT } from '@audio/settings.ts'
 import { panelRegistry } from '@controls/panel.ts'
 
@@ -162,6 +162,24 @@ describe('the ranking', () => {
        unheard patch sits mid-shelf, above the one carrying a single 2. */
     const order = ranked(RATED, 4).map((item) => item.id)
     expect(order.indexOf('unheard')).toBeLessThan(order.indexOf('panned'))
+  })
+
+  /* The score moved into the library's own entry.ts so that the shelf and the
+     library's Order row cannot come to different opinions of "best". These two
+     pin the shelf's order across that move, and pin the two readers together. */
+  test('still weights a crowd above one delighted rating', () => {
+    expect(ranked(RATED, 4).map((item) => item.id)).toEqual([
+      'crowd',
+      'lucky',
+      'unheard',
+      'panned',
+    ])
+  })
+
+  test('agrees with the order the library sorts by', () => {
+    expect(sortedBy(RATED, 'rating').map((item) => item.id)).toEqual(
+      ranked(RATED, RATED.length).map((item) => item.id),
+    )
   })
 
   test('orders a wholly unrated library the same way twice', () => {

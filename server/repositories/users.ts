@@ -6,7 +6,7 @@ import {
   type Privilege,
   type Role,
 } from '@access/privileges.ts'
-import type { UserStats } from '@admin/users.ts'
+import type { Decided, UserStats } from '@admin/users.ts'
 
 /* A row per account, the roles it holds, and the per-privilege answers that
    beat them. Rows in, rows out: whether a write is allowed is the users
@@ -43,6 +43,49 @@ export interface Overridden {
      nothing here quietly deletes a row it did not understand. */
   readonly unknown: string[]
 }
+
+/* Which bucket a stored row falls in. Exported and shared rather than written
+   out beside each query, because three callers now read the same table and a
+   second copy of this is one that drifts. */
+export function sortOverrides(
+  rows: Iterable<{ readonly privilege: string; readonly granted: boolean }>,
+): Overridden {
+  const granted: Privilege[] = []
+  const revoked: Privilege[] = []
+  const unknown: string[] = []
+
+  for (const row of rows) {
+    if (!isPrivilege(row.privilege)) unknown.push(row.privilege)
+    else (row.granted ? granted : revoked).push(row.privilege)
+  }
+  return { granted, revoked, unknown }
+}
+
+interface DecidedRow {
+  user_id: number
+  privilege: string
+  granted: number
+  at: string
+  by_uid: string | null
+  by_name: string | null
+  by_email: string | null
+}
+
+/* The audit columns every write already fills, joined to the account that
+   wrote them. A left join, because `by_user_id` is `on delete set null` and
+   the install writes rows with no actor at all. */
+const DECIDED = `
+  select o.user_id, o.privilege, o.granted, o.at,
+         d.uid as by_uid, d.display_name as by_name, d.email as by_email
+    from user_privileges o
+    left join users d on d.id = o.by_user_id`
+
+const decided = (row: DecidedRow): Decided => ({
+  privilege: row.privilege,
+  granted: row.granted === 1,
+  at: row.at,
+  by: row.by_uid === null ? null : { uid: row.by_uid, name: row.by_name, email: row.by_email },
+})
 
 const STATS = `
   (select count(*) from patches p
@@ -140,6 +183,9 @@ export function createUsers(db: Database) {
       )
     },
 
+    /* Run on every authenticated request, through the viewer lookup, which is
+       why the actor's name is a second method rather than a join here: one
+       admin page reads it and every page load would pay for it. */
     overridesOf(userId: number): Overridden {
       const rows = db
         .query<{ privilege: string; granted: number }, [number]>(
@@ -147,18 +193,26 @@ export function createUsers(db: Database) {
         )
         .all(userId)
 
-      const granted: Privilege[] = []
-      const revoked: Privilege[] = []
-      const unknown: string[] = []
+      return sortOverrides(
+        rows.map((row) => ({ privilege: row.privilege, granted: row.granted === 1 })),
+      )
+    },
 
-      for (const row of rows) {
-        if (!isPrivilege(row.privilege)) {
-          unknown.push(row.privilege)
-          continue
-        }
-        ;(row.granted ? granted : revoked).push(row.privilege)
+    decisionsOf(userId: number): Decided[] {
+      return db
+        .query<DecidedRow, [number]>(`${DECIDED} where o.user_id = ? order by o.privilege`)
+        .all(userId)
+        .map(decided)
+    },
+
+    decisionsAll(): Map<number, Decided[]> {
+      const byUser = new Map<number, Decided[]>()
+      for (const row of db.query<DecidedRow, []>(`${DECIDED} order by o.privilege`).all()) {
+        const held = byUser.get(row.user_id) ?? []
+        held.push(decided(row))
+        byUser.set(row.user_id, held)
       }
-      return { granted, revoked, unknown }
+      return byUser
     },
 
     /* `null` removes the row, which is what returning a privilege to inherited
@@ -198,15 +252,13 @@ export function createUsers(db: Database) {
         )
         .all()
 
-      const byUser = new Map<number, Overridden>()
+      const byUser = new Map<number, { privilege: string; granted: boolean }[]>()
       for (const row of rows) {
-        const held =
-          byUser.get(row.user_id) ?? { granted: [], revoked: [], unknown: [] }
-        if (!isPrivilege(row.privilege)) held.unknown.push(row.privilege)
-        else (row.granted ? held.granted : held.revoked).push(row.privilege)
+        const held = byUser.get(row.user_id) ?? []
+        held.push({ privilege: row.privilege, granted: row.granted === 1 })
         byUser.set(row.user_id, held)
       }
-      return byUser
+      return new Map([...byUser].map(([userId, held]) => [userId, sortOverrides(held)]))
     },
 
     /* The one everything belongs to until there is anyone to sign in. No roles:
