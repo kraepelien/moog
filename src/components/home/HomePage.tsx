@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import Box from '@mui/material/Box'
 import ButtonBase from '@mui/material/ButtonBase'
+import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { Signature } from './Signature.tsx'
 import { factsOf, figuresOf, shelfOf } from './stats.ts'
@@ -103,7 +104,7 @@ export function HomePage({
       </Box>
 
       {shelf.entries.length > 0 && (
-        <Box className={styles.block}>
+        <Stack spacing={2}>
           <Typography component="h3" className={styles.blockTitle}>
             {shelf.title}
           </Typography>
@@ -117,10 +118,10 @@ export function HomePage({
               />
             ))}
           </Box>
-        </Box>
+        </Stack>
       )}
 
-      <Box className={styles.block}>
+      <Stack spacing={2}>
         <Typography component="h3" className={styles.blockTitle}>
           Everywhere else
         </Typography>
@@ -145,7 +146,7 @@ export function HomePage({
             </ButtonBase>
           ))}
         </Box>
-      </Box>
+      </Stack>
     </Box>
   )
 }

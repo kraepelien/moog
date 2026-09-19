@@ -68,5 +68,9 @@ export const theme = createTheme({
         root: { backgroundImage: 'none' },
       },
     },
+    /* Spacing a Stack with margins, which is MUI's default, leaves a row that
+       wraps with nothing between its lines, and zeroes each child's own margin
+       at a specificity `sx` cannot beat. With this, `spacing` is a real `gap`. */
+    MuiStack: { defaultProps: { useFlexGap: true } },
   },
 })

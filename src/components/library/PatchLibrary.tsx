@@ -128,7 +128,7 @@ export function PatchLibrary({
   }
 
   return (
-    <Stack className={styles.library}>
+    <Stack spacing={2}>
       <Paper variant="outlined" className={styles.card}>
         <Box className={styles.search}>
           <SearchField

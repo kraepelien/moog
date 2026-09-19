@@ -1,9 +1,3 @@
-.panels {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
 /* Label and value on one line, the label in a column of its own width so the
    figures line up down the panel rather than each starting where its own words
    end. The same shape FieldRow gives the patch's fields. */

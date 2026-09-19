@@ -66,7 +66,7 @@ export function OpsPage({ report }: { report: OpsReport | null }) {
   const { backup, purge, factory, limits, limitEnv } = report
 
   return (
-    <div className={styles.panels}>
+    <Stack spacing={2}>
       <Panel title="Maintenance">
         {report.scheduled ? (
           <Stack>
@@ -152,6 +152,6 @@ export function OpsPage({ report }: { report: OpsReport | null }) {
           </div>
         ))}
       </Panel>
-    </div>
+    </Stack>
   )
 }

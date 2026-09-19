@@ -198,6 +198,44 @@ Three resolvers have to agree on the map, and only two of them fail loudly:
   `--configLoader native` on every `vite` invocation in `package.json`: Bun loads the config
   directly and applies `paths` itself. Drop the flag and the warnings come back.
 
+## Styling
+
+Colour is settled in `README.md` and holds everywhere: never a literal, always a custom property, so
+a skin an administrator saves repaints MUI's chrome, the stylesheets and the inline styles together.
+This is where the rest of it goes.
+
+- **An element is styled in one place.** Everything it needs as MUI props and it carries no class;
+  anything a stylesheet does better and it carries a class, which then carries the gap and the
+  padding too. Split across both, one box takes two files to read, and `injectFirst` puts the
+  stylesheet after MUI in the document, so a module rule beats an `sx` of equal specificity and the
+  `sx` line would not even be the answer. A colour the component computes is the exception; the
+  skin convention already puts that inline.
+- **`<Stack direction spacing>` when that is the whole rule.** A `Stack` or `Box` whose class is
+  only `display: flex`, a direction and a `gap` is a `Stack` with its props written in another file.
+  MUI 9 has no shorthand layout props (`Stack` takes `direction`, `spacing`, `divider`,
+  `useFlexGap`, `sx` and nothing else, and `Box` takes only `sx`), so an element that also wants
+  `align-items`, `flex-wrap`, `min-width` or padding keeps its class, gap included.
+- **A gap off the 8px grid keeps its class.** `spacing={n}` is n × 8px. The stylesheets use
+  twenty-one distinct spacing values and most are off that grid; `spacing={1.25}` states a 10px
+  rhythm less clearly than `gap: 10px` does, and re-basing `theme.spacing` to fit them would
+  silently move all forty-one spacings already written as `sx`.
+- **A stylesheet earns its place** with `[data-*]` state, `@container` and `@media`, `:hover` and
+  `:focus-visible`, `::before`, `@keyframes`, `composes` and SVG paint: the rules that describe a
+  *relationship*, between states, between siblings, against the container, which a prop on one
+  element cannot state. Where a media query or a grid template already owns a box, its gap stays
+  with them: `HomePage.module.css` and `PageNav.module.css` are both that case.
+- **Move a rule, never copy it.** Deleting the declaration belongs in the same commit that adds the
+  prop. There is no half-way state that is correct: `spacing` on a `Stack` whose class still sets
+  `gap` doubles the space, and an `sx` added beside a live module rule does nothing at all.
+- **The instrument does not import MUI.** `Panel.tsx`, `knob/`, `switch/`, `wheel/`, `keyboard/` and
+  `OverloadLamp.tsx` take their geometry from `reference/measurements.md` in pixels and are driven
+  by six `data-*` vocabularies. None of the above reaches them.
+
+Nothing here is checked by the suite. Under Bun a `.module.css` import resolves to the file's path,
+so `styles.x` is `undefined` and no module rule has ever been in a test's CSSOM; `sx` is real, but
+no test asserts a gap. `bun run build` catches a `Stack` given a prop it does not have, and that is
+the whole of the automated cover. Say which pages were looked at instead.
+
 ## Gotchas that have already cost time
 
 - **SVG gradient and filter ids are document-global.** Shared `<defs>` once, not per knob.

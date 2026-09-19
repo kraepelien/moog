@@ -180,12 +180,6 @@
 
 /* The shelves */
 
-.block {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
 .blockTitle {
   margin: 0;
   font-size: 0.72rem;

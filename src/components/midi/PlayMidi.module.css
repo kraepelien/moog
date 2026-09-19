@@ -1,7 +1,3 @@
-.page {
-  gap: 16px;
-}
-
 .card {
   border-radius: 10px;
   overflow: hidden;
@@ -106,11 +102,6 @@
   .part .marks {
     display: none;
   }
-}
-
-.flags {
-  display: flex;
-  gap: 4px;
 }
 
 /* Square, close together and letter-sized, the way a desk's two buttons sit. */

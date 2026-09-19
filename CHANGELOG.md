@@ -3,6 +3,7 @@
 Everything that has landed on `main`, newest first. A pull request carries its link; a commit pushed
 straight to `main` has none to carry.
 
+- [Say where layout goes, and let a Stack's own spacing say it](https://github.com/kraepelien/moog/pull/117)
 - [Decline Google Translate, which rewrites the panel's legends out from under React](https://github.com/kraepelien/moog/pull/121)
 - [Take the new drawing as the master and rebake every icon from it, corner included](https://github.com/kraepelien/moog/pull/120)
 - [Call the app PatchMemory, move it to patchmemory.app, and let the guest list be the door](https://github.com/kraepelien/moog/pull/119)
