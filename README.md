@@ -797,6 +797,33 @@ Opening a row used to load the patch and adopt it *before* navigating, and `navi
 about an unsaved draft, so answering Cancel left the library showing with the draft already gone.
 `navigate` answers whether it went, and the editor button adopts only once it has.
 
+**Print is a button on the sheet**, and `src/print.css` is the whole of what it needs. That
+stylesheet is global rather than a module because almost everything printing does is to elements
+the sheet does not own: the nav, the preview banner, the file still playing, the bar's buttons, the
+panel checklist and a page's alerts all wear `data-print="off"` and go on one selector, which keeps
+what stays off the paper a list in one file instead of a rule per component. The patch's name is
+not one of them: on paper it is the sheet's title.
+
+The scale is the part a stylesheet cannot reach. `FitToWidth` writes the panel's scale as an
+*inline* transform measured against the window, and a `ResizeObserver` callback is delivered at the
+end of a frame, which is after `print()` has taken its snapshot. So the sheet printed at whatever
+the screen last produced: half again wider than the page from a 1680px window, two thirds of its
+width from a 900px one. The panel is therefore rescaled for the paper synchronously inside
+`beforeprint`, and by the `matchMedia('print')` change event, which is how Safari announces the
+same thing; `afterprint` puts the window's measurement back. `src/components/printSheet.ts` holds
+the page box, A4 landscape with 10mm margins, and `test/printSheet.test.ts` reads the `@page` rule
+off disk so that the stylesheet and the constants cannot drift apart. Paper is a value declared
+here, not geometry recovered from a scan.
+
+**The panel prints as it is drawn**, dark, with `print-color-adjust: exact` because Chrome drops
+background graphics by default and a panel of white ink on a dropped black field prints nothing at
+all. The manual's own sheets are line art on white, and matching them would mean re-pathing artwork
+that is lifted verbatim.
+
+A patch that carries notes runs to two sheets. The panel takes 533 of the 718 printable pixels down
+an A4 landscape page, the Notes box does not fit under it, and `break-inside: avoid` moves the box
+whole rather than cutting it in half. A patch with no notes is one sheet.
+
 ### The page nav
 
 `PageNav.tsx` is the only way to any page, and it is one nav in two placements: a rail down the left

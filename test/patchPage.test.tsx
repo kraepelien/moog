@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { AccessProvider } from '@access/AccessProvider.tsx'
+import { PageNav } from '@components/PageNav.tsx'
+import { PanelChecklist } from '@components/Panel.tsx'
 import { PatchPage } from '@components/patch/PatchPage.tsx'
 import type { LibraryEntry } from '@components/library/entry.ts'
+import { panelRegistry } from '@controls/panel.ts'
+import { ROUTES } from '@navigation/routes.ts'
 import { createPatch, type Patch } from '@patch/schema.ts'
 
 /* The sheet is the one page that shows a patch without being able to change it,
@@ -34,7 +39,7 @@ const ENTRY: LibraryEntry = {
 }
 
 function renderSheet(overrides: Partial<Parameters<typeof PatchPage>[0]> = {}) {
-  const counts = { opened: 0, browsed: 0 }
+  const counts = { opened: 0, browsed: 0, printed: 0 }
   /* The page is controlled by whatever holds `played`, so what it does with a
      control it leaves live is report it, not redraw itself. */
   const playedBack: { id: string; value: unknown }[] = []
@@ -46,10 +51,17 @@ function renderSheet(overrides: Partial<Parameters<typeof PatchPage>[0]> = {}) {
       onOpen={() => (counts.opened += 1)}
       onBrowse={() => (counts.browsed += 1)}
       onPlay={(id, value) => playedBack.push({ id, value })}
+      onPrint={() => (counts.printed += 1)}
       {...overrides}
     />,
   )
-  return { ...counts, playedBack, opened: () => counts.opened, browsed: () => counts.browsed }
+  return {
+    ...counts,
+    playedBack,
+    opened: () => counts.opened,
+    browsed: () => counts.browsed,
+    printed: () => counts.printed,
+  }
 }
 
 describe('the patch sheet', () => {
@@ -139,5 +151,55 @@ describe('an address with no patch behind it', () => {
   test('says nothing at all while it is still being fetched', () => {
     renderSheet({ patch: null, entry: null, loading: true })
     expect(screen.queryByText('No patch at this address')).toBeNull()
+  })
+})
+
+/* Printing is the sheet on paper, which is what the page was drawn from in the
+   first place. happy-dom renders no stylesheet, so what a print looks like is
+   not testable here; what is, is that the button asks exactly once and that the
+   parts of the app that are not the patch carry the attribute the print
+   stylesheet hides them by. */
+describe('printing the sheet', () => {
+  test('offers it beside the way into the editor', () => {
+    renderSheet()
+    expect(screen.getByRole('button', { name: 'Print' })).toBeTruthy()
+  })
+
+  test('asks the browser once, through whatever it was handed', () => {
+    const sheet = renderSheet()
+    fireEvent.click(screen.getByRole('button', { name: 'Print' }))
+    expect(sheet.printed()).toBe(1)
+  })
+
+  test('marks the bar’s buttons as no part of the sheet, and keeps the name', () => {
+    renderSheet()
+    const name = screen.getByText('Midnight Funk')
+    expect(name.closest('[data-print="off"]')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Print' }).closest('[data-print="off"]')).toBeTruthy()
+  })
+
+  /* The nav and the checklist are the two the print stylesheet reaches furthest
+     for, and neither has any other reason to carry the attribute: a section
+     added to either without one is a page of the app printed onto the sheet. */
+  test('leaves the navigation off the paper', () => {
+    const editor = ROUTES.find((route) => route.name === 'editor')!
+    render(
+      <AccessProvider privileges={[]}>
+        <PageNav
+          route={editor}
+          onNavigate={() => {}}
+          actions={[]}
+          placement="rail"
+          collapsed={false}
+          onCollapse={() => {}}
+        />
+      </AccessProvider>,
+    )
+    expect(screen.getByRole('navigation').getAttribute('data-print')).toBe('off')
+  })
+
+  test('and the panel checklist, which is a working view rather than a patch', () => {
+    const { container } = render(<PanelChecklist registry={panelRegistry} />)
+    expect(container.firstElementChild!.getAttribute('data-print')).toBe('off')
   })
 })

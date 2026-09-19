@@ -20,7 +20,7 @@ export function PreviewBanner({ skin, onReset }: { skin: Skin; onReset: () => vo
   if (changes.length === 0) return null
 
   return (
-    <Box className={styles.banner}>
+    <Box className={styles.banner} data-print="off">
       <Typography variant="body2" className={styles.said}>
         <strong>Previewing colours.</strong> Only this browser sees them, and they go when you
         close the tab.

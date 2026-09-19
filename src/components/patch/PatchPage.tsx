@@ -9,6 +9,7 @@ import { StarRating } from '@components/library/StarRating.tsx'
 import { PatchBar } from '@components/PatchBar.tsx'
 import { FitToWidth } from '@components/FitToWidth.tsx'
 import { Panel } from '@components/Panel.tsx'
+import { printableWidthPx } from '@components/printSheet.ts'
 import { bankOf, BANK_TONES, type LibraryEntry } from '@components/library/entry.ts'
 import { instrumentName } from '@instruments/instruments.ts'
 import { panelRegistry } from '@controls/panel.ts'
@@ -39,6 +40,11 @@ export function PatchPage({
   onBrowse,
   onPlay,
   onRate,
+  /* Taken as a parameter with a default, the way the keyboard takes its
+     instrument, so a test can count prints instead of opening a dialog it
+     cannot close. Wrapped rather than passed bare: `print` detached from the
+     window it belongs to throws when it is called. */
+  onPrint = () => window.print(),
 }: {
   patch: Patch | null
   loading: boolean
@@ -56,6 +62,7 @@ export function PatchPage({
   onBrowse: () => void
   onPlay?: (id: string, value: ControlValue) => void
   onRate?: (stars: number) => void
+  onPrint?: () => void
 }) {
   if (loading) return <Typography sx={{ p: 2 }}>Loading…</Typography>
 
@@ -64,7 +71,7 @@ export function PatchPage({
      an id exists. Saying more here would invent a distinction it withheld. */
   if (patch === null) {
     return (
-      <Alert severity="info" className={styles.absent}>
+      <Alert severity="info" className={styles.absent} data-print="off">
         <AlertTitle>No patch at this address</AlertTitle>
         <Typography component="p" sx={{ mb: 1.5 }}>
           It may have been deleted, or it may belong to somebody who has not published it.
@@ -83,7 +90,10 @@ export function PatchPage({
     <div className={styles.page}>
       <PatchBar
         title={{ text: patch.name, unsaved: false }}
-        buttons={[{ label: 'Open in the editor', tone: 'green', onSelect: onOpen }]}
+        buttons={[
+          { label: 'Open in the editor', tone: 'green', onSelect: onOpen },
+          { label: 'Print', tone: 'blue', onSelect: onPrint },
+        ]}
       />
 
       <div className={styles.fields}>
@@ -157,17 +167,21 @@ export function PatchPage({
           panel is what makes a link somebody was sent sound. `readOnly` has
           already swallowed every write to a control the patch records, so
           anything arriving here is one of the controls it does not. */}
-      <FitToWidth>
-        <Panel
-          registry={panelRegistry}
-          values={{ ...resolved.values, ...played }}
-          onChange={(id, next) => onPlay?.(id, next)}
-          readOnly
-        />
-      </FitToWidth>
+      <div data-print="panel">
+        <FitToWidth printWidth={printableWidthPx()}>
+          <Panel
+            registry={panelRegistry}
+            values={{ ...resolved.values, ...played }}
+            onChange={(id, next) => onPlay?.(id, next)}
+            readOnly
+          />
+        </FitToWidth>
+      </div>
 
       {/* Under the panel, which is where the manual's own sheets print theirs. */}
-      <PatchNotes notes={patch.notes} />
+      <div className={styles.notes} data-print="notes">
+        <PatchNotes notes={patch.notes} />
+      </div>
     </div>
   )
 }

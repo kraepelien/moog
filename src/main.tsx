@@ -13,6 +13,7 @@ import type { Skin } from './tones.ts'
 import './index.css'
 import './shellPalette.css'
 import './panelPalette.css'
+import './print.css'
 
 /* Before anything renders, so a link bookmarked while the routes lived in the
    fragment opens the page it names rather than the default one. */

@@ -13,6 +13,12 @@
   gap: 4px;
 }
 
+/* A patch with no notes draws none, and a wrapper left holding nothing would
+   still take the column's gap under the panel. */
+.notes:empty {
+  display: none;
+}
+
 .absent {
   max-width: 34rem;
 }
