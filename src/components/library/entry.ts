@@ -1,3 +1,4 @@
+import { instrumentName } from '@instruments/instruments.ts'
 import type { Visibility } from '@patch/schema.ts'
 import type { Tone } from '@/tones.ts'
 
@@ -80,17 +81,23 @@ export const NO_FILTERS: LibraryFilters = {
   publicOnly: false,
 }
 
+/* Name, categories and the synth's printed name, which is the whole of what the
+   box promises. Stars are deliberately not among them: a bare `4` also matches
+   every patch whose name carries a digit, and a `stars:` prefix would be a query
+   language for one field. The Order row is the answer to caring about ratings. */
+function matchesText(entry: LibraryEntry, text: string): boolean {
+  if (entry.name.toLowerCase().includes(text)) return true
+  if (entry.tags.some((tag) => tag.toLowerCase().includes(text))) return true
+  return instrumentName(entry.instrument).toLowerCase().includes(text)
+}
+
 /* An empty set of chips in a row means that row is not filtering, rather than
    that nothing matches it — otherwise opening the library would show nothing.
    Within a row the chips are an OR and the rows are an AND, which is what makes
    "bass or lead, on a Model D" sayable. */
 export function matchesFilters(entry: LibraryEntry, filters: LibraryFilters): boolean {
   const text = filters.text.trim().toLowerCase()
-  if (text !== '' && !entry.name.toLowerCase().includes(text)) {
-    /* A tag is worth searching by name too: typing "bass" should find what the
-       BASS chip finds, without making you notice the chip. */
-    if (!entry.tags.some((tag) => tag.toLowerCase().includes(text))) return false
-  }
+  if (text !== '' && !matchesText(entry, text)) return false
 
   if (filters.tags.length > 0 && !filters.tags.some((tag) => entry.tags.includes(tag))) {
     return false
@@ -131,4 +138,63 @@ export function withFilter(filters: LibraryFilters, pressed: RowFilter): Library
 
 export function toggled<T>(list: readonly T[], value: T): readonly T[] {
   return list.includes(value) ? list.filter((item) => item !== value) : [...list, value]
+}
+
+/* Every patch is scored as though it already carried PRIOR ratings at NEUTRAL,
+   and its real ratings are added to those. Three imagined middling ones is
+   enough that a single delighted rating cannot beat what a crowd settled high,
+   and few enough that a handful of real ones still moves a patch.
+
+   The imagined ratings sit at the middle of the scale rather than at the
+   library's own mean, which is the usual anchor: almost nothing here is rated
+   yet, so that mean is one or two patches' opinion of themselves, and anchoring
+   to it ties every unrated patch with the best-rated one.
+
+   It lives here rather than beside the home shelf that first wanted it, because
+   the shelf and the library's Order row both say "best" and must not be able to
+   mean two different things by it. */
+const PRIOR = 3
+const NEUTRAL = 3
+
+/* Unrated scores NEUTRAL exactly: unheard is an unknown, not a bad one, so it
+   sits above a patch somebody actively disliked and below one people liked. */
+export function scoreOf(entry: LibraryEntry): number {
+  if (entry.averageRating === null) return NEUTRAL
+  /* An average exists, so at least one rating does. The two arrive from
+     separate subqueries, and a count that went missing would otherwise flatten
+     a genuinely rated patch onto NEUTRAL. */
+  const count = Math.max(entry.ratingCount, 1)
+  return (count * entry.averageRating + PRIOR * NEUTRAL) / (count + PRIOR)
+}
+
+/* Each order carries the one direction anybody wants of it, rather than a
+   second control for ascending against descending that nothing here asked for. */
+export const SORTS = ['name', 'rating', 'updated'] as const
+export type LibrarySort = (typeof SORTS)[number]
+export const DEFAULT_SORT: LibrarySort = 'name'
+
+/* Name is the order the rows already arrive in, `order by p.name collate nocase`
+   from the server, so it re-sorts nothing: doing it again here would only
+   disagree with that base order over case and accents. The other two break ties
+   the way the home shelf breaks its own, on recency and then name, so a library
+   nobody has rated is at least the same list on every load. */
+export function sortedBy(
+  entries: readonly LibraryEntry[],
+  sort: LibrarySort,
+): readonly LibraryEntry[] {
+  switch (sort) {
+    case 'name':
+      return entries
+    case 'rating':
+      return [...entries].sort(
+        (a, b) =>
+          scoreOf(b) - scoreOf(a) ||
+          b.updatedAt.localeCompare(a.updatedAt) ||
+          a.name.localeCompare(b.name),
+      )
+    case 'updated':
+      return [...entries].sort(
+        (a, b) => b.updatedAt.localeCompare(a.updatedAt) || a.name.localeCompare(b.name),
+      )
+  }
 }

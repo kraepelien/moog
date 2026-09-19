@@ -107,7 +107,7 @@ describe('a category an administrator gave a colour', () => {
 describe('finding a patch', () => {
   test('typing narrows the list to matching names', () => {
     renderLibrary()
-    fireEvent.change(screen.getByLabelText('Search for names, categories, synths or stars'), {
+    fireEvent.change(screen.getByLabelText('Search names, categories or synths'), {
       target: { value: 'sub' },
     })
     expect(rowNames()).toEqual(['Sub Bass'])
@@ -117,10 +117,24 @@ describe('finding a patch', () => {
      or the placeholder is a lie. */
   test('typing matches a tag the name does not carry', () => {
     renderLibrary([entry({ id: 'x', name: 'Destitution', tags: ['percussion'] })])
-    fireEvent.change(screen.getByLabelText('Search for names, categories, synths or stars'), {
+    fireEvent.change(screen.getByLabelText('Search names, categories or synths'), {
       target: { value: 'percuss' },
     })
     expect(rowNames()).toEqual(['Destitution'])
+  })
+
+  /* The box promised synths long before it tested one. The second entry's synth
+     is unknown to this build, so `instrumentName` hands back the id and that is
+     what has to answer. */
+  test('typing a synth narrows the list to patches made on it', () => {
+    renderLibrary([
+      entry({ id: 'a', name: 'Aleph' }),
+      entry({ id: 'b', name: 'Beth', instrument: 'prophet-5' }),
+    ])
+    fireEvent.change(screen.getByLabelText('Search names, categories or synths'), {
+      target: { value: 'minimoog' },
+    })
+    expect(rowNames()).toEqual(['Aleph'])
   })
 
   test('switching a category chip on keeps only patches wearing it', () => {
@@ -175,7 +189,7 @@ describe('finding a patch', () => {
 
   test('a search matching nothing says so rather than showing an empty card', () => {
     renderLibrary()
-    fireEvent.change(screen.getByLabelText('Search for names, categories, synths or stars'), {
+    fireEvent.change(screen.getByLabelText('Search names, categories or synths'), {
       target: { value: 'nothing here' },
     })
     expect(rowNames()).toEqual([])
@@ -255,5 +269,84 @@ describe('paging', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'bass' }))
     expect(rowNames()).toEqual(['Odd One'])
+  })
+})
+
+describe('ordering', () => {
+  const RATED: readonly LibraryEntry[] = [
+    entry({ id: 'crowd', name: 'Crowd', averageRating: 4.5, ratingCount: 40 }),
+    entry({ id: 'top', name: 'Top', averageRating: 5, ratingCount: 20 }),
+    entry({ id: 'unheard', name: 'Unheard' }),
+    entry({ id: 'panned', name: 'Panned', averageRating: 1, ratingCount: 4 }),
+  ]
+
+  const STAMPED: readonly LibraryEntry[] = [
+    entry({ id: 'middle', name: 'Middle', updatedAt: '2026-02-01T00:00:00.000Z' }),
+    entry({ id: 'oldest', name: 'Oldest', updatedAt: '2025-06-01T00:00:00.000Z' }),
+    entry({ id: 'newest', name: 'Newest', updatedAt: '2026-08-01T00:00:00.000Z' }),
+  ]
+
+  test('starts on the order the rows arrived in', () => {
+    renderLibrary()
+    expect(rowNames()).toEqual(['Sub Bass', 'Fuzz Lead', 'My Patch', 'Borrowed Pad'])
+  })
+
+  /* Unheard between the 1 and the 5 is the neutral prior doing its work: an
+     unrated patch is an unknown rather than a bad one. */
+  test('Rating puts the best first and an unrated patch mid-list', () => {
+    renderLibrary(RATED)
+    fireEvent.click(screen.getByRole('button', { name: 'Rating' }))
+    expect(rowNames()).toEqual(['Top', 'Crowd', 'Unheard', 'Panned'])
+  })
+
+  test('Updated puts the newest first', () => {
+    renderLibrary(STAMPED)
+    fireEvent.click(screen.getByRole('button', { name: 'Updated' }))
+    expect(rowNames()).toEqual(['Newest', 'Middle', 'Oldest'])
+  })
+
+  test('Name puts them back the way they came', () => {
+    renderLibrary(STAMPED)
+    fireEvent.click(screen.getByRole('button', { name: 'Updated' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Name' }))
+    expect(rowNames()).toEqual(['Middle', 'Oldest', 'Newest'])
+  })
+
+  /* The bug a naive implementation hides: sorting what a page already holds
+     reorders a hundred rows against each other and leaves the newest patch in
+     the bank stranded on page two. The newest here is the last one built, so it
+     is off the first page until the whole list is ordered. */
+  test('orders the library rather than the page it is showing', () => {
+    const many = Array.from({ length: PER_PAGE + 5 }, (_, index) =>
+      entry({
+        id: `patch-${index}`,
+        name: `Patch ${index}`,
+        updatedAt: new Date(Date.UTC(2026, 0, 1) + index * 60_000).toISOString(),
+      }),
+    )
+    renderLibrary(many)
+    fireEvent.click(screen.getByRole('button', { name: 'Updated' }))
+    expect(rowNames()[0]).toBe(`Patch ${PER_PAGE + 4}`)
+  })
+
+  test('a fresh order goes back to the first page', () => {
+    const many = Array.from({ length: PER_PAGE + 5 }, (_, index) =>
+      entry({ id: `patch-${index}`, name: `Patch ${index}` }),
+    )
+    renderLibrary(many)
+    fireEvent.click(screen.getByRole('button', { name: 'Go to page 2' }))
+    expect(screen.getByRole('button', { name: 'page 2' })).toBeDefined()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Rating' }))
+    expect(screen.getByRole('button', { name: 'page 1' })).toBeDefined()
+  })
+
+  /* One chip on at a time, and the one that is on is inert: there is no off for
+     it to fall to, so a second press must not clear the order or move the page. */
+  test('pressing the order already chosen does nothing', () => {
+    renderLibrary(STAMPED)
+    fireEvent.click(screen.getByRole('button', { name: 'Updated' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Updated' }))
+    expect(rowNames()).toEqual(['Newest', 'Middle', 'Oldest'])
   })
 })
