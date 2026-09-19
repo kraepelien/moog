@@ -19,7 +19,7 @@ mkdir -p /volume1/docker/moog/data
 chown -R 1027:65536 /volume1/docker/moog/data
 ```
 
-And the route, copied from `deploy/traefik-moog.yml`:
+And the route, copied from `traefik-patchmemory.yml`:
 
 - `traefik/dynamic/moog.yml`
 

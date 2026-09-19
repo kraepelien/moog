@@ -7,10 +7,10 @@
 http:
   routers:
     moog:
-      rule: "Host(`moog.pomello.se`)"
+      rule: "Host(`patchmemory.app`)"
       entryPoints:
         - websecure
-      service: moog
+      service: patchmemory
 
   services:
     moog:
