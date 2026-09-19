@@ -702,7 +702,7 @@ function Workspace({
              writing that default into the file turns an honest omission into a
              stored setting. */
           downloadJson(
-            `${slugify(draft.name) || 'patch'}.moogpatch.json`,
+            `${slugify(draft.name) || 'patch'}.patchmemory.json`,
             serializeBundle(createBundle([draft])),
           )
         }),
@@ -724,7 +724,7 @@ function Workspace({
         void run(async () => {
           const all = await Promise.all(saved.map((summary) => store.get(summary.id)))
           const present = all.filter((patch): patch is Patch => patch !== null)
-          downloadJson('all-patches.moogpatch.json', serializeBundle(createBundle(present)))
+          downloadJson('all-patches.patchmemory.json', serializeBundle(createBundle(present)))
         }),
     },
     {

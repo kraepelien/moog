@@ -5,7 +5,7 @@
    standalone server must behave identically, and `subtle.verify` compares in
    constant time. */
 
-export const SESSION_COOKIE = 'moog_session'
+export const SESSION_COOKIE = 'pm_session'
 const LOCAL_USER = 'local'
 
 export interface AuthConfig {

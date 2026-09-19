@@ -15,9 +15,9 @@ const roots: string[] = []
 const SECRET = 'limits-secret'
 
 async function world(over: Partial<Limits> = {}) {
-  const root = mkdtempSync(join(tmpdir(), 'moog-limits-'))
+  const root = mkdtempSync(join(tmpdir(), 'patchmemory-limits-'))
   roots.push(root)
-  const db = openDatabase(join(root, 'moog.db'))
+  const db = openDatabase(join(root, 'patchmemory.db'))
   syncInstruments(db)
 
   const config = {

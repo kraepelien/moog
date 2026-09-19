@@ -49,7 +49,7 @@ a conflict that is not ours to settle are each a reason to stop, never a reason 
 `CHANGELOG.md` lists every pull request merged into `main`, newest first, one line each:
 
 ```markdown
-- [Home on the mark, and a tag's picker on the colour it is wearing](https://github.com/kraepelien/moog/pull/76)
+- [Home on the mark, and a tag's picker on the colour it is wearing](https://github.com/kraepelien/patchmemory/pull/76)
 ```
 
 A commit pushed straight to `main` may take a line too, without the link — there is no pull request
@@ -148,7 +148,7 @@ remapping every saved patch.
 
   The cost is paid by whoever is already running one: a database made before the edit keeps whatever
   the old step gave it, because its version is unchanged and nothing re-runs. Deleting
-  `data/moog.db*` is how it catches up, and on the NAS that means a redeploy with the volume
+  `data/patchmemory.db*` is how it catches up, and on the NAS that means a redeploy with the volume
   cleared. Say so in the pull request every time.
 
   This changes the day something real is running against a database somebody cares about. From then

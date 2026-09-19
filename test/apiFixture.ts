@@ -22,8 +22,8 @@ export interface TestApi {
 }
 
 export function testApi(): TestApi {
-  const root = mkdtempSync(join(tmpdir(), 'moog-test-'))
-  const db = openDatabase(join(root, 'moog.db'))
+  const root = mkdtempSync(join(tmpdir(), 'patchmemory-test-'))
+  const db = openDatabase(join(root, 'patchmemory.db'))
   syncInstruments(db)
   /* Config and limits from an empty environment, never from process.env: Bun
      loads .env before the suite runs, so a developer with real OAuth credentials

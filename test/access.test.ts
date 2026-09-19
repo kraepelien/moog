@@ -17,9 +17,9 @@ const roots: string[] = []
 const SECRET = 'access-secret'
 
 async function world(admins: readonly string[] = ['boss@example.com']) {
-  const root = mkdtempSync(join(tmpdir(), 'moog-access-'))
+  const root = mkdtempSync(join(tmpdir(), 'patchmemory-access-'))
   roots.push(root)
-  const db = openDatabase(join(root, 'moog.db'))
+  const db = openDatabase(join(root, 'patchmemory.db'))
   syncInstruments(db)
   seedTags(db)
 
@@ -180,9 +180,9 @@ describe('with sign-in off', () => {
      the same place the list does, rather than by storing a role against the one
      user that exists. */
   test('the local user is an admin because the mode makes one, not because a row says so', async () => {
-    const root = mkdtempSync(join(tmpdir(), 'moog-access-off-'))
+    const root = mkdtempSync(join(tmpdir(), 'patchmemory-access-off-'))
     roots.push(root)
-    const db = openDatabase(join(root, 'moog.db'))
+    const db = openDatabase(join(root, 'patchmemory.db'))
     syncInstruments(db)
 
     const config = authConfigFromEnv({})

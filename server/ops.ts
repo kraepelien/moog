@@ -117,7 +117,7 @@ export function runMaintenance(deps: Housekeeping): void {
 
   /* A dated copy, because a plain file copy of a database in WAL mode can catch
      it mid-write and the backup on the NAS is a file copy. */
-  const path = join(deps.root, 'backups', `moog-${at.slice(0, 10)}.db`)
+  const path = join(deps.root, 'backups', `patchmemory-${at.slice(0, 10)}.db`)
   try {
     ;(deps.backup ?? backupTo)(deps.db, path)
     deps.ops.recordBackup({ at, path, ok: true, error: null })

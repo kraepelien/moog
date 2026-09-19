@@ -6,7 +6,7 @@ writing the same data folder is the one thing worth avoiding.
 
 ## On the NAS, once
 
-Create `/volume1/docker/moog/` and put three things in it:
+Create `/volume1/docker/patchmemory/` and put three things in it:
 
 - `docker-compose.yml` — copied from the repo root
 - `deploy.sh` — copied from `deploy/`
@@ -15,13 +15,13 @@ Create `/volume1/docker/moog/` and put three things in it:
 Then the data folder, owned by the account the container runs as:
 
 ```sh
-mkdir -p /volume1/docker/moog/data
-chown -R 1027:65536 /volume1/docker/moog/data
+mkdir -p /volume1/docker/patchmemory/data
+chown -R 1027:65536 /volume1/docker/patchmemory/data
 ```
 
-And the route, copied from `traefik-patchmemory.yml`:
+And the route, copied from `deploy/traefik-patchmemory.yml`:
 
-- `traefik/dynamic/moog.yml`
+- `traefik/dynamic/patchmemory.yml`
 
 Traefik reads its file provider here rather than from container labels, so the
 route is a file next to `pomello.yml` and this container joins no shared network.
@@ -32,23 +32,32 @@ and the route points at nothing.
 ## `.env`
 
 ```sh
-PM_IMAGE=ghcr.io/kraepelien/moog:latest   # rewritten by deploy.sh each deploy
-PM_PORT=10072                             # must match traefik/dynamic/moog.yml
-PM_DATA_DIR=/volume1/docker/moog/data
-PM_UID=1027                               # the `docker` account
-PM_GID=65536                              # the `docker` group
+PM_IMAGE=ghcr.io/kraepelien/patchmemory:latest  # rewritten by deploy.sh each deploy
+PM_PORT=10072                                   # must match the Traefik route
+PM_DATA_DIR=/volume1/docker/patchmemory/data
+PM_UID=1027                                     # the `docker` account
+PM_GID=65536                                    # the `docker` group
 
 # Sign-in. Leave PM_OAUTH_CLIENT_ID empty and the app runs as one local user
 # with nothing gated, which is how it ran before there were accounts.
 PM_OAUTH_CLIENT_ID=
 PM_OAUTH_CLIENT_SECRET=
-PM_SESSION_SECRET=                        # any long random string
-PM_PUBLIC_ORIGIN=https://moog.pomello.se
-PM_ADMINS=you@example.com                 # comma-separated
+PM_SESSION_SECRET=                              # any long random string
+PM_PUBLIC_ORIGIN=https://patchmemory.app
+PM_ADMINS=you@example.com                       # comma-separated; the guest list
 ```
 
-Anyone with a Google account can sign in and save, so the server keeps five
-caps with defaults nobody honest meets: `PM_MAX_PATCHES` (2000 each),
+Every key is read by its exact name, from a file that lives on this machine and
+in no repository. A key spelled any other way is not an error and nothing warns
+about it: `MOOG_ADMINS` here is a container that comes up with an empty guest
+list and admits nobody. The startup line says which it got.
+
+Only the addresses in `PM_ADMINS` can sign in: a Google account that is not
+listed is turned away at the callback and no row is written for it. The five
+caps below were written for open registration and stay as they are — they cost
+nothing against a guest list, and they are what is already there the day the
+list comes off. Their defaults are what nobody honest meets:
+`PM_MAX_PATCHES` (2000 each),
 `PM_MAX_PATCH_BYTES` (65536, against a real patch of about 200),
 `PM_TRASH_DAYS` (30 before a deleted patch is purged on the daily timer),
 `PM_WRITES_PER_MINUTE` (120 per person) and `PM_SIGN_INS_PER_MINUTE` (10 per
@@ -58,8 +67,8 @@ answers 413, and over a rate 429.
 Compose hands this whole file to the container as its `env_file`, so a setting
 the server grows later belongs here and nowhere else; `docker-compose.yml` names
 only what compose itself reads. The one exception is a key the image already
-sets: `PORT`, `PM_DATA`, `PM_BANK` and `PM_DIST` are container paths,
-and writing one of them here overrides the image and breaks the container.
+sets: `PORT`, `PM_DATA`, `PM_BANK` and `PM_DIST` are container paths, and
+writing one of them here overrides the image and breaks the container.
 
 `deploy.sh` only rewrites the `PM_IMAGE` line, so everything added here by
 hand survives a deploy. None of it is in the repo, the image or CI.
@@ -70,12 +79,14 @@ In Google Cloud Console: APIs & Services → Credentials → **OAuth client ID**
 Web application, with two redirect URIs:
 
 ```
-https://moog.pomello.se/api/auth/google/callback
+https://patchmemory.app/api/auth/google/callback
 http://localhost:5173/api/auth/google/callback
 ```
 
-Publish the consent screen rather than leaving it in testing, or only the
-accounts listed in the console can sign in — an allowlist by accident.
+Publishing the consent screen rather than leaving it in testing matters less
+than it did, since `PM_ADMINS` is an allowlist on purpose now — but leave it
+published anyway, so a refusal comes from this app with a message rather than
+from Google with a screen nobody can act on.
 
 `PM_SESSION_SECRET` can be anything long and random:
 
@@ -121,7 +132,7 @@ netstat -tlnp 2>/dev/null | grep 1007
 ```
 
 If it is taken, change `PM_PORT` in `.env` and the url in
-`traefik/dynamic/moog.yml` together.
+`traefik/dynamic/patchmemory.yml` together.
 
 ## First deploy
 

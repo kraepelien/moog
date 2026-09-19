@@ -64,7 +64,7 @@ describe('keeping the menu on top', () => {
      there arrived from a console as easily as from the setting. */
   test('reads anything else as following the window', () => {
     const { storage, held } = fakeStorage()
-    held.set('moog:nav-top', 'yes please')
+    held.set('pm:nav-top', 'yes please')
     expect(createDeviceNav(storage).read()).toBe('window')
   })
 })

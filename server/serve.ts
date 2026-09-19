@@ -23,7 +23,7 @@ const seed = process.env.PM_BANK ?? 'bank'
 const dist = process.env.PM_DIST ?? 'dist'
 const port = Number(process.env.PORT ?? 5174)
 
-const databasePath = join(root, 'moog.db')
+const databasePath = join(root, 'patchmemory.db')
 const db = openDatabase(databasePath)
 const ops = createOpsLog({ databasePath })
 const factory = loadFactory(db, seed)
@@ -72,4 +72,4 @@ Bun.serve({
    relative and collided as `.//data` against the container's own PM_DATA. An
    absolute path also says *which* checkout this is, the same reason the port is
    worth quoting when two worktrees are running. */
-console.log(`PatchDB on http://localhost:${port}  (data in ${resolve(root)})`)
+console.log(`PatchMemory on http://localhost:${port}  (data in ${resolve(root)})`)

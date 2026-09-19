@@ -5,8 +5,8 @@
 
      public/icon.svg and public/logo.svg are copies of this file, made by
      tools/make-icons.ts, and every PNG in public/ is baked from it.
-     public/patchdb.svg stands it over the wordmark. icon-maskable.svg beside it
-     is the only drawing that departs from it.
+     public/patchmemory.svg stands it over the wordmark. icon-maskable.svg
+     beside it is the only drawing that departs from it.
 
      The tile goes with it everywhere, a page as much as a launcher: it is what
      the gaps between the keys are drawn against, and a mark that borrowed a
