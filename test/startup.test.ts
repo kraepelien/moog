@@ -20,9 +20,9 @@ describe('what the line says', () => {
     const config = authConfigFromEnv({
       PM_OAUTH_CLIENT_ID: 'client',
       PM_SESSION_SECRET: 'secret',
-      PM_PUBLIC_ORIGIN: 'https://moog.example',
+      PM_PUBLIC_ORIGIN: 'https://patchmemory.example',
     })
-    expect(describeAuth(config)).toContain('returns to https://moog.example')
+    expect(describeAuth(config)).toContain('returns to https://patchmemory.example')
   })
 
   /* A request from loopback answers as itself whatever this says, so a line
@@ -31,10 +31,11 @@ describe('what the line says', () => {
     const config = authConfigFromEnv({
       PM_OAUTH_CLIENT_ID: 'client',
       PM_SESSION_SECRET: 'secret',
-      PM_PUBLIC_ORIGIN: 'https://moog.example',
+      PM_PUBLIC_ORIGIN: 'https://patchmemory.example',
     })
     expect(describeAuth(config)).toBe(
-      'Google → returns to https://moog.example, or to this machine when signed in from localhost',
+      'Google, nobody admitted — PM_ADMINS is empty → returns to ' +
+        'https://patchmemory.example, or to this machine when signed in from localhost',
     )
   })
 
@@ -44,7 +45,9 @@ describe('what the line says', () => {
       PM_OAUTH_CLIENT_ID: 'client',
       PM_SESSION_SECRET: 'secret',
     })
-    expect(describeAuth(config)).toBe('Google → returns to the origin each request arrives on')
+    expect(describeAuth(config)).toBe(
+      'Google, nobody admitted — PM_ADMINS is empty → returns to the origin each request arrives on',
+    )
   })
 
   /* The one that sent a local sign-in to production: browsing localhost while
@@ -53,11 +56,11 @@ describe('what the line says', () => {
     const config = authConfigFromEnv({
       PM_OAUTH_CLIENT_ID: 'client',
       PM_SESSION_SECRET: 'secret',
-      PM_PUBLIC_ORIGIN: 'https://moog.pomello.se',
+      PM_PUBLIC_ORIGIN: 'https://patchmemory.app',
       PM_ADMINS: 'a@example.com,b@example.com',
     })
     expect(describeAuth(config)).toStartWith(
-      'Google, 2 admin(s) → returns to https://moog.pomello.se',
+      'Google, 2 address(es) admitted → returns to https://patchmemory.app',
     )
   })
 

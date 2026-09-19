@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Copied to the NAS as /volume1/docker/patchmemory/deploy.sh and called by the workflow
-# with the image tag to run:
+# Copied to the NAS as /volume1/docker/patchmemory/deploy.sh and called by the
+# workflow with the image tag to run:
 #
 #   bash /volume1/docker/patchmemory/deploy.sh ghcr.io/kraepelien/patchmemory:abc1234
 #

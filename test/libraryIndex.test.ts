@@ -16,9 +16,9 @@ import { createPatch, type Patch, type Visibility } from '@patch/schema.ts'
 const roots: string[] = []
 
 function library() {
-  const root = mkdtempSync(join(tmpdir(), 'moog-library-'))
+  const root = mkdtempSync(join(tmpdir(), 'patchmemory-library-'))
   roots.push(root)
-  const db = openDatabase(join(root, 'moog.db'))
+  const db = openDatabase(join(root, 'patchmemory.db'))
   syncInstruments(db)
   const store = createRepositories(db)
 

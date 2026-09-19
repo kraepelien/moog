@@ -18,9 +18,9 @@ const roots: string[] = []
 const SECRET = 'permissions-secret'
 
 async function world() {
-  const root = mkdtempSync(join(tmpdir(), 'moog-perms-'))
+  const root = mkdtempSync(join(tmpdir(), 'patchmemory-perms-'))
   roots.push(root)
-  const db = openDatabase(join(root, 'moog.db'))
+  const db = openDatabase(join(root, 'patchmemory.db'))
   syncInstruments(db)
   const store = createRepositories(db)
 

@@ -67,7 +67,7 @@ describe('the cookie carrying it', () => {
   })
 
   test('is HttpOnly, SameSite=Lax, and never scoped to a domain', async () => {
-    const cookie = await sessionCookie('u', config(), new Request('https://moog.example/'), NOW)
+    const cookie = await sessionCookie('u', config(), new Request('https://patchmemory.example/'), NOW)
     expect(cookie).toContain('HttpOnly')
     expect(cookie).toContain('SameSite=Lax')
     expect(cookie).toContain('Path=/')
@@ -75,13 +75,13 @@ describe('the cookie carrying it', () => {
   })
 
   test('clearing it expires it with the same attributes', () => {
-    const cleared = clearedSessionCookie(new Request('https://moog.example/'))
+    const cleared = clearedSessionCookie(new Request('https://patchmemory.example/'))
     expect(cleared).toContain('Max-Age=0')
     expect(cleared).toContain('HttpOnly')
   })
 
   test('is found among others', () => {
-    const request = new Request('https://moog.example/', {
+    const request = new Request('https://patchmemory.example/', {
       headers: { cookie: `other=1; ${SESSION_COOKIE}=abc.def; third=2` },
     })
     expect(readCookie(request, SESSION_COOKIE)).toBe('abc.def')
@@ -93,7 +93,7 @@ describe('an https request', () => {
   test('is one Traefik says is, or one that plainly is', () => {
     const forwarded = new Request('http://nas/', { headers: { 'x-forwarded-proto': 'https' } })
     expect(isSecureRequest(forwarded)).toBe(true)
-    expect(isSecureRequest(new Request('https://moog.example/'))).toBe(true)
+    expect(isSecureRequest(new Request('https://patchmemory.example/'))).toBe(true)
     expect(isSecureRequest(new Request('http://nas/'))).toBe(false)
   })
 

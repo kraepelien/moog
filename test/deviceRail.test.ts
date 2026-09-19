@@ -65,7 +65,7 @@ describe('keeping the rail folded', () => {
      in there arrived from a console as easily as from the arrow. */
   test('reads anything else as unfolded', () => {
     const { storage, held } = fakeStorage()
-    held.set('moog:rail-collapsed', 'yes please')
+    held.set('pm:rail-collapsed', 'yes please')
     expect(createDeviceRail(storage).read()).toBe(false)
   })
 })

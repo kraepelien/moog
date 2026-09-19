@@ -21,9 +21,9 @@ import { createPatch } from '@patch/schema.ts'
 const roots: string[] = []
 
 function world(env: Record<string, string> = {}) {
-  const root = mkdtempSync(join(tmpdir(), 'moog-ops-'))
+  const root = mkdtempSync(join(tmpdir(), 'patchmemory-ops-'))
   roots.push(root)
-  const databasePath = join(root, 'moog.db')
+  const databasePath = join(root, 'patchmemory.db')
   const db = openDatabase(databasePath)
   syncInstruments(db)
   const limits = limitsFromEnv(env)

@@ -24,9 +24,9 @@ afterEach(() => {
 })
 
 async function world() {
-  const root = mkdtempSync(join(tmpdir(), 'moog-arr-'))
+  const root = mkdtempSync(join(tmpdir(), 'patchmemory-arr-'))
   roots.push(root)
-  const db = openDatabase(join(root, 'moog.db'))
+  const db = openDatabase(join(root, 'patchmemory.db'))
   syncInstruments(db)
 
   const config = {

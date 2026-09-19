@@ -20,9 +20,9 @@ const roots: string[] = []
 const SECRET = 'test-secret'
 
 function server(mode: 'off' | 'oauth' = 'off') {
-  const root = mkdtempSync(join(tmpdir(), 'moog-viewer-'))
+  const root = mkdtempSync(join(tmpdir(), 'patchmemory-viewer-'))
   roots.push(root)
-  const db = openDatabase(join(root, 'moog.db'))
+  const db = openDatabase(join(root, 'patchmemory.db'))
   syncInstruments(db)
 
   const config = { ...authConfigFromEnv({ PM_SESSION_SECRET: SECRET }), mode, secret: SECRET }

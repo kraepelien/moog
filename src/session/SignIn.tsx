@@ -15,6 +15,7 @@ const TROUBLE: Record<string, string> = {
   state: 'That sign-in did not match the one that started. Try again.',
   refused: 'Google did not grant access.',
   exchange: 'Google would not confirm who that was. Try again.',
+  denied: 'That account is not on the list for this install. Ask to be added.',
 }
 
 export function SignIn({ returnTo = '/', error }: { returnTo?: string; error?: string | null }) {
@@ -27,7 +28,7 @@ export function SignIn({ returnTo = '/', error }: { returnTo?: string; error?: s
         href={signInHref(returnTo)}
         aria-label="Sign in with Google"
       >
-        <img src="/patchdb.svg" alt="PatchDB" width="174" height="156" className={styles.logo} />
+        <img src="/patchmemory.svg" alt="PatchMemory" width="174" height="156" className={styles.logo} />
       </ButtonBase>
       <Typography className={styles.hint} component="p">
         Sign in with Google

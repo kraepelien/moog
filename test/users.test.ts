@@ -28,9 +28,9 @@ afterEach(() => {
    be given here. `u-boss` is one in every case, since somebody has to be able
    to reach the page at all. */
 async function world(admins: readonly string[] = ['u-boss']) {
-  const root = mkdtempSync(join(tmpdir(), 'moog-users-'))
+  const root = mkdtempSync(join(tmpdir(), 'patchmemory-users-'))
   roots.push(root)
-  const db = openDatabase(join(root, 'moog.db'))
+  const db = openDatabase(join(root, 'patchmemory.db'))
   syncInstruments(db)
 
   const config = {

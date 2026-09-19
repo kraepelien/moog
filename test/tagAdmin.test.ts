@@ -20,9 +20,9 @@ const roots: string[] = []
 const SECRET = 'tags-secret'
 
 async function world() {
-  const root = mkdtempSync(join(tmpdir(), 'moog-tags-'))
+  const root = mkdtempSync(join(tmpdir(), 'patchmemory-tags-'))
   roots.push(root)
-  const db = openDatabase(join(root, 'moog.db'))
+  const db = openDatabase(join(root, 'patchmemory.db'))
   syncInstruments(db)
   seedTags(db, ['Bass', 'Lead'])
 

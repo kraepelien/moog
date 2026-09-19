@@ -11,7 +11,14 @@ export function describeAuth(config: AuthConfig): string {
   if (config.mode === 'off') {
     return 'off — everything belongs to the local user (PM_OAUTH_CLIENT_ID is unset)'
   }
-  const admins = config.admins.length > 0 ? `, ${config.admins.length} admin(s)` : ''
+  /* PM_ADMINS is the guest list and not only the list of administrators, so an
+     empty one signs nobody in. Said here because an install refusing everybody
+     looks entirely healthy from outside: the page loads, Google answers, and
+     every account lands back on the sign-in screen. */
+  const admins =
+    config.admins.length > 0
+      ? `, ${config.admins.length} address(es) admitted`
+      : ', nobody admitted — PM_ADMINS is empty'
   /* Where a sign-in comes back to, stated rather than warned about: it is right
      for a deployment to differ from the origin being served and wrong for a
      development machine, and only the person reading knows which this is.

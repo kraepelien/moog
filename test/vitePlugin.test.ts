@@ -21,7 +21,7 @@ function nodeRequest(
   return Object.assign(stream, {
     url: options.url ?? '/',
     method: options.method ?? 'GET',
-    headers: { host: 'moog.pomello.se', ...options.headers },
+    headers: { host: 'patchmemory.app', ...options.headers },
     socket: { encrypted: options.encrypted ?? false },
   }) as unknown as IncomingMessage
 }
@@ -53,8 +53,8 @@ describe('a request crossing the bridge', () => {
   })
 
   test('carries its cookies', () => {
-    const request = toRequest(nodeRequest({ headers: { cookie: 'moog_session=abc; other=1' } }))
-    expect(request.headers.get('cookie')).toBe('moog_session=abc; other=1')
+    const request = toRequest(nodeRequest({ headers: { cookie: 'pm_session=abc; other=1' } }))
+    expect(request.headers.get('cookie')).toBe('pm_session=abc; other=1')
   })
 
   test('keeps a header that was sent more than once', () => {
@@ -79,8 +79,8 @@ describe('a response crossing back', () => {
     /* `Headers.forEach` joins these with a comma and loses all but the first. */
     const response = new Response('{}', {
       headers: [
-        ['set-cookie', 'moog_oauth=; Max-Age=0'],
-        ['set-cookie', 'moog_session=abc; HttpOnly'],
+        ['set-cookie', 'pm_oauth=; Max-Age=0'],
+        ['set-cookie', 'pm_session=abc; HttpOnly'],
         ['content-type', 'application/json'],
       ],
     })
@@ -88,7 +88,7 @@ describe('a response crossing back', () => {
     const { res, headers } = nodeResponse()
     await send(res, response)
 
-    expect(headers.get('set-cookie')).toEqual(['moog_oauth=; Max-Age=0', 'moog_session=abc; HttpOnly'])
+    expect(headers.get('set-cookie')).toEqual(['pm_oauth=; Max-Age=0', 'pm_session=abc; HttpOnly'])
     expect(headers.get('content-type')).toBe('application/json')
   })
 

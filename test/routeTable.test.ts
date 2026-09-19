@@ -19,9 +19,9 @@ afterEach(() => {
 })
 
 function server() {
-  const root = mkdtempSync(join(tmpdir(), 'moog-table-'))
+  const root = mkdtempSync(join(tmpdir(), 'patchmemory-table-'))
   roots.push(root)
-  const db = openDatabase(join(root, 'moog.db'))
+  const db = openDatabase(join(root, 'patchmemory.db'))
   syncInstruments(db)
   seedTags(db)
 

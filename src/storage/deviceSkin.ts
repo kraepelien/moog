@@ -13,7 +13,7 @@ import { cleanSkin, type Skin } from '@/tones.ts'
  * driven by a fake instead of only in a browser.
  */
 
-const KEY = 'moog:skin'
+const KEY = 'pm:skin'
 
 export interface StorageLike {
   getItem(key: string): string | null

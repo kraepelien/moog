@@ -4,15 +4,15 @@
 #   docker compose pull && docker compose up -d
 #
 # Traefik is not configured from here. It reads the file provider, so the route
-# lives in traefik/dynamic/patchmemory.yml and points at this published port — there are
-# no labels, and no shared network to join.
+# lives in traefik/dynamic/patchmemory.yml and points at this published port —
+# there are no labels, and no shared network to join.
 #
 # No red/green: two containers writing one database is the thing worth avoiding.
 # A session survives a restart — it is a signed cookie, not server state — so
 # the seconds between containers cost nobody their sign-in.
 
 services:
-  moog:
+  patchmemory:
     image: ${PM_IMAGE:-ghcr.io/kraepelien/patchmemory:latest}
     container_name: patchmemory
     restart: unless-stopped
@@ -28,8 +28,8 @@ services:
     env_file: .env
 
     # Published so Traefik can reach it by host and port, the way its dynamic
-    # configuration expects. Change it here and in traefik/dynamic/patchmemory.yml
-    # together, or the route points at nothing.
+    # configuration expects. Change it here and in
+    # traefik/dynamic/patchmemory.yml together, or the route points at nothing.
     ports:
       - "${PM_PORT:-10072}:8080"
 
