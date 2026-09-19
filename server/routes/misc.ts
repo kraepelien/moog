@@ -1,3 +1,4 @@
+import { PRIVILEGE } from '@access/privileges.ts'
 import { badRequest, json, readBody } from '@server/http.ts'
 import { route, type Route } from './table.ts'
 
@@ -37,6 +38,16 @@ export const miscRoutes: readonly Route[] = [
                 avatar: viewer.user.avatar_url,
               },
       }),
+  }),
+
+  /* Not folded into /health, which is open because the container's healthcheck
+     calls it with no session: backup paths, the trash window and the rate
+     limits are not things to hand an unauthenticated caller. */
+  route({
+    method: 'GET',
+    path: '/ops',
+    needs: PRIVILEGE.AdminOps,
+    handle: ({ services }) => json(services.ops.report(services.limits)),
   }),
 
   route({

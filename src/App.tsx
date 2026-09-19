@@ -10,8 +10,10 @@ import Typography from '@mui/material/Typography'
 import { AdminPage } from './admin/AdminPage.tsx'
 import { AdminNav } from './admin/AdminNav.tsx'
 import { LayoutPage } from './admin/LayoutPage.tsx'
+import { OpsPage } from './admin/OpsPage.tsx'
 import { UsersPage } from './admin/UsersPage.tsx'
 import type { Decision } from './admin/UserAccess.tsx'
+import type { OpsReport } from './admin/ops.ts'
 import type { AdminUser } from './admin/users.ts'
 import { paletteOf, type Tag, type TagInUse } from './admin/tags.ts'
 import { FitToWidth } from './components/FitToWidth.tsx'
@@ -205,6 +207,8 @@ function Workspace({
   const [{ route, params }, navigate] = useRoute()
   const mayAdminTags = useCan(PRIVILEGE.AdminTags)
   const mayAdminUsers = useCan(PRIVILEGE.AdminUsers)
+  const mayAdminOps = useCan(PRIVILEGE.AdminOps)
+  const [ops, setOps] = useState<OpsReport | null>(null)
   const [users, setUsers] = useState<readonly AdminUser[]>([])
   /* What this device is being shown in, which is also what the layout page's
      fields show. One value and no draft beside it: there is nothing to save it
@@ -314,6 +318,15 @@ function Workspace({
   const refreshUsers = useCallback(async () => {
     setUsers(await store.listUsers())
   }, [])
+
+  /* Asked for on the page that shows it, like the users list: the route refuses
+     anybody else, and a report is only ever as fresh as the moment it is read. */
+  useEffect(() => {
+    if (route.name !== 'ops' || !mayAdminOps) return
+    void (async () => {
+      await run(async () => setOps(await store.ops()))
+    })()
+  }, [route.name, mayAdminOps, run])
 
   /* Asked for only on the page that shows it, like the tag counts: everybody
      else would be making a call the route refuses. */
@@ -838,6 +851,8 @@ function Workspace({
                       onRoles={setUserRoles}
                     />
                   )}
+
+                  {route.name === 'ops' && <OpsPage report={ops} />}
                 </Stack>
               </RouteGuard>
             )}

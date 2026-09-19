@@ -6,6 +6,7 @@ import { createRepositories } from './repositories/index.ts'
 import { handleAuth } from './routes/auth.ts'
 import { allRoutes } from './routes/index.ts'
 import { dispatch } from './routes/table.ts'
+import { createOpsLog, type OpsLog } from './ops.ts'
 import { createServices } from './services/index.ts'
 import type { Identity } from './services/patches.ts'
 
@@ -25,6 +26,10 @@ export interface ApiOptions {
   readonly doFetch?: typeof fetch
   readonly now?: () => number
   readonly identity?: Identity
+  /* What the housekeeping has done. Supplied by whoever runs it, so the dev
+     plugin's default is an empty record that says nothing is scheduled rather
+     than zeroes that would read as a backup which failed. */
+  readonly ops?: OpsLog
 }
 
 export function createApi({
@@ -34,11 +39,12 @@ export function createApi({
   doFetch,
   now,
   identity,
+  ops = createOpsLog({ now }),
 }: ApiOptions): (request: Request) => Promise<Response | null> {
   const repositories = createRepositories(db)
   if (config.mode === 'off') repositories.users.ensureLocal(config.localUser)
 
-  const services = createServices({ repositories, config, limits, identity })
+  const services = createServices({ repositories, config, limits, identity, ops })
 
   const writes = createRateLimiter(limits.writesPerMinute, now)
   const signIns = createRateLimiter(limits.signInsPerMinute, now)

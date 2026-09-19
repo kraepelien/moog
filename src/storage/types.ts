@@ -1,3 +1,4 @@
+import type { OpsReport } from '@admin/ops.ts'
 import type { Tag, TagInUse } from '@admin/tags.ts'
 import type { AdminUser } from '@admin/users.ts'
 import type { LibraryEntry } from '@components/library/entry.ts'
@@ -79,6 +80,13 @@ export interface AdminStore {
      there is no empty hex. */
   setTagColour(id: number, colour: string | null): Promise<void>
   removeTag(id: number): Promise<void>
+}
+
+/* What the housekeeping has done since this process started. Read-only, and
+   refused with `forbidden` for anyone without AdminOps, so the page hiding the
+   row is a convenience and never the check. */
+export interface OpsStore {
+  ops(): Promise<OpsReport>
 }
 
 /* Everyone with an account, and what they may do. One privilege at a time

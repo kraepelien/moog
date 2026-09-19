@@ -1,0 +1,39 @@
+.panels {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Label and value on one line, the label in a column of its own width so the
+   figures line up down the panel rather than each starting where its own words
+   end. The same shape FieldRow gives the patch's fields. */
+.line {
+  display: flex;
+  gap: 12px;
+  padding: 3px 0;
+}
+
+.name {
+  flex: 0 0 11rem;
+  color: var(--content-color-alt);
+}
+
+.value {
+  color: var(--content-color);
+}
+
+.failed {
+  color: var(--error-color, var(--content-color));
+}
+
+/* The variable that sets a limit, beside it rather than under it: it is what a
+   reader changes, and a column of them reads as a second list of numbers. */
+.variable {
+  color: var(--content-color-alt);
+  font-size: 0.8125rem;
+}
+
+.since {
+  color: var(--content-color-alt);
+  font-size: 0.8125rem;
+}

@@ -745,6 +745,38 @@ administration page asks who decided something, and every page load would otherw
 It is its own route with its own privilege rather than nesting behind `AccessAdmin`, so the two can
 be held apart — which is what the rules above assume.
 
+### The operations page
+
+`/admin/ops` behind `AdminOps` says what this server has done to itself since it started: the last
+backup and whether it worked, the last sweep of the trash and what it measured against, the bank it
+seeded, and the limits it holds people to with the variable that sets each one. All of it was real
+already and visible only in the container's log, which made "did last night's backup work" a
+question answered over ssh.
+
+**The hard part is where the facts come from.** `serve.ts` runs the backup and the purge;
+`createApi` is shared with the Vite plugin, which runs neither. So `server/ops.ts` holds both the
+schedule and the record of what it did, and `createApi` takes that record as an option exactly as
+it already takes `limits` and `identity`. It is constructed rather than imported: `createApi` is
+called several times inside one test file, and a module singleton would leak one test's backup into
+the next one's assertions, which is the trap `createRateLimiter` already avoids the same way.
+
+`runMaintenance` and `scheduleMaintenance` are separate exports because a test that called the
+scheduler would leave a live `setInterval` holding the suite open.
+
+**Under `bun run dev` the page says nothing here takes backups**, in words, rather than reporting a
+backup of none: a zero reads as a run that copied nothing, which is a different and worse thing to
+believe. The bank and the limits are real in both, because both entry points seed and both read the
+environment. The page also says the timer runs from process start rather than at a wall-clock hour,
+because that is what `setInterval` does and an operator expecting 03:00 would be wrong.
+
+The size counts the `-wal` file beside the database: in WAL mode the main file stays one page until
+a checkpoint, and a fresh install otherwise reports 4 KiB while its own backup is 139 KB.
+
+**Credentials are not on it.** The limits are configuration worth seeing; `MOOG_OAUTH_CLIENT_ID`,
+the secret and the contents of `MOOG_ADMINS` are not, and a page that showed them would be a new
+reason to guard the page rather than a window onto the housekeeping. `/health` stays open for the
+container's healthcheck and gains none of this.
+
 ### Arrangements are the first thing a privilege gates
 
 `StoreMidi` is what lets somebody keep a MIDI file together with the sound put on each of its

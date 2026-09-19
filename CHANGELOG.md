@@ -3,6 +3,7 @@
 Everything that has landed on `main`, newest first. A pull request carries its link; a commit pushed
 straight to `main` has none to carry.
 
+- Say what the server has done to itself, instead of leaving it in a log nobody reads over ssh
 - [Say who decided an override and when, which every write has recorded since the schema was written](https://github.com/kraepelien/moog/pull/113)
 - [Order the library by name, rating or when it was last touched, search the synth the box always claimed to, and stop claiming stars](https://github.com/kraepelien/moog/pull/111)
 - [Show a patch's notes, which have been collected and never read back since they were added](https://github.com/kraepelien/moog/pull/110)

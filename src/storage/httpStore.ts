@@ -2,6 +2,7 @@ import { migrateToCurrent } from '@patch/migrate.ts'
 import type { Patch } from '@patch/schema.ts'
 import type { AdminUser } from '@admin/users.ts'
 import type { LibraryEntry } from '@components/library/entry.ts'
+import type { OpsReport } from '@admin/ops.ts'
 import type { Tag, TagInUse } from '@admin/tags.ts'
 import type {
   Arrangement,
@@ -14,6 +15,7 @@ import {
   type UserStore,
   type ArrangementStore,
   type LibraryStore,
+  type OpsStore,
   type PatchStore,
   type PatchSummary,
   type TagStore,
@@ -113,7 +115,8 @@ export function createHttpStore(
   TagStore &
   AdminStore &
   ArrangementStore &
-  UserStore {
+  UserStore &
+  OpsStore {
   const request = (path: string, init?: RequestInit) => requestWith(doFetch, path, init)
 
   return {
@@ -217,6 +220,10 @@ export function createHttpStore(
 
     async deleteArrangement(id: string): Promise<void> {
       await request(`/arrangements/${encodeURIComponent(id)}`, { method: 'DELETE' })
+    },
+
+    async ops(): Promise<OpsReport> {
+      return (await request('/ops')) as OpsReport
     },
 
     async listUsers(): Promise<readonly AdminUser[]> {
