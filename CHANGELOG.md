@@ -4,7 +4,8 @@ Everything that has landed on `main`, newest first. A pull request carries its l
 straight to `main` has none to carry.
 
 - [Decline Google Translate, which rewrites the panel's legends out from under React](https://github.com/kraepelien/moog/pull/121)
-- Call the app PatchMemory, move it to patchmemory.app, and let the guest list be the door
+- [Take the new drawing as the master and rebake every icon from it, corner included](https://github.com/kraepelien/moog/pull/120)
+- [Call the app PatchMemory, move it to patchmemory.app, and let the guest list be the door](https://github.com/kraepelien/moog/pull/119)
 - [Let the bank be corrected, which is what seeding it rather than syncing it was always for](https://github.com/kraepelien/moog/pull/118)
 - [Say when the server is a build behind the page, instead of drawing an empty list or nothing at all](https://github.com/kraepelien/moog/pull/116)
 - [Give the one privilege with no page behind it a page, and everybody their trash back](https://github.com/kraepelien/moog/pull/115)
