@@ -13,51 +13,54 @@ function dir(files: Record<string, string>): Dir {
   }
 }
 
-const CONFIGURED = { MOOG_OAUTH_CLIENT_ID: 'client-abc' }
+const CONFIGURED = { PM_OAUTH_CLIENT_ID: 'client-abc' }
 
 describe('what the line says', () => {
   test('names where a sign-in comes back to', () => {
     const config = authConfigFromEnv({
-      MOOG_OAUTH_CLIENT_ID: 'client',
-      MOOG_SESSION_SECRET: 'secret',
-      MOOG_PUBLIC_ORIGIN: 'https://moog.example',
+      PM_OAUTH_CLIENT_ID: 'client',
+      PM_SESSION_SECRET: 'secret',
+      PM_PUBLIC_ORIGIN: 'https://patchmemory.example',
     })
-    expect(describeAuth(config)).toContain('returns to https://moog.example')
+    expect(describeAuth(config)).toContain('returns to https://patchmemory.example')
   })
 
   /* A request from loopback answers as itself whatever this says, so a line
      naming only the live domain read as though local sign-in were broken. */
   test('says that a sign-in from this machine comes back here', () => {
     const config = authConfigFromEnv({
-      MOOG_OAUTH_CLIENT_ID: 'client',
-      MOOG_SESSION_SECRET: 'secret',
-      MOOG_PUBLIC_ORIGIN: 'https://moog.example',
+      PM_OAUTH_CLIENT_ID: 'client',
+      PM_SESSION_SECRET: 'secret',
+      PM_PUBLIC_ORIGIN: 'https://patchmemory.example',
     })
     expect(describeAuth(config)).toBe(
-      'Google → returns to https://moog.example, or to this machine when signed in from localhost',
+      'Google, nobody admitted — PM_ADMINS is empty → returns to ' +
+        'https://patchmemory.example, or to this machine when signed in from localhost',
     )
   })
 
   /* Nothing to add when the two answers are already the same sentence. */
   test('says it once when no origin is configured', () => {
     const config = authConfigFromEnv({
-      MOOG_OAUTH_CLIENT_ID: 'client',
-      MOOG_SESSION_SECRET: 'secret',
+      PM_OAUTH_CLIENT_ID: 'client',
+      PM_SESSION_SECRET: 'secret',
     })
-    expect(describeAuth(config)).toBe('Google → returns to the origin each request arrives on')
+    expect(describeAuth(config)).toBe(
+      'Google, nobody admitted — PM_ADMINS is empty → returns to the origin each request arrives on',
+    )
   })
 
   /* The one that sent a local sign-in to production: browsing localhost while
      this says a live domain is the whole of the bug, visible at a glance. */
   test('a public origin is stated even when it is not where you are browsing', () => {
     const config = authConfigFromEnv({
-      MOOG_OAUTH_CLIENT_ID: 'client',
-      MOOG_SESSION_SECRET: 'secret',
-      MOOG_PUBLIC_ORIGIN: 'https://moog.pomello.se',
-      MOOG_ADMINS: 'a@example.com,b@example.com',
+      PM_OAUTH_CLIENT_ID: 'client',
+      PM_SESSION_SECRET: 'secret',
+      PM_PUBLIC_ORIGIN: 'https://patchmemory.app',
+      PM_ADMINS: 'a@example.com,b@example.com',
     })
     expect(describeAuth(config)).toStartWith(
-      'Google, 2 admin(s) → returns to https://moog.pomello.se',
+      'Google, 2 address(es) admitted → returns to https://patchmemory.app',
     )
   })
 
@@ -70,7 +73,7 @@ describe('a file that was never read', () => {
   /* The actual afternoon: the file was called .emv, so nothing read it, and
      nothing anywhere said a word. */
   test.each(['.emv', '.enb', 'env', '.en'])('%s is offered as the file you meant', (name) => {
-    expect(envTrouble(dir({ [name]: 'MOOG_OAUTH_CLIENT_ID=abc' }), {})).toContain(
+    expect(envTrouble(dir({ [name]: 'PM_OAUTH_CLIENT_ID=abc' }), {})).toContain(
       `Did you mean .env?`,
     )
   })
@@ -88,24 +91,24 @@ describe('a file that was read but did not arrive', () => {
   /* A byte order mark is not whitespace, so it joins the first key's name and
      that key alone disappears. An editor shows nothing. */
   test('a byte order mark is named, since nothing else would show it', () => {
-    const warning = envTrouble(dir({ '.env': '﻿MOOG_OAUTH_CLIENT_ID=abc\n' }), {})
+    const warning = envTrouble(dir({ '.env': '﻿PM_OAUTH_CLIENT_ID=abc\n' }), {})
     expect(warning).toContain('byte order mark')
   })
 
   test('a value in the file that the process never got is reported', () => {
-    const warning = envTrouble(dir({ '.env': 'MOOG_OAUTH_CLIENT_ID=abc\n' }), {})
+    const warning = envTrouble(dir({ '.env': 'PM_OAUTH_CLIENT_ID=abc\n' }), {})
     expect(warning).toContain('did not receive it')
   })
 
   test('quotes and an export prefix are still a written value', () => {
-    const warning = envTrouble(dir({ '.env': 'export MOOG_OAUTH_CLIENT_ID="abc"\n' }), {})
+    const warning = envTrouble(dir({ '.env': 'export PM_OAUTH_CLIENT_ID="abc"\n' }), {})
     expect(warning).toContain('did not receive it')
   })
 })
 
 describe('silence, which is most of the time', () => {
   test('nothing at all once it is configured', () => {
-    expect(envTrouble(dir({ '.env': 'MOOG_OAUTH_CLIENT_ID=abc' }), CONFIGURED)).toBeNull()
+    expect(envTrouble(dir({ '.env': 'PM_OAUTH_CLIENT_ID=abc' }), CONFIGURED)).toBeNull()
     expect(envTrouble(dir({ '.emv': 'anything' }), CONFIGURED)).toBeNull()
   })
 
@@ -116,10 +119,10 @@ describe('silence, which is most of the time', () => {
   })
 
   test('nothing when the value is deliberately left blank', () => {
-    expect(envTrouble(dir({ '.env': 'MOOG_OAUTH_CLIENT_ID=\nMOOG_ADMINS=a@b.c\n' }), {})).toBeNull()
+    expect(envTrouble(dir({ '.env': 'PM_OAUTH_CLIENT_ID=\nPM_ADMINS=a@b.c\n' }), {})).toBeNull()
   })
 
   test('nothing when .env is about something else entirely', () => {
-    expect(envTrouble(dir({ '.env': 'MOOG_DATA=./data\n' }), {})).toBeNull()
+    expect(envTrouble(dir({ '.env': 'PM_DATA=./data\n' }), {})).toBeNull()
   })
 })

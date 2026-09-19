@@ -59,7 +59,7 @@ describe('who somebody counts as', () => {
   })
 
   /* Added per request rather than written to the column, so taking the address
-     out of MOOG_ADMINS takes the role away again. */
+     out of PM_ADMINS takes the role away again. */
   test('adds admin for an address the environment lists', () => {
     expect(effectiveRoles([], true)).toEqual([ROLE.member, ROLE.admin])
   })
@@ -69,7 +69,7 @@ describe('who somebody counts as', () => {
   })
 
   /* Neither of the other two is a decision: everybody is a member, and an admin
-     is one because MOOG_ADMINS says so. Tester is the only thing anybody is
+     is one because PM_ADMINS says so. Tester is the only thing anybody is
      flagged as. */
   test('leaves only tester to be given', () => {
     expect(ASSIGNABLE_ROLES).toEqual([ROLE.tester])

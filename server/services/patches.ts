@@ -68,7 +68,29 @@ export function createPatchService(
       return patches.listDeletedOwnedBy(viewer.user.id).map(stamped)
     },
 
-    mayWrite(found: Located, viewer: Viewer): Refusal | null {
+    /* Two questions, because the bank answers them differently.
+
+       Changing what a factory patch *says* is a correction, and it is what
+       seeding the bank rather than syncing it was for: the rows are the live
+       bank, so a correction has somewhere to live that a restart will not undo,
+       and an administrator making one is the only thing that changes a factory
+       patch. The whole bank was wrong once, which is what `BANK_REFRESH`
+       exists to remember, and until now nothing could fix a single sheet of it.
+
+       Taking one out of circulation is a different act: retiring a page of the
+       manual rather than fixing a knob drawn on it. Nothing offers it. */
+    mayEdit(found: Located, viewer: Viewer): Refusal | null {
+      if (viewer.can(PRIVILEGE.AdminPatches)) return null
+      if (isFactory(found)) return { error: 'factory patches are read-only', status: 403 }
+      if (isMine(found, viewer)) return null
+      return { error: 'not yours', status: 403 }
+    },
+
+    /* Deleting, unpublishing and restoring: whether the patch is there at all,
+       and who can see it. The bank is refused to everybody, administrators
+       included, because a retired factory patch stays retired and no file will
+       bring it back. */
+    mayRemove(found: Located, viewer: Viewer): Refusal | null {
       if (isFactory(found)) return { error: 'factory patches are read-only', status: 403 }
       if (isMine(found, viewer) || viewer.can(PRIVILEGE.AdminPatches)) return null
       return { error: 'not yours', status: 403 }
@@ -97,7 +119,8 @@ export function createPatchService(
 
     /* Save as, and the only way a patch comes into existence. Loading a factory
        patch and pressing Save arrives here, which is what makes "you can never
-       save over one" a refusal in `mayWrite` rather than a rule to remember. */
+       save over one" a refusal in `mayEdit` rather than a rule to remember,
+       for everybody who is not correcting the bank on purpose. */
     create(payload: unknown, viewer: Viewer): Patch | Refusal {
       if (patches.countOwnedBy(viewer.user.id) >= limits.maxPatches) {
         return {

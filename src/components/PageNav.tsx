@@ -139,7 +139,7 @@ export function PageNav({
           60px the lockup would be the wordmark at eight pixels tall, which is a
           smudge rather than a name. The bar is shorter still, so it takes the
           tile for the same reason without waiting to be folded. Both drawings
-          say PatchDB to a reader, so the heading reads the same either way. */}
+          say PatchMemory to a reader, so the heading reads the same either way. */}
       <h1 className={styles.mark}>
         <ButtonBase
           className={styles.home}
@@ -148,8 +148,8 @@ export function PageNav({
           onClick={() => onNavigate(HOME_ROUTE.path)}
         >
           <img
-            src={named ? '/patchdb.svg' : '/logo.svg'}
-            alt="PatchDB"
+            src={named ? '/patchmemory.svg' : '/logo.svg'}
+            alt="PatchMemory"
             width={named ? 68 : 34}
             height={named ? 61 : 34}
             className={styles.logo}

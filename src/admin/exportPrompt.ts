@@ -81,7 +81,7 @@ export function exportPrompt(changes: readonly ColourChange[]): string {
      here looked tidy in the source and ragged in the dialog, which wraps it
      again at its own width. */
   return [
-    `Change the ${colours} the moog app ships with.`,
+    `Change the ${colours} the PatchMemory app ships with.`,
     '',
     `They are written down twice and ${SOURCES.lock} fails if the two disagree, so both have to change together: DEFAULT_SKIN in ${SOURCES.constant}, and ${sheetsFor(changes)}.`,
     '',

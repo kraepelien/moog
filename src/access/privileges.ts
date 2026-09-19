@@ -74,7 +74,7 @@ export const DESCRIPTION: Record<Privilege, string> = {
   AdminLayout:
     'Open the Layout page, try the app’s colours out on this browser, and export a prompt that changes the ones it ships with. Nothing done there repaints the app for anybody else.',
   AdminPatches:
-    'Edit, delete or unpublish a patch belonging to somebody else. Factory patches stay read-only for everyone.',
+    'Edit, delete or unpublish a patch belonging to somebody else, and correct a patch in the factory bank when it was transcribed wrong. Correcting one changes it for everybody here and survives a restart. Retiring a factory patch is refused to everybody, including whoever holds this.',
   AdminOps:
     'See what this server has done since it started: the last backup and whether it worked, the last sweep of the trash, the bank it seeded and the limits it holds people to. Nothing on that page changes anything.',
   StoreMidi:
@@ -97,7 +97,7 @@ export const ROLES: readonly Role[] = Object.values(ROLE)
    `member` is what every signed-in account is, applied at resolution rather
    than stored, so unlocking a basic feature reaches everyone with no write.
 
-   `admin` comes from `MOOG_ADMINS` and nowhere else. Storing it as well gave
+   `admin` comes from `PM_ADMINS` and nowhere else. Storing it as well gave
    one fact two sources, which is what let a column go on claiming an admin the
    environment had stopped naming. Somebody who needs one administrative power
    without being an administrator is given that privilege, not the role. */

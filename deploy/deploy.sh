@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Copied to the NAS as /volume1/docker/moog/deploy.sh and called by the workflow
-# with the image tag to run:
+# Copied to the NAS as /volume1/docker/patchmemory/deploy.sh and called by the
+# workflow with the image tag to run:
 #
-#   bash /volume1/docker/moog/deploy.sh ghcr.io/kraepelien/moog:abc1234
+#   bash /volume1/docker/patchmemory/deploy.sh ghcr.io/kraepelien/patchmemory:abc1234
 #
 # Alongside it the folder needs docker-compose.yml from this repo, and a .env
 # holding the settings for this machine. It is not red/green on purpose: the
@@ -29,10 +29,10 @@ fi
 # where compose reads it rather than passed through the environment — that way
 # `docker compose up -d` by hand later runs the same image this deployed.
 touch .env
-if grep -q '^MOOG_IMAGE=' .env; then
-  sed -i "s|^MOOG_IMAGE=.*|MOOG_IMAGE=${IMAGE}|" .env
+if grep -q '^PM_IMAGE=' .env; then
+  sed -i "s|^PM_IMAGE=.*|PM_IMAGE=${IMAGE}|" .env
 else
-  echo "MOOG_IMAGE=${IMAGE}" >> .env
+  echo "PM_IMAGE=${IMAGE}" >> .env
 fi
 
 echo "Deploying ${IMAGE}"
@@ -45,7 +45,7 @@ docker compose up -d --remove-orphans
 # build.
 echo -n "Waiting for health"
 for _ in $(seq 1 30); do
-  state="$(docker inspect --format '{{.State.Health.Status}}' moog 2>/dev/null || echo starting)"
+  state="$(docker inspect --format '{{.State.Health.Status}}' patchmemory 2>/dev/null || echo starting)"
   if [[ "$state" == "healthy" ]]; then
     echo " — healthy"
     docker image prune -f >/dev/null 2>&1 || true
@@ -56,5 +56,5 @@ for _ in $(seq 1 30); do
 done
 
 echo " — never became healthy" >&2
-docker compose logs --tail=50 moog >&2
+docker compose logs --tail=50 patchmemory >&2
 exit 1

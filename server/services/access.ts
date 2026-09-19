@@ -30,7 +30,7 @@ export function createAccess(repositories: Repositories, config: AuthConfig) {
 
   const viewerOf = (user: UserRow): Viewer => {
     /* Added in memory, never written. Persisting it left the role behind after
-       an address was taken out of MOOG_ADMINS, so the column claimed an admin
+       an address was taken out of PM_ADMINS, so the column claimed an admin
        the environment no longer named — and with overrides in play, deleting
        the revoke that masked it would have handed admin back. */
     const envAdmin = listed(user)

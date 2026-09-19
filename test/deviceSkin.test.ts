@@ -6,7 +6,7 @@ import { createDeviceSkin, type StorageLike } from '@storage/deviceSkin.ts'
 
 function fakeStorage(seed?: string) {
   const held = new Map<string, string>()
-  if (seed !== undefined) held.set('moog:skin', seed)
+  if (seed !== undefined) held.set('pm:skin', seed)
   return {
     held,
     storage: {

@@ -8,7 +8,7 @@ import { ExportDialog } from '@admin/ExportDialog.tsx'
 
 afterEach(cleanup)
 
-const PROMPT = 'Change the colours the moog app ships with.\n\n  - Card: #0e0e11 → #123456\n'
+const PROMPT = 'Change the colours the PatchMemory app ships with.\n\n  - Card: #0e0e11 → #123456\n'
 
 function renderDialog(open = true) {
   const closes: number[] = []

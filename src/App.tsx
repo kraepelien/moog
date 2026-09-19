@@ -14,7 +14,9 @@ import { OpsPage } from './admin/OpsPage.tsx'
 import { UsersPage } from './admin/UsersPage.tsx'
 import type { Decision } from './admin/UserAccess.tsx'
 import type { OpsReport } from './admin/ops.ts'
+import { ExportDialog } from './admin/ExportDialog.tsx'
 import { PatchesPage } from './admin/PatchesPage.tsx'
+import { bankPrompt, correctionOf } from './patch/bankPrompt.ts'
 import type { PatchRecord } from './patch/record.ts'
 import type { AdminUser } from './admin/users.ts'
 import { paletteOf, type Tag, type TagInUse } from './admin/tags.ts'
@@ -214,9 +216,12 @@ function Workspace({
   const [ops, setOps] = useState<OpsReport | null>(null)
   const mayAdminPatches = useCan(PRIVILEGE.AdminPatches)
   const [records, setRecords] = useState<readonly PatchRecord[]>([])
-  /* Whose patch the editor is holding, when it is not yours. Null the rest of
-     the time, which is every ordinary edit. */
-  const [onBehalfOf, setOnBehalfOf] = useState<{ name: string | null } | null>(null)
+  /* What the editor is holding, when it is not simply yours: somebody else's
+     patch, or a sheet of the bank being corrected. Null the rest of the time,
+     which is every ordinary edit. */
+  const [onBehalfOf, setOnBehalfOf] = useState<
+    { kind: 'person'; name: string | null } | { kind: 'bank'; from: Patch } | null
+  >(null)
   const [trash, setTrash] = useState<readonly PatchRecord[]>([])
   const [users, setUsers] = useState<readonly AdminUser[]>([])
   /* What this device is being shown in, which is also what the layout page's
@@ -226,6 +231,7 @@ function Workspace({
   const [skin, setSkin] = useState<Skin>(painted)
   const [keeping, setKeeping] = useState(true)
   const [midiHelp, setMidiHelp] = useState(false)
+  const [correcting, setCorrecting] = useState(false)
   /* What the patch sheet is showing. Held apart from `draft` on purpose: the
      sheet is a view of a stored patch and the draft is what is being edited,
      and keeping one variable for both is what would make arriving at an address
@@ -586,7 +592,13 @@ function Workspace({
         if (!patch) return
         if (!(await navigate(pathFor('editor')))) return
         adopt(patch, { stored: true })
-        setOnBehalfOf(record.ownerUid === null ? null : { name: record.ownerName })
+        setOnBehalfOf(
+          record.origin === 'factory'
+            ? /* The row as it was loaded, so Export can say what changed rather
+                 than restating the whole sheet at the repo's file. */
+              { kind: 'bank', from: patch }
+            : { kind: 'person', name: record.ownerName },
+        )
       }),
     [adopt, navigate, run],
   )
@@ -667,6 +679,19 @@ function Workspace({
           await refresh()
         }),
     },
+    ...(onBehalfOf?.kind === 'bank'
+      ? [
+          {
+            /* Correcting the row fixes this install. The repo's file is what
+               seeds the next one, and nothing may push a file over a row, so
+               bringing the two in line is a prompt rather than a button that
+               writes. */
+            label: 'Export correction',
+            tone: 'violet' as const,
+            onSelect: () => setCorrecting(true),
+          },
+        ]
+      : []),
     {
       label: 'Export',
       tone: 'blue',
@@ -677,7 +702,7 @@ function Workspace({
              writing that default into the file turns an honest omission into a
              stored setting. */
           downloadJson(
-            `${slugify(draft.name) || 'patch'}.moogpatch.json`,
+            `${slugify(draft.name) || 'patch'}.patchmemory.json`,
             serializeBundle(createBundle([draft])),
           )
         }),
@@ -699,7 +724,7 @@ function Workspace({
         void run(async () => {
           const all = await Promise.all(saved.map((summary) => store.get(summary.id)))
           const present = all.filter((patch): patch is Patch => patch !== null)
-          downloadJson('all-patches.moogpatch.json', serializeBundle(createBundle(present)))
+          downloadJson('all-patches.patchmemory.json', serializeBundle(createBundle(present)))
         }),
     },
     {
@@ -764,7 +789,9 @@ function Workspace({
                 title={{
                   text: draft.name,
                   unsaved: dirty,
-                  ...(onBehalfOf === null ? {} : { owner: onBehalfOf.name }),
+                  ...(onBehalfOf === null
+                    ? {}
+                    : { owner: onBehalfOf.kind === 'bank' ? 'from the bank' : onBehalfOf.name }),
                 }}
                 buttons={editorButtons}
               />
@@ -773,10 +800,23 @@ function Workspace({
             {/* Said twice, in the bar and here, because the green Save reads as
                 "save mine" and this is the one thing somebody needs told before
                 they press it. */}
-            {route.name === 'editor' && onBehalfOf !== null && (
+            {route.name === 'editor' && onBehalfOf?.kind === 'person' && (
               <Alert severity="info">
                 This is {onBehalfOf.name === null ? 'somebody else' : onBehalfOf.name}
                 &rsquo;s patch. Saving writes back to their copy; it does not make one of your own.
+              </Alert>
+            )}
+
+            {/* Weightier than editing one person's patch, and said in a
+                stronger colour for it: the bank is what everybody here loads
+                from, and a correction is the one thing that changes it. */}
+            {route.name === 'editor' && onBehalfOf?.kind === 'bank' && (
+              <Alert severity="warning">
+                <AlertTitle>Correcting the bank</AlertTitle>
+                Saving changes this factory patch for everybody on this install, and it stays
+                changed through a restart. It does not change <code>bank/</code> in the repo, so a
+                fresh database elsewhere still seeds the old values: use Export to carry the
+                correction back.
               </Alert>
             )}
 
@@ -1022,6 +1062,19 @@ function Workspace({
       </Box>
 
       <MidiHelp open={midiHelp} onClose={() => setMidiHelp(false)} />
+
+      {/* The same dialog the Layout page hands its colours to, because it is the
+          same act: a change that only source can make, written out to be
+          pasted. */}
+      <ExportDialog
+        open={correcting}
+        prompt={
+          onBehalfOf?.kind === 'bank'
+            ? bankPrompt(correctionOf(onBehalfOf.from, draft))
+            : ''
+        }
+        onClose={() => setCorrecting(false)}
+      />
 
       {/* Out of the flow: the menu's Import clicks this. */}
       <input

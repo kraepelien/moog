@@ -49,7 +49,7 @@ a conflict that is not ours to settle are each a reason to stop, never a reason 
 `CHANGELOG.md` lists every pull request merged into `main`, newest first, one line each:
 
 ```markdown
-- [Home on the mark, and a tag's picker on the colour it is wearing](https://github.com/kraepelien/moog/pull/76)
+- [Home on the mark, and a tag's picker on the colour it is wearing](https://github.com/kraepelien/patchmemory/pull/76)
 ```
 
 A commit pushed straight to `main` may take a line too, without the link — there is no pull request
@@ -125,6 +125,12 @@ remapping every saved patch.
 - **SQL lives in a repository, rules live in a service.** A repository that also refused would be a
   second place for the rules to live. A route with no rules of its own talks to its repository
   rather than to a service that would only forward the call.
+- **Correcting a factory patch is a write to its row, never to its file.** `mayEdit` lets
+  `AdminPatches` do it and `mayRemove` still refuses the bank to everybody, because fixing a
+  transcription and retiring a sheet are different acts. The repo's file goes on seeding a database
+  that does not hold that slug, so the two are brought back into line by the prompt
+  `src/patch/bankPrompt.ts` writes, the way the Layout page does it for colours, and not by
+  anything that writes a file from the app.
 - **The bank in `bank/` seeds and never overwrites.** A row the database already holds is the live
   bank, and an administrator editing it is the only thing that changes a factory patch, so a change
   to a file reaches a fresh database and nothing else. Do not add a flag, route or environment
@@ -142,7 +148,7 @@ remapping every saved patch.
 
   The cost is paid by whoever is already running one: a database made before the edit keeps whatever
   the old step gave it, because its version is unchanged and nothing re-runs. Deleting
-  `data/moog.db*` is how it catches up, and on the NAS that means a redeploy with the volume
+  `data/patchmemory.db*` is how it catches up, and on the NAS that means a redeploy with the volume
   cleared. Say so in the pull request every time.
 
   This changes the day something real is running against a database somebody cares about. From then
@@ -238,7 +244,7 @@ the whole of the automated cover. Say which pages were looked at instead.
 - **`localStorage` does not exist in Bun's runtime.** The storage adapter takes its `Storage` object
   as a parameter; keep it injected rather than reaching for `window`.
 - **Bun loads `.env`, and the server reads its configuration from the environment.** Before
-  `test/setup.ts` emptied every `MOOG_*` variable, a developer who had set up sign-in ran the suite
+  `test/setup.ts` emptied every `PM_*` variable, a developer who had set up sign-in ran the suite
   against a different application than CI did: oauth rather than off, and 45 tests failing on a 401
   that nobody else could reproduce. A test that needs configuration states it rather than inheriting
   it.

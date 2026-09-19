@@ -37,7 +37,7 @@ export interface AdminUser {
   readonly provider: string
   /* What the column holds — never `member`, which everybody is. */
   readonly roles: readonly Role[]
-  /* Listed in MOOG_ADMINS. The admin role cannot be taken off them here, so the
+  /* Listed in PM_ADMINS. The admin role cannot be taken off them here, so the
      page draws that toggle locked rather than letting it fail. */
   readonly envAdmin: boolean
   /* After the roles and the overrides have been resolved: what they can do. */
@@ -104,7 +104,7 @@ export function protectedReason(
   }
 
   if (user.envAdmin) {
-    return `This address is listed in MOOG_ADMINS, which is how a locked-out install is recovered, so ${privilege} cannot be revoked from it. Take the address out of the environment and restart instead.`
+    return `This address is listed in PM_ADMINS, which is how a locked-out install is recovered, so ${privilege} cannot be revoked from it. Take the address out of the environment and restart instead.`
   }
 
   return null

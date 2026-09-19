@@ -19,13 +19,13 @@ export interface Limits {
    that goes stale the day a limit is renamed. Keyed on `keyof Limits`, so a
    limit added without a variable name fails to typecheck. */
 export const LIMIT_ENV: Record<keyof Limits, string> = {
-  maxPatches: 'MOOG_MAX_PATCHES',
-  maxPatchBytes: 'MOOG_MAX_PATCH_BYTES',
-  maxArrangements: 'MOOG_MAX_ARRANGEMENTS',
-  maxMidiBytes: 'MOOG_MAX_MIDI_BYTES',
-  trashDays: 'MOOG_TRASH_DAYS',
-  writesPerMinute: 'MOOG_WRITES_PER_MINUTE',
-  signInsPerMinute: 'MOOG_SIGN_INS_PER_MINUTE',
+  maxPatches: 'PM_MAX_PATCHES',
+  maxPatchBytes: 'PM_MAX_PATCH_BYTES',
+  maxArrangements: 'PM_MAX_ARRANGEMENTS',
+  maxMidiBytes: 'PM_MAX_MIDI_BYTES',
+  trashDays: 'PM_TRASH_DAYS',
+  writesPerMinute: 'PM_WRITES_PER_MINUTE',
+  signInsPerMinute: 'PM_SIGN_INS_PER_MINUTE',
 }
 
 export function limitsFromEnv(env: Record<string, string | undefined>): Limits {

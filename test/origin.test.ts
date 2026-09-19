@@ -7,9 +7,9 @@ import { authConfigFromEnv, isLoopback, originOf } from '@server/identity.ts'
    its port is whichever was free when it started. */
 
 const deployed = authConfigFromEnv({
-  MOOG_OAUTH_CLIENT_ID: 'client',
-  MOOG_SESSION_SECRET: 'secret',
-  MOOG_PUBLIC_ORIGIN: 'https://moog.example',
+  PM_OAUTH_CLIENT_ID: 'client',
+  PM_SESSION_SECRET: 'secret',
+  PM_PUBLIC_ORIGIN: 'https://patchmemory.example',
 })
 
 const at = (url: string) => new Request(url)
@@ -17,12 +17,12 @@ const at = (url: string) => new Request(url)
 describe('what counts as this machine', () => {
   test.each([
     ['localhost', true],
-    ['moog.localhost', true],
+    ['patchmemory.localhost', true],
     ['127.0.0.1', true],
     ['127.1.2.3', true],
     ['::1', true],
     ['[::1]', true],
-    ['moog.example', false],
+    ['patchmemory.example', false],
     ['notlocalhost', false],
     ['localhost.evil.example', false],
     ['1270.0.1', false],
@@ -33,8 +33,8 @@ describe('what counts as this machine', () => {
 
 describe('a deployment', () => {
   test('answers as the origin it was told about', () => {
-    expect(originOf(deployed, at('https://moog.example/api/auth/google/start'))).toBe(
-      'https://moog.example',
+    expect(originOf(deployed, at('https://patchmemory.example/api/auth/google/start'))).toBe(
+      'https://patchmemory.example',
     )
   })
 
@@ -42,7 +42,7 @@ describe('a deployment', () => {
      Host is whatever was forwarded, and a forged one must not be believed. */
   test('ignores a forged Host', () => {
     expect(originOf(deployed, at('https://evil.example/api/auth/google/start'))).toBe(
-      'https://moog.example',
+      'https://patchmemory.example',
     )
   })
 })

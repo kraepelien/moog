@@ -18,14 +18,14 @@ const roots: string[] = []
 const SECRET = 'permissions-secret'
 
 async function world() {
-  const root = mkdtempSync(join(tmpdir(), 'moog-perms-'))
+  const root = mkdtempSync(join(tmpdir(), 'patchmemory-perms-'))
   roots.push(root)
-  const db = openDatabase(join(root, 'moog.db'))
+  const db = openDatabase(join(root, 'patchmemory.db'))
   syncInstruments(db)
   const store = createRepositories(db)
 
   const config = {
-    ...authConfigFromEnv({ MOOG_SESSION_SECRET: SECRET }),
+    ...authConfigFromEnv({ PM_SESSION_SECRET: SECRET }),
     mode: 'oauth' as const,
     secret: SECRET,
     admins: ['boss@example.com'],
@@ -91,13 +91,45 @@ describe('a factory patch', () => {
     expect((await theirs.call('GET', '/api/patches/sub-bass'))!.status).toBe(200)
   })
 
-  test('cannot be written over, even by an admin', async () => {
-    const { mine, boss, store } = await world()
+  test('cannot be written over by somebody without the privilege', async () => {
+    const { mine, store } = await world()
     const before = store.patches.listFactory()[0]!
 
     expect((await mine.call('PUT', '/api/patches/sub-bass', before))!.status).toBe(403)
-    expect((await boss.call('PUT', '/api/patches/sub-bass', before))!.status).toBe(403)
+    expect(store.patches.listFactory()[0]).toEqual(before)
+  })
+
+  /* The correction the bank was seeded rather than synced *for*: the rows are
+     the live bank, so this survives a restart, where a file put back over a row
+     would not. The whole bank was wrong once. */
+  test('is corrected by an administrator, and keeps its slug and its bank', async () => {
+    const { boss, store } = await world()
+    const before = store.patches.listFactory()[0]!
+
+    const response = (await boss.call('PUT', '/api/patches/sub-bass', {
+      ...before,
+      name: 'Sub Bass, corrected',
+      values: { ...before.values, osc1Range: 'ft2' },
+    }))!
+    expect(response.status).toBe(200)
+
+    const after = store.patches.listFactory()[0]!
+    expect(after.name).toBe('Sub Bass, corrected')
+    expect(after.values.osc1Range).toBe('ft2')
+    /* Still the bank: addressed by its slug, owned by nobody, and listed as a
+       factory patch rather than quietly becoming the administrator's. */
+    expect(after.id).toBe('sub-bass')
+    expect(store.patches.locate('sub-bass')?.ownerId).toBeNull()
+  })
+
+  /* Correcting a sheet is not the same act as taking one out of the manual, and
+     a retired factory patch stays retired: no file brings it back. */
+  test('is still not something an administrator can remove or unpublish', async () => {
+    const { boss, store } = await world()
+    const before = store.patches.listFactory()[0]!
+
     expect((await boss.call('DELETE', '/api/patches/sub-bass'))!.status).toBe(403)
+    expect((await boss.call('POST', '/api/patches/sub-bass/unpublish'))!.status).toBe(403)
 
     expect(store.patches.listFactory()[0]).toEqual(before)
   })
@@ -238,7 +270,7 @@ describe('a request from another site', () => {
   test('is refused when it would change something', async () => {
     const { db } = await world()
     const config = {
-      ...authConfigFromEnv({ MOOG_SESSION_SECRET: SECRET }),
+      ...authConfigFromEnv({ PM_SESSION_SECRET: SECRET }),
       secret: SECRET,
     }
     const handle = createApi({ db, config })

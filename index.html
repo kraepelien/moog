@@ -20,7 +20,12 @@
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#000000" />
 
-    <title>PatchDB</title>
+    <!-- Translate swaps text nodes in place, and a panel legend is SVG text inside
+         a React tree: the reconciler then fails on a child it no longer recognises.
+         Declined for the whole app, because a dialog rewritten mid-edit fails alike. -->
+    <meta name="google" content="notranslate" />
+
+    <title>PatchMemory</title>
   </head>
   <body>
     <div id="root"></div>
