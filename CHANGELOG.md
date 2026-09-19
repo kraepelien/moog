@@ -3,6 +3,7 @@
 Everything that has landed on `main`, newest first. A pull request carries its link; a commit pushed
 straight to `main` has none to carry.
 
+- Say when the server is a build behind the page, instead of drawing an empty list or nothing at all
 - [Give the one privilege with no page behind it a page, and everybody their trash back](https://github.com/kraepelien/moog/pull/115)
 - [Say what the server has done to itself, instead of leaving it in a log nobody reads over ssh](https://github.com/kraepelien/moog/pull/114)
 - [Print the patch sheet, at the paper's scale rather than the window's](https://github.com/kraepelien/moog/pull/112)

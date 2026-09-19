@@ -110,6 +110,35 @@ function toPatch(raw: unknown): Patch | null {
   return migrated.ok ? migrated.value : null
 }
 
+/* A 404 means two different things, and only one of them is data. To `get` it
+   is "no such patch", which is a real answer. To a route that returns a
+   collection it is "no such route", which is never one: an install with nothing
+   in it answers with an empty list, not a missing path.
+
+   So a collection that 404s is a server that does not have this build's routes,
+   and the likeliest cause by far is a dev server left running across a pull,
+   which serves the old API while Vite hot-reloads the new page. Said out loud
+   rather than turned into an empty list: an empty page with no explanation is
+   the same debugging session either way, only quieter. */
+function collection<T>(answer: unknown, what: string): T {
+  if (answer === null) {
+    throw new StoreError(
+      'io',
+      `This server has no ${what}. It is running an older build than this page: restart it.`,
+    )
+  }
+  return answer as T
+}
+
+/* An account as this build expects one, from a server that may be a build
+   behind. `decisions` arrived with the audit trail, and a page that maps over
+   it took the whole app down against a server that had the route but not yet
+   the field. The adapter is where foreign data becomes our shape, so it is
+   where the missing half is filled in rather than at each reader. */
+function sound(user: AdminUser): AdminUser {
+  return { ...user, decisions: user.decisions ?? [] }
+}
+
 export function createHttpStore(
   doFetch: Fetch = (path, init) => fetch(path, init),
 ): PatchStore &
@@ -169,7 +198,7 @@ export function createHttpStore(
 
     async library(instrument?: string): Promise<readonly LibraryEntry[]> {
       const path = instrument === undefined ? '/library' : `/library?instrument=${encodeURIComponent(instrument)}`
-      return ((await request(path)) ?? []) as LibraryEntry[]
+      return collection<LibraryEntry[]>(await request(path), 'library')
     },
 
     async rate(id: string, stars: number): Promise<void> {
@@ -180,11 +209,11 @@ export function createHttpStore(
     },
 
     async listTags(): Promise<readonly Tag[]> {
-      return ((await request('/tags')) ?? []) as Tag[]
+      return collection<Tag[]>(await request('/tags'), 'tag list')
     },
 
     async listTagsInUse(): Promise<readonly TagInUse[]> {
-      return ((await request('/tags/in-use')) ?? []) as TagInUse[]
+      return collection<TagInUse[]>(await request('/tags/in-use'), 'tag usage')
     },
 
     async addTag(name: string): Promise<void> {
@@ -200,7 +229,7 @@ export function createHttpStore(
     },
 
     async listArrangements(): Promise<readonly ArrangementSummary[]> {
-      return ((await request('/arrangements')) ?? []) as ArrangementSummary[]
+      return collection<ArrangementSummary[]>(await request('/arrangements'), 'arrangements')
     },
 
     async getArrangement(id: string): Promise<Arrangement | null> {
@@ -226,7 +255,7 @@ export function createHttpStore(
     },
 
     async listEveryPatch(): Promise<readonly PatchRecord[]> {
-      return (await request('/patches/all')) as readonly PatchRecord[]
+      return collection<readonly PatchRecord[]>(await request('/patches/all'), 'patch list')
     },
 
     async unpublish(id: string): Promise<void> {
@@ -234,7 +263,7 @@ export function createHttpStore(
     },
 
     async listTrash(): Promise<readonly PatchRecord[]> {
-      return (await request('/patches/trash')) as readonly PatchRecord[]
+      return collection<readonly PatchRecord[]>(await request('/patches/trash'), 'trash')
     },
 
     async restore(id: string): Promise<void> {
@@ -242,18 +271,20 @@ export function createHttpStore(
     },
 
     async ops(): Promise<OpsReport> {
-      return (await request('/ops')) as OpsReport
+      return collection<OpsReport>(await request('/ops'), 'operations report')
     },
 
     async listUsers(): Promise<readonly AdminUser[]> {
-      return ((await request('/users')) ?? []) as AdminUser[]
+      return collection<AdminUser[]>(await request('/users'), 'account list').map(sound)
     },
 
     async setUserRoles(uid: string, roles: readonly string[]): Promise<AdminUser> {
-      return (await request(`/users/${encodeURIComponent(uid)}/roles`, {
-        method: 'PUT',
-        body: JSON.stringify({ roles }),
-      })) as AdminUser
+      return sound(
+        (await request(`/users/${encodeURIComponent(uid)}/roles`, {
+          method: 'PUT',
+          body: JSON.stringify({ roles }),
+        })) as AdminUser,
+      )
     },
 
     async setUserPrivilege(
@@ -261,17 +292,21 @@ export function createHttpStore(
       privilege: string,
       granted: boolean,
     ): Promise<AdminUser> {
-      return (await request(
-        `/users/${encodeURIComponent(uid)}/privileges/${encodeURIComponent(privilege)}`,
-        { method: 'PUT', body: JSON.stringify({ granted }) },
-      )) as AdminUser
+      return sound(
+        (await request(
+          `/users/${encodeURIComponent(uid)}/privileges/${encodeURIComponent(privilege)}`,
+          { method: 'PUT', body: JSON.stringify({ granted }) },
+        )) as AdminUser,
+      )
     },
 
     async clearUserPrivilege(uid: string, privilege: string): Promise<AdminUser> {
-      return (await request(
-        `/users/${encodeURIComponent(uid)}/privileges/${encodeURIComponent(privilege)}`,
-        { method: 'DELETE' },
-      )) as AdminUser
+      return sound(
+        (await request(
+          `/users/${encodeURIComponent(uid)}/privileges/${encodeURIComponent(privilege)}`,
+          { method: 'DELETE' },
+        )) as AdminUser,
+      )
     },
   }
 }
