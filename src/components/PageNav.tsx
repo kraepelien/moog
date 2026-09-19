@@ -104,8 +104,8 @@ export function PageNav({
 
   /* The first administration page this account can open, because the privileges
      are independent: somebody may keep the user list without holding the tag
-     page Settings used to land on. Nothing is drawn when there is none. */
-  const settings =
+     page Admin used to land on. Nothing is drawn when there is none. */
+  const admin =
     ADMIN_ROUTES.find((entry) => entry.needs === undefined || held.has(entry.needs)) ?? null
 
   return (
@@ -172,15 +172,15 @@ export function PageNav({
       </Box>
 
       <Box className={styles.foot}>
-        {settings !== null && (
+        {admin !== null && (
           <NavItem
-            label="Settings"
+            label="Admin"
             title="Administration"
             glyph={<SettingsGlyph />}
             on={route.path.startsWith('/admin')}
             named={named}
             placement={placement}
-            onSelect={() => onNavigate(settings.path)}
+            onSelect={() => onNavigate(admin.path)}
           />
         )}
 
