@@ -21,9 +21,9 @@ import { createPatch } from '@patch/schema.ts'
 const roots: string[] = []
 
 function world(env: Record<string, string> = {}) {
-  const root = mkdtempSync(join(tmpdir(), 'moog-ops-'))
+  const root = mkdtempSync(join(tmpdir(), 'patchmemory-ops-'))
   roots.push(root)
-  const databasePath = join(root, 'moog.db')
+  const databasePath = join(root, 'patchmemory.db')
   const db = openDatabase(databasePath)
   syncInstruments(db)
   const limits = limitsFromEnv(env)
@@ -84,7 +84,7 @@ describe('one cycle of the housekeeping', () => {
   })
 
   test('sweeps what is past the window and leaves what is inside it', () => {
-    const world_ = world({ MOOG_TRASH_DAYS: '3' })
+    const world_ = world({ PM_TRASH_DAYS: '3' })
     /* A real row: patches carry a foreign key to their owner. */
     const owner = createUsers(world_.db).ensure({
       uid: 'me',
@@ -113,7 +113,7 @@ describe('one cycle of the housekeeping', () => {
   })
 
   test('says which cutoff the count was taken against', () => {
-    const world_ = world({ MOOG_TRASH_DAYS: '3' })
+    const world_ = world({ PM_TRASH_DAYS: '3' })
     runMaintenance({ ...world_, now: () => Date.parse('2026-01-10T00:00:00.000Z') })
 
     expect(world_.ops.report(world_.limits).purge!.olderThan).toBe('2026-01-07T00:00:00.000Z')
@@ -125,7 +125,7 @@ describe('the report itself', () => {
     const { ops, limits } = world()
     const report = ops.report(limits)
 
-    expect(report.limitEnv.trashDays).toBe('MOOG_TRASH_DAYS')
+    expect(report.limitEnv.trashDays).toBe('PM_TRASH_DAYS')
     expect(Object.keys(report.limitEnv).sort()).toEqual(Object.keys(report.limits).sort())
   })
 
@@ -165,9 +165,9 @@ describe('the report itself', () => {
 /* Sign-in on, so there is somebody to refuse. The secret is required once a
    client id is set, which is a startup check rather than anything about ops. */
 const SIGNED_OUT = {
-  MOOG_OAUTH_CLIENT_ID: 'x',
-  MOOG_OAUTH_CLIENT_SECRET: 'y',
-  MOOG_SESSION_SECRET: 'z'.repeat(32),
+  PM_OAUTH_CLIENT_ID: 'x',
+  PM_OAUTH_CLIENT_SECRET: 'y',
+  PM_SESSION_SECRET: 'z'.repeat(32),
 }
 
 describe('who may read it', () => {
@@ -206,6 +206,6 @@ describe('who may read it', () => {
       '/api/health',
     )
     expect(response!.status).toBe(200)
-    expect(await response!.text()).not.toContain('MOOG_TRASH_DAYS')
+    expect(await response!.text()).not.toContain('PM_TRASH_DAYS')
   })
 })

@@ -15,7 +15,7 @@ const SECRET = 'a-test-secret'
 const NOW = Date.UTC(2026, 8, 16, 12, 0, 0)
 
 const config = (over: Partial<ReturnType<typeof authConfigFromEnv>> = {}) => ({
-  ...authConfigFromEnv({ MOOG_SESSION_SECRET: SECRET }),
+  ...authConfigFromEnv({ PM_SESSION_SECRET: SECRET }),
   secret: SECRET,
   ...over,
 })
@@ -67,7 +67,7 @@ describe('the cookie carrying it', () => {
   })
 
   test('is HttpOnly, SameSite=Lax, and never scoped to a domain', async () => {
-    const cookie = await sessionCookie('u', config(), new Request('https://moog.example/'), NOW)
+    const cookie = await sessionCookie('u', config(), new Request('https://patchmemory.example/'), NOW)
     expect(cookie).toContain('HttpOnly')
     expect(cookie).toContain('SameSite=Lax')
     expect(cookie).toContain('Path=/')
@@ -75,13 +75,13 @@ describe('the cookie carrying it', () => {
   })
 
   test('clearing it expires it with the same attributes', () => {
-    const cleared = clearedSessionCookie(new Request('https://moog.example/'))
+    const cleared = clearedSessionCookie(new Request('https://patchmemory.example/'))
     expect(cleared).toContain('Max-Age=0')
     expect(cleared).toContain('HttpOnly')
   })
 
   test('is found among others', () => {
-    const request = new Request('https://moog.example/', {
+    const request = new Request('https://patchmemory.example/', {
       headers: { cookie: `other=1; ${SESSION_COOKIE}=abc.def; third=2` },
     })
     expect(readCookie(request, SESSION_COOKIE)).toBe('abc.def')
@@ -93,7 +93,7 @@ describe('an https request', () => {
   test('is one Traefik says is, or one that plainly is', () => {
     const forwarded = new Request('http://nas/', { headers: { 'x-forwarded-proto': 'https' } })
     expect(isSecureRequest(forwarded)).toBe(true)
-    expect(isSecureRequest(new Request('https://moog.example/'))).toBe(true)
+    expect(isSecureRequest(new Request('https://patchmemory.example/'))).toBe(true)
     expect(isSecureRequest(new Request('http://nas/'))).toBe(false)
   })
 
@@ -126,11 +126,11 @@ describe('with sign-in switched off', () => {
 describe('configuration', () => {
   test('a client id without a secret is refused at startup', () => {
     /* Rather than issuing cookies signed with an empty string. */
-    expect(() => authConfigFromEnv({ MOOG_OAUTH_CLIENT_ID: 'abc' })).toThrow(/SESSION_SECRET/)
+    expect(() => authConfigFromEnv({ PM_OAUTH_CLIENT_ID: 'abc' })).toThrow(/SESSION_SECRET/)
   })
 
   test('admins are a comma-separated list, trimmed', () => {
-    const parsed = authConfigFromEnv({ MOOG_ADMINS: ' one@x.com , two@x.com ,, ' })
+    const parsed = authConfigFromEnv({ PM_ADMINS: ' one@x.com , two@x.com ,, ' })
     expect(parsed.admins).toEqual(['one@x.com', 'two@x.com'])
   })
 })

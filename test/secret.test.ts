@@ -7,7 +7,7 @@ import { join } from 'node:path'
    Vite inlines anything a bundled module reads, and only a build would show
    it. */
 
-const SECRET_NAMES = ['MOOG_OAUTH_CLIENT_SECRET', 'MOOG_SESSION_SECRET']
+const SECRET_NAMES = ['PM_OAUTH_CLIENT_SECRET', 'PM_SESSION_SECRET']
 
 function filesUnder(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

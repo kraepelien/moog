@@ -85,11 +85,11 @@ export function watchServerSources(server: ViteDevServer): void {
 
 export function patchApi(options: PatchApiOptions): Plugin {
   return {
-    name: 'moog-patch-api',
+    name: 'patchmemory-patch-api',
     async configureServer(server) {
       watchServerSources(server)
 
-      const databasePath = join(options.root, 'moog.db')
+      const databasePath = join(options.root, 'patchmemory.db')
       const db = openDatabase(databasePath)
       /* Its own record, never marked scheduled: this plugin serves the same
          routes and runs no timer, so the operations page says nothing runs here

@@ -11,7 +11,7 @@ import type { StorageLike } from './deviceSkin.ts'
  * be recording a layout it cannot have.
  */
 
-const KEY = 'moog:nav-top'
+const KEY = 'pm:nav-top'
 
 /* `window` is the rail on a wide screen and the bar on a narrow one; `top` is
    the bar everywhere. */

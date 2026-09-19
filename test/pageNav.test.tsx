@@ -126,13 +126,13 @@ describe('folding the rail', () => {
   })
 
   /* The name is a word like any other, and at 60px the lockup would be a
-     wordmark eight pixels tall. Both drawings are named PatchDB, so the heading
+     wordmark eight pixels tall. Both drawings are named PatchMemory, so the heading
      reads the same whichever is up. */
   test('takes the name off the mark too, and keeps the heading', () => {
-    const mark = () => screen.getByRole('img', { name: 'PatchDB' }) as HTMLImageElement
+    const mark = () => screen.getByRole('img', { name: 'PatchMemory' }) as HTMLImageElement
 
     renderNav({ collapsed: false })
-    expect(mark().getAttribute('src')).toBe('/patchdb.svg')
+    expect(mark().getAttribute('src')).toBe('/patchmemory.svg')
 
     cleanup()
     renderNav({ collapsed: true })
@@ -187,7 +187,7 @@ describe('across the top', () => {
   test('takes the tile rather than the lockup', () => {
     renderNav({ placement: 'top' })
     expect(
-      (screen.getByRole('img', { name: 'PatchDB' }) as HTMLImageElement).getAttribute('src'),
+      (screen.getByRole('img', { name: 'PatchMemory' }) as HTMLImageElement).getAttribute('src'),
     ).toBe('/logo.svg')
   })
 

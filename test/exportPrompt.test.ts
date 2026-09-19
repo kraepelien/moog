@@ -50,7 +50,7 @@ describe('the prompt it writes', () => {
   test('counts what it is asking for, and says it in the singular when it is one', () => {
     expect(promptFor({ contentBg: '#123456' }))
       .toContain(`Set these 1 of the ${SKIN_SWATCHES.length} colours`)
-    expect(promptFor({ contentBg: '#123456' })).toContain('Change the colour the moog app ships')
+    expect(promptFor({ contentBg: '#123456' })).toContain('Change the colour the PatchMemory app ships')
     expect(promptFor({ contentBg: '#123456', blue: '#2266ff' })).toContain('Change the colours')
   })
 

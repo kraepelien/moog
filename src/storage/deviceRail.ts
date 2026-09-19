@@ -12,7 +12,7 @@ import type { StorageLike } from './deviceSkin.ts'
  * only in a browser.
  */
 
-const KEY = 'moog:rail-collapsed'
+const KEY = 'pm:rail-collapsed'
 
 export interface DeviceRail {
   read(): boolean

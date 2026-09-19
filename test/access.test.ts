@@ -17,14 +17,14 @@ const roots: string[] = []
 const SECRET = 'access-secret'
 
 async function world(admins: readonly string[] = ['boss@example.com']) {
-  const root = mkdtempSync(join(tmpdir(), 'moog-access-'))
+  const root = mkdtempSync(join(tmpdir(), 'patchmemory-access-'))
   roots.push(root)
-  const db = openDatabase(join(root, 'moog.db'))
+  const db = openDatabase(join(root, 'patchmemory.db'))
   syncInstruments(db)
   seedTags(db)
 
   const config = {
-    ...authConfigFromEnv({ MOOG_SESSION_SECRET: SECRET }),
+    ...authConfigFromEnv({ PM_SESSION_SECRET: SECRET }),
     mode: 'oauth' as const,
     secret: SECRET,
     admins,
@@ -94,7 +94,7 @@ describe('the session route', () => {
 
 describe('what the environment grants', () => {
   test('makes a listed address an admin without them signing in again', async () => {
-    /* MOOG_ADMINS already worked this way: a line in .env and a restart. A
+    /* PM_ADMINS already worked this way: a line in .env and a restart. A
        grant that only landed at the next sign-in would look like it was
        ignored. */
     const { person } = await world(['late@example.com'])
@@ -104,7 +104,7 @@ describe('what the environment grants', () => {
   })
 
   /* The column is not a second way to be one. A row left saying `admin` by an
-     older build is ignored, so taking an address out of MOOG_ADMINS really does
+     older build is ignored, so taking an address out of PM_ADMINS really does
      take it away. */
   test('is the only thing that makes an admin, whatever a column says', async () => {
     const { person, repositories } = await world([])
@@ -180,9 +180,9 @@ describe('with sign-in off', () => {
      the same place the list does, rather than by storing a role against the one
      user that exists. */
   test('the local user is an admin because the mode makes one, not because a row says so', async () => {
-    const root = mkdtempSync(join(tmpdir(), 'moog-access-off-'))
+    const root = mkdtempSync(join(tmpdir(), 'patchmemory-access-off-'))
     roots.push(root)
-    const db = openDatabase(join(root, 'moog.db'))
+    const db = openDatabase(join(root, 'patchmemory.db'))
     syncInstruments(db)
 
     const config = authConfigFromEnv({})

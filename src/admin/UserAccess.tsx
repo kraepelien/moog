@@ -340,7 +340,7 @@ export function UserAccess({
 
   const standing: Partial<Record<Role, string>> = {
     [ROLE.member]: 'everybody signed in',
-    [ROLE.admin]: user.envAdmin ? 'from MOOG_ADMINS' : 'not from here',
+    [ROLE.admin]: user.envAdmin ? 'from PM_ADMINS' : 'not from here',
   }
 
   const groups: { name: string; note: string; of: readonly Privilege[] }[] = [
@@ -391,7 +391,7 @@ export function UserAccess({
 
         {user.envAdmin && (
           <Alert severity="info" sx={{ mt: 2 }}>
-            This address is listed in <code>MOOG_ADMINS</code>, which is the only thing that makes
+            This address is listed in <code>PM_ADMINS</code>, which is the only thing that makes
             an administrator. Take it out and restart to stop that. The two privileges that would
             lock everybody out of this page are shown locked below.
           </Alert>

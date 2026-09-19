@@ -59,14 +59,14 @@ jobs:
         with:
           context: .
           load: true
-          tags: moog:smoke
+          tags: patchmemory:smoke
           # The id the container runs as has to match whoever owns the share, or
           # every file it writes comes back unreadable from the NAS. The defaults
           # are the Synology account this deploys to; the variables only need
           # setting for a different host.
           build-args: |
-            UID=${{ vars.MOOG_UID || '1027' }}
-            GID=${{ vars.MOOG_GID || '65536' }}
+            UID=${{ vars.PM_UID || '1027' }}
+            GID=${{ vars.PM_GID || '65536' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -78,18 +78,18 @@ jobs:
       # being true.
       - name: Smoke-test the image
         run: |
-          docker run -d --name moog-smoke -p 8080:8080 moog:smoke
+          docker run -d --name patchmemory-smoke -p 8080:8080 patchmemory:smoke
           for _ in $(seq 1 30); do
             if curl -fsS -m 5 http://127.0.0.1:8080/api/health; then
               exit 0
             fi
-            if [ "$(docker inspect --format '{{.State.Status}}' moog-smoke)" != running ]; then
+            if [ "$(docker inspect --format '{{.State.Status}}' patchmemory-smoke)" != running ]; then
               break
             fi
             sleep 2
           done
           echo "::error::the image never served /api/health"
-          docker logs moog-smoke
+          docker logs patchmemory-smoke
           exit 1
 
       - uses: docker/build-push-action@v7
@@ -98,8 +98,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           build-args: |
-            UID=${{ vars.MOOG_UID || '1027' }}
-            GID=${{ vars.MOOG_GID || '65536' }}
+            UID=${{ vars.PM_UID || '1027' }}
+            GID=${{ vars.PM_GID || '65536' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -129,4 +129,4 @@ jobs:
               -o ConnectTimeout=15 \
               -p ${{ env.SSH_PORT }} \
               ${{ env.SSH_USER }}@${{ env.SSH_HOST }} \
-              "bash /volume1/docker/moog/deploy.sh ${{ env.IMAGE }}:${{ env.SHORT_SHA }}"
+              "bash /volume1/docker/patchmemory/deploy.sh ${{ env.IMAGE }}:${{ env.SHORT_SHA }}"

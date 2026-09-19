@@ -6,7 +6,7 @@ import { authConfigFromEnv } from '@server/identity.ts'
    laptop and passes in CI, which is the shape of failure that costs a morning. */
 describe('the environment a test runs in', () => {
   test('carries none of the developer own configuration', () => {
-    expect(Object.keys(process.env).filter((name) => name.startsWith('MOOG_'))).toEqual([])
+    expect(Object.keys(process.env).filter((name) => name.startsWith('PM_'))).toEqual([])
   })
 
   /* The one that actually bit: with a client id present the server wants a real

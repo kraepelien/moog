@@ -18,12 +18,12 @@ import { seedTags } from './services/tags.ts'
    hand — which a group-readable-only file does not allow. */
 process.umask(0o002)
 
-const root = process.env.MOOG_DATA ?? 'data'
-const seed = process.env.MOOG_BANK ?? 'bank'
-const dist = process.env.MOOG_DIST ?? 'dist'
+const root = process.env.PM_DATA ?? 'data'
+const seed = process.env.PM_BANK ?? 'bank'
+const dist = process.env.PM_DIST ?? 'dist'
 const port = Number(process.env.PORT ?? 5174)
 
-const databasePath = join(root, 'moog.db')
+const databasePath = join(root, 'patchmemory.db')
 const db = openDatabase(databasePath)
 const ops = createOpsLog({ databasePath })
 const factory = loadFactory(db, seed)
@@ -69,7 +69,7 @@ Bun.serve({
 })
 
 /* Resolved rather than printed with a `./` in front, which assumed `root` was
-   relative and collided as `.//data` against the container's own MOOG_DATA. An
+   relative and collided as `.//data` against the container's own PM_DATA. An
    absolute path also says *which* checkout this is, the same reason the port is
    worth quoting when two worktrees are running. */
-console.log(`PatchDB on http://localhost:${port}  (data in ${resolve(root)})`)
+console.log(`PatchMemory on http://localhost:${port}  (data in ${resolve(root)})`)

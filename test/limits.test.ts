@@ -15,13 +15,13 @@ const roots: string[] = []
 const SECRET = 'limits-secret'
 
 async function world(over: Partial<Limits> = {}) {
-  const root = mkdtempSync(join(tmpdir(), 'moog-limits-'))
+  const root = mkdtempSync(join(tmpdir(), 'patchmemory-limits-'))
   roots.push(root)
-  const db = openDatabase(join(root, 'moog.db'))
+  const db = openDatabase(join(root, 'patchmemory.db'))
   syncInstruments(db)
 
   const config = {
-    ...authConfigFromEnv({ MOOG_SESSION_SECRET: SECRET }),
+    ...authConfigFromEnv({ PM_SESSION_SECRET: SECRET }),
     mode: 'oauth' as const,
     secret: SECRET,
     admins: ['boss@example.com'],
@@ -183,7 +183,7 @@ describe('how fast anyone may write', () => {
   test('holds the door on sign-in too', async () => {
     const { db } = await world()
     const config = {
-      ...authConfigFromEnv({ MOOG_SESSION_SECRET: SECRET }),
+      ...authConfigFromEnv({ PM_SESSION_SECRET: SECRET }),
       mode: 'oauth' as const,
       secret: SECRET,
       clientId: 'client',

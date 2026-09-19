@@ -18,14 +18,14 @@ const roots: string[] = []
 const SECRET = 'permissions-secret'
 
 async function world() {
-  const root = mkdtempSync(join(tmpdir(), 'moog-perms-'))
+  const root = mkdtempSync(join(tmpdir(), 'patchmemory-perms-'))
   roots.push(root)
-  const db = openDatabase(join(root, 'moog.db'))
+  const db = openDatabase(join(root, 'patchmemory.db'))
   syncInstruments(db)
   const store = createRepositories(db)
 
   const config = {
-    ...authConfigFromEnv({ MOOG_SESSION_SECRET: SECRET }),
+    ...authConfigFromEnv({ PM_SESSION_SECRET: SECRET }),
     mode: 'oauth' as const,
     secret: SECRET,
     admins: ['boss@example.com'],
@@ -270,7 +270,7 @@ describe('a request from another site', () => {
   test('is refused when it would change something', async () => {
     const { db } = await world()
     const config = {
-      ...authConfigFromEnv({ MOOG_SESSION_SECRET: SECRET }),
+      ...authConfigFromEnv({ PM_SESSION_SECRET: SECRET }),
       secret: SECRET,
     }
     const handle = createApi({ db, config })

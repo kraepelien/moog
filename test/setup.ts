@@ -56,5 +56,5 @@ if (!Element.prototype.setPointerCapture) {
    configuration states it, as the sign-in tests already do by passing an object
    to authConfigFromEnv rather than reading the environment. */
 for (const name of Object.keys(process.env)) {
-  if (name.startsWith('MOOG_')) delete process.env[name]
+  if (name.startsWith('PM_')) delete process.env[name]
 }

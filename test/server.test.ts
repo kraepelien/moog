@@ -19,9 +19,9 @@ import { fixedIdentity } from './fixtures.ts'
 const roots: string[] = []
 
 function freshDb() {
-  const root = mkdtempSync(join(tmpdir(), 'moog-server-'))
+  const root = mkdtempSync(join(tmpdir(), 'patchmemory-server-'))
   roots.push(root)
-  const db = openDatabase(join(root, 'moog.db'))
+  const db = openDatabase(join(root, 'patchmemory.db'))
   syncInstruments(db)
   return db
 }
@@ -215,11 +215,11 @@ describe('the request handler', () => {
 
 describe('the daily backup', () => {
   test('replaces the copy already made today rather than failing', () => {
-    const root = mkdtempSync(join(tmpdir(), 'moog-backup-'))
+    const root = mkdtempSync(join(tmpdir(), 'patchmemory-backup-'))
     roots.push(root)
-    const db = openDatabase(join(root, 'moog.db'))
+    const db = openDatabase(join(root, 'patchmemory.db'))
     syncInstruments(db)
-    const path = join(root, 'backups', 'moog-today.db')
+    const path = join(root, 'backups', 'patchmemory-today.db')
 
     backupTo(db, path)
     createRepositories(db).patches.create(aPatch('Saved After The First Copy'), owned(db), 'later')

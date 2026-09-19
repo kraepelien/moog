@@ -12,13 +12,13 @@ const BASE: OpsReport = {
   everyHours: 24,
   backup: {
     at: '2026-02-03T08:00:01.000Z',
-    path: 'data/backups/moog-2026-02-03.db',
+    path: 'data/backups/patchmemory-2026-02-03.db',
     ok: true,
     error: null,
   },
   purge: { at: '2026-02-03T08:00:00.500Z', removed: 2, olderThan: '2026-01-04T08:00:00.000Z' },
   factory: { loaded: 0, kept: 44, retired: 0, refreshed: false },
-  database: { path: 'data/moog.db', bytes: 2_097_152 },
+  database: { path: 'data/patchmemory.db', bytes: 2_097_152 },
   limits: limitsFromEnv({}),
   limitEnv: LIMIT_ENV,
 }
@@ -28,7 +28,7 @@ const show = (over: Partial<OpsReport> = {}) => render(<OpsPage report={{ ...BAS
 describe('a server that runs its own housekeeping', () => {
   test('says when the last copy was written, and where it went', () => {
     show()
-    expect(screen.getByText('data/backups/moog-2026-02-03.db')).toBeTruthy()
+    expect(screen.getByText('data/backups/patchmemory-2026-02-03.db')).toBeTruthy()
   })
 
   test('says what the last sweep removed, and what it measured against', () => {
@@ -47,7 +47,7 @@ describe('a server that runs its own housekeeping', () => {
     show({
       backup: {
         at: '2026-02-03T08:00:01.000Z',
-        path: 'data/backups/moog-2026-02-03.db',
+        path: 'data/backups/patchmemory-2026-02-03.db',
         ok: false,
         error: 'read-only file system',
       },
@@ -82,8 +82,8 @@ describe('a process that takes no backups', () => {
 describe('the limits', () => {
   test('names the variable that sets each one', () => {
     show()
-    expect(screen.getByText('MOOG_TRASH_DAYS')).toBeTruthy()
-    expect(screen.getByText('MOOG_WRITES_PER_MINUTE')).toBeTruthy()
+    expect(screen.getByText('PM_TRASH_DAYS')).toBeTruthy()
+    expect(screen.getByText('PM_WRITES_PER_MINUTE')).toBeTruthy()
   })
 
   /* Configuration is worth seeing; credentials are not, and a page that showed
@@ -91,9 +91,9 @@ describe('the limits', () => {
      housekeeping. */
   test('says nothing about the credentials or who administers the install', () => {
     const { container } = show()
-    expect(container.textContent).not.toContain('MOOG_ADMINS')
-    expect(container.textContent).not.toContain('MOOG_OAUTH_CLIENT_ID')
-    expect(container.textContent).not.toContain('MOOG_SESSION_SECRET')
+    expect(container.textContent).not.toContain('PM_ADMINS')
+    expect(container.textContent).not.toContain('PM_OAUTH_CLIENT_ID')
+    expect(container.textContent).not.toContain('PM_SESSION_SECRET')
   })
 })
 

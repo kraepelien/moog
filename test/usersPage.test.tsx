@@ -477,9 +477,9 @@ describe('what a role gives', () => {
 
     expect(screen.queryByRole('button', { name: 'Give the admin role' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Remove the admin role' })).toBeNull()
-    expect(card(ROLE.admin).textContent).toContain('MOOG_ADMINS')
+    expect(card(ROLE.admin).textContent).toContain('PM_ADMINS')
     expect(
-      screen.getAllByRole('alert').some((alert) => alert.textContent?.includes('MOOG_ADMINS')),
+      screen.getAllByRole('alert').some((alert) => alert.textContent?.includes('PM_ADMINS')),
     ).toBe(true)
   })
 })

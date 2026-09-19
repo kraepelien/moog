@@ -1,6 +1,7 @@
 import type { Database } from 'bun:sqlite'
 import {
   clearedSessionCookie,
+  isEnvAdmin,
   originOf,
   readCookie,
   readToken,
@@ -21,7 +22,7 @@ import { createUsers } from '@server/repositories/users.ts'
    an auth route anywhere else would work deployed and fall through to the app
    in development. */
 
-const FLOW_COOKIE = 'moog_oauth'
+const FLOW_COOKIE = 'pm_oauth'
 const FLOW_MINUTES = 10
 
 export interface AuthOptions {
@@ -127,9 +128,20 @@ export async function handleAuth(
     })
     if (!profile) return redirect('/signed-out?error=exchange')
 
+    /* PM_ADMINS is the guest list, and this is the door it is checked at.
+       Refused before a row is written, so the user list holds the people who
+       got in rather than everybody who ever tried.
+
+       The check is not repeated per request, because a session that outlived
+       its address is ended by rotating PM_SESSION_SECRET or by deleting the
+       account, and a per-request version would have to treat every member as a
+       stranger — which is the ownership and privilege machinery the rest of the
+       server is built on. */
+    if (!isEnvAdmin(profile.email, config)) return redirect('/signed-out?error=denied')
+
     const uid = await userIdFor(provider.id, profile.subject)
-    /* A member, always. Whether they are also an admin is decided per request
-       from MOOG_ADMINS and from what has been granted, not here. */
+    /* A member, always. What the row is allowed to do is decided per request
+       from PM_ADMINS and from what has been granted, never stored here. */
     createUsers(options.db).ensure({
       uid,
       provider: provider.id,

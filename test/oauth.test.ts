@@ -20,10 +20,10 @@ function claims(payload: object): string {
   return `header.${body}.signature`
 }
 
-function signIn(options: { token?: object; status?: number } = {}) {
-  const root = mkdtempSync(join(tmpdir(), 'moog-oauth-'))
+function signIn(options: { token?: object; status?: number; admins?: string } = {}) {
+  const root = mkdtempSync(join(tmpdir(), 'patchmemory-oauth-'))
   roots.push(root)
-  const db = openDatabase(join(root, 'moog.db'))
+  const db = openDatabase(join(root, 'patchmemory.db'))
   syncInstruments(db)
 
   const exchanges: { body: URLSearchParams }[] = []
@@ -39,16 +39,19 @@ function signIn(options: { token?: object; status?: number } = {}) {
 
   const config = {
     ...authConfigFromEnv({
-      MOOG_SESSION_SECRET: SECRET,
-      MOOG_OAUTH_CLIENT_ID: 'client-abc',
-      MOOG_OAUTH_CLIENT_SECRET: 'secret-xyz',
-      MOOG_PUBLIC_ORIGIN: 'https://moog.example',
+      PM_SESSION_SECRET: SECRET,
+      PM_OAUTH_CLIENT_ID: 'client-abc',
+      PM_OAUTH_CLIENT_SECRET: 'secret-xyz',
+      PM_PUBLIC_ORIGIN: 'https://patchmemory.example',
+      /* The guest list. It names the address the fake token carries, so the
+         default fixture is somebody the callback admits. */
+      PM_ADMINS: options.admins ?? 'p@example.com',
     }),
   }
   const handle = createApi({ db, config, doFetch })
 
   const call = (path: string, init: RequestInit = {}) =>
-    handle(new Request(`https://moog.example${path}`, init))
+    handle(new Request(`https://patchmemory.example${path}`, init))
 
   return { db, call, exchanges }
 }
@@ -60,7 +63,7 @@ const cookieNamed = (response: Response, name: string) =>
 async function start(call: ReturnType<typeof signIn>['call'], returnTo = '/#/library') {
   const response = (await call(`/api/auth/google/start?returnTo=${encodeURIComponent(returnTo)}`))!
   const location = new URL(response.headers.get('location')!)
-  const flow = cookieNamed(response, 'moog_oauth')!.split(';')[0]!
+  const flow = cookieNamed(response, 'pm_oauth')!.split(';')[0]!
   return { response, location, flow, state: location.searchParams.get('state')! }
 }
 
@@ -87,13 +90,13 @@ describe('starting a sign-in', () => {
     const { call } = signIn()
     const { location } = await start(call)
     expect(location.searchParams.get('redirect_uri')).toBe(
-      'https://moog.example/api/auth/google/callback',
+      'https://patchmemory.example/api/auth/google/callback',
     )
   })
 
   test('keeps the state and the verifier in a cookie, not in the server', async () => {
     const { response } = await start(signIn().call)
-    const flow = cookieNamed(response, 'moog_oauth')!
+    const flow = cookieNamed(response, 'pm_oauth')!
     expect(flow).toContain('HttpOnly')
     expect(flow).toContain('Path=/api/auth')
     expect(flow).toContain('Max-Age=600')
@@ -127,7 +130,7 @@ describe('coming back from Google', () => {
     /* Two Set-Cookie headers in one response, which is the case the dev bridge
        used to flatten into nonsense. */
     expect(cookiesFrom(back)).toHaveLength(2)
-    expect(cookieNamed(back, 'moog_oauth')).toContain('Max-Age=0')
+    expect(cookieNamed(back, 'pm_oauth')).toContain('Max-Age=0')
   })
 
   test('sends the verifier that matches the challenge', async () => {
@@ -169,6 +172,32 @@ describe('coming back from Google', () => {
 
     expect(back.status).toBe(302)
     expect(back.headers.get('location')).toContain('error=exchange')
+  })
+
+  test('turns away an address PM_ADMINS does not name, and writes no row', async () => {
+    const { call, db } = signIn({ admins: 'somebody-else@example.com' })
+    const { flow, state } = await start(call)
+    const back = (await call(`/api/auth/google/callback?code=abc&state=${state}`, {
+      headers: { cookie: flow },
+    }))!
+
+    expect(back.headers.get('location')).toContain('error=denied')
+    expect(cookieNamed(back, SESSION_COOKIE)).toBeUndefined()
+    /* The refusal leaves nothing behind: a row here would put somebody on the
+       user list who has never been allowed in. */
+    expect(createUsers(db).find(await userIdFor('google', '1174'))).toBeNull()
+  })
+
+  test('turns everybody away when PM_ADMINS is empty', async () => {
+    /* The lockout that reads as a healthy install: Google answers, the callback
+       runs, and every account lands back on the sign-in page. */
+    const { call } = signIn({ admins: '' })
+    const { flow, state } = await start(call)
+    const back = (await call(`/api/auth/google/callback?code=abc&state=${state}`, {
+      headers: { cookie: flow },
+    }))!
+
+    expect(back.headers.get('location')).toContain('error=denied')
   })
 
   test('refuses a token carrying no subject', async () => {
@@ -224,9 +253,9 @@ describe('signing out', () => {
 
 describe('with sign-in unconfigured', () => {
   test('the routes are not there at all', async () => {
-    const root = mkdtempSync(join(tmpdir(), 'moog-oauth-off-'))
+    const root = mkdtempSync(join(tmpdir(), 'patchmemory-oauth-off-'))
     roots.push(root)
-    const db = openDatabase(join(root, 'moog.db'))
+    const db = openDatabase(join(root, 'patchmemory.db'))
     const handle = createApi({ db, config: authConfigFromEnv({}) })
 
     const response = (await handle(new Request('https://x/api/auth/google/start')))!

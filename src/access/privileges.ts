@@ -97,7 +97,7 @@ export const ROLES: readonly Role[] = Object.values(ROLE)
    `member` is what every signed-in account is, applied at resolution rather
    than stored, so unlocking a basic feature reaches everyone with no write.
 
-   `admin` comes from `MOOG_ADMINS` and nowhere else. Storing it as well gave
+   `admin` comes from `PM_ADMINS` and nowhere else. Storing it as well gave
    one fact two sources, which is what let a column go on claiming an admin the
    environment had stopped naming. Somebody who needs one administrative power
    without being an administrator is given that privilege, not the role. */
