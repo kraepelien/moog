@@ -4,11 +4,8 @@ import { PRIVILEGE, type Privilege } from '@access/privileges.ts'
    behind a privilege is behind it by being written down here rather than by
    whoever adds it remembering to check.
 
-   The address still lives in the fragment. A fragment already survives a
-   reload and works with the back button, and moving to real paths would drag
-   every OAuth return URL with it for a cosmetic gain on an app that is behind
-   a sign-in anyway. Only `read` below knows, so that change stays one function
-   wide when it is worth making. */
+   Matched against the path. The server hands back the app for an address it
+   does not recognise, which is what a fragment would otherwise have bought. */
 
 export interface RouteDef {
   readonly name: string
@@ -32,6 +29,12 @@ export const ROUTES: readonly RouteDef[] = [
      where a logo already takes everybody who presses one. */
   { name: 'home', path: '/', title: 'Home' },
   { name: 'library', path: '/library', title: 'Patch library', rail: 'Library' },
+  /* The one page with an address of its own per thing it shows, and not a row:
+     it is reached from a library row or a link somebody was sent. No `needs`,
+     deliberately: whether a patch may be read is a decision about that row
+     which only the patches service can make, and a privilege named here would
+     be a second and wrong copy of it. */
+  { name: 'patch', path: '/patch/:id', title: 'Patch' },
   { name: 'editor', path: '/editor', title: 'Patch editor', rail: 'Editor' },
   { name: 'midi', path: '/midi', title: 'Play MIDI', rail: 'MIDI' },
   /* Not a row of its own: this is a page somebody opens once and leaves, and it

@@ -153,7 +153,7 @@ async function upload(container: HTMLElement, bytes: Uint8Array, name = 'song.mi
    finished closing. */
 async function dress() {
   fireEvent.click(screen.getAllByRole('button', { name: 'Load patch' })[0]!)
-  fireEvent.click(await screen.findByRole('button', { name: 'Open Sub Bass in the editor' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Open Sub Bass' }))
   await waitForElementToBeRemoved(() => screen.queryByRole('dialog'))
   await waitFor(() => expect(screen.getAllByText('Sub Bass')[0]).toBeDefined())
 }

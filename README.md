@@ -305,9 +305,8 @@ Within a filter row the chips are an OR and the rows are an AND, so "bass or
 lead, on a Model D" is sayable. An empty row filters nothing rather than matching
 nothing, or opening the library would show an empty list.
 
-Opening a row loads the patch and switches to the editor in one go. A factory
-patch opens as a **copy**, so saving afterwards cannot write back over it; a
-patch of your own opens as itself, so saving updates the one you picked.
+Opening a row goes to that patch's own address, `/patch/:id`, which is the one
+page in the app with an address per thing it shows. See **The patch sheet**.
 
 Saving is a form, not a button. **Save** opens `SavePatchDialog`, which collects
 the name, the categories, the synth, whether it is public, and the notes, then
@@ -749,11 +748,44 @@ would otherwise have been buying, and it was already there.
 routes lived in the fragment is rewritten once by `adoptLegacyHash` before anything renders; a
 fragment that is not a path is left alone, because that is somebody's anchor.
 
-The matcher captures `:name` segments and `useParams()` hands them over, although no page takes one
-yet: that is what makes adding a page like `/patch/:id` a row in the table rather than a rewrite.
+The matcher captures `:name` segments and `useParams()` hands them over. `/patch/:id` is the one
+page that takes one, and it was a row in the table rather than a rewrite, which is what that
+machinery was for.
+
+A route's declared path is `/patch/:id` and the address is `/patch/midnight-funk`, so anything
+carrying somebody back to where they were wants the second. `returnToFor` in `session/session.ts`
+is that distinction named once, because handing the first to a sign-in sends them to the home page
+instead and nothing downstream can tell.
 
 There is no router dependency. What one would buy here is `useBlocker`, nested layouts, loaders and
 route-level code splitting, and only the first had a use — it is `useNavigationBlock` now.
+
+### The patch sheet
+
+`/patch/:id` is the one page with an address per thing it shows, and it is what makes a patch
+something you can send somebody. It **shows** a patch rather than editing one: arriving changes no
+state at all, so a link opened by somebody halfway through a patch of their own cannot cost them
+the draft they had going. `/editor` stays what it was, the one unsaved draft.
+
+That division is the whole reason the sheet is not simply the editor at another address. As the
+editor, the address would have to be rewritten twice for a single act, since a factory patch opens
+as a copy with no stored id and saving that copy mints a new one, and a press of Back landing
+between the two would have to decide whether to reload a patch over a dirty panel.
+
+**The panel on it is frozen, and still plays.** `Panel` takes `readOnly`, and what it freezes is
+what the patch records, which is `isRecalled`: a frozen control is handed a no-op and wrapped in an
+`inert` span at `display: contents`, so freezing costs no layout and no control component knows the
+sheet exists. The output levels describe the room, the pitch wheel cannot hold a position, and the
+keyboard is a decoration, so none of the three is in a patch and none of them is frozen. The
+keyboard carries its own audio, so drawing the panel is what makes a link sound.
+
+Unknown, somebody else's private one, and deleted are **one message**, because the server refuses
+to tell them apart: a 403 would confirm that an id exists. Saying more would invent a distinction
+it withheld.
+
+Opening a row used to load the patch and adopt it *before* navigating, and `navigate` is what asks
+about an unsaved draft, so answering Cancel left the library showing with the draft already gone.
+`navigate` answers whether it went, and the editor button adopts only once it has.
 
 ### The page nav
 

@@ -39,8 +39,8 @@ function Editor({ dirty }: { dirty: boolean }) {
 /* Started inside `act` because asking opens the dialog, and that is a state
    update React wants to know it caused. The promise is handed back rather than
    awaited: it does not settle until the question has been answered. */
-function leave(to: string): Promise<void> {
-  let going!: Promise<void>
+function leave(to: string): Promise<boolean> {
+  let going!: Promise<boolean>
   act(() => {
     going = navigate(to)
   })
@@ -95,6 +95,23 @@ describe('leaving a page with unsaved changes', () => {
     await going
 
     expect(at()).toBe('/')
+  })
+
+  /* What a caller that replaces the draft reads before replacing it. Opening a
+     patch in the editor navigates first and adopts second, so a refusal here is
+     the whole of what keeps the draft that was already open. */
+  test('reports whether it went, so a caller can act after the move', async () => {
+    render(<Editor dirty />)
+
+    const refused = leave('/library')
+    await screen.findByRole('dialog')
+    answer('Cancel')
+    expect(await refused).toBe(false)
+
+    const allowed = leave('/library')
+    await screen.findByRole('dialog')
+    answer('Discard and leave')
+    expect(await allowed).toBe(true)
   })
 
   test('does not ask at all with nothing unsaved', async () => {

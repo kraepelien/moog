@@ -4,6 +4,7 @@ Everything that has landed on `main`, newest first. A pull request carries its l
 straight to `main` has none to carry.
 
 - [Give every privilege one control with three positions, put what it means behind an info icon, and move StoreMidi onto the tester rung](https://github.com/kraepelien/moog/pull/109)
+- [Give every patch an address of its own, and stop opening one from costing you the draft](https://github.com/kraepelien/moog/pull/108)
 - [Start the home shelf with the best-rated patches rather than the four the seed happened to stamp last](https://github.com/kraepelien/moog/pull/107)
 - [Call the administration row Admin, the word it lands on](https://github.com/kraepelien/moog/pull/106)
 - [Lift the nav off the page, and mark the current one by the lettering rather than the fill](https://github.com/kraepelien/moog/pull/105)

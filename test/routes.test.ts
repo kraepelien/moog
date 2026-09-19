@@ -30,11 +30,10 @@ describe('resolving an address', () => {
   })
 })
 
-/* No page takes a parameter yet. The matcher does, which is what makes adding
-   one a row in the table rather than a rewrite — so it is exercised directly
-   against a route that is not in the live table. */
+/* The patch page is the one route with a parameter, so this exercises the real
+   row rather than a stand-in. */
 describe('matching a page that takes a parameter', () => {
-  const patch = { name: 'patch', path: '/patch/:id', title: 'Patch' }
+  const patch = ROUTES.find((route) => route.name === 'patch')!
 
   test('captures the segment under the name the path gave it', () => {
     expect(matchRoute(patch, '/patch/abc-123')?.params).toEqual({ id: 'abc-123' })
@@ -47,6 +46,17 @@ describe('matching a page that takes a parameter', () => {
   test('does not match a different depth', () => {
     expect(matchRoute(patch, '/patch')).toBeNull()
     expect(matchRoute(patch, '/patch/abc/extra')).toBeNull()
+  })
+
+  test('resolves a real address to it, slug or uid alike', () => {
+    expect(resolve('/patch/midnight-funk').route.name).toBe('patch')
+    expect(resolve('/patch/midnight-funk').params).toEqual({ id: 'midnight-funk' })
+  })
+
+  /* Round trips, which is what a link somebody was sent depends on. */
+  test('builds an address a space survives', () => {
+    expect(pathFor('patch', { id: 'a b' })).toBe('/patch/a%20b')
+    expect(resolve(pathFor('patch', { id: 'a b' })).params).toEqual({ id: 'a b' })
   })
 })
 

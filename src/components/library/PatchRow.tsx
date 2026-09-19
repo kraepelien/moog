@@ -22,9 +22,9 @@ export function PatchRow({
   onRate,
 }: {
   entry: LibraryEntry
-  /* The one the editor is showing. Pressing a name opens it and leaves the list,
-     so coming back to a list of forty-four with no idea which one is loaded is
-     the state this marks. */
+  /* The one the editor is showing. Pressing a name leaves the list for that
+     patch's own page, so coming back to a list of forty-four with no idea which
+     one is loaded is the state this marks. */
   open?: boolean
   tagPalette?: TagPalette
   onOpen: () => void
@@ -54,8 +54,8 @@ export function PatchRow({
         aria-current={open === true ? 'true' : undefined}
         aria-label={
           open === true
-            ? `${entry.name || 'This patch'}, open in the editor`
-            : `Open ${entry.name || 'this patch'} in the editor`
+            ? `${entry.name || 'This patch'}, the patch this editor is showing`
+            : `Open ${entry.name || 'this patch'}`
         }
       >
         <Typography component="span" className={styles.nameText}>

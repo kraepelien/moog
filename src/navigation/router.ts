@@ -90,12 +90,15 @@ export function useLocation(): string {
 }
 
 /* Async because whatever is blocking has to be allowed to ask a person, and the
-   nice way to ask is a dialog rather than `window.confirm`. Call sites do not
-   wait on it: navigating is something they start, not something they read the
-   result of. */
-export async function navigate(path: string): Promise<void> {
-  if (read() === path) return
-  if (blocker !== null && !(await blocker(path))) return
+   nice way to ask is a dialog rather than `window.confirm`.
+
+   Answers whether it went, which most call sites still ignore. The one that
+   cannot is opening a patch in the editor: it replaces the draft, so it has to
+   happen after the move rather than before it, or a refused navigation leaves
+   the old draft already gone. */
+export async function navigate(path: string): Promise<boolean> {
+  if (read() === path) return true
+  if (blocker !== null && !(await blocker(path))) return false
 
   window.history.pushState(null, '', path)
   current = path
@@ -104,13 +107,12 @@ export async function navigate(path: string): Promise<void> {
      would. Not on `popstate`: what the browser saved for that entry is where
      somebody left the page they are going back to. */
   window.scrollTo(0, 0)
+  return true
 }
 
-export function useRoute(): [Match, (path: string) => void] {
+export function useRoute(): [Match, (path: string) => Promise<boolean>] {
   const path = useLocation()
-  const go = useCallback((next: string) => {
-    void navigate(next)
-  }, [])
+  const go = useCallback((next: string) => navigate(next), [])
   return [resolve(path), go]
 }
 
