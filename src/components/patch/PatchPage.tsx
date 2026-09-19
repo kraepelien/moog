@@ -2,6 +2,7 @@ import { useCallback, useRef } from 'react'
 import Alert from '@mui/material/Alert'
 import AlertTitle from '@mui/material/AlertTitle'
 import Button from '@mui/material/Button'
+import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { FieldRow } from '@components/library/FieldRow.tsx'
 import { FilterRow } from '@components/library/FilterRow.tsx'
@@ -117,7 +118,7 @@ export function PatchPage({
   const bank = entry === null ? null : bankOf(entry)
 
   return (
-    <div className={styles.page} ref={sheet}>
+    <Stack spacing={2} ref={sheet}>
       <PatchBar
         title={{ text: patch.name, unsaved: false }}
         buttons={[
@@ -126,7 +127,9 @@ export function PatchPage({
         ]}
       />
 
-      <div className={styles.fields}>
+      {/* A column of rows rather than a grid: FieldRow already lines the labels
+          up in a column of their own width. */}
+      <Stack spacing={0.5}>
         {patch.tags.length > 0 && (
           <FilterRow
             label="Category"
@@ -190,7 +193,7 @@ export function PatchPage({
             </Typography>
           </FieldRow>
         )}
-      </div>
+      </Stack>
 
       {/* Playable, which is the point of an interactive sheet rather than a
           picture of one: the keyboard carries its own audio, so drawing the
@@ -212,6 +215,6 @@ export function PatchPage({
       <div className={styles.notes} data-print="notes">
         <PatchNotes notes={patch.notes} />
       </div>
-    </div>
+    </Stack>
   )
 }

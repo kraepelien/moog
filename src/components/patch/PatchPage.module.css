@@ -1,18 +1,3 @@
-.page {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* Above the panel, the way a patch sheet heads its own drawing. A column of
-   rows rather than a grid: FieldRow already lines the labels up in a column of
-   their own width. */
-.fields {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
 /* A patch with no notes draws none, and a wrapper left holding nothing would
    still take the column's gap under the panel. */
 .notes:empty {

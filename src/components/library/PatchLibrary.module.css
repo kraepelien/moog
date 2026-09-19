@@ -1,7 +1,3 @@
-.library {
-  gap: 16px;
-}
-
 .card {
   border-radius: 10px;
   overflow: hidden;

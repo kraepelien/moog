@@ -198,7 +198,7 @@ export function PlayMidi({
   const dressed = dressedParts(session)
 
   return (
-    <Stack className={styles.page}>
+    <Stack spacing={2}>
       <Paper variant="outlined" className={styles.card}>
         <Box className={styles.head}>
           <Typography component="h2" className={styles.title}>
@@ -328,7 +328,7 @@ export function PlayMidi({
                     {String(part.channel).padStart(2, '0')}
                   </Typography>
 
-                  <Box className={styles.flags}>
+                  <Stack direction="row" spacing={0.5}>
                     <Flag
                       letter="S"
                       title={`Solo ${partName(part)}`}
@@ -345,7 +345,7 @@ export function PlayMidi({
                       on={muted.has(part.channel)}
                       onPress={() => toggleMute(part.channel)}
                     />
-                  </Box>
+                  </Stack>
 
                   <Typography component="span" className={styles.name}>
                     {partName(part)}
