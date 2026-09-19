@@ -3,6 +3,7 @@
 Everything that has landed on `main`, newest first. A pull request carries its link; a commit pushed
 straight to `main` has none to carry.
 
+- Give the one privilege with no page behind it a page, and everybody their trash back
 - [Say what the server has done to itself, instead of leaving it in a log nobody reads over ssh](https://github.com/kraepelien/moog/pull/114)
 - [Print the patch sheet, at the paper's scale rather than the window's](https://github.com/kraepelien/moog/pull/112)
 - [Say who decided an override and when, which every write has recorded since the schema was written](https://github.com/kraepelien/moog/pull/113)

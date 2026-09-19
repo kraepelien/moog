@@ -28,7 +28,14 @@ export function PatchBar({
   title,
   buttons,
 }: {
-  readonly title: { readonly text: string; readonly unsaved: boolean }
+  /* `owner` is set only where the patch is not yours, which is an administrator
+     editing somebody else's. Green Save otherwise reads as "save mine", and
+     whose it is has to be said before it is pressed rather than after. */
+  readonly title: {
+    readonly text: string
+    readonly unsaved: boolean
+    readonly owner?: string | null
+  }
   readonly buttons: readonly PatchBarButton[]
 }) {
   return (
@@ -39,6 +46,11 @@ export function PatchBar({
         sx={{ color: TONE_COLOURS[TITLE_TONE[title.unsaved ? 'unsaved' : 'saved']].ink }}
       >
         {title.text || '(unnamed)'}
+        {title.owner !== undefined && (
+          <Typography component="span" className={styles.owner}>
+            {title.owner === null ? 'somebody else’s patch' : `${title.owner}’s patch`}
+          </Typography>
+        )}
       </Typography>
 
       {/* The buttons and not the bar: on paper the name is the sheet's title,

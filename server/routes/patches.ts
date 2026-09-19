@@ -1,3 +1,4 @@
+import { PRIVILEGE } from '@access/privileges.ts'
 import { isRating } from '@components/library/entry.ts'
 import { badRequest, json, readBody } from '@server/http.ts'
 import { isSafeName } from '@server/repositories/patches.ts'
@@ -34,6 +35,26 @@ export const patchRoutes: readonly Route[] = [
       const created = services.patches.create(await readBody(request), viewer)
       return isRefusal(created) ? refuse(created) : json(created, 201)
     },
+  }),
+
+  /* Both literals are declared above `/patches/:id`, and the order is load
+     bearing: `dispatch` takes the first path that matches in declaration order,
+     and `all` and `trash` are names `isSafeName` accepts, so declared after
+     this would look up a patch called "all" and answer 404. That is a feature
+     that appears to be missing rather than an error, which is why
+     `test/routeTable.test.ts` pins it, beside the same pair for `/tags/in-use`. */
+  route({
+    method: 'GET',
+    path: '/patches/all',
+    needs: PRIVILEGE.AdminPatches,
+    handle: ({ services }) => json(services.patches.listEverything()),
+  }),
+
+  /* No `needs`: everybody has a trash. Whose it is, is the service's rule. */
+  route({
+    method: 'GET',
+    path: '/patches/trash',
+    handle: ({ viewer, services }) => json(services.patches.listTrash(viewer)),
   }),
 
   route({

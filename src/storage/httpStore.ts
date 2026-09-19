@@ -1,4 +1,5 @@
 import { migrateToCurrent } from '@patch/migrate.ts'
+import type { PatchRecord } from '@patch/record.ts'
 import type { Patch } from '@patch/schema.ts'
 import type { AdminUser } from '@admin/users.ts'
 import type { LibraryEntry } from '@components/library/entry.ts'
@@ -16,6 +17,7 @@ import {
   type ArrangementStore,
   type LibraryStore,
   type OpsStore,
+  type PatchAdminStore,
   type PatchStore,
   type PatchSummary,
   type TagStore,
@@ -116,7 +118,8 @@ export function createHttpStore(
   AdminStore &
   ArrangementStore &
   UserStore &
-  OpsStore {
+  OpsStore &
+  PatchAdminStore {
   const request = (path: string, init?: RequestInit) => requestWith(doFetch, path, init)
 
   return {
@@ -220,6 +223,22 @@ export function createHttpStore(
 
     async deleteArrangement(id: string): Promise<void> {
       await request(`/arrangements/${encodeURIComponent(id)}`, { method: 'DELETE' })
+    },
+
+    async listEveryPatch(): Promise<readonly PatchRecord[]> {
+      return (await request('/patches/all')) as readonly PatchRecord[]
+    },
+
+    async unpublish(id: string): Promise<void> {
+      await request(`/patches/${encodeURIComponent(id)}/unpublish`, { method: 'POST' })
+    },
+
+    async listTrash(): Promise<readonly PatchRecord[]> {
+      return (await request('/patches/trash')) as readonly PatchRecord[]
+    },
+
+    async restore(id: string): Promise<void> {
+      await request(`/patches/${encodeURIComponent(id)}/restore`, { method: 'POST' })
     },
 
     async ops(): Promise<OpsReport> {

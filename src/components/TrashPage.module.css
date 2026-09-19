@@ -1,0 +1,10 @@
+.patch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.overdue {
+  color: var(--warning-color, var(--content-color));
+}

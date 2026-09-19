@@ -271,3 +271,114 @@ describe('every answer', () => {
     expect(response.headers.get('vary')).toBe('Cookie')
   })
 })
+
+/* The privilege was half unreachable before the page existed: `mayWrite`
+   admitted it and `mayRead` did not, and `find` runs the read rule first, so an
+   administrator could edit somebody's *public* patch through the API while a
+   private one answered 404 before the write rule was consulted. */
+describe('administering everybody’s patches', () => {
+  test('lists every patch on the install, whoever owns it', async () => {
+    const { mine, theirs, boss, own } = await world()
+    await own(mine, 'Mine', 'private')
+    await own(theirs, 'Theirs', 'private')
+
+    const response = (await boss.call('GET', '/api/patches/all'))!
+    expect(response.status).toBe(200)
+
+    const names = ((await response.json()) as { name: string }[]).map((row) => row.name).sort()
+    expect(names).toEqual(['Mine', 'Sub Bass', 'Theirs'])
+  })
+
+  test('is not a list an ordinary account may ask for', async () => {
+    const { mine } = await world()
+    expect((await mine.call('GET', '/api/patches/all'))!.status).toBe(403)
+  })
+
+  test('is not a list somebody signed out may ask for', async () => {
+    const { stranger } = await world()
+    expect((await stranger('GET', '/api/patches/all'))!.status).toBe(401)
+  })
+
+  test('opens somebody else’s private patch, which it could not before', async () => {
+    const { theirs, boss, own } = await world()
+    const patch = await own(theirs, 'Theirs', 'private')
+
+    expect((await boss.call('GET', `/api/patches/${patch.id}`))!.status).toBe(200)
+  })
+
+  test('and still refuses it to everybody else', async () => {
+    const { mine, theirs, own } = await world()
+    const patch = await own(theirs, 'Theirs', 'private')
+
+    expect((await mine.call('GET', `/api/patches/${patch.id}`))!.status).toBe(404)
+  })
+
+  /* Follows from reading it, since `create({ from })` reads through the same
+     rule. Consistent with already being able to edit it, and written down so it
+     is a decision rather than something nobody noticed. */
+  test('may copy one, which reading it implies', async () => {
+    const { theirs, boss, own } = await world()
+    const patch = await own(theirs, 'Theirs', 'private')
+
+    const response = (await boss.call('POST', '/api/patches', {
+      ...createPatch({ name: 'A copy' }),
+      id: undefined,
+      from: patch.id,
+    }))!
+    expect(response.status).toBe(201)
+  })
+
+  test('a factory patch is in the list and still refused to write', async () => {
+    const { boss } = await world()
+    const rows = (await (await boss.call('GET', '/api/patches/all'))!.json()) as {
+      id: string
+      origin: string
+    }[]
+
+    expect(rows.find((row) => row.id === 'sub-bass')?.origin).toBe('factory')
+    expect((await boss.call('DELETE', '/api/patches/sub-bass'))!.status).toBe(403)
+  })
+})
+
+describe('a trash of your own', () => {
+  test('holds what you deleted and nothing of anybody else’s', async () => {
+    const { mine, theirs, own } = await world()
+    const ours = await own(mine, 'Mine', 'private')
+    const not = await own(theirs, 'Theirs', 'private')
+    await mine.call('DELETE', `/api/patches/${ours.id}`)
+    await theirs.call('DELETE', `/api/patches/${not.id}`)
+
+    const rows = (await (await mine.call('GET', '/api/patches/trash'))!.json()) as {
+      name: string
+    }[]
+    expect(rows.map((row) => row.name)).toEqual(['Mine'])
+  })
+
+  test('needs no privilege, because everybody has one', async () => {
+    const { mine } = await world()
+    expect((await mine.call('GET', '/api/patches/trash'))!.status).toBe(200)
+  })
+
+  test('says when the sweep will take each row', async () => {
+    const { mine, own } = await world()
+    const patch = await own(mine, 'Mine', 'private')
+    await mine.call('DELETE', `/api/patches/${patch.id}`)
+
+    const [row] = (await (await mine.call('GET', '/api/patches/trash'))!.json()) as {
+      deletedAt: string
+      purgeAt: string
+    }[]
+    /* The default window, thirty days on from the deletion. */
+    expect(Date.parse(row!.purgeAt) - Date.parse(row!.deletedAt)).toBe(30 * 24 * 60 * 60 * 1000)
+  })
+
+  test('puts one back where it came from', async () => {
+    const { mine, own } = await world()
+    const patch = await own(mine, 'Mine', 'private')
+    await mine.call('DELETE', `/api/patches/${patch.id}`)
+
+    expect((await mine.call('POST', `/api/patches/${patch.id}/restore`))!.status).toBe(200)
+    expect((await mine.call('GET', `/api/patches/${patch.id}`))!.status).toBe(200)
+    expect(((await (await mine.call('GET', '/api/patches/trash'))!.json()) as unknown[])).toEqual([])
+  })
+})

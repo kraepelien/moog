@@ -14,6 +14,8 @@ import { OpsPage } from './admin/OpsPage.tsx'
 import { UsersPage } from './admin/UsersPage.tsx'
 import type { Decision } from './admin/UserAccess.tsx'
 import type { OpsReport } from './admin/ops.ts'
+import { PatchesPage } from './admin/PatchesPage.tsx'
+import type { PatchRecord } from './patch/record.ts'
 import type { AdminUser } from './admin/users.ts'
 import { paletteOf, type Tag, type TagInUse } from './admin/tags.ts'
 import { FitToWidth } from './components/FitToWidth.tsx'
@@ -39,6 +41,7 @@ import type { LibraryEntry } from './components/library/entry.ts'
 import { Panel, PanelChecklist } from './components/Panel.tsx'
 import { PatchNotes } from './components/library/PatchNotes.tsx'
 import { PatchPage } from './components/patch/PatchPage.tsx'
+import { TrashPage } from './components/TrashPage.tsx'
 import { useConfirm } from './components/useConfirm.tsx'
 import { SignIn } from './session/SignIn.tsx'
 import { returnToFor, signOut, useSession, type Session } from './session/session.ts'
@@ -209,6 +212,12 @@ function Workspace({
   const mayAdminUsers = useCan(PRIVILEGE.AdminUsers)
   const mayAdminOps = useCan(PRIVILEGE.AdminOps)
   const [ops, setOps] = useState<OpsReport | null>(null)
+  const mayAdminPatches = useCan(PRIVILEGE.AdminPatches)
+  const [records, setRecords] = useState<readonly PatchRecord[]>([])
+  /* Whose patch the editor is holding, when it is not yours. Null the rest of
+     the time, which is every ordinary edit. */
+  const [onBehalfOf, setOnBehalfOf] = useState<{ name: string | null } | null>(null)
+  const [trash, setTrash] = useState<readonly PatchRecord[]>([])
   const [users, setUsers] = useState<readonly AdminUser[]>([])
   /* What this device is being shown in, which is also what the layout page's
      fields show. One value and no draft beside it: there is nothing to save it
@@ -318,6 +327,28 @@ function Workspace({
   const refreshUsers = useCallback(async () => {
     setUsers(await store.listUsers())
   }, [])
+
+  const refreshRecords = useCallback(async () => {
+    setRecords(await store.listEveryPatch())
+  }, [])
+
+  const refreshTrash = useCallback(async () => {
+    setTrash(await store.listTrash())
+  }, [])
+
+  useEffect(() => {
+    if (route.name !== 'trash') return
+    void (async () => {
+      await run(refreshTrash)
+    })()
+  }, [route.name, refreshTrash, run])
+
+  useEffect(() => {
+    if (route.name !== 'patches' || !mayAdminPatches) return
+    void (async () => {
+      await run(refreshRecords)
+    })()
+  }, [route.name, mayAdminPatches, refreshRecords, run])
 
   /* Asked for on the page that shows it, like the users list: the route refuses
      anybody else, and a report is only ever as fresh as the moment it is read. */
@@ -485,6 +516,10 @@ function Workspace({
       setReport(resolvePatch(panelRegistry, patch).report)
       setStored(options.stored ?? false)
       setCopiedFrom(options.from ?? null)
+      /* Cleared here rather than at each call site: every other way of adopting
+         a patch is one of your own, and a banner naming the last owner over
+         somebody's new draft is worse than none. */
+      setOnBehalfOf(null)
     },
     [],
   )
@@ -534,6 +569,24 @@ function Workspace({
               }),
           writable ? { stored: true } : { from: entry?.id ?? patch.id },
         )
+      }),
+    [adopt, navigate, run],
+  )
+
+  /* The administration page's Edit, which is the only way to write over
+     somebody else's patch. Deliberately not `openEntry`'s doing: the library is
+     where you go to play something, and a Save that wrote back to its owner
+     because you hold a privilege would be the wrong default there. Coming
+     through the page makes it a deliberate act, and `onBehalfOf` is what makes
+     it a visible one. */
+  const editAsAdmin = useCallback(
+    (record: PatchRecord) =>
+      void run(async () => {
+        const patch = await store.get(record.id)
+        if (!patch) return
+        if (!(await navigate(pathFor('editor')))) return
+        adopt(patch, { stored: true })
+        setOnBehalfOf(record.ownerUid === null ? null : { name: record.ownerName })
       }),
     [adopt, navigate, run],
   )
@@ -600,6 +653,10 @@ function Workspace({
           if (
             !(await ask({
               title: `Delete “${draft.name || '(unnamed)'}”?`,
+              /* Where it went, which is the only thing that makes the trash
+                 findable: it is not a row in the nav, and nobody goes looking
+                 for a page they have no reason to believe exists. */
+              body: 'It goes to the trash, in the account menu, and can be put back from there for a while.',
               confirm: 'Delete',
               destructive: true,
             }))
@@ -646,8 +703,12 @@ function Workspace({
         }),
     },
     {
-      label: 'Preferences…',
+      label: 'Trash…',
       separated: true,
+      onSelect: () => navigate(pathFor('trash')),
+    },
+    {
+      label: 'Preferences…',
       onSelect: () => navigate(pathFor('preferences')),
     },
     ...(session?.mode === 'oauth'
@@ -699,7 +760,24 @@ function Workspace({
             <NowPlaying />
 
             {route.name === 'editor' && (
-              <PatchBar title={{ text: draft.name, unsaved: dirty }} buttons={editorButtons} />
+              <PatchBar
+                title={{
+                  text: draft.name,
+                  unsaved: dirty,
+                  ...(onBehalfOf === null ? {} : { owner: onBehalfOf.name }),
+                }}
+                buttons={editorButtons}
+              />
+            )}
+
+            {/* Said twice, in the bar and here, because the green Save reads as
+                "save mine" and this is the one thing somebody needs told before
+                they press it. */}
+            {route.name === 'editor' && onBehalfOf !== null && (
+              <Alert severity="info">
+                This is {onBehalfOf.name === null ? 'somebody else' : onBehalfOf.name}
+                &rsquo;s patch. Saving writes back to their copy; it does not make one of your own.
+              </Alert>
             )}
 
             {route.name === 'home' && (
@@ -799,6 +877,20 @@ function Workspace({
               />
             )}
 
+            {route.name === 'trash' && (
+              <TrashPage
+                records={trash}
+                tagPalette={tagPalette}
+                onRestore={(record) =>
+                  void run(async () => {
+                    await store.restore(record.id)
+                    await refreshTrash()
+                    await refresh()
+                  })
+                }
+              />
+            )}
+
             {route.name === 'preferences' && (
               <PreferencesPage
                 nav={nav}
@@ -849,6 +941,40 @@ function Workspace({
                       viewerUid={session.user?.uid ?? null}
                       onDecide={decidePrivilege}
                       onRoles={setUserRoles}
+                    />
+                  )}
+
+                  {route.name === 'patches' && (
+                    <PatchesPage
+                      records={records}
+                      tagPalette={tagPalette}
+                      onEdit={editAsAdmin}
+                      onUnpublish={(record) =>
+                        void run(async () => {
+                          await store.unpublish(record.id)
+                          await refreshRecords()
+                          await refresh()
+                        })
+                      }
+                      onDelete={(record) =>
+                        void run(async () => {
+                          if (
+                            !(await ask({
+                              title: `Delete “${record.name || '(unnamed)'}”?`,
+                              /* Named, because this is not your patch and the
+                                 owner is the fact that makes it a decision. */
+                              body: `It belongs to ${record.ownerName ?? 'somebody else'}. It goes to their trash and can be restored from there.`,
+                              confirm: 'Delete',
+                              destructive: true,
+                            }))
+                          ) {
+                            throw new Cancelled()
+                          }
+                          await store.delete(record.id)
+                          await refreshRecords()
+                          await refresh()
+                        })
+                      }
                     />
                   )}
 

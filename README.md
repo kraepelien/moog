@@ -777,6 +777,51 @@ the secret and the contents of `MOOG_ADMINS` are not, and a page that showed the
 reason to guard the page rather than a window onto the housekeeping. `/health` stays open for the
 container's healthcheck and gains none of this.
 
+### Administering everybody's patches
+
+`/admin/patches` behind `AdminPatches` lists every patch on the install with its owner, and is the
+only way to edit one that is not yours.
+
+**Deliberately not the library.** The library is where you go to play something, and a green Save
+that wrote back to somebody else's copy because you happen to hold a privilege would be the wrong
+default there: opening a row still gives you a copy, exactly as before. Coming through this page
+makes it a deliberate act, and the editor then says whose patch it is twice, in the bar under the
+name and in a banner above the panel, because Save otherwise reads as "save mine".
+
+**Factory rows draw no buttons at all** and say why. `mayWrite` refuses the bank to everybody, so a
+Delete there would be a control whose only outcome is a 403. There is no Publish either: putting
+somebody's private patch in front of everybody is a choice they did not make, and the privilege
+only ever claimed the one direction.
+
+`mayRead` now admits `AdminPatches` as well. It always should have: `mayWrite` admitted it and
+`find` runs the read rule first, so before this an administrator could edit somebody's *public*
+patch through the API while a private one answered 404 before the write rule was consulted. It
+follows that an admin can copy a private patch too, since `create({ from })` reads through the same
+rule; that has a test of its own so it is a decision rather than something nobody noticed.
+
+`GET /api/patches/all` and `GET /api/patches/trash` are **declared above `/patches/:id`**, and the
+order is load bearing: `dispatch` takes the first path that matches in declaration order, and `all`
+and `trash` are names `isSafeName` accepts, so declared after they would look up a patch by that
+name and answer 404, which reads as a feature nobody built. `test/routeTable.test.ts` pins it,
+beside the same pair for `/tags/in-use`.
+
+### The trash, which was always there
+
+Deleting has always been a grace period: the row is marked and a nightly sweep takes it
+`MOOG_TRASH_DAYS` later. Nothing could reach the middle of that, so `POST /patches/:id/restore`
+existed with no caller anywhere in `src/`.
+
+`/trash` is what a person sees of their own, reached from the account menu beside Preferences
+rather than as a row in the nav: it is opened when something has gone wrong and left again, and it
+is empty for almost everybody almost always. What makes it findable is the delete confirmation,
+which now says where the patch went. An administrator sees everybody's as a chip on the patches
+page, over rows that list already carries, rather than as a second page.
+
+**The row carries `purgeAt` rather than the window.** The number a person needs is per row, and
+telling the browser `trashDays` would hand it a rule it then has to reimplement. A row can outlive
+its own date, because only `bun run serve` sweeps and only once a day, so both pages say "due to be
+removed" rather than printing a negative.
+
 ### Arrangements are the first thing a privilege gates
 
 `StoreMidi` is what lets somebody keep a MIDI file together with the sound put on each of its
@@ -1034,6 +1079,8 @@ interface PatchStore {
   get(id: string): Promise<Patch | null>
   save(patch: Patch): Promise<Patch>
   delete(id: string): Promise<void>
+  listTrash(): Promise<readonly PatchRecord[]>
+  restore(id: string): Promise<void>
 }
 ```
 
