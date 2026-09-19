@@ -41,10 +41,20 @@ function Actions({
   onUnpublish: () => void
   onDelete: () => void
 }) {
-  if (record.origin === 'factory') {
-    return <span className={styles.readOnly}>From the bank, read-only</span>
-  }
   if (record.deletedAt !== null) return <span className={styles.readOnly}>In the trash</span>
+
+  /* The bank is correctable and nothing more. Editing one fixes a sheet that was
+     transcribed wrong; deleting one retires a page of the manual, which is a
+     different act and is refused to everybody. */
+  if (record.origin === 'factory') {
+    return (
+      <Box className={styles.actions}>
+        <Button size="small" onClick={onEdit}>
+          Correct
+        </Button>
+      </Box>
+    )
+  }
 
   return (
     <Box className={styles.actions}>
@@ -111,6 +121,8 @@ export function PatchesPage({
         <Alert severity="info" sx={{ mb: 2 }}>
           Every patch on this install, whoever made it. Editing one from here writes back to its
           owner&rsquo;s copy rather than making one of your own, and the editor says whose it is.
+          Correcting a patch from the bank changes it for everybody here, which is what the bank
+          being seeded rather than synced is for.
         </Alert>
 
         <Box sx={{ mb: 2 }}>

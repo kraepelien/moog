@@ -81,13 +81,25 @@ describe('the list', () => {
     expect(button('Publish')).toBeNull()
   })
 
-  /* `mayWrite` refuses the bank to everybody, so a button here would be one
-     whose only outcome is a 403. */
-  test('draws no action at all on a factory patch, and says why', () => {
+  /* The bank is correctable and nothing else: a wrong transcription is what the
+     rows being the live bank was for, and `mayRemove` still refuses the bank to
+     everybody, so a Delete here would be a button whose only outcome is a 403. */
+  test('offers a factory patch a correction, and nothing that would remove it', () => {
+    const { edited } = show([FACTORY])
+
+    expect(button('Delete')).toBeNull()
+    expect(button('Unpublish')).toBeNull()
+
+    fireEvent.click(button('Correct')!)
+    expect(edited).toEqual(['midnight-funk'])
+  })
+
+  /* Correct rather than Edit, because it is not the same act: this one changes
+     what everybody on the install loads. */
+  test('names that button for what it does to the bank', () => {
     show([FACTORY])
     expect(button('Edit')).toBeNull()
-    expect(button('Delete')).toBeNull()
-    expect(screen.getByText(/read-only/)).toBeTruthy()
+    expect(button('Correct')).toBeTruthy()
   })
 })
 

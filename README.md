@@ -788,10 +788,27 @@ default there: opening a row still gives you a copy, exactly as before. Coming t
 makes it a deliberate act, and the editor then says whose patch it is twice, in the bar under the
 name and in a banner above the panel, because Save otherwise reads as "save mine".
 
-**Factory rows draw no buttons at all** and say why. `mayWrite` refuses the bank to everybody, so a
-Delete there would be a control whose only outcome is a 403. There is no Publish either: putting
-somebody's private patch in front of everybody is a choice they did not make, and the privilege
-only ever claimed the one direction.
+**A factory row offers one button, Correct.** That is the act the bank was seeded rather than
+synced for: the rows are the live bank, so a correction has somewhere to live that a restart will
+not undo, and the whole bank was wrong once. It is named Correct rather than Edit because it is not
+the same act as editing one person's patch: it changes what everybody on the install loads.
+
+Taking a factory patch away is refused to everybody, administrators included, which is why the rule
+is two questions rather than one. `mayEdit` asks whether the contents may change and lets the
+privilege correct the bank; `mayRemove` asks whether it may stop existing or stop being public, and
+answers no for the bank whoever is asking. A retired factory patch stays retired and no file brings
+it back, so that is not a button to offer beside a typo fix.
+
+There is no Publish either: putting somebody's private patch in front of everybody is a choice they
+did not make, and the privilege only ever claimed the one direction.
+
+**A correction fixes this install, and the repo file still seeds the next one.** Nothing may push a
+file over a row that already exists, so the two are brought back into line the way the Layout page
+brings a colour into line: Export writes a prompt naming `bank/<slug>.json` and the controls that
+moved, which is pasted into Claude Code. `src/patch/bankPrompt.ts` writes it and
+`test/bankPrompt.test.ts` pins the wording against a file that has to exist. A control the
+correction clears is asked for as a *removal*, because an omission in a bank file means the
+registry default on purpose.
 
 `mayRead` now admits `AdminPatches` as well. It always should have: `mayWrite` admitted it and
 `find` runs the read rule first, so before this an administrator could edit somebody's *public*
