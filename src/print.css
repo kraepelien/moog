@@ -1,0 +1,44 @@
+/* What a patch sheet is on paper. Global rather than a module, because almost
+   everything printing has to do is to elements it does not own: the nav, the
+   banners and the buttons are each somewhere else, and one selector here is
+   what keeps the list of what a sheet leaves out readable in one place.
+
+   The scale the panel prints at is not here. It is an inline transform written
+   by FitToWidth, which a stylesheet could only fight with !important and would
+   still have no number to put in. */
+
+@page {
+  size: A4 landscape;
+  margin: 10mm;
+}
+
+@media print {
+  /* Everything that is the app rather than the patch. The attribute is on the
+     component; which components wear it is the only thing this file knows. */
+  [data-print='off'] {
+    display: none;
+  }
+
+  /* @page supplies the margin, so the padding the shell puts round a page on
+     screen is a second one. Left on, it took 32px out of the width the panel is
+     scaled to fit and printed the right-hand sections into the margin. The
+     weight is MUI's fault: it writes that padding as a class of its own. */
+  main {
+    padding: 0 !important;
+  }
+
+  /* The panel is light ink on a dark field, and Chrome drops background
+     graphics unless asked: without this the sheet prints white on white and
+     says nothing at all. */
+  [data-print='panel'] {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* A panel cut across two sheets is an instrument with no bottom half, and a
+     Notes box split mid-sentence is the performance instruction halved. */
+  [data-print='panel'],
+  [data-print='notes'] {
+    break-inside: avoid;
+  }
+}
