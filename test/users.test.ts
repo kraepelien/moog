@@ -102,7 +102,7 @@ describe('the list', () => {
     const punter = found(list, 'u-punter')
 
     expect(punter.roles).toEqual([])
-    expect(punter.privileges).toEqual([PRIVILEGE.StoreMidi])
+    expect(punter.privileges).toEqual([])
 
     /* An admin stores no role either: the column holds what somebody was given,
        and being an administrator is not given here. */
@@ -255,7 +255,9 @@ describe('AccessAdmin as a boundary', () => {
   test('leaves what does not depend on it alone', async () => {
     const { person } = await world()
     const boss = await person('u-boss')
-    const other = await person('u-other')
+    /* A tester, because that is the rung StoreMidi sits on and this test needs
+       something outside administration to still be there afterwards. */
+    const other = await person('u-other', [ROLE.tester])
     await administered(boss, 'u-other')
 
     await boss('PUT', '/api/users/u-other/privileges/AccessAdmin', { granted: false })
@@ -272,7 +274,7 @@ describe('AccessAdmin as a boundary', () => {
     await boss('PUT', '/api/users/u-other/privileges/AccessAdmin', { granted: false })
 
     const said = await body<{ privileges: string[] }>(await other('GET', '/api/session'))
-    expect(said.privileges).toEqual([PRIVILEGE.StoreMidi])
+    expect(said.privileges).toEqual([])
   })
 })
 
@@ -411,7 +413,7 @@ describe('roles', () => {
     })
 
     const list = await body<AdminUser[]>(await boss('GET', '/api/users'))
-    expect(found(list, 'u-punter').privileges).toEqual([PRIVILEGE.StoreMidi])
+    expect(found(list, 'u-punter').privileges).toEqual([])
   })
 
   /* There is nothing here to take away from them: the column never held it. */

@@ -577,8 +577,10 @@ An **override** is one person's answer for one privilege, and beats the role eit
 **`tester` is the only role anybody is given.** The other two are facts rather than decisions, and
 neither is ever written to a row:
 
-- `member` is what every signed-in account is, applied at resolution, so no row can end up with no
-  privileges at all and unlocking a basic feature reaches everybody without touching the database.
+- `member` is what every signed-in account is, applied at resolution rather than stored. It carries
+  nothing today: signing in is not itself permission to do anything. The rung stays because it is
+  where a privilege everybody should have would go, reaching every account without touching the
+  database.
 - `admin` comes from `MOOG_ADMINS` and nowhere else. Storing it as well gave one fact two sources,
   which is what let a column go on claiming an administrator the environment had stopped naming.
   Somebody who needs one administrative power without being an administrator is given that
@@ -589,8 +591,13 @@ honouring it is what makes that a rule rather than a thing nothing happens to do
 
 **The roles are a ladder** — `member`, then `tester`, then `admin` — and each rung holds what the
 rungs below it hold. `ROLE_LADDER` states that order, and each role lists only what it *adds*.
-Re-listing an inherited privilege is how the two drift: the admin role used to repeat `StoreMidi`,
-and the day a second privilege was given to members it would not have been repeated there.
+Re-listing an inherited privilege is how the two drift, so `addedBy()` derives each rung's own
+contribution from `privilegesOf()` rather than reading the table a second time.
+
+Today `member` adds nothing, `tester` adds `StoreMidi`, and `admin` adds the five administrative
+ones. Keeping a file on the server is a tester's power rather than every account's: it is storage
+somebody has to pay for, and the rung is what hands it to a group in one line instead of to each
+person by hand.
 
 The roles are code, so unlocking a feature takes a deploy either way. What the ladder buys is that
 the deploy is **one line**: give it to `member` and testers and admins have it too, with no per-user
@@ -704,8 +711,9 @@ be held apart — which is what the rules above assume.
 ### Arrangements are the first thing a privilege gates
 
 `StoreMidi` is what lets somebody keep a MIDI file together with the sound put on each of its
-parts. Save and Open appear on the Play MIDI page for whoever holds it, and every
-`/api/arrangements` route declares it — there is no half of that resource that is open.
+parts, and it sits on the `tester` rung rather than `member`. Save and Open appear on the Play MIDI
+page for whoever holds it, and every `/api/arrangements` route declares it — there is no half of
+that resource that is open.
 
 **A part points at a patch by id rather than carrying a copy.** Editing a patch then changes what
 the arrangement plays, which is what somebody who tweaked a bass and pressed play expects. The cost

@@ -1,7 +1,14 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { AccessProvider } from '@access/AccessProvider.tsx'
-import { PRIVILEGE, ROLE, type Privilege, type Role } from '@access/privileges.ts'
+import {
+  PRIVILEGE,
+  PRIVILEGES,
+  ROLE,
+  TITLE,
+  type Privilege,
+  type Role,
+} from '@access/privileges.ts'
 import { UsersPage } from '@admin/UsersPage.tsx'
 import type { Decision } from '@admin/UserAccess.tsx'
 import type { AdminUser } from '@admin/users.ts'
@@ -14,7 +21,9 @@ function user(overrides: Partial<AdminUser> & { uid: string }): AdminUser {
     email: `${overrides.uid}@example.com`,
     avatar: null,
     provider: 'test',
-    roles: [],
+    /* A tester, because StoreMidi sits on that rung: an account holding it
+       with no role would be a state the resolver never produces. */
+    roles: [ROLE.tester],
     envAdmin: false,
     privileges: [PRIVILEGE.StoreMidi],
     granted: [],
@@ -53,16 +62,37 @@ function show(people: readonly AdminUser[] = PEOPLE, viewerUid: string | null = 
   return { decided, roled }
 }
 
-const grant = (privilege: string) =>
-  screen.getByRole('checkbox', { name: `Grant ${privilege}` }) as HTMLInputElement
-const revoke = (privilege: string) =>
-  screen.getByRole('checkbox', { name: `Revoke ${privilege}` }) as HTMLInputElement
+/* One position of one privilege's control. The aria labels carry the stored
+   name rather than the title, so a row is found by the thing that cannot
+   change without the lock file saying so. */
+const pick = (position: string, privilege: string) =>
+  screen.getByRole('button', { name: `${position} ${privilege}` }) as HTMLButtonElement
 
-/* Faded means "a role is answering, and nothing is stored here". The row says
-   which it is in an attribute and the stylesheet fades from that, so this reads
-   the state rather than asking what colour anything ended up. */
-const faded = (privilege: string): boolean =>
-  grant(privilege).closest('li')!.getAttribute('data-stored') === 'no'
+const row = (privilege: string): HTMLElement => pick('Grant', privilege).closest('li')!
+
+/* Which of the three it is sitting on, read off the pressed state MUI gives
+   the group rather than off anything this file decides. */
+const at = (privilege: string): Decision => {
+  const on: [string, Decision][] = [
+    ['Grant', 'granted'],
+    ['Use the roles for', 'inherited'],
+    ['Revoke', 'revoked'],
+  ]
+  const found = on.find(
+    ([position]) => pick(position, privilege).getAttribute('aria-pressed') === 'true',
+  )
+  if (!found) throw new Error(`No position pressed for ${privilege}`)
+  return found[1]
+}
+
+/* Whether a row of its own is holding the answer up, as against a role
+   answering. The row says which in an attribute and the stylesheet reads that,
+   so this reads the state rather than asking what colour anything ended up. */
+const stored = (privilege: string): boolean =>
+  row(privilege).getAttribute('data-stored') === 'yes'
+
+const card = (role: Role): HTMLElement =>
+  screen.getByText(role, { selector: 'span' }).closest('[data-held]')!
 
 const search = () => screen.getByLabelText('Search people') as HTMLInputElement
 const type = (text: string) => fireEvent.change(search(), { target: { value: text } })
@@ -121,115 +151,131 @@ describe('the editor', () => {
     expect(screen.getByText('Grace')).toBeTruthy()
   })
 
-  test('says what each privilege lets somebody do', () => {
-    show()
-    open('Ada')
-    expect(screen.getByText(/Save a MIDI file together with the sound/)).toBeTruthy()
-  })
-
-  /* The grant box says whether they have it; nothing else has to be read to
-     know, and the revoke box beside it is empty until somebody decides. */
-  test('ticks what the account holds and leaves the rest clear', () => {
+  /* The row reads as something a person can do; the stored name is beside it
+     because that is what an override row and an error name. */
+  test('names each privilege in words and keeps the stored name', () => {
     show()
     open('Ada')
 
-    /* Everybody is a member, so this one is held — by a role. */
-    expect(grant(PRIVILEGE.StoreMidi).checked).toBe(true)
-    expect(revoke(PRIVILEGE.StoreMidi).checked).toBe(false)
-    expect(grant(PRIVILEGE.AdminTags).checked).toBe(false)
-    expect(revoke(PRIVILEGE.AdminTags).checked).toBe(false)
+    const line = row(PRIVILEGE.StoreMidi).textContent
+    expect(line).toContain(TITLE[PRIVILEGE.StoreMidi])
+    expect(line).toContain(PRIVILEGE.StoreMidi)
   })
 
-  /* Faded is the whole signal for "no row exists, a role is answering", so the
-     two have to be told apart without reading the line underneath. */
-  test('fades a tick that only a role is giving, and not one of its own', () => {
+  /* The whole reason the long descriptions came off the rows: six paragraphs
+     is a list nobody reads, so it has to be reachable in one hover. */
+  test('says what a privilege lets somebody do, behind the info icon', async () => {
+    show()
+    open('Ada')
+
+    fireEvent.mouseOver(screen.getByRole('button', { name: `About ${PRIVILEGE.StoreMidi}` }))
+    expect(await screen.findByText(/Save a MIDI file together with the sound/)).toBeTruthy()
+  })
+
+  test('offers one for every privilege there is', () => {
+    show()
+    open('Ada')
+
+    for (const privilege of PRIVILEGES) {
+      expect(screen.getByRole('button', { name: `About ${privilege}` })).toBeTruthy()
+    }
+  })
+
+  /* One control, three positions, and the position it is in is the whole
+     answer — nothing else has to be read to know what is stored. */
+  test('sits on the roles where nothing is stored against the account', () => {
+    show()
+    open('Ada')
+
+    expect(at(PRIVILEGE.StoreMidi)).toBe('inherited')
+    expect(at(PRIVILEGE.AdminTags)).toBe('inherited')
+    expect(stored(PRIVILEGE.StoreMidi)).toBe(false)
+  })
+
+  test('sits on the answer stored against the account', () => {
     show([
       user({
         uid: 'ada',
         name: 'Ada',
         granted: [PRIVILEGE.AccessAdmin],
-        privileges: [PRIVILEGE.StoreMidi, PRIVILEGE.AccessAdmin],
+        revoked: [PRIVILEGE.StoreMidi],
+        privileges: [PRIVILEGE.AccessAdmin],
       }),
     ])
     open('Ada')
 
-    expect(faded(PRIVILEGE.StoreMidi)).toBe(true)
-    expect(faded(PRIVILEGE.AccessAdmin)).toBe(false)
+    expect(at(PRIVILEGE.AccessAdmin)).toBe('granted')
+    expect(at(PRIVILEGE.StoreMidi)).toBe('revoked')
+    expect(stored(PRIVILEGE.AccessAdmin)).toBe(true)
+    expect(stored(PRIVILEGE.StoreMidi)).toBe(true)
   })
 
-  /* A revoke is a decision that outlives the role, so it is its own box rather
-     than the absence of a tick in the other one. */
-  test('reads an explicit answer off the account rather than the role', () => {
-    show([user({ uid: 'ada', name: 'Ada', revoked: [PRIVILEGE.StoreMidi], privileges: [] })])
+  /* Whether they can actually do it is not the same question as what is
+     stored, so it is said rather than inferred from the control. */
+  test('says whether the account ends up holding it', () => {
+    show()
     open('Ada')
 
-    expect(grant(PRIVILEGE.StoreMidi).checked).toBe(false)
-    expect(revoke(PRIVILEGE.StoreMidi).checked).toBe(true)
-    expect(faded(PRIVILEGE.StoreMidi)).toBe(false)
-    expect(screen.getAllByText(/revoked for this account/)[0]).toBeTruthy()
+    expect(row(PRIVILEGE.StoreMidi).textContent).toContain('Allowed')
+    expect(row(PRIVILEGE.AdminTags).textContent).toContain('Not allowed')
   })
 
-  test('hands back a grant when a clear box is ticked', () => {
+  /* "From a role" left somebody to work out which one, and which one is what
+     they would have to take away. */
+  test('names the role that is answering', () => {
+    show()
+    open('Ada')
+    expect(row(PRIVILEGE.StoreMidi).textContent).toContain('the tester role gives it')
+  })
+
+  test('says so where no role gives it at all', () => {
+    show()
+    open('Ada')
+    expect(row(PRIVILEGE.AdminTags).textContent).toContain('no role gives it')
+  })
+
+  test('hands back a grant', () => {
     const { decided } = show()
     open('Ada')
-    fireEvent.click(grant(PRIVILEGE.AdminTags))
+    fireEvent.click(pick('Grant', PRIVILEGE.AdminTags))
 
-    expect(decided).toEqual([
-      { uid: 'ada', privilege: PRIVILEGE.AdminTags, decision: 'granted' },
-    ])
+    expect(decided).toEqual([{ uid: 'ada', privilege: PRIVILEGE.AdminTags, decision: 'granted' }])
   })
 
-  test('hands back a revoke when the revoke box is ticked', () => {
+  test('hands back a revoke', () => {
     const { decided } = show()
     open('Ada')
-    fireEvent.click(revoke(PRIVILEGE.StoreMidi))
+    fireEvent.click(pick('Revoke', PRIVILEGE.StoreMidi))
 
-    expect(decided).toEqual([
-      { uid: 'ada', privilege: PRIVILEGE.StoreMidi, decision: 'revoked' },
-    ])
+    expect(decided).toEqual([{ uid: 'ada', privilege: PRIVILEGE.StoreMidi, decision: 'revoked' }])
   })
 
-  /* The one click that crosses over: no row is holding the tick up, so there is
-     nothing to delete and wanting it off can only be a revoke. */
-  test('turns clearing a tick a role is giving into a revoke', () => {
-    const { decided } = show()
-    open('Ada')
-    fireEvent.click(grant(PRIVILEGE.StoreMidi))
-
-    expect(decided).toEqual([
-      { uid: 'ada', privilege: PRIVILEGE.StoreMidi, decision: 'revoked' },
-    ])
-  })
-
-  /* Clearing either box is how an override goes away, which is why no row
-     carries a button for it. */
-  test('goes back to the default when a stored grant is cleared', () => {
+  /* Going back to the roles is a position rather than a button, because it is
+     the same thing as deleting the row. */
+  test('hands back the roles answer, which is deleting the row', () => {
     const { decided } = show([
       user({
         uid: 'ada',
         name: 'Ada',
-        granted: [PRIVILEGE.AdminTags],
-        privileges: [PRIVILEGE.StoreMidi],
+        roles: [ROLE.tester],
+        revoked: [PRIVILEGE.StoreMidi],
+        privileges: [],
       }),
     ])
     open('Ada')
-    fireEvent.click(grant(PRIVILEGE.AdminTags))
+    fireEvent.click(pick('Use the roles for', PRIVILEGE.StoreMidi))
 
-    expect(decided).toEqual([
-      { uid: 'ada', privilege: PRIVILEGE.AdminTags, decision: 'inherited' },
-    ])
+    expect(decided).toEqual([{ uid: 'ada', privilege: PRIVILEGE.StoreMidi, decision: 'inherited' }])
   })
 
-  test('goes back to the default when a stored revoke is cleared', () => {
-    const { decided } = show([
-      user({ uid: 'ada', name: 'Ada', revoked: [PRIVILEGE.StoreMidi], privileges: [] }),
-    ])
+  /* Pressing the position it is already in is MUI reporting null, and writing
+     the answer already stored would be a request for nothing. */
+  test('says nothing when the position it is already in is pressed', () => {
+    const { decided } = show()
     open('Ada')
-    fireEvent.click(revoke(PRIVILEGE.StoreMidi))
+    fireEvent.click(pick('Use the roles for', PRIVILEGE.AdminTags))
 
-    expect(decided).toEqual([
-      { uid: 'ada', privilege: PRIVILEGE.StoreMidi, decision: 'inherited' },
-    ])
+    expect(decided).toEqual([])
   })
 
   test('offers no separate button for the default', () => {
@@ -239,28 +285,6 @@ describe('the editor', () => {
     expect(
       screen.queryByRole('button', { name: `Use the default for ${PRIVILEGE.StoreMidi}` }),
     ).toBeNull()
-  })
-
-  test('hands back a role being given', () => {
-    const { roled } = show()
-    open('Ada')
-    fireEvent.click(screen.getByRole('button', { name: 'Give the tester role' }))
-
-    expect(roled).toEqual([{ uid: 'ada', roles: [ROLE.tester] }])
-  })
-
-  /* Being an administrator is not a decision this page makes, so it is not
-     drawn as something to press. Tester is the only role anybody is given. */
-  test('offers no admin toggle, and says where being one comes from', () => {
-    show([user({ uid: 'root', name: 'Root', envAdmin: true })])
-    open('Root')
-
-    expect(screen.queryByRole('button', { name: 'Give the admin role' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Remove the admin role' })).toBeNull()
-    expect(screen.getByRole('button', { name: 'Give the tester role' })).toBeTruthy()
-    expect(
-      screen.getAllByRole('alert').some((alert) => alert.textContent?.includes('MOOG_ADMINS')),
-    ).toBe(true)
   })
 
   test('flags a grant that a role already covers, which says nothing yet', () => {
@@ -280,7 +304,7 @@ describe('the editor', () => {
       }),
     ])
     open('Grace')
-    expect(screen.getByText(/a role already gives it/)).toBeTruthy()
+    expect(row(PRIVILEGE.AdminTags).textContent).toContain('already gives it')
   })
 
   /* A row reading "granted" while the account cannot do it is the confusing
@@ -295,7 +319,9 @@ describe('the editor', () => {
       }),
     ])
     open('Ada')
-    expect(screen.getByText(/does nothing without AccessAdmin/)).toBeTruthy()
+    expect(row(PRIVILEGE.AdminTags).textContent).toContain(
+      `does nothing without ${TITLE[PRIVILEGE.AccessAdmin]}`,
+    )
   })
 
   /* Kept and shown rather than hidden: it is somebody's decision, and a build
@@ -307,9 +333,75 @@ describe('the editor', () => {
   })
 })
 
+/* "tester" on its own says nothing about what it hands over, which is the
+   question somebody is actually answering when they press Give. */
+describe('what a role gives', () => {
+  test('lists what each rung adds, beside the button that gives it', () => {
+    show()
+    open('Ada')
+
+    expect(card(ROLE.tester).textContent).toContain(TITLE[PRIVILEGE.StoreMidi])
+
+    const admin = card(ROLE.admin)
+    expect(admin.textContent).toContain(TITLE[PRIVILEGE.AdminUsers])
+    /* What a lower rung already carries is not re-listed: the card says what
+       this rung adds, and the ladder says the rest. */
+    expect(admin.textContent).not.toContain(TITLE[PRIVILEGE.StoreMidi])
+  })
+
+  test('says a rung adds nothing rather than drawing an empty card', () => {
+    show()
+    open('Ada')
+    expect(card(ROLE.member).textContent).toContain('Adds nothing')
+  })
+
+  /* The card doubles as a preview of pressing Give, so what the account
+     already holds is marked apart from what the role would add. */
+  test('marks what the account already holds', () => {
+    show([
+      user({ uid: 'ada', name: 'Ada', roles: [ROLE.tester], privileges: [PRIVILEGE.StoreMidi] }),
+    ])
+    open('Ada')
+
+    const holds = card(ROLE.tester).querySelectorAll('[data-has="yes"]')
+    expect(holds.length).toBe(1)
+    expect(holds[0]!.textContent).toBe(TITLE[PRIVILEGE.StoreMidi])
+  })
+
+  test('hands back a role being given', () => {
+    const { roled } = show([user({ uid: 'ada', name: 'Ada', roles: [], privileges: [] })])
+    open('Ada')
+    fireEvent.click(screen.getByRole('button', { name: 'Give the tester role' }))
+
+    expect(roled).toEqual([{ uid: 'ada', roles: [ROLE.tester] }])
+  })
+
+  test('hands back a role being taken away', () => {
+    const { roled } = show()
+    open('Ada')
+    fireEvent.click(screen.getByRole('button', { name: 'Remove the tester role' }))
+
+    expect(roled).toEqual([{ uid: 'ada', roles: [] }])
+  })
+
+  /* Being an administrator is not a decision this page makes, so it is not
+     drawn as something to press. Tester is the only role anybody is given. */
+  test('offers no admin toggle, and says where being one comes from', () => {
+    show([user({ uid: 'root', name: 'Root', envAdmin: true })])
+    open('Root')
+
+    expect(screen.queryByRole('button', { name: 'Give the admin role' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Remove the admin role' })).toBeNull()
+    expect(card(ROLE.admin).textContent).toContain('MOOG_ADMINS')
+    expect(
+      screen.getAllByRole('alert').some((alert) => alert.textContent?.includes('MOOG_ADMINS')),
+    ).toBe(true)
+  })
+})
+
 /* Two of the three write-time refusals are knowable from the account on screen,
-   so the page draws them rather than offering a box whose only outcome is the
-   error banner it used to be. */
+   so the page draws them rather than offering a position whose only outcome is
+   the error banner it used to be. */
 describe('what cannot be revoked', () => {
   const ADMIN_PRIVILEGES = [
     PRIVILEGE.AccessAdmin,
@@ -327,15 +419,24 @@ describe('what cannot be revoked', () => {
     privileges: ADMIN_PRIVILEGES,
   })
 
-  test('locks the two that recover a locked-out install, ticked rather than clear', () => {
+  test('locks the two that recover a locked-out install', () => {
     show([ROOT])
     open('Root')
 
     for (const privilege of [PRIVILEGE.AccessAdmin, PRIVILEGE.AdminUsers]) {
-      expect(grant(privilege).checked).toBe(true)
-      expect(grant(privilege).disabled).toBe(true)
-      expect(revoke(privilege).disabled).toBe(true)
+      expect(pick('Revoke', privilege).disabled).toBe(true)
+      expect(row(privilege).textContent).toContain('Allowed')
     }
+  })
+
+  /* Only the revoke. Granting is never what the server refuses, and locking the
+     other two positions left a row nobody could put back where it was. */
+  test('leaves the other two positions alone', () => {
+    show([ROOT])
+    open('Root')
+
+    expect(pick('Grant', PRIVILEGE.AccessAdmin).disabled).toBe(false)
+    expect(pick('Use the roles for', PRIVILEGE.AccessAdmin).disabled).toBe(false)
   })
 
   /* Only the two. An address in the environment is an ordinary account for
@@ -344,15 +445,15 @@ describe('what cannot be revoked', () => {
     show([ROOT])
     open('Root')
 
-    expect(grant(PRIVILEGE.AdminTags).disabled).toBe(false)
-    expect(revoke(PRIVILEGE.AdminTags).disabled).toBe(false)
+    expect(pick('Grant', PRIVILEGE.AdminTags).disabled).toBe(false)
+    expect(pick('Revoke', PRIVILEGE.AdminTags).disabled).toBe(false)
   })
 
   test('says why on the row rather than after the click', () => {
     show([ROOT])
     open('Root')
 
-    expect(screen.getAllByText(/cannot be revoked/).length).toBeGreaterThan(0)
+    expect(row(PRIVILEGE.AccessAdmin).textContent).toContain('cannot be revoked')
   })
 
   /* The other refusal: the page you would need to undo it is the one you are
@@ -361,15 +462,15 @@ describe('what cannot be revoked', () => {
     show([user({ uid: 'ada', name: 'Ada', privileges: ADMIN_PRIVILEGES })], 'ada')
     open('Ada')
 
-    expect(revoke(PRIVILEGE.AccessAdmin).disabled).toBe(true)
-    expect(revoke(PRIVILEGE.AdminUsers).disabled).toBe(true)
+    expect(pick('Revoke', PRIVILEGE.AccessAdmin).disabled).toBe(true)
+    expect(pick('Revoke', PRIVILEGE.AdminUsers).disabled).toBe(true)
   })
 
   test('leaves them open on somebody else the environment does not list', () => {
     show([user({ uid: 'ada', name: 'Ada', privileges: ADMIN_PRIVILEGES })], 'grace')
     open('Ada')
 
-    expect(revoke(PRIVILEGE.AccessAdmin).disabled).toBe(false)
-    expect(revoke(PRIVILEGE.AdminUsers).disabled).toBe(false)
+    expect(pick('Revoke', PRIVILEGE.AccessAdmin).disabled).toBe(false)
+    expect(pick('Revoke', PRIVILEGE.AdminUsers).disabled).toBe(false)
   })
 })

@@ -8,68 +8,117 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--content-color-alt);
-}
-
-.roles {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-top: 16px;
-}
-
-.role {
-  min-width: 0;
-  padding: 2px 12px;
-  border-radius: 999px;
-  text-transform: lowercase;
-  font-weight: 600;
+  margin: 0;
 }
 
 .note {
   font-size: 0.78rem;
+  margin: 2px 0 0;
+}
+
+.section {
+  margin-top: 20px;
+}
+
+.group {
+  margin-top: 24px;
+}
+
+/* Wrapping cards rather than a row that scrolls: the ladder is read as three
+   things side by side, and a rung pushed off the edge is the one somebody was
+   looking for. */
+.roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.roleCard {
+  flex: 1 1 180px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid;
+  border-color: inherit;
+  border-radius: 10px;
+}
+
+/* Held is the whole signal, so it is a filled edge rather than a tint: the
+   three cards have to stay comparable, and recolouring one changes what it
+   looks like it is saying. */
+.roleCard[data-held='yes'] {
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+
+.roleCard[data-held='no'] {
+  opacity: 0.65;
+}
+
+.roleHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.roleName {
+  font-weight: 600;
+  text-transform: lowercase;
+}
+
+.roleButton {
+  min-width: 0;
+  padding: 1px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.roleStanding {
+  font-size: 0.72rem;
+}
+
+.roleAdds {
+  display: block;
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  font-size: 0.78rem;
+}
+
+.roleAdds li {
+  padding-left: 16px;
+  position: relative;
+}
+
+/* A tick for what this account already has and a hollow mark for what the role
+   would add, so the card doubles as a preview of pressing Give. */
+.roleAdds li::before {
+  content: '○';
+  position: absolute;
+  left: 0;
+  color: var(--content-color-alt);
+}
+
+.roleAdds li[data-has='yes']::before {
+  content: '✓';
 }
 
 .list {
   list-style: none;
-  margin: 0;
+  margin: 8px 0 0;
   padding: 0;
 }
 
-/* The boxes and the text, shared with the header, so the two column names sit
-   over the boxes they name rather than near them. */
-.row,
-.head {
-  display: grid;
-  grid-template-columns: 112px 1fr;
-  gap: 8px;
-  align-items: start;
-}
-
-/* A box of its own rather than two grid tracks: it is what the tooltip hangs
-   off on a locked row, and `display: contents` would leave nothing to hover. */
-.boxes {
-  display: grid;
-  grid-template-columns: 56px 56px;
-  align-items: start;
-}
-
-.head {
-  padding-bottom: 6px;
-  border-bottom: 1px solid;
-  border-color: inherit;
-}
-
-/* Tighter than the roles' label: "REVOKE" has to sit inside its own column or
-   the two headings run into each other and name neither box. */
-.head .boxes > * {
-  justify-self: center;
-  font-size: 0.62rem;
-  letter-spacing: 0.06em;
-}
-
+/* The name and the control on one line, the status under both. Two tracks
+   rather than three: the control is a fixed width and the name takes what is
+   left, so a long title wraps instead of squeezing the buttons. */
 .row {
-  padding: 12px 0;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 16px;
+  row-gap: 2px;
+  padding: 10px 0;
   border-bottom: 1px solid;
   border-color: inherit;
 }
@@ -78,18 +127,53 @@
   border-bottom: none;
 }
 
+.status {
+  grid-column: 1 / -1;
+  font-size: 0.74rem;
+}
+
 .about {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
 }
 
-.name {
+.title {
   font-weight: 600;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+.name {
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.info {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: help;
+  color: var(--content-color-alt);
+}
+
+.info:hover,
+.info:focus-visible {
+  color: inherit;
+}
+
+/* The stored name above the description, on its own line. */
+.tipName {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  opacity: 0.75;
+  margin-bottom: 2px;
 }
 
 .lock {
@@ -97,41 +181,32 @@
   color: var(--content-color-alt);
 }
 
-.what {
-  font-size: 0.82rem;
+.verdict {
+  font-weight: 600;
 }
 
-.source {
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+.row[data-held='no'] .verdict {
+  color: var(--content-color-alt);
 }
 
-/* Aligned to the first line of the name rather than centred on a row whose
-   height is set by the description under it. */
-.grant,
-.revoke {
-  justify-self: center;
-  margin-top: -6px;
+/* Uniform width, so the three read as one control and the eye can run down the
+   column to see which position each row is in. */
+.decide button {
+  min-width: 78px;
+  padding: 3px 10px;
+  text-transform: none;
+  font-size: 0.78rem;
 }
 
-/* Nothing is stored against this account, so a role is answering. Faded rather
-   than recoloured, the way the library's filter chips show an inactive one: the
-   tick still has to read as a tick, just not as somebody's decision. Only the
-   grant box fades — a revoke is never anything but somebody's decision. */
-.row[data-stored='no'] .grant {
-  opacity: 0.45;
+/* Which answer is selected is carried by hue as well as position: green for
+   handed over, pink for taken away, and nothing for the roles deciding, which
+   is the state that is not a decision. */
+.decide .grant[aria-pressed='true'] {
+  color: var(--success-color);
+  background-color: var(--tone-green-field);
 }
 
-/* Locked is not the same as off, so the tick keeps its weight and only the box
-   around it recedes; otherwise a privilege that cannot be taken away reads as
-   one that is not held. */
-.row[data-locked='yes'] .revoke {
-  opacity: 0.25;
-}
-
-.legend {
-  display: block;
-  margin-top: 12px;
-  font-size: 0.75rem;
+.decide .revoke[aria-pressed='true'] {
+  color: var(--tone-pink-ink);
+  background-color: var(--tone-pink-field);
 }

@@ -14,7 +14,7 @@ import { SearchField } from '@components/library/SearchField.tsx'
 import { ToneChip } from '@components/library/ToneChip.tsx'
 import { UserAccess, type Decision } from './UserAccess.tsx'
 import { displayName, matchesUser, type AdminUser } from './users.ts'
-import type { Privilege, Role } from '@access/privileges.ts'
+import { isAssignable, type Privilege, type Role } from '@access/privileges.ts'
 import styles from './UsersPage.module.css'
 
 /* Everyone with an account. Searched in memory like the patch library, because
@@ -128,19 +128,30 @@ export function UsersPage({
                       </Box>
                     </TableCell>
 
+                    {/* The roles as stored, plus what the environment adds.
+                        `admin` is never in the column — `formatRoles` keeps it
+                        out — so the chip for it comes from `envAdmin` alone
+                        rather than from either source that might have it. */}
                     <TableCell>
                       <Box className={styles.holds}>
+                        <ToneChip label="member" tone="grey" />
+                        {user.roles.filter(isAssignable).map((role) => (
+                          <ToneChip key={role} label={role} tone="blue" />
+                        ))}
                         {user.envAdmin && <ToneChip label="admin (.env)" tone="violet" />}
-                        {user.roles
-                          .filter((role) => !(role === 'admin' && user.envAdmin))
-                          .map((role) => (
-                            <ToneChip key={role} label={role} tone="blue" />
-                          ))}
                         {user.granted.length > 0 && (
-                          <ToneChip label={`+${user.granted.length}`} tone="green" />
+                          <ToneChip
+                            label={`+${user.granted.length}`}
+                            tone="green"
+                            title={`Granted on top of the roles: ${user.granted.join(', ')}`}
+                          />
                         )}
                         {user.revoked.length > 0 && (
-                          <ToneChip label={`−${user.revoked.length}`} tone="pink" />
+                          <ToneChip
+                            label={`−${user.revoked.length}`}
+                            tone="pink"
+                            title={`Taken away from this account: ${user.revoked.join(', ')}`}
+                          />
                         )}
                       </Box>
                     </TableCell>
