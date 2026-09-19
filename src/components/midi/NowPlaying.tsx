@@ -17,7 +17,7 @@ export function NowPlaying() {
   if (!playing || route.name === 'midi') return null
 
   return (
-    <Box className={styles.strip}>
+    <Box className={styles.strip} data-print="off">
       <Button
         className={styles.name}
         onClick={() => navigate(pathFor('midi'))}

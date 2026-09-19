@@ -41,7 +41,9 @@ export function PatchBar({
         {title.text || '(unnamed)'}
       </Typography>
 
-      <Box className={styles.buttons}>
+      {/* The buttons and not the bar: on paper the name is the sheet's title,
+          and nothing printed can be pressed. */}
+      <Box className={styles.buttons} data-print="off">
         {buttons.map((button) => (
           <Button
             key={button.label}

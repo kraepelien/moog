@@ -113,6 +113,7 @@ export function PageNav({
       component="nav"
       aria-label="Pages"
       className={styles.nav}
+      data-print="off"
       data-placement={placement}
       data-collapsed={collapsed ? 'true' : 'false'}
     >

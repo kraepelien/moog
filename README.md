@@ -867,6 +867,45 @@ Opening a row used to load the patch and adopt it *before* navigating, and `navi
 about an unsaved draft, so answering Cancel left the library showing with the draft already gone.
 `navigate` answers whether it went, and the editor button adopts only once it has.
 
+**Print is a button on the sheet**, and `src/print.css` is the whole of what it needs. That
+stylesheet is global rather than a module because almost everything printing does is to elements
+the sheet does not own: the nav, the preview banner, the file still playing, the bar's buttons, the
+panel checklist and a page's alerts all wear `data-print="off"` and go on one selector, which keeps
+what stays off the paper a list in one file instead of a rule per component. The patch's name is
+not one of them: on paper it is the sheet's title.
+
+The scale is the part a stylesheet cannot reach. `FitToWidth` writes the panel's scale as an
+*inline* transform measured against the window, and a `ResizeObserver` callback is delivered at the
+end of a frame, which is after `print()` has taken its snapshot. So the sheet printed at whatever
+the screen last produced: half again wider than the page from a 1680px window, two thirds of its
+width from a 900px one. The panel is therefore rescaled for the paper synchronously inside
+`beforeprint`, and by the `matchMedia('print')` change event, which is how Safari announces the
+same thing; `afterprint` puts the window's measurement back. `src/components/printSheet.ts` holds
+the page box, A4 landscape with 10mm margins, and `test/printSheet.test.ts` reads the `@page` rule
+off disk so that the stylesheet and the constants cannot drift apart. Paper is a value declared
+here, not geometry recovered from a scan.
+
+**The panel prints as it is drawn**, dark, with `print-color-adjust: exact` because Chrome drops
+background graphics by default and a panel of white ink on a dropped black field prints nothing at
+all. The manual's own sheets are line art on white, and matching them would mean re-pathing artwork
+that is lifted verbatim.
+
+**A sheet is one page**, which is what a patch sheet is: the manual prints two filled-in ones to a
+page. That takes fitting the panel to the page rather than to its width. Fitted across alone it
+came out 533 pixels tall in the 718 an A4 landscape page has, which leaves the Notes box nothing,
+and `break-inside: avoid` then moved the whole box onto a second sheet: two pages for the 35 of the
+44 patches in `bank/` that carry a note. So `printScale` answers for one dimension at a time and
+the panel takes the smaller of the two, which puts Midnight Funk at 0.41 instead of 0.48, still far
+larger than the manual draws the instrument.
+
+How much room is left is a question only the page can answer, since it depends on how many rows of
+chips and how many lines of note that patch has, so `PatchPage` measures it and `FitToWidth` asks
+at the moment of printing. It measures at the *paper's* width, briefly setting the column to it,
+because `beforeprint` runs on the layout the window has: a note that takes two lines in a 1680px
+window may take three across a 1047px page, and a sheet measured at the window's width is one that
+fits until somebody prints it from a large monitor. Where the rest of the sheet has taken the whole
+page the height drops out of the decision rather than scaling the panel to nothing.
+
 ### The page nav
 
 `PageNav.tsx` is the only way to any page, and it is one nav in two placements: a rail down the left

@@ -1,3 +1,4 @@
+import { useCallback, useRef } from 'react'
 import Alert from '@mui/material/Alert'
 import AlertTitle from '@mui/material/AlertTitle'
 import Button from '@mui/material/Button'
@@ -9,6 +10,7 @@ import { StarRating } from '@components/library/StarRating.tsx'
 import { PatchBar } from '@components/PatchBar.tsx'
 import { FitToWidth } from '@components/FitToWidth.tsx'
 import { Panel } from '@components/Panel.tsx'
+import { printableHeightPx, printableWidthPx } from '@components/printSheet.ts'
 import { bankOf, BANK_TONES, type LibraryEntry } from '@components/library/entry.ts'
 import { instrumentName } from '@instruments/instruments.ts'
 import { panelRegistry } from '@controls/panel.ts'
@@ -39,6 +41,11 @@ export function PatchPage({
   onBrowse,
   onPlay,
   onRate,
+  /* Taken as a parameter with a default, the way the keyboard takes its
+     instrument, so a test can count prints instead of opening a dialog it
+     cannot close. Wrapped rather than passed bare: `print` detached from the
+     window it belongs to throws when it is called. */
+  onPrint = () => window.print(),
 }: {
   patch: Patch | null
   loading: boolean
@@ -56,7 +63,37 @@ export function PatchPage({
   onBrowse: () => void
   onPlay?: (id: string, value: ControlValue) => void
   onRate?: (stars: number) => void
+  onPrint?: () => void
 }) {
+  const sheet = useRef<HTMLDivElement>(null)
+  const drawing = useRef<HTMLDivElement>(null)
+
+  /* How much of the page the panel may have, answered while the print is being
+     set up rather than worked out in advance: it is the paper less everything
+     else on the sheet, and a patch with three rows of chips and a long note
+     leaves less of it than one with neither.
+
+     Measured at the paper's width, because `beforeprint` runs on the layout the
+     window has: the note that takes two lines in a 1680px window may take three
+     across a page 1047px wide, and a sheet measured at the wrong width is a
+     sheet that fits until somebody prints it from a large monitor. Setting the
+     width forces the reflow, and it is put back before the handler returns, so
+     nothing is ever painted at it. */
+  const room = useCallback(() => {
+    const width = printableWidthPx()
+    const column = sheet.current
+    const panel = drawing.current
+    if (!column || !panel) return { width, height: printableHeightPx() }
+
+    const was = column.style.width
+    column.style.width = `${width}px`
+    /* The panel's own box is taken back out, so the answer does not depend on
+       the scale it happens to be drawn at while this is being asked. */
+    const rest = column.getBoundingClientRect().height - panel.getBoundingClientRect().height
+    column.style.width = was
+    return { width, height: printableHeightPx() - rest }
+  }, [])
+
   if (loading) return <Typography sx={{ p: 2 }}>Loading…</Typography>
 
   /* Unknown, somebody else's private one, and deleted are one message on
@@ -64,7 +101,7 @@ export function PatchPage({
      an id exists. Saying more here would invent a distinction it withheld. */
   if (patch === null) {
     return (
-      <Alert severity="info" className={styles.absent}>
+      <Alert severity="info" className={styles.absent} data-print="off">
         <AlertTitle>No patch at this address</AlertTitle>
         <Typography component="p" sx={{ mb: 1.5 }}>
           It may have been deleted, or it may belong to somebody who has not published it.
@@ -80,10 +117,13 @@ export function PatchPage({
   const bank = entry === null ? null : bankOf(entry)
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} ref={sheet}>
       <PatchBar
         title={{ text: patch.name, unsaved: false }}
-        buttons={[{ label: 'Open in the editor', tone: 'green', onSelect: onOpen }]}
+        buttons={[
+          { label: 'Open in the editor', tone: 'green', onSelect: onOpen },
+          { label: 'Print', tone: 'blue', onSelect: onPrint },
+        ]}
       />
 
       <div className={styles.fields}>
@@ -157,17 +197,21 @@ export function PatchPage({
           panel is what makes a link somebody was sent sound. `readOnly` has
           already swallowed every write to a control the patch records, so
           anything arriving here is one of the controls it does not. */}
-      <FitToWidth>
-        <Panel
-          registry={panelRegistry}
-          values={{ ...resolved.values, ...played }}
-          onChange={(id, next) => onPlay?.(id, next)}
-          readOnly
-        />
-      </FitToWidth>
+      <div data-print="panel" ref={drawing}>
+        <FitToWidth printRoom={room}>
+          <Panel
+            registry={panelRegistry}
+            values={{ ...resolved.values, ...played }}
+            onChange={(id, next) => onPlay?.(id, next)}
+            readOnly
+          />
+        </FitToWidth>
+      </div>
 
       {/* Under the panel, which is where the manual's own sheets print theirs. */}
-      <PatchNotes notes={patch.notes} />
+      <div className={styles.notes} data-print="notes">
+        <PatchNotes notes={patch.notes} />
+      </div>
     </div>
   )
 }

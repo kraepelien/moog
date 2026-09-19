@@ -381,7 +381,7 @@ function ChecklistItem({ item }: { item: PanelItem }) {
 
 export function PanelChecklist({ registry }: { registry: Registry }) {
   return (
-    <div className={`${styles.panel} ${styles.checklist}`}>
+    <div className={`${styles.panel} ${styles.checklist}`} data-print="off">
       {registry.sections.map((section) => (
         <section key={section.id} className={styles.section}>
           <div className={styles.sectionBody}>
