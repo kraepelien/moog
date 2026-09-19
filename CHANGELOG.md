@@ -3,6 +3,7 @@
 Everything that has landed on `main`, newest first. A pull request carries its link; a commit pushed
 straight to `main` has none to carry.
 
+- Give every patch an address of its own, and stop opening one from costing you the draft
 - [Start the home shelf with the best-rated patches rather than the four the seed happened to stamp last](https://github.com/kraepelien/moog/pull/107)
 - [Call the administration row Admin, the word it lands on](https://github.com/kraepelien/moog/pull/106)
 - [Lift the nav off the page, and mark the current one by the lettering rather than the fill](https://github.com/kraepelien/moog/pull/105)

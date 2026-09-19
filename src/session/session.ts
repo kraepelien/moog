@@ -22,6 +22,18 @@ export const SIGNED_OUT: Session = {
   user: null,
 }
 
+/* Where signing in comes back to. The *address*, never the route's declared
+   path: a route that takes a parameter is written `/patch/:id`, and returning
+   to that literally asks for a patch called ":id" and lands on the default page
+   instead. `safeReturnTo` on the server cannot catch it either, since it is a
+   path like any other.
+
+   The query goes with it: a failed attempt arrives back carrying `?error=`, and
+   that belongs to the page that reads it rather than to the next round trip. */
+export function returnToFor(address: string): string {
+  return address.split(/[?#]/)[0] || '/'
+}
+
 export function signInHref(returnTo: string): string {
   return `/api/auth/google/start?returnTo=${encodeURIComponent(returnTo)}`
 }

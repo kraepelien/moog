@@ -35,9 +35,10 @@ import {
 } from './components/library/SavePatchDialog.tsx'
 import type { LibraryEntry } from './components/library/entry.ts'
 import { Panel, PanelChecklist } from './components/Panel.tsx'
+import { PatchPage } from './components/patch/PatchPage.tsx'
 import { useConfirm } from './components/useConfirm.tsx'
 import { SignIn } from './session/SignIn.tsx'
-import { signOut, useSession, type Session } from './session/session.ts'
+import { returnToFor, signOut, useSession, type Session } from './session/session.ts'
 import { webMidiSupported } from './audio/useMidi.ts'
 import { AccessProvider } from './access/AccessProvider.tsx'
 import { useCan } from './access/context.ts'
@@ -104,7 +105,6 @@ export function App({
   keepNav: (next: NavPreference) => void
 }) {
   const { session, refresh } = useSession()
-  const [{ route }] = useRoute()
   const here = useLocation()
 
   useDocumentTitle()
@@ -114,7 +114,7 @@ export function App({
     /* A sign-in that failed comes back with a reason in the query, and this is
        the page that can say it. */
     const error = new URLSearchParams(here.split('?')[1] ?? '').get('error')
-    return <SignIn returnTo={route.path} error={error} />
+    return <SignIn returnTo={returnToFor(here)} error={error} />
   }
 
   return (
@@ -201,7 +201,7 @@ function Workspace({
      file records, so turning it must not mark the draft unsaved either. */
   const [played, setPlayed] = useState<Record<string, ControlValue>>({})
   const { ask, dialog } = useConfirm()
-  const [{ route }, navigate] = useRoute()
+  const [{ route, params }, navigate] = useRoute()
   const mayAdminTags = useCan(PRIVILEGE.AdminTags)
   const mayAdminUsers = useCan(PRIVILEGE.AdminUsers)
   const [users, setUsers] = useState<readonly AdminUser[]>([])
@@ -212,6 +212,18 @@ function Workspace({
   const [skin, setSkin] = useState<Skin>(painted)
   const [keeping, setKeeping] = useState(true)
   const [midiHelp, setMidiHelp] = useState(false)
+  /* What the patch sheet is showing. Held apart from `draft` on purpose: the
+     sheet is a view of a stored patch and the draft is what is being edited,
+     and keeping one variable for both is what would make arriving at an address
+     replace whatever somebody had open. */
+  const [shown, setShown] = useState<{ id: string; patch: Patch | null; loading: boolean }>({
+    id: '',
+    patch: null,
+    /* Stated rather than inferred from a missing patch: an address with nothing
+       behind it answers 404, so "no patch yet" and "no patch at all" look
+       identical from the outside and the page would load for ever. */
+    loading: false,
+  })
   /* The menu cannot hold a file input, so it holds a button that clicks one. */
   const importing = useRef<HTMLInputElement>(null)
 
@@ -310,6 +322,27 @@ function Workspace({
       await run(refreshUsers)
     })()
   }, [route.name, mayAdminUsers, refreshUsers, run])
+
+  /* Loaded for the address, and only on the page that shows it. Keyed on the id
+     so that following a second link re-fetches, and so that coming back to one
+     already loaded draws immediately rather than blanking first. */
+  useEffect(() => {
+    const id = params.id
+    if (route.name !== 'patch' || id === undefined || id === shown.id) return
+    void (async () => {
+      /* Cleared first: the previous patch on screen under a new address would
+         be this page showing one patch and claiming another. */
+      setShown({ id, patch: null, loading: true })
+      await run(async () => {
+        const patch = await store.get(id)
+        /* Only if the address has not moved on while this was in flight. */
+        setShown((held) => (held.id === id ? { id, patch, loading: false } : held))
+      })
+      /* A refusal leaves `run` having reported it, and the page still has to
+         stop loading or it sits on a spinner over an error. */
+      setShown((held) => (held.id === id ? { ...held, loading: false } : held))
+    })()
+  }, [route.name, params.id, shown.id, run])
 
   /* The list is replaced from what the write returned rather than re-fetched:
      the server answers with the account as it now stands, so a second call
@@ -457,28 +490,36 @@ function Workspace({
     [],
   )
 
-  /* Opening is the row's whole job, so it loads and moves to the editor in one
-     go rather than loading in place and leaving you on the list. A factory patch
-     opens as a copy, because saving afterwards must not write back over it; a
-     patch of your own opens as itself, so saving updates the one you picked. */
+  /* Opening a row goes to that patch's own address rather than into the editor.
+     A sheet changes nothing, so pressing a row can never cost somebody the
+     draft they had going, and the address is then a link they can send. */
   const openEntry = useCallback(
-    (entry: LibraryEntry) =>
+    (entry: LibraryEntry) => void navigate(pathFor('patch', { id: entry.id })),
+    [navigate],
+  )
+
+  /* The other half of what opening used to be, now behind the sheet's button.
+     A factory patch opens as a copy, because saving afterwards must not write
+     back over it; a patch of your own opens as itself, so saving updates the
+     one you picked.
+
+     The move comes first and the draft is replaced only once it went. The other
+     way round, a dirty panel was replaced before the blocker asked about it, so
+     answering Cancel left the list showing with the draft already gone. */
+  const openInEditor = useCallback(
+    (patch: Patch, entry: LibraryEntry | null) =>
       void run(async () => {
-        /* Fetched whatever it is: a row carries no values, and a factory patch
-           is read through the same call as any other. */
-        const patch = await store.get(entry.id)
-        if (!patch) return
-        const factory = entry.origin === 'factory'
-        const writable = !factory && entry.mine
+        if (!(await navigate(pathFor('editor')))) return
+        const factory = entry?.origin === 'factory'
+        const writable = entry !== null && !factory && entry.mine
         adopt(
           writable
             ? patch
             : copyOf(patch, {
-                owner: factory ? null : { id: null, name: entry.ownerName },
+                owner: factory ? null : { id: null, name: entry?.ownerName ?? null },
               }),
-          writable ? { stored: true } : { from: entry.id },
+          writable ? { stored: true } : { from: entry?.id ?? patch.id },
         )
-        navigate(pathFor('editor'))
       }),
     [adopt, navigate, run],
   )
@@ -698,6 +739,29 @@ function Workspace({
                 loadPatch={(id) => store.get(id)}
                 desk={desk}
                 onProblem={setProblem}
+              />
+            )}
+
+            {route.name === 'patch' && (
+              <PatchPage
+                patch={shown.patch}
+                loading={shown.loading}
+                entry={library.find((one) => one.id === shown.id) ?? null}
+                played={played}
+                tagPalette={tagPalette}
+                onBrowse={() => void navigate(pathFor('library'))}
+                onPlay={(id, next) => setPlayed((previous) => ({ ...previous, [id]: next }))}
+                onOpen={() => {
+                  if (shown.patch) {
+                    openInEditor(shown.patch, library.find((one) => one.id === shown.id) ?? null)
+                  }
+                }}
+                onRate={(stars) =>
+                  void run(async () => {
+                    await store.rate(shown.id, stars)
+                    await refresh()
+                  })
+                }
               />
             )}
 

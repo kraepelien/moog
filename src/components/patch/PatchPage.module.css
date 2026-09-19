@@ -1,0 +1,22 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Above the panel, the way a patch sheet heads its own drawing. A column of
+   rows rather than a grid: FieldRow already lines the labels up in a column of
+   their own width. */
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.absent {
+  max-width: 34rem;
+}
+
+.provenance {
+  color: var(--content-color-alt);
+}
