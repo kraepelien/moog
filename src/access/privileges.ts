@@ -38,7 +38,21 @@ export type Privilege = (typeof PRIVILEGE)[keyof typeof PRIVILEGE]
 
 export const PRIVILEGES: readonly Privilege[] = Object.values(PRIVILEGE)
 
-/* Shown beside each privilege where it is granted. Written for somebody
+/* What the row is called where somebody is handing it over. The name beside it
+   is the stored one and stays exact; this is the same thing said in words, so a
+   list of six reads as six things a person can do rather than six identifiers.
+
+   A Record, so a privilege added without one fails to typecheck. */
+export const TITLE: Record<Privilege, string> = {
+  AccessAdmin: 'Be an administrator',
+  AdminUsers: 'Manage people and their access',
+  AdminTags: 'Keep the tag list',
+  AdminLayout: 'Try out the layout',
+  AdminPatches: 'Edit anybody’s patch',
+  StoreMidi: 'Save MIDI arrangements',
+}
+
+/* The long form, behind the info icon on each row. Written for somebody
    deciding whether to hand it over, which is why these say what it lets a
    person do rather than why the code is arranged this way.
 
@@ -71,9 +85,8 @@ export const ROLES: readonly Role[] = Object.values(ROLE)
 /* The only role anybody is given. The other two are facts rather than
    decisions, and neither is ever written to a row:
 
-   `member` is what every signed-in account is, applied at resolution, so no row
-   can end up with no privileges at all and unlocking a basic feature reaches
-   everyone with no write.
+   `member` is what every signed-in account is, applied at resolution rather
+   than stored, so unlocking a basic feature reaches everyone with no write.
 
    `admin` comes from `MOOG_ADMINS` and nowhere else. Storing it as well gave
    one fact two sources, which is what let a column go on claiming an admin the
@@ -98,11 +111,11 @@ export const ROLE_LADDER: readonly Role[] = [ROLE.member, ROLE.tester, ROLE.admi
    and the day a second one was given to members it would not have been
    repeated. */
 const ADDS: Record<Role, readonly Privilege[]> = {
-  member: [PRIVILEGE.StoreMidi],
-  /* Nothing yet. It exists so a beta privilege can be handed to a group in one
-     line rather than to each person by hand — and, being a rung, reaches
-     admins at the same time. */
-  tester: [],
+  /* Nothing. Signing in is not itself permission to do anything, and the rung
+     stays because it is where a privilege everybody should have would go —
+     one line, reaching every account with no write. */
+  member: [],
+  tester: [PRIVILEGE.StoreMidi],
   admin: [
     PRIVILEGE.AccessAdmin,
     PRIVILEGE.AdminUsers,
@@ -126,6 +139,17 @@ export function privilegesOf(role: Role): readonly Privilege[] {
   return PRIVILEGES.filter((privilege) => held.has(privilege))
 }
 
+/* What this rung alone puts on the table: what it holds that the rung below
+   does not. Derived rather than read from `ADDS`, so the list shown beside a
+   role cannot claim something `privilegesOf` would not hand over. */
+export function addedBy(role: Role): readonly Privilege[] {
+  const rung = ROLE_LADDER.indexOf(role)
+  if (rung < 0) return []
+
+  const below = rung === 0 ? [] : privilegesOf(ROLE_LADDER[rung - 1] as Role)
+  return privilegesOf(role).filter((privilege) => !below.includes(privilege))
+}
+
 /* What a privilege is conditional on. `AccessAdmin` is a boundary rather than a
    door: without it the administration privileges do not apply at all, so taking
    it away de-administers somebody everywhere at once instead of hiding pages
@@ -145,6 +169,14 @@ export const REQUIRES: Partial<Record<Privilege, Privilege>> = {
 
 export function requiredBy(privilege: Privilege): Privilege | null {
   return REQUIRES[privilege] ?? null
+}
+
+/* Which half of the editor a privilege belongs under. Read off `REQUIRES`
+   rather than kept as a third list: administration is exactly what
+   `AccessAdmin` gates plus `AccessAdmin` itself, so a privilege added with its
+   prerequisite lands in the right group with no second edit to forget. */
+export function isAdministrative(privilege: Privilege): boolean {
+  return privilege === PRIVILEGE.AccessAdmin || requiredBy(privilege) === PRIVILEGE.AccessAdmin
 }
 
 /* The two that must not be revoked away from everybody: `AccessAdmin` because
@@ -255,7 +287,16 @@ export function sourceOf(
 }
 
 export function fromRole(roles: readonly Role[], privilege: Privilege): boolean {
-  /* Member is checked whatever was passed, because everybody is one. */
-  if (privilegesOf(ROLE.member).includes(privilege)) return true
-  return roles.some((role) => privilegesOf(role).includes(privilege))
+  return roleGiving(roles, privilege) !== null
+}
+
+/* Which role is answering, so a row can name it instead of saying "a role".
+   The lowest rung that carries it, because that is the one whose removal would
+   actually take it away — a higher rung only inherits what is already there.
+   Member is counted whatever was passed, since everybody is one. */
+export function roleGiving(roles: readonly Role[], privilege: Privilege): Role | null {
+  const held = new Set<Role>([ROLE.member, ...roles])
+  return (
+    ROLE_LADDER.find((role) => held.has(role) && privilegesOf(role).includes(privilege)) ?? null
+  )
 }

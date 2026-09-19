@@ -38,7 +38,9 @@ async function world() {
   const handle = createApi({ db, config })
   const repositories = createRepositories(db)
 
-  const person = async (uid: string, roles: readonly string[] = [ROLE.member]) => {
+  /* Tester by default: StoreMidi sits on that rung, so an account without it
+     is testing the refusal rather than the feature. */
+  const person = async (uid: string, roles: readonly string[] = [ROLE.tester]) => {
     repositories.users.ensure({
       uid,
       provider: 'test',
@@ -87,8 +89,6 @@ const anArrangement = (parts: Record<string, { patchId: string; name: string }> 
 })
 
 describe('the privilege', () => {
-  /* Every signed-in account is a member and members may store MIDI, so the only
-     way to be without it is to have had it taken away. */
   test('is the door: without it every route refuses', async () => {
     const { person, repositories } = await world()
     const nobody = await person('u-nobody')
@@ -105,13 +105,24 @@ describe('the privilege', () => {
     expect((await nobody.call('DELETE', '/api/arrangements/whatever'))!.status).toBe(403)
   })
 
-  test('comes with being a member, which is what StoreMidi grants', async () => {
+  test('comes with the tester role, which is what StoreMidi sits on', async () => {
     const { person } = await world()
-    const member = await person('u-member')
+    const tester = await person('u-tester', [ROLE.tester])
+
+    const said = await body<{ privileges: string[] }>(await tester.call('GET', '/api/session'))
+    expect(said.privileges).toContain(PRIVILEGE.StoreMidi)
+    expect((await tester.call('GET', '/api/arrangements'))!.status).toBe(200)
+  })
+
+  /* Signing in is not itself permission to keep files on the server, so the
+     rung below is refused the same way an explicit revoke is. */
+  test('is not something a plain member has', async () => {
+    const { person } = await world()
+    const member = await person('u-member', [ROLE.member])
 
     const said = await body<{ privileges: string[] }>(await member.call('GET', '/api/session'))
-    expect(said.privileges).toContain(PRIVILEGE.StoreMidi)
-    expect((await member.call('GET', '/api/arrangements'))!.status).toBe(200)
+    expect(said.privileges).not.toContain(PRIVILEGE.StoreMidi)
+    expect((await member.call('GET', '/api/arrangements'))!.status).toBe(403)
   })
 
   test('refuses a stranger with 401, having nobody to refuse', async () => {

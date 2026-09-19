@@ -2,8 +2,12 @@ import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
+  addedBy,
   ASSIGNABLE_ROLES,
   DESCRIPTION,
+  isAdministrative,
+  roleGiving,
+  TITLE,
   effectiveRoles,
   formatRoles,
   fromRole,
@@ -86,8 +90,15 @@ describe('who somebody counts as', () => {
 })
 
 describe('resolving what somebody may do', () => {
-  test('gives the baseline to an account holding no role at all', () => {
-    expect(resolve([])).toEqual([PRIVILEGE.StoreMidi])
+  /* Signing in is not itself permission to do anything. The member rung is
+     where a privilege everybody should have would go, and today nothing is
+     there. */
+  test('gives nothing to an account holding no role at all', () => {
+    expect(resolve([])).toEqual([])
+  })
+
+  test('gives a tester what that rung carries', () => {
+    expect(resolve([ROLE.tester])).toEqual([PRIVILEGE.StoreMidi])
   })
 
   test('gives an admin everything the role holds', () => {
@@ -117,7 +128,7 @@ describe('resolving what somebody may do', () => {
   })
 
   test('can leave an account holding nothing at all', () => {
-    expect(resolve([], { revoked: [PRIVILEGE.StoreMidi] })).toEqual([])
+    expect(resolve([ROLE.tester], { revoked: [PRIVILEGE.StoreMidi] })).toEqual([])
   })
 
   test('answers in the catalogue order, so two equal sets are equal lists', () => {
@@ -150,7 +161,7 @@ describe('what AccessAdmin is conditional on', () => {
   })
 
   test('leaves what does not depend on it alone', () => {
-    expect(resolve([ROLE.admin], { revoked: [PRIVILEGE.AccessAdmin] })).toContain(
+    expect(resolve([ROLE.member, ROLE.admin], { revoked: [PRIVILEGE.AccessAdmin] })).toContain(
       PRIVILEGE.StoreMidi,
     )
   })
@@ -174,7 +185,7 @@ describe('what AccessAdmin is conditional on', () => {
 describe('where an answer came from', () => {
   test('says the role when nothing was said about this account', () => {
     expect(sourceOf([ROLE.admin], PRIVILEGE.AdminTags)).toBe('role')
-    expect(sourceOf([], PRIVILEGE.StoreMidi)).toBe('role')
+    expect(sourceOf([ROLE.tester], PRIVILEGE.StoreMidi)).toBe('role')
   })
 
   test('says nothing gives it, where nothing does', () => {
@@ -211,6 +222,108 @@ describe('the catalogue', () => {
 
   test('has a privilege list for every role', () => {
     for (const role of ROLES) expect(Array.isArray(privilegesOf(role))).toBe(true)
+  })
+
+  /* The row's own label, so a list of six reads as six things a person can do.
+     Short, because it sits beside a control and not in a paragraph. */
+  test('titles every privilege, distinctly and without repeating the name', () => {
+    const titles = PRIVILEGES.map((privilege) => TITLE[privilege])
+    expect(new Set(titles).size).toBe(PRIVILEGES.length)
+
+    for (const privilege of PRIVILEGES) {
+      expect(TITLE[privilege].length).toBeGreaterThan(3)
+      expect(TITLE[privilege]).not.toBe(privilege)
+    }
+  })
+})
+
+/* Which half of the editor a privilege is drawn under. Read off REQUIRES
+   rather than kept as a third list, so a privilege added with its prerequisite
+   lands in the right group with no second edit to forget. */
+describe('telling administration from the rest', () => {
+  test('counts AccessAdmin and everything conditional on it', () => {
+    expect(isAdministrative(PRIVILEGE.AccessAdmin)).toBe(true)
+    expect(isAdministrative(PRIVILEGE.AdminUsers)).toBe(true)
+    expect(isAdministrative(PRIVILEGE.AdminPatches)).toBe(true)
+  })
+
+  test('leaves out what does not depend on it', () => {
+    expect(isAdministrative(PRIVILEGE.StoreMidi)).toBe(false)
+  })
+
+  /* Every privilege lands in exactly one of the two halves, so none can be
+     left out of the editor by being in neither. */
+  test('puts every privilege on one side or the other', () => {
+    const administrative = PRIVILEGES.filter(isAdministrative)
+    const rest = PRIVILEGES.filter((privilege) => !isAdministrative(privilege))
+    expect(administrative.length + rest.length).toBe(PRIVILEGES.length)
+    expect(administrative.length).toBeGreaterThan(0)
+  })
+
+  /* The same set the admin role carries, which is what makes the grouping a
+     reading of the rules rather than a second opinion about them. */
+  test('agrees with what the admin rung adds', () => {
+    expect(addedBy(ROLE.admin).every(isAdministrative)).toBe(true)
+  })
+})
+
+/* What a rung puts on the table by itself, which is what the editor shows
+   beside the button that gives the role. */
+describe('what a role adds', () => {
+  test('is what it holds that the rung below does not', () => {
+    expect(addedBy(ROLE.member)).toEqual([])
+    expect(addedBy(ROLE.tester)).toEqual([PRIVILEGE.StoreMidi])
+    expect(addedBy(ROLE.admin)).not.toContain(PRIVILEGE.StoreMidi)
+    expect(addedBy(ROLE.admin)).toContain(PRIVILEGE.AdminUsers)
+  })
+
+  /* The rungs partition the catalogue between them, so nothing a role gives is
+     missing from every card and nothing is listed on two. */
+  test('accounts for everything the top rung holds, exactly once', () => {
+    const listed = ROLE_LADDER.flatMap((role) => addedBy(role))
+    expect(new Set(listed).size).toBe(listed.length)
+    expect([...listed].sort()).toEqual([...privilegesOf(ROLE.admin)].sort())
+  })
+
+  test('is nothing for a role off the ladder', () => {
+    expect(addedBy('curator' as never)).toEqual([])
+  })
+})
+
+/* Which role is answering, so a row can name it instead of saying "a role" —
+   and naming it says which one would have to go. */
+describe('the role that gives a privilege', () => {
+  test('names the rung it sits on', () => {
+    expect(roleGiving([ROLE.tester], PRIVILEGE.StoreMidi)).toBe(ROLE.tester)
+    expect(roleGiving([ROLE.admin], PRIVILEGE.AdminTags)).toBe(ROLE.admin)
+  })
+
+  /* The lowest, because a higher rung only inherits what is already there:
+     taking the admin role off somebody who is also a tester does not take
+     StoreMidi with it. */
+  test('names the lowest rung carrying it, not the one being held', () => {
+    expect(roleGiving([ROLE.tester, ROLE.admin], PRIVILEGE.StoreMidi)).toBe(ROLE.tester)
+  })
+
+  test('counts member whatever was passed, since everybody is one', () => {
+    for (const privilege of privilegesOf(ROLE.member)) {
+      expect(roleGiving([], privilege)).toBe(ROLE.member)
+    }
+  })
+
+  test('is nothing where no role the account holds gives it', () => {
+    expect(roleGiving([], PRIVILEGE.StoreMidi)).toBeNull()
+    expect(roleGiving([ROLE.tester], PRIVILEGE.AdminTags)).toBeNull()
+  })
+
+  /* `fromRole` is this question asked as a yes or no, so the two cannot drift
+     into disagreeing about the same account. */
+  test('agrees with fromRole on every privilege', () => {
+    for (const roles of [[], [ROLE.tester], [ROLE.member, ROLE.admin]]) {
+      for (const privilege of PRIVILEGES) {
+        expect(fromRole(roles, privilege)).toBe(roleGiving(roles, privilege) !== null)
+      }
+    }
   })
 })
 
@@ -255,11 +368,8 @@ describe('a role inheriting from the ones below it', () => {
     ).not.toContain(PRIVILEGE.StoreMidi)
   })
 
-  /* The ladder replaced a table that listed StoreMidi against both member and
-     admin. Nobody's access changes; what changes is that the next privilege
-     given to members cannot be forgotten on the rung above. */
-  test('leaves what everybody holds today exactly as it was', () => {
-    expect(resolve([ROLE.member])).toEqual([PRIVILEGE.StoreMidi])
+  test('gives each rung what it and everything below it carries', () => {
+    expect(resolve([ROLE.member])).toEqual([])
     expect(resolve([ROLE.member, ROLE.tester])).toEqual([PRIVILEGE.StoreMidi])
     expect(resolve([ROLE.member, ROLE.admin])).toEqual([
       PRIVILEGE.AccessAdmin,

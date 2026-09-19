@@ -72,12 +72,14 @@ describe('the session route', () => {
     expect(said.privileges).toContain(PRIVILEGE.AdminTags)
   })
 
-  test('gives an ordinary member the member set and nothing more', async () => {
+  /* Signing in makes somebody a member and a member holds nothing: the rung is
+     where a privilege everybody should have would go, not a starter set. */
+  test('gives an ordinary member the member set, which is empty', async () => {
     const { person } = await world()
     const punter = await person('u-punter', 'punter@example.com')
 
     const said = await session(punter)
-    expect(said.privileges).toEqual([PRIVILEGE.StoreMidi])
+    expect(said.privileges).toEqual([])
     expect(said.roles).toEqual([ROLE.member])
   })
 

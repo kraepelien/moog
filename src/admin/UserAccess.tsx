@@ -1,23 +1,28 @@
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import Checkbox from '@mui/material/Checkbox'
 import Paper from '@mui/material/Paper'
 import Stack from '@mui/material/Stack'
+import ToggleButton from '@mui/material/ToggleButton'
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import {
-  ASSIGNABLE_ROLES,
+  addedBy,
   DESCRIPTION,
   effectiveRoles,
-  fromRole,
+  isAdministrative,
+  isAssignable,
   requiredBy,
+  roleGiving,
   sourceOf,
   PRIVILEGES,
   PRIVILEGE,
+  ROLE,
+  ROLE_LADDER,
+  TITLE,
   type Privilege,
   type Role,
-  type Source,
 } from '@access/privileges.ts'
 import { displayName, protectedReason, type AdminUser } from './users.ts'
 import { SHELL, TONE_COLOURS } from '@/tones.ts'
@@ -25,31 +30,24 @@ import styles from './UserAccess.module.css'
 
 /* What one account may do, and why.
  *
- * Two boxes rather than one, because a privilege that nobody has given and one
- * that somebody took away are not the same state and only the second survives a
- * role being added later. Grant says they have it; how solid it is says whether
- * a row here is what says so, or a role answering. Revoke is its own decision
- * and is stored as one.
+ * Each privilege has one control with three positions, because there are three
+ * answers and only three: this account is handed it, this account is refused
+ * it, or neither and the roles decide. A revoke is its own position rather than
+ * the absence of a grant because it outlives a role being added later, and
+ * going back to the roles is a position rather than a button because it is what
+ * deleting the row means.
  *
- * Between them they draw three states and never a fourth: unticking either box
- * goes back to whatever the roles say, which is deleting the row, so clearing
- * an override needs no button of its own. Unticking a faded grant is the one
- * click that crosses over — there is no row to delete, so wanting it off is a
- * revoke, and the other box ticks to say so.
+ * The row says what it is in words and keeps the stored name beside it, since
+ * that name is what the override row holds and what an error names. The long
+ * description sits behind the info icon: whoever is handing a privilege over
+ * reads it once, and a list of six paragraphs is a list nobody reads.
  *
- * A revoke the server would refuse is drawn locked instead of offered. The
- * reasons are `protectedReason`; the floor that keeps somebody holding
- * AdminUsers is not among them and still arrives as an error, because it
- * depends on every other account. */
+ * A revoke the server would refuse is drawn locked — only that position, since
+ * granting is never what gets refused. The reasons are `protectedReason`; the
+ * floor that keeps somebody holding AdminUsers is not among them and still
+ * arrives as an error, because it depends on every other account. */
 
 export type Decision = 'granted' | 'inherited' | 'revoked'
-
-const SAYS: Record<Source, string> = {
-  role: 'from a role',
-  granted: 'granted to this account',
-  revoked: 'revoked for this account',
-  none: 'no role gives this',
-}
 
 function LockGlyph() {
   return (
@@ -63,6 +61,228 @@ function LockGlyph() {
         strokeLinejoin="round"
       />
     </svg>
+  )
+}
+
+function InfoGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="1.6" fill="none" />
+      <path
+        d="M12 11v5.5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <circle cx="12" cy="7.8" r="1.05" fill="currentColor" />
+    </svg>
+  )
+}
+
+/* Both lines of the tooltip. The stored name is in it rather than only beside
+   the title, so the one place somebody reads about a privilege also tells them
+   what it is called in an override row and in an error. */
+function about(privilege: Privilege) {
+  return (
+    <>
+      <Box component="span" className={styles.tipName}>
+        {privilege}
+      </Box>
+      {DESCRIPTION[privilege]}
+    </>
+  )
+}
+
+/* What each rung adds, with the ones this account already holds marked. Shown
+   beside the button that gives the role, because "tester" on its own says
+   nothing about what it hands over. */
+function RoleCard({
+  role,
+  held,
+  standing,
+  user,
+  onRoles,
+}: {
+  role: Role
+  held: boolean
+  /* Why they hold it, where that is not somebody's decision: everybody is a
+     member, and an administrator is one because the environment says so. */
+  standing: string | null
+  user: AdminUser
+  onRoles: (roles: readonly Role[]) => void
+}) {
+  const adds = addedBy(role)
+  const colour = TONE_COLOURS.blue
+
+  return (
+    <Box className={styles.roleCard} data-held={held ? 'yes' : 'no'}>
+      <Box className={styles.roleHead}>
+        <Typography component="span" className={styles.roleName}>
+          {role}
+        </Typography>
+        {isAssignable(role) ? (
+          <Button
+            size="small"
+            className={styles.roleButton}
+            aria-label={`${held ? 'Remove' : 'Give'} the ${role} role`}
+            aria-pressed={held}
+            onClick={() =>
+              onRoles(held ? user.roles.filter((one) => one !== role) : [...user.roles, role])
+            }
+            sx={{
+              color: held ? SHELL.onTone : colour.ink,
+              backgroundColor: held ? colour.ink : colour.field,
+              '&:hover': { backgroundColor: held ? colour.ink : colour.strong },
+            }}
+          >
+            {held ? 'Remove' : 'Give'}
+          </Button>
+        ) : (
+          <Typography component="span" color="text.secondary" className={styles.roleStanding}>
+            {standing}
+          </Typography>
+        )}
+      </Box>
+
+      {adds.length === 0 ? (
+        <Typography component="span" color="text.secondary" className={styles.roleAdds}>
+          Adds nothing on its own.
+        </Typography>
+      ) : (
+        <Box component="ul" className={styles.roleAdds}>
+          {adds.map((privilege) => (
+            <Box component="li" key={privilege} data-has={user.privileges.includes(privilege) ? 'yes' : 'no'}>
+              {TITLE[privilege]}
+            </Box>
+          ))}
+        </Box>
+      )}
+    </Box>
+  )
+}
+
+function PrivilegeRow({
+  privilege,
+  user,
+  roles,
+  viewerUid,
+  onDecide,
+}: {
+  privilege: Privilege
+  user: AdminUser
+  roles: readonly Role[]
+  viewerUid: string | null
+  onDecide: (privilege: Privilege, decision: Decision) => void
+}) {
+  const source = sourceOf(roles, privilege, user)
+  const decision: Decision =
+    source === 'granted' ? 'granted' : source === 'revoked' ? 'revoked' : 'inherited'
+
+  const held = user.privileges.includes(privilege)
+  const giver = roleGiving(roles, privilege)
+  const needs = requiredBy(privilege)
+  const locked = protectedReason(user, privilege, viewerUid)
+
+  /* Said once, in the order somebody reads it: whether they can do it, then
+     what is answering, then the two ways an answer can be true and still do
+     nothing. */
+  const why =
+    decision === 'granted'
+      ? 'granted to this account'
+      : decision === 'revoked'
+        ? 'revoked for this account'
+        : giver !== null
+          ? `the ${giver} role gives it`
+          : 'no role gives it'
+
+  const redundant = decision === 'granted' && giver !== null
+  /* Something says yes and the account still cannot do it, because what it is
+     conditional on is missing. The confusing row, so it is said out loud. */
+  const inert =
+    needs !== null && !held && decision !== 'revoked' && (giver !== null || decision === 'granted')
+      ? needs
+      : null
+
+  const revoke = (
+    <ToggleButton
+      value="revoked"
+      disabled={locked !== null}
+      aria-label={`Revoke ${privilege}`}
+      className={styles.revoke}
+    >
+      Revoke
+    </ToggleButton>
+  )
+
+  return (
+    <Box
+      component="li"
+      className={styles.row}
+      data-stored={decision === 'inherited' ? 'no' : 'yes'}
+      data-held={held ? 'yes' : 'no'}
+      data-locked={locked === null ? 'no' : 'yes'}
+    >
+      <Box className={styles.about}>
+        <Typography component="span" className={styles.title}>
+          {TITLE[privilege]}
+          <Tooltip title={about(privilege)}>
+            <Box
+              component="button"
+              type="button"
+              className={styles.info}
+              aria-label={`About ${privilege}`}
+            >
+              <InfoGlyph />
+            </Box>
+          </Tooltip>
+          {locked !== null && (
+            <Tooltip title={locked}>
+              <Box component="span" className={styles.lock} aria-hidden="true">
+                <LockGlyph />
+              </Box>
+            </Tooltip>
+          )}
+        </Typography>
+        <Typography component="span" color="text.secondary" className={styles.name}>
+          {privilege}
+        </Typography>
+      </Box>
+
+      <ToggleButtonGroup
+        exclusive
+        size="small"
+        value={decision}
+        className={styles.decide}
+        aria-label={`What ${privilege} does for this account`}
+        /* Null is MUI reporting the selected button pressed again. Passing it
+           on would be writing the answer that is already stored. */
+        onChange={(_event, next: Decision | null) => next !== null && onDecide(privilege, next)}
+      >
+        <ToggleButton value="granted" aria-label={`Grant ${privilege}`} className={styles.grant}>
+          Grant
+        </ToggleButton>
+        <ToggleButton value="inherited" aria-label={`Use the roles for ${privilege}`}>
+          Default
+        </ToggleButton>
+        {/* Disabled inside a group takes no pointer events, so the tooltip hangs
+            off a wrapper rather than the button. */}
+        {locked === null ? revoke : <Tooltip title={locked}><Box component="span">{revoke}</Box></Tooltip>}
+      </ToggleButtonGroup>
+
+      <Typography component="span" className={styles.status}>
+        <Box component="span" className={styles.verdict}>
+          {held ? 'Allowed' : 'Not allowed'}
+        </Box>
+        <Box component="span" color="text.secondary">
+          {' · '}
+          {why}
+          {locked !== null ? ' · cannot be revoked' : ''}
+          {redundant ? ` · the ${giver} role already gives it, so this changes nothing` : ''}
+          {inert !== null ? ` · does nothing without ${TITLE[inert]}` : ''}
+        </Box>
+      </Typography>
+    </Box>
   )
 }
 
@@ -81,15 +301,56 @@ export function UserAccess({
 }) {
   const roles = effectiveRoles(user.roles, user.envAdmin)
 
+  const standing: Partial<Record<Role, string>> = {
+    [ROLE.member]: 'everybody signed in',
+    [ROLE.admin]: user.envAdmin ? 'from MOOG_ADMINS' : 'not from here',
+  }
+
+  const groups: { name: string; note: string; of: readonly Privilege[] }[] = [
+    {
+      name: 'The instrument',
+      note: 'What this account can do with the app itself.',
+      of: PRIVILEGES.filter((privilege) => !isAdministrative(privilege)),
+    },
+    {
+      name: 'Administration',
+      note: `Every one of these is conditional on ${TITLE[PRIVILEGE.AccessAdmin]}, so taking that away takes back the rest as well as hiding the pages.`,
+      of: PRIVILEGES.filter(isAdministrative),
+    },
+  ]
+
   return (
     <Stack spacing={2}>
       <Paper variant="outlined" sx={{ p: 2 }}>
-        <Typography variant="h6" component="h2" gutterBottom>
+        <Typography variant="h6" component="h2">
           {displayName(user)}
         </Typography>
         <Typography color="text.secondary" className={styles.who}>
           {user.email ?? user.uid} · signed in with {user.provider}
         </Typography>
+
+        <Box className={styles.section}>
+          <Typography component="h3" className={styles.label}>
+            Roles
+          </Typography>
+          <Typography component="p" color="text.secondary" className={styles.note}>
+            A role holds everything the roles before it hold, so a tester also has what a member
+            has. Tester is the only one given from here.
+          </Typography>
+        </Box>
+
+        <Box className={styles.roles}>
+          {ROLE_LADDER.map((role) => (
+            <RoleCard
+              key={role}
+              role={role}
+              held={role === ROLE.member || roles.includes(role)}
+              standing={standing[role] ?? null}
+              user={user}
+              onRoles={onRoles}
+            />
+          ))}
+        </Box>
 
         {user.envAdmin && (
           <Alert severity="info" sx={{ mt: 2 }}>
@@ -98,169 +359,40 @@ export function UserAccess({
             lock everybody out of this page are shown locked below.
           </Alert>
         )}
-
-        <Box className={styles.roles}>
-          <Typography component="span" className={styles.label}>
-            Roles
-          </Typography>
-          {ASSIGNABLE_ROLES.map((role) => {
-            const held = user.roles.includes(role)
-            const colour = TONE_COLOURS.blue
-            return (
-              <Button
-                key={role}
-                size="small"
-                className={styles.role}
-                aria-label={`${held ? 'Remove' : 'Give'} the ${role} role`}
-                aria-pressed={held}
-                onClick={() =>
-                  onRoles(
-                    held ? user.roles.filter((one) => one !== role) : [...user.roles, role],
-                  )
-                }
-                sx={{
-                  color: held ? SHELL.onTone : colour.ink,
-                  backgroundColor: held ? colour.ink : colour.field,
-                  '&:hover': { backgroundColor: held ? colour.ink : colour.strong },
-                }}
-              >
-                {role}
-              </Button>
-            )
-          })}
-          {/* The other two are facts rather than decisions, so neither is drawn
-              as something to press. */}
-          <Typography component="span" color="text.secondary" className={styles.note}>
-            Everybody signed in is a member. Being an administrator comes from{' '}
-            <code>MOOG_ADMINS</code>, not from here.
-          </Typography>
-        </Box>
       </Paper>
 
       <Paper variant="outlined" sx={{ p: 2 }}>
-        <Typography variant="h6" component="h2" gutterBottom>
+        <Typography variant="h6" component="h2">
           Privileges
         </Typography>
-
-        <Box className={styles.head} aria-hidden="true">
-          <Box className={styles.boxes}>
-            <Typography component="span" className={styles.label}>
-              Grant
-            </Typography>
-            <Typography component="span" className={styles.label}>
-              Revoke
-            </Typography>
-          </Box>
-        </Box>
-
-        <Box component="ul" className={styles.list}>
-          {PRIVILEGES.map((privilege) => {
-            const source = sourceOf(roles, privilege, user)
-            const explicit = source === 'granted' || source === 'revoked'
-
-            /* An explicit grant stays ticked even where the account does not end
-               up holding it, because the row is real and hiding it would make
-               the grant look lost. The line underneath says why it is doing
-               nothing. */
-            const granted = source === 'granted' || user.privileges.includes(privilege)
-            const revoked = source === 'revoked'
-
-            /* A grant that says nothing today, and would only start meaning
-               something once the role that covers it goes away. */
-            const redundant = source === 'granted' && fromRole(roles, privilege)
-            /* Something gives it and the account still does not have it, because
-               what it is conditional on is missing. */
-            const waiting = requiredBy(privilege)
-            const inert =
-              (source === 'granted' || source === 'role') &&
-              waiting !== null &&
-              !user.privileges.includes(privilege)
-
-            const locked = protectedReason(user, privilege, viewerUid)
-
-            /* Unticking is going back to the roles' answer, which is deleting
-               the row. The exception is a tick no row is holding up: there is
-               nothing to delete, so wanting it off can only be a revoke. */
-            const decideGrant = (wanted: boolean): Decision =>
-              wanted ? 'granted' : source === 'granted' ? 'inherited' : 'revoked'
-
-            const boxes = (
-              <Box className={styles.boxes}>
-                <Checkbox
-                  className={styles.grant}
-                  checked={granted}
-                  disabled={locked !== null}
-                  slotProps={{ input: { 'aria-label': `Grant ${privilege}` } }}
-                  onChange={(event) => onDecide(privilege, decideGrant(event.target.checked))}
-                  sx={{
-                    color: TONE_COLOURS.grey.ink,
-                    '&.Mui-checked': { color: TONE_COLOURS.green.ink },
-                    '&.Mui-disabled.Mui-checked': { color: TONE_COLOURS.green.ink },
-                  }}
-                />
-                <Checkbox
-                  className={styles.revoke}
-                  checked={revoked}
-                  disabled={locked !== null}
-                  slotProps={{ input: { 'aria-label': `Revoke ${privilege}` } }}
-                  onChange={(event) =>
-                    onDecide(privilege, event.target.checked ? 'revoked' : 'inherited')
-                  }
-                  sx={{
-                    color: TONE_COLOURS.grey.ink,
-                    '&.Mui-checked': { color: TONE_COLOURS.pink.ink },
-                  }}
-                />
-              </Box>
-            )
-
-            /* Where the answer came from is an attribute rather than a style,
-               so the stylesheet fades from it and a test can read it without
-               asking what colour anything ended up. */
-            return (
-              <Box
-                component="li"
-                key={privilege}
-                className={styles.row}
-                data-stored={explicit ? 'yes' : 'no'}
-                data-locked={locked === null ? 'no' : 'yes'}
-              >
-                {/* The boxes inside are disabled and take no pointer events, so
-                    the wrapper is what the tooltip hangs off. */}
-                {locked === null ? boxes : <Tooltip title={locked}>{boxes}</Tooltip>}
-
-                <Box className={styles.about}>
-                  <Typography component="span" className={styles.name}>
-                    {privilege}
-                    {locked !== null && (
-                      <Tooltip title={locked}>
-                        <Box component="span" className={styles.lock} aria-hidden="true">
-                          <LockGlyph />
-                        </Box>
-                      </Tooltip>
-                    )}
-                  </Typography>
-                  <Typography component="span" color="text.secondary" className={styles.what}>
-                    {DESCRIPTION[privilege]}
-                  </Typography>
-                  <Typography component="span" color="text.secondary" className={styles.source}>
-                    {SAYS[source]}
-                    {locked !== null ? ' — cannot be revoked' : ''}
-                    {redundant ? ' — and a role already gives it, so this says nothing yet' : ''}
-                    {inert ? ` — but does nothing without ${waiting}` : ''}
-                  </Typography>
-                </Box>
-              </Box>
-            )
-          })}
-        </Box>
-
-        <Typography color="text.secondary" className={styles.legend}>
-          A faded tick is a role answering, with nothing stored here; clearing either box goes back
-          to that. Revoking is its own box because it outlives a role being added later. Every
-          administration privilege is conditional on {PRIVILEGE.AccessAdmin}, so taking that one
-          away takes back the rest as well as hiding the pages.
+        <Typography color="text.secondary" className={styles.who}>
+          Default is whatever the roles above say. Grant and Revoke are stored against this account
+          and outlive a role being added or taken away.
         </Typography>
+
+        {groups.map((group) => (
+          <Box key={group.name} className={styles.group}>
+            <Typography component="h3" className={styles.label}>
+              {group.name}
+            </Typography>
+            <Typography component="p" color="text.secondary" className={styles.note}>
+              {group.note}
+            </Typography>
+
+            <Box component="ul" className={styles.list}>
+              {group.of.map((privilege) => (
+                <PrivilegeRow
+                  key={privilege}
+                  privilege={privilege}
+                  user={user}
+                  roles={roles}
+                  viewerUid={viewerUid}
+                  onDecide={onDecide}
+                />
+              ))}
+            </Box>
+          </Box>
+        ))}
 
         {user.unknown.length > 0 && (
           <Alert severity="warning" sx={{ mt: 2 }}>
