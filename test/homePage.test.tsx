@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { HomePage } from '@components/home/HomePage.tsx'
-import { factsOf, figuresOf, recent, shelfOf } from '@components/home/stats.ts'
+import { factsOf, figuresOf, ranked, recent, shelfOf } from '@components/home/stats.ts'
 import type { LibraryEntry } from '@components/library/entry.ts'
 import { SILENT } from '@audio/settings.ts'
 import { panelRegistry } from '@controls/panel.ts'
@@ -33,8 +33,8 @@ function entry(overrides: Partial<LibraryEntry> & { id: string }): LibraryEntry 
 }
 
 const BANK: readonly LibraryEntry[] = [
-  entry({ id: 'sub-bass', name: 'Sub Bass', tags: ['bass'], averageRating: 4 }),
-  entry({ id: 'fuzz-lead', name: 'Fuzz Lead', tags: ['lead'], averageRating: 5 }),
+  entry({ id: 'sub-bass', name: 'Sub Bass', tags: ['bass'], averageRating: 4, ratingCount: 20 }),
+  entry({ id: 'fuzz-lead', name: 'Fuzz Lead', tags: ['lead'], averageRating: 5, ratingCount: 12 }),
   entry({
     id: 'my-patch',
     name: 'My Patch',
@@ -124,10 +124,55 @@ describe('the shelf', () => {
   })
 
   test('does not claim you left off anywhere when you have saved nothing', () => {
-    /* Every factory patch is stamped by the same seed, so the newest four are
-       arbitrary and the heading has to say something else. */
+    /* Every factory patch is stamped by the same seed, so recency says nothing
+       about which four to show and the heading has to say something else. */
     const shelf = shelfOf(BANK.filter((item) => !item.mine), 3)
     expect(shelf.title).toBe('Start with one of these')
+  })
+
+  test('offers the best of the library to somebody with nothing of their own', () => {
+    const shelf = shelfOf(BANK.filter((item) => !item.mine), 3)
+    expect(shelf.entries.map((item) => item.id)).toEqual([
+      'fuzz-lead',
+      'sub-bass',
+      'borrowed-pad',
+    ])
+  })
+
+  test('fills the row behind your own work with the best of the rest', () => {
+    const shelf = shelfOf(BANK, 2)
+    expect(shelf.entries.map((item) => item.id)).toEqual(['my-patch', 'fuzz-lead'])
+  })
+})
+
+describe('the ranking', () => {
+  const RATED: readonly LibraryEntry[] = [
+    entry({ id: 'crowd', name: 'Crowd', averageRating: 4.5, ratingCount: 40 }),
+    entry({ id: 'lucky', name: 'Lucky', averageRating: 5, ratingCount: 1 }),
+    entry({ id: 'unheard', name: 'Unheard' }),
+    entry({ id: 'panned', name: 'Panned', averageRating: 2, ratingCount: 1 }),
+  ]
+
+  test('does not let one five-star rating outrank a patch the crowd settled high', () => {
+    expect(ranked(RATED, 2).map((item) => item.id)).toEqual(['crowd', 'lucky'])
+  })
+
+  test('treats unrated as unknown rather than bad', () => {
+    /* Nobody has rated it, which is not the same as somebody disliking it: an
+       unheard patch sits mid-shelf, above the one carrying a single 2. */
+    const order = ranked(RATED, 4).map((item) => item.id)
+    expect(order.indexOf('unheard')).toBeLessThan(order.indexOf('panned'))
+  })
+
+  test('orders a wholly unrated library the same way twice', () => {
+    const unrated = [
+      entry({ id: 'b', name: 'B' }),
+      entry({ id: 'a', name: 'A' }),
+      entry({ id: 'c', name: 'C' }),
+    ]
+    expect(ranked(unrated, 3).map((item) => item.id)).toEqual(
+      ranked([...unrated].reverse(), 3).map((item) => item.id),
+    )
   })
 
   test('opens the patch its card was drawn from', () => {

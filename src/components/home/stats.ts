@@ -104,24 +104,64 @@ export function recent(entries: readonly LibraryEntry[], count: number): readonl
   return [...entries].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, count)
 }
 
+/* Every patch is scored as though it already carried PRIOR ratings at NEUTRAL,
+   and its real ratings are added to those. Three imagined middling ones is
+   enough that a single delighted rating cannot beat what a crowd settled high,
+   and few enough that a handful of real ones still moves a patch.
+
+   The imagined ratings sit at the middle of the scale rather than at the
+   library's own mean, which is the usual anchor: almost nothing here is rated
+   yet, so that mean is one or two patches' opinion of themselves, and anchoring
+   to it ties every unrated patch with the best-rated one. */
+const PRIOR = 3
+const NEUTRAL = 3
+
+/* Unrated scores NEUTRAL exactly: unheard is an unknown, not a bad one, so it
+   sits above a patch somebody actively disliked and below one people liked. */
+function scoreOf(entry: LibraryEntry): number {
+  if (entry.averageRating === null) return NEUTRAL
+  /* An average exists, so at least one rating does. The two arrive from
+     separate subqueries, and a count that went missing would otherwise flatten
+     a genuinely rated patch onto NEUTRAL. */
+  const count = Math.max(entry.ratingCount, 1)
+  return (count * entry.averageRating + PRIOR * NEUTRAL) / (count + PRIOR)
+}
+
+/* Best first, by that weighted score. Ties break on recency and then on name,
+   so a shelf of patches nobody has rated is at least the same shelf on every
+   load rather than whatever order the rows arrived in. */
+export function ranked(entries: readonly LibraryEntry[], count: number): readonly LibraryEntry[] {
+  return [...entries]
+    .map((entry) => ({ entry, score: scoreOf(entry) }))
+    .sort(
+      (a, b) =>
+        b.score - a.score ||
+        b.entry.updatedAt.localeCompare(a.entry.updatedAt) ||
+        a.entry.name.localeCompare(b.entry.name),
+    )
+    .slice(0, count)
+    .map((scored) => scored.entry)
+}
+
 export interface Shelf {
   readonly title: string
   readonly entries: readonly LibraryEntry[]
 }
 
-/* Your own work first, topped up from the rest of the library so a bank of one
-   is still a row of four.
+/* Your own work first and newest first, because that is where you left off;
+   topped up with the best of the rest, so a bank of one is still a row of four
+   and the patches you have not saved are the ones worth hearing.
 
    The heading follows what is actually in it. Every factory patch is stamped at
-   the same moment by the seed, so on a database nobody has saved to yet the
-   four newest are four arbitrary ones — and "pick up where you left off" would
-   be pointing at somewhere nobody has been. */
+   the same moment by the seed, so recency says nothing about a library nobody
+   has saved to — and "pick up where you left off" would be pointing at
+   somewhere nobody has been. */
 export function shelfOf(entries: readonly LibraryEntry[], count: number): Shelf {
   const mine = recent(
     entries.filter((entry) => bankOf(entry) === 'user'),
     count,
   )
-  const rest = recent(
+  const rest = ranked(
     entries.filter((entry) => bankOf(entry) !== 'user'),
     count - mine.length,
   )
