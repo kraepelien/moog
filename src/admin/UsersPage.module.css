@@ -26,19 +26,21 @@
 }
 
 /* The tallies go rather than shrink, the way the library's rows drop their
-   chips. Seven columns stop fitting below this, and a table wider than its card
+   chips. Eight columns stop fitting below this, and a table wider than its card
    is not merely cramped here: Access is the last column, so it is Change — the
    only way in to somebody's privileges — that ends up off the edge, behind a
    sideways scroll the page gives no sign of having.
 
-   Who somebody is and what they hold are what the line is for; the counts are
-   read when comparing people, which is what a wider window is for.
+   Who somebody is and what they hold are what the line is for; the counts and
+   the dates are read when comparing people, which is what a wider window is
+   for.
 
-   Measured against one account named "This install": all seven fit at 738 and
-   Last seen starts wrapping at 694. The number sits above both because that
-   account is the narrowest Person column there will ever be — a real name over
-   an email is most of a column wider, and it is the tallies that would pay. */
-@container (max-width: 760px) {
+   Measured against one account named "This install", in Chrome at this build:
+   all eight fit at 904, the two dates start wrapping at 902, and Last seen
+   starts wrapping at 858. The number sits above all three because that account
+   is the narrowest Person column there will ever be: a real name over an email
+   is most of a column wider, and it is the tallies that would pay. */
+@container (max-width: 920px) {
   .tally {
     display: none;
   }
