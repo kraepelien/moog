@@ -3,7 +3,7 @@
 Everything that has landed on `main`, newest first. A pull request carries its link; a commit pushed
 straight to `main` has none to carry.
 
-- Let the bank be corrected, which is what seeding it rather than syncing it was always for
+- [Let the bank be corrected, which is what seeding it rather than syncing it was always for](https://github.com/kraepelien/moog/pull/118)
 - [Say when the server is a build behind the page, instead of drawing an empty list or nothing at all](https://github.com/kraepelien/moog/pull/116)
 - [Give the one privilege with no page behind it a page, and everybody their trash back](https://github.com/kraepelien/moog/pull/115)
 - [Say what the server has done to itself, instead of leaving it in a log nobody reads over ssh](https://github.com/kraepelien/moog/pull/114)
