@@ -58,7 +58,7 @@ function rowNames(): string[] {
     .getAllByRole('button')
     .map((node) => node.getAttribute('aria-label') ?? '')
     .filter((label) => label.startsWith('Open '))
-    .map((label) => label.replace(/^Open /, '').replace(/ in the editor$/, ''))
+    .map((label) => label.replace(/^Open /, ''))
 }
 
 /* Opening a patch leaves the library, so coming back to a list of forty-four
@@ -66,13 +66,13 @@ function rowNames(): string[] {
 describe('the patch the editor is showing', () => {
   test('is the row that says it is open, and only that one', () => {
     renderLibrary(BANK, { openId: 'fuzz-lead' })
-    expect(screen.getByRole('button', { name: 'Fuzz Lead, open in the editor' })).toBeDefined()
-    expect(screen.getByRole('button', { name: 'Open Sub Bass in the editor' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Fuzz Lead, the patch this editor is showing' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Open Sub Bass' })).toBeDefined()
   })
 
   test('is nothing at all for a draft that has never been saved', () => {
     renderLibrary(BANK, { openId: undefined })
-    expect(screen.queryByRole('button', { name: /open in the editor/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /the patch this editor is showing/ })).toBeNull()
   })
 
   /* The bug this pins: the whole line used to be the button, so a press aimed at
@@ -88,7 +88,7 @@ describe('the patch the editor is showing', () => {
      start from what was saved. */
   test('can still be opened again', () => {
     const { opened } = renderLibrary(BANK, { openId: 'fuzz-lead' })
-    fireEvent.click(screen.getByRole('button', { name: 'Fuzz Lead, open in the editor' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Fuzz Lead, the patch this editor is showing' }))
     expect(opened).toEqual(['fuzz-lead'])
   })
 })
@@ -186,7 +186,7 @@ describe('finding a patch', () => {
 describe('opening a patch', () => {
   test('clicking a row reports the entry that row was drawn from', () => {
     const { opened } = renderLibrary()
-    fireEvent.click(screen.getByRole('button', { name: 'Open Fuzz Lead in the editor' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Open Fuzz Lead' }))
     expect(opened).toEqual(['fuzz-lead'])
   })
 

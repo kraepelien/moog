@@ -1,5 +1,6 @@
 import { SILENT } from '@audio/settings.ts'
 import { isPlaceholder } from '@controls/placeholder.ts'
+import { isRecalled } from '@controls/recall.ts'
 import type { Registry } from '@controls/registry.ts'
 import { isContinuousKnob } from '@controls/continuousKnob.ts'
 import { isStepKnob } from '@controls/stepKnob.ts'
@@ -139,13 +140,14 @@ interface SectionProps {
   section: { id: string; label: string }
   values: Readonly<Record<string, ControlValue>>
   onChange: (id: string, value: ControlValue) => void
+  readOnly?: boolean
 }
 
 /* A section with a grid places its controls by id; one without falls back to the
    grouped rows, so a section nobody has laid out yet still draws. Controls the
    grid does not mention flow underneath it rather than vanishing — which is what
    keeps "add a knob, touch no layout" true. */
-function PanelSection({ registry, section, values, onChange }: SectionProps) {
+function PanelSection({ registry, section, values, onChange, readOnly }: SectionProps) {
   const layout = layoutFor(section.id)
   /* Decorations included: a jack is on the instrument, so it is on the panel. */
   const built = registry
@@ -158,18 +160,36 @@ function PanelSection({ registry, section, values, onChange }: SectionProps) {
     const override = layout?.labels?.[item.id]
     const renamed =
       override && !isDecoration(item) ? { ...item, label: spoken(override) } : item
-    return (
+    const control = (
       <Control
         key={item.id}
         item={renamed}
         value={values[item.id]}
         values={values}
-        onChange={(next) => onChange(item.id, next)}
+        onChange={frozen(item) ? () => {} : (next) => onChange(item.id, next)}
         setControl={onChange}
         hideHeader={captionDrawn || override === ''}
       />
     )
+    if (!frozen(item)) return control
+    /* `display: contents` so freezing costs no layout: `inert` is about the
+       flat tree rather than about boxes, and the grid goes on placing the
+       control itself. The no-op above is the half that holds regardless, since
+       every control here is controlled by its `value` and nothing but a write
+       can move one. */
+    return (
+      <span key={item.id} style={{ display: 'contents' }} inert>
+        {control}
+      </span>
+    )
   }
+
+  /* What the sheet shows as saved, against what it leaves you to play with:
+     the output levels describe the room and the pitch wheel cannot hold a
+     position, so neither is in the patch and neither is frozen. The keyboard
+     is a decoration and is never one either. */
+  const frozen = (item: PanelItem) =>
+    readOnly === true && !isDecoration(item) && isRecalled(item)
 
   /* The section prints the caption, so the control is told not to — except a
      wheel, which carries its name underneath. */
@@ -271,10 +291,14 @@ export function Panel({
   registry,
   values,
   onChange,
+  readOnly,
 }: {
   registry: Registry
   values: Readonly<Record<string, ControlValue>>
   onChange: (id: string, value: ControlValue) => void
+  /* The patch sheet at `/patch/:id` draws the same panel showing a patch as it
+     was saved, so what the patch records is frozen and the rest still plays. */
+  readOnly?: boolean
 }) {
   const has = (id: string) =>
     registry.itemsInSection(id).some((item) => isBuilt(item) || isDecoration(item))
@@ -298,6 +322,7 @@ export function Panel({
         section={section}
         values={values}
         onChange={onChange}
+        readOnly={readOnly}
       />
     )
   }
