@@ -10,6 +10,25 @@ export interface UserStats {
   readonly ratings: number
 }
 
+/* The account that decided one override, as the join found it. Raw columns:
+   which of the three to show is the page's rule, and answering it here would
+   put that rule in a second place. */
+export interface Decider {
+  readonly uid: string
+  readonly name: string | null
+  readonly email: string | null
+}
+
+/* One stored override with the stamp every write already puts on it. It rides
+   beside `granted`/`revoked` rather than inside them, because those two go
+   straight to `resolve()`, which must not learn what an audit field is. */
+export interface Decided {
+  readonly privilege: string
+  readonly granted: boolean
+  readonly at: string
+  readonly by: Decider | null
+}
+
 export interface AdminUser {
   readonly uid: string
   readonly name: string | null
@@ -29,6 +48,8 @@ export interface AdminUser {
      than hidden: they are somebody's decision, and a build that hid them would
      look like it had lost them. */
   readonly unknown: readonly string[]
+  /* Every stored row, known name or not, with who decided it and when. */
+  readonly decisions: readonly Decided[]
   readonly stats: UserStats
   readonly createdAt: string
   readonly lastSeenAt: string
@@ -36,6 +57,20 @@ export interface AdminUser {
 
 export function displayName(user: AdminUser): string {
   return user.name ?? user.email ?? user.uid
+}
+
+/* `by_user_id` is `on delete set null`, so a null actor is both a row the
+   install wrote itself and one whose author has since been deleted. Nothing
+   can tell the two apart, so neither is claimed. */
+export function decidedBy(by: Decider | null): string {
+  return by === null ? 'who decided it is not recorded' : `by ${by.name ?? by.email ?? by.uid}`
+}
+
+/* A date rather than a timestamp: these are read down a column, and the moment
+   itself rides along in a `title` for whoever wants it. */
+export function when(iso: string): string {
+  const at = new Date(iso)
+  return Number.isNaN(at.getTime()) ? '—' : at.toISOString().slice(0, 10)
 }
 
 /* Matched across the three things somebody would type: what they are called,

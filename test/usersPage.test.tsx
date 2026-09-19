@@ -11,7 +11,7 @@ import {
 } from '@access/privileges.ts'
 import { UsersPage } from '@admin/UsersPage.tsx'
 import type { Decision } from '@admin/UserAccess.tsx'
-import type { AdminUser } from '@admin/users.ts'
+import type { AdminUser, Decided } from '@admin/users.ts'
 
 afterEach(cleanup)
 
@@ -29,12 +29,22 @@ function user(overrides: Partial<AdminUser> & { uid: string }): AdminUser {
     granted: [],
     revoked: [],
     unknown: [],
+    decisions: [],
     stats: { patches: 0, arrangements: 0, ratings: 0 },
     createdAt: '2026-01-01T00:00:00.000Z',
     lastSeenAt: '2026-02-03T00:00:00.000Z',
     ...overrides,
   }
 }
+
+const ADA = { uid: 'ada', name: 'Ada', email: 'ada@example.com' }
+
+const decided = (privilege: string, by: Decided['by'], granted = true): Decided => ({
+  privilege,
+  granted,
+  at: '2026-02-03T09:15:00.000Z',
+  by,
+})
 
 const PEOPLE: readonly AdminUser[] = [
   user({ uid: 'ada', name: 'Ada', stats: { patches: 3, arrangements: 1, ratings: 7 } }),
@@ -133,6 +143,13 @@ describe('the list', () => {
   test('marks an account with privileges added or taken away', () => {
     show([user({ uid: 'ada', name: 'Ada', granted: [PRIVILEGE.AdminTags] })])
     expect(screen.getByText('+1')).toBeTruthy()
+  })
+
+  /* `created_at` has been on the row since the schema and reached the page
+     without ever being drawn. */
+  test('says when each account joined', () => {
+    show()
+    expect(screen.getAllByText('2026-01-01').length).toBe(PEOPLE.length)
   })
 
   test('marks somebody the environment makes an admin', () => {
@@ -330,6 +347,74 @@ describe('the editor', () => {
     show([user({ uid: 'ada', name: 'Ada', unknown: ['AdminEverything'] })])
     open('Ada')
     expect(screen.getByText(/AdminEverything/)).toBeTruthy()
+  })
+})
+
+/* The audit columns are written on every override and nothing had read them
+   back, so no page could say who decided anything or when. */
+describe('who decided a stored answer', () => {
+  const GRACE = user({
+    uid: 'grace',
+    name: 'Grace',
+    granted: [PRIVILEGE.AdminTags],
+    decisions: [decided(PRIVILEGE.AdminTags, ADA)],
+  })
+
+  test('names them on the row, with the moment itself behind the date', () => {
+    show([GRACE])
+    open('Grace')
+
+    const line = row(PRIVILEGE.AdminTags).textContent
+    expect(line).toContain('2026-02-03')
+    expect(line).toContain('by Ada')
+    expect(screen.getByTitle('2026-02-03T09:15:00.000Z')).toBeTruthy()
+  })
+
+  /* Nothing is stored where a role is answering, so there is nothing to stamp
+     and a date there would be invented. */
+  test('says nothing on a line a role is answering', () => {
+    show([GRACE])
+    open('Grace')
+
+    const line = row(PRIVILEGE.StoreMidi).textContent
+    expect(line).toContain('the tester role gives it')
+    expect(line).not.toContain('2026-02-03')
+  })
+
+  test('reads as not recorded where the account that decided it is gone', () => {
+    show([
+      user({
+        uid: 'grace',
+        name: 'Grace',
+        revoked: [PRIVILEGE.StoreMidi],
+        privileges: [],
+        decisions: [decided(PRIVILEGE.StoreMidi, null, false)],
+      }),
+    ])
+    open('Grace')
+
+    expect(row(PRIVILEGE.StoreMidi).textContent).toContain('not recorded')
+  })
+
+  /* The row whose provenance matters most: nothing here can say what it means,
+     so who wrote it is the only thing left to go on. */
+  test('stamps a name this build does not know, and says which way it went', () => {
+    show([
+      user({
+        uid: 'grace',
+        name: 'Grace',
+        unknown: ['AdminEverything'],
+        decisions: [decided('AdminEverything', ADA, false)],
+      }),
+    ])
+    open('Grace')
+
+    const warning = screen
+      .getAllByRole('alert')
+      .find((alert) => alert.textContent?.includes('AdminEverything'))!
+    expect(warning.textContent).toContain('revoked')
+    expect(warning.textContent).toContain('by Ada')
+    expect(warning.textContent).toContain('2026-02-03')
   })
 })
 

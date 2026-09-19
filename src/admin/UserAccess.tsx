@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -24,7 +25,14 @@ import {
   type Privilege,
   type Role,
 } from '@access/privileges.ts'
-import { displayName, protectedReason, type AdminUser } from './users.ts'
+import {
+  decidedBy,
+  displayName,
+  protectedReason,
+  when,
+  type AdminUser,
+  type Decided,
+} from './users.ts'
 import { SHELL, TONE_COLOURS } from '@/tones.ts'
 import styles from './UserAccess.module.css'
 
@@ -77,6 +85,23 @@ function InfoGlyph() {
       />
       <circle cx="12" cy="7.8" r="1.05" fill="currentColor" />
     </svg>
+  )
+}
+
+/* Who decided this row and when, which nothing else in the app can say: the
+   columns have been written on every override since the schema, and no query
+   had ever read them back. The date is a date and the moment is the `title`.
+
+   `verdict` is for a name this build does not know, where the position of a
+   control is not there to say which way the row went. */
+function Stamp({ decided, verdict = false }: { decided: Decided | undefined; verdict?: boolean }) {
+  if (decided === undefined) return null
+
+  return (
+    <Box component="span" color="text.secondary" className={styles.stamp} title={decided.at}>
+      {verdict ? ` · ${decided.granted ? 'granted' : 'revoked'}` : ''}
+      {` · ${when(decided.at)} · ${decidedBy(decided.by)}`}
+    </Box>
   )
 }
 
@@ -167,12 +192,16 @@ function PrivilegeRow({
   user,
   roles,
   viewerUid,
+  decided,
   onDecide,
 }: {
   privilege: Privilege
   user: AdminUser
   roles: readonly Role[]
   viewerUid: string | null
+  /* Undefined where no row is stored, which is the roles answering and nothing
+     to stamp. */
+  decided: Decided | undefined
   onDecide: (privilege: Privilege, decision: Decision) => void
 }) {
   const source = sourceOf(roles, privilege, user)
@@ -281,6 +310,7 @@ function PrivilegeRow({
           {redundant ? ` · the ${giver} role already gives it, so this changes nothing` : ''}
           {inert !== null ? ` · does nothing without ${TITLE[inert]}` : ''}
         </Box>
+        <Stamp decided={decided} />
       </Typography>
     </Box>
   )
@@ -300,6 +330,13 @@ export function UserAccess({
   onRoles: (roles: readonly Role[]) => void
 }) {
   const roles = effectiveRoles(user.roles, user.envAdmin)
+
+  /* A map rather than a find per row: this draws every privilege there is, and
+     a scan inside that loop is a scan per privilege. */
+  const stamps = useMemo(
+    () => new Map(user.decisions.map((one) => [one.privilege, one])),
+    [user.decisions],
+  )
 
   const standing: Partial<Record<Role, string>> = {
     [ROLE.member]: 'everybody signed in',
@@ -387,6 +424,7 @@ export function UserAccess({
                   user={user}
                   roles={roles}
                   viewerUid={viewerUid}
+                  decided={stamps.get(privilege)}
                   onDecide={onDecide}
                 />
               ))}
@@ -396,8 +434,21 @@ export function UserAccess({
 
         {user.unknown.length > 0 && (
           <Alert severity="warning" sx={{ mt: 2 }}>
-            This account also has something said about {user.unknown.join(', ')}, which this build
-            does not know. It is left exactly as it is and does nothing here.
+            This account also has something said about names this build does not know. Each is left
+            exactly as it is and does nothing here.
+            {/* With its stamp, which is the whole reason they are shown: an
+                override nobody can account for is the one where who wrote it
+                is worth knowing. */}
+            <Box component="ul" className={styles.unknown}>
+              {user.unknown.map((name) => (
+                <Box component="li" key={name}>
+                  <Box component="span" className={styles.name}>
+                    {name}
+                  </Box>
+                  <Stamp decided={stamps.get(name)} verdict />
+                </Box>
+              ))}
+            </Box>
           </Alert>
         )}
       </Paper>

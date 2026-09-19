@@ -13,7 +13,7 @@ import Typography from '@mui/material/Typography'
 import { SearchField } from '@components/library/SearchField.tsx'
 import { ToneChip } from '@components/library/ToneChip.tsx'
 import { UserAccess, type Decision } from './UserAccess.tsx'
-import { displayName, matchesUser, type AdminUser } from './users.ts'
+import { displayName, matchesUser, when, type AdminUser } from './users.ts'
 import { isAssignable, type Privilege, type Role } from '@access/privileges.ts'
 import styles from './UsersPage.module.css'
 
@@ -23,11 +23,6 @@ import styles from './UsersPage.module.css'
  * Picking somebody opens the editor in place rather than on another page: what
  * you are changing is one row of the list you just searched, and losing the
  * search to see it would mean doing it again for the next person. */
-
-function when(iso: string): string {
-  const at = new Date(iso)
-  return Number.isNaN(at.getTime()) ? '—' : at.toISOString().slice(0, 10)
-}
 
 export function UsersPage({
   users,
@@ -103,6 +98,9 @@ export function UsersPage({
                     Ratings
                   </TableCell>
                   <TableCell align="right" className={styles.tally}>
+                    Joined
+                  </TableCell>
+                  <TableCell align="right" className={styles.tally}>
                     Last seen
                   </TableCell>
                   <TableCell align="right">Access</TableCell>
@@ -165,7 +163,10 @@ export function UsersPage({
                     <TableCell align="right" className={styles.tally}>
                       {user.stats.ratings}
                     </TableCell>
-                    <TableCell align="right" className={styles.tally}>
+                    <TableCell align="right" className={styles.tally} title={user.createdAt}>
+                      {when(user.createdAt)}
+                    </TableCell>
+                    <TableCell align="right" className={styles.tally} title={user.lastSeenAt}>
                       {when(user.lastSeenAt)}
                     </TableCell>
                     <TableCell align="right">
