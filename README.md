@@ -820,9 +820,21 @@ background graphics by default and a panel of white ink on a dropped black field
 all. The manual's own sheets are line art on white, and matching them would mean re-pathing artwork
 that is lifted verbatim.
 
-A patch that carries notes runs to two sheets. The panel takes 533 of the 718 printable pixels down
-an A4 landscape page, the Notes box does not fit under it, and `break-inside: avoid` moves the box
-whole rather than cutting it in half. A patch with no notes is one sheet.
+**A sheet is one page**, which is what a patch sheet is: the manual prints two filled-in ones to a
+page. That takes fitting the panel to the page rather than to its width. Fitted across alone it
+came out 533 pixels tall in the 718 an A4 landscape page has, which leaves the Notes box nothing,
+and `break-inside: avoid` then moved the whole box onto a second sheet: two pages for the 35 of the
+44 patches in `bank/` that carry a note. So `printScale` answers for one dimension at a time and
+the panel takes the smaller of the two, which puts Midnight Funk at 0.41 instead of 0.48, still far
+larger than the manual draws the instrument.
+
+How much room is left is a question only the page can answer, since it depends on how many rows of
+chips and how many lines of note that patch has, so `PatchPage` measures it and `FitToWidth` asks
+at the moment of printing. It measures at the *paper's* width, briefly setting the column to it,
+because `beforeprint` runs on the layout the window has: a note that takes two lines in a 1680px
+window may take three across a 1047px page, and a sheet measured at the window's width is one that
+fits until somebody prints it from a large monitor. Where the rest of the sheet has taken the whole
+page the height drops out of the decision rather than scaling the panel to nothing.
 
 ### The page nav
 

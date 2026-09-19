@@ -6,12 +6,15 @@ import { printScale } from './printSheet.ts'
    because a transform does not change the space an element occupies. */
 export function FitToWidth({
   children,
-  printWidth,
+  printRoom,
 }: {
   children: ReactNode
-  /* The width of the paper's content box. Given, the panel is rescaled to it
-     for the duration of a print; left out, printing takes the screen's scale. */
-  printWidth?: number
+  /* The box on the paper this has to fit inside. Asked for rather than given as
+     a number, because how much of the page is left depends on what else the
+     sheet is printing: a patch with three rows of chips and a five-line note
+     leaves the panel less room than one with neither, and only the page can
+     measure that. Left out, printing takes the screen's scale. */
+  printRoom?: () => { readonly width: number; readonly height: number }
 }) {
   const outer = useRef<HTMLDivElement>(null)
   const inner = useRef<HTMLDivElement>(null)
@@ -45,7 +48,7 @@ export function FitToWidth({
   useLayoutEffect(() => {
     const box = outer.current
     const content = inner.current
-    if (!box || !content || printWidth === undefined) return
+    if (!box || !content || printRoom === undefined) return
 
     const write = (next: number, tall: number | null) => {
       content.style.transform = `scale(${next})`
@@ -59,7 +62,14 @@ export function FitToWidth({
     const toPaper = () => {
       const natural = content.offsetWidth
       if (natural === 0) return
-      const next = printScale(natural, printWidth)
+      const room = printRoom()
+      /* Both dimensions, the smaller winning: fitting the width alone put the
+         panel on the paper at a height that left the notes box no room, and
+         `break-inside: avoid` then moved the whole box onto a second sheet. */
+      const next = Math.min(
+        printScale(natural, room.width),
+        printScale(content.offsetHeight, room.height),
+      )
       write(next, content.offsetHeight * next)
     }
     const toScreen = () => write(onScreen.current.scale, onScreen.current.height)
@@ -78,7 +88,7 @@ export function FitToWidth({
       window.removeEventListener('afterprint', toScreen)
       media?.removeEventListener('change', announced)
     }
-  }, [printWidth])
+  }, [printRoom])
 
   return (
     <div ref={outer} style={{ height: height ?? undefined, overflow: 'hidden' }}>

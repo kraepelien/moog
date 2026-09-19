@@ -20,10 +20,21 @@ export function printableWidthPx(): number {
   return (PAGE_WIDTH_MM - PAGE_MARGIN_MM * 2) * PX_PER_MM
 }
 
-/* Capped at 1. A panel narrower than the page is printed at the size it is
-   drawn: blowing it up to fill the paper would print an instrument whose
-   legends and dials are larger than the manual's own sheets draw them. */
-export function printScale(naturalWidth: number, available: number): number {
-  if (naturalWidth <= 0) return 1
-  return Math.min(1, available / naturalWidth)
+export function printableHeightPx(): number {
+  return (PAGE_HEIGHT_MM - PAGE_MARGIN_MM * 2) * PX_PER_MM
+}
+
+/* One dimension at a time, so a panel that has to satisfy both is the smaller
+   of two answers rather than a second function knowing about boxes.
+
+   Capped at 1: a panel narrower than the page is printed at the size it is
+   drawn, since blowing it up to fill the paper would print an instrument whose
+   legends and dials are larger than the manual's own sheets draw them.
+
+   No room left is not a scale of zero. It means the sheet has already given the
+   panel away to something else, and the honest answer is to leave this
+   dimension out of the decision rather than to print nothing. */
+export function printScale(natural: number, available: number): number {
+  if (natural <= 0 || available <= 0) return 1
+  return Math.min(1, available / natural)
 }
