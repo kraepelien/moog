@@ -125,6 +125,12 @@ remapping every saved patch.
 - **SQL lives in a repository, rules live in a service.** A repository that also refused would be a
   second place for the rules to live. A route with no rules of its own talks to its repository
   rather than to a service that would only forward the call.
+- **Correcting a factory patch is a write to its row, never to its file.** `mayEdit` lets
+  `AdminPatches` do it and `mayRemove` still refuses the bank to everybody, because fixing a
+  transcription and retiring a sheet are different acts. The repo's file goes on seeding a database
+  that does not hold that slug, so the two are brought back into line by the prompt
+  `src/patch/bankPrompt.ts` writes, the way the Layout page does it for colours, and not by
+  anything that writes a file from the app.
 - **The bank in `bank/` seeds and never overwrites.** A row the database already holds is the live
   bank, and an administrator editing it is the only thing that changes a factory patch, so a change
   to a file reaches a fresh database and nothing else. Do not add a flag, route or environment

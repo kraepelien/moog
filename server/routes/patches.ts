@@ -76,7 +76,7 @@ export const patchRoutes: readonly Route[] = [
       if (found instanceof Response) return found
       if (isRefusal(found)) return refuse(found)
 
-      const refusal = context.services.patches.mayWrite(found, context.viewer)
+      const refusal = context.services.patches.mayEdit(found, context.viewer)
       if (refusal) return refuse(refusal)
 
       const saved = context.services.patches.replace(
@@ -96,7 +96,7 @@ export const patchRoutes: readonly Route[] = [
       if (found instanceof Response) return found
       if (isRefusal(found)) return refuse(found)
 
-      const refusal = context.services.patches.mayWrite(found, context.viewer)
+      const refusal = context.services.patches.mayRemove(found, context.viewer)
       if (refusal) return refuse(refusal)
 
       context.services.repositories.patches.delete(found.uid)
@@ -132,7 +132,7 @@ export const patchRoutes: readonly Route[] = [
       if (found instanceof Response) return found
       if (isRefusal(found)) return refuse(found)
 
-      const refusal = context.services.patches.mayWrite(found, context.viewer)
+      const refusal = context.services.patches.mayRemove(found, context.viewer)
       if (refusal) return refuse(refusal)
 
       context.services.repositories.patches.setVisibility(found.uid, 'private')
@@ -148,7 +148,7 @@ export const patchRoutes: readonly Route[] = [
       if (found instanceof Response) return found
       if (isRefusal(found)) return refuse(found)
 
-      const refusal = context.services.patches.mayWrite(found, context.viewer)
+      const refusal = context.services.patches.mayRemove(found, context.viewer)
       if (refusal) return refuse(refusal)
 
       context.services.repositories.patches.restore(found.uid)
