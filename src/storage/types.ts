@@ -7,6 +7,7 @@ import type {
   ArrangementInput,
   ArrangementSummary,
 } from '@components/midi/arrangement.ts'
+import type { PatchRecord } from '@patch/record.ts'
 import type { Patch, Visibility } from '@patch/schema.ts'
 
 export interface PatchSummary {
@@ -60,6 +61,10 @@ export interface PatchStore {
      sites must not assume the local copy won. */
   save(patch: Patch): Promise<Patch>
   delete(id: string): Promise<void>
+  /* The other half of the grace period `delete` starts. Everybody has a trash
+     and it is their own, so neither of these is an administrative call. */
+  listTrash(): Promise<readonly PatchRecord[]>
+  restore(id: string): Promise<void>
 }
 
 /* The categories an admin keeps, apart from PatchStore because they are not a
@@ -80,6 +85,18 @@ export interface AdminStore {
      there is no empty hex. */
   setTagColour(id: number, colour: string | null): Promise<void>
   removeTag(id: number): Promise<void>
+}
+
+/* Every patch on the install, and the two things an administrator does to one
+   that is not theirs. Refused with `forbidden` without AdminPatches, so the
+   page drawing the rows is a convenience and never the check.
+
+   `unpublish` is here rather than on `PatchStore` because your own patch is
+   unpublished through the save form's visibility field: this method only ever
+   means somebody else's. */
+export interface PatchAdminStore {
+  listEveryPatch(): Promise<readonly PatchRecord[]>
+  unpublish(id: string): Promise<void>
 }
 
 /* What the housekeeping has done since this process started. Read-only, and

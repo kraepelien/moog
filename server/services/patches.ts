@@ -1,5 +1,6 @@
 import { PRIVILEGE } from '@access/privileges.ts'
 import { migrateToCurrent } from '@patch/migrate.ts'
+import type { PatchRecord } from '@patch/record.ts'
 import { createPatch, type Patch } from '@patch/schema.ts'
 import type { Limits } from '@server/limits.ts'
 import type { Located } from '@server/repositories/patches.ts'
@@ -11,13 +12,15 @@ import type { Refusal } from './refusal.ts'
  *
  * Factory content is never writable, by anyone, including an admin: it comes
  * from the image and a change would be overwritten at the next start. Someone
- * else's private patch answers 404 rather than 403, because a 403 confirms the
- * id exists. */
+ * else's private patch answers 404 rather than 403 for everybody without
+ * `AdminPatches`, because a 403 confirms the id exists. */
 
 export interface Identity {
   readonly newId: () => string
   readonly now: () => string
 }
+
+const DAY_MS = 24 * 60 * 60 * 1000
 
 const isFactory = (found: Located) => found.slug !== null
 const isMine = (found: Located, viewer: Viewer) => found.ownerId === viewer.user.id
@@ -29,9 +32,40 @@ export function createPatchService(
 ) {
   const { patches } = repositories
 
+  const stamped = (row: Omit<PatchRecord, 'purgeAt'>): PatchRecord => ({
+    ...row,
+    purgeAt:
+      row.deletedAt === null
+        ? null
+        : new Date(Date.parse(row.deletedAt) + limits.trashDays * DAY_MS).toISOString(),
+  })
+
   const service = {
+    /* `AdminPatches` reads as well as writes. It always meant to: `mayWrite`
+       admits it and `find` runs this first, so without it an administrator
+       could edit somebody's *public* patch through the API while a private one
+       404'd before the write rule was ever consulted. The list that privilege
+       now draws would otherwise show private rows that refuse to open.
+
+       It follows that an admin can copy a private patch as well, since
+       `create({ from })` reads through here. That is consistent with their
+       already being able to edit it, and it has a test of its own so it is a
+       decision rather than a leak. */
     mayRead(found: Located, viewer: Viewer): boolean {
-      return isFactory(found) || isMine(found, viewer) || found.visibility === 'public'
+      if (isFactory(found) || isMine(found, viewer) || found.visibility === 'public') return true
+      return viewer.can(PRIVILEGE.AdminPatches)
+    },
+
+    /* Every patch on the install, with the moment the sweep will take a deleted
+       one. `trashDays` is a rule and lives here rather than in the SQL. */
+    listEverything(): PatchRecord[] {
+      return patches.listAll().map(stamped)
+    },
+
+    /* Everybody has a trash, and it is their own: the scope is the rule, the
+       same way `GET /patches` is scoped to whoever asked. */
+    listTrash(viewer: Viewer): PatchRecord[] {
+      return patches.listDeletedOwnedBy(viewer.user.id).map(stamped)
     },
 
     mayWrite(found: Located, viewer: Viewer): Refusal | null {

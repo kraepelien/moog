@@ -33,3 +33,13 @@
   font-weight: 600;
   letter-spacing: 0.08em;
 }
+
+/* Under the name rather than beside it: the name is the heading and this is a
+   fact about it, and on a narrow bar the two side by side push the buttons off. */
+.owner {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--content-color-alt);
+}

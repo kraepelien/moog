@@ -59,6 +59,46 @@ const SELECT = `
     join instruments i on i.id = p.instrument_id
    where p.deleted_at is null`
 
+interface RecordRow {
+  uid: string
+  slug: string | null
+  name: string
+  tags: string
+  instrument: string
+  visibility: string
+  updated_at: string
+  deleted_at: string | null
+  owner_uid: string | null
+  owner_name: string | null
+}
+
+/* Every patch on the install, deleted ones included, without their values.
+   Its own projection rather than `SELECT` above: that one ends in
+   `deleted_at is null` and every caller appends to it, and this is the one
+   query that wants the rows it excludes. No values, which is what would make
+   paging this expensive if the list ever grows one. */
+const RECORDS = `
+  select p.uid, p.slug, p.name, p.tags, i.slug as instrument, p.visibility,
+         p.updated_at, p.deleted_at, o.uid as owner_uid, o.display_name as owner_name
+    from patches p
+    join instruments i on i.id = p.instrument_id
+    left join users o on o.id = p.owner_id`
+
+function toRecord(row: RecordRow) {
+  return {
+    id: row.slug ?? row.uid,
+    name: row.name,
+    origin: row.slug === null ? ('user' as const) : ('factory' as const),
+    ownerUid: row.owner_uid,
+    ownerName: row.owner_name,
+    tags: JSON.parse(row.tags) as string[],
+    instrument: row.instrument,
+    visibility: row.visibility as Patch['visibility'],
+    updatedAt: row.updated_at,
+    deletedAt: row.deleted_at,
+  }
+}
+
 function toPatch(row: PatchRow): Patch {
   return {
     schemaVersion: row.schema_version,
@@ -164,6 +204,22 @@ export function createPatches(db: Database) {
     create(patch: Patch, owner: number, id: string): Patch {
       write({ ...patch, id }, { owner })
       return { ...patch, id }
+    },
+
+    /* Newest first, because an administrator arriving here is nearly always
+       looking at something that just happened. */
+    listAll() {
+      return db.query<RecordRow, []>(`${RECORDS} order by p.updated_at desc`).all().map(toRecord)
+    },
+
+    listDeletedOwnedBy(owner: number) {
+      return db
+        .query<RecordRow, [number]>(
+          `${RECORDS} where p.deleted_at is not null and p.owner_id = ?
+            order by p.deleted_at desc`,
+        )
+        .all(owner)
+        .map(toRecord)
     },
 
     restore(id: string): boolean {

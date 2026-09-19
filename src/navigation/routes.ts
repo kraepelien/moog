@@ -40,11 +40,16 @@ export const ROUTES: readonly RouteDef[] = [
   /* Not a row of its own: this is a page somebody opens once and leaves, and it
      is in the account menu where the rest of what belongs to a person is. */
   { name: 'preferences', path: '/preferences', title: 'Preferences' },
+  /* Not a row either: opened when something has gone wrong and left again, and
+     empty for almost everybody almost always. The delete confirmation is what
+     makes it findable, by saying where the patch went. */
+  { name: 'trash', path: '/trash', title: 'Trash' },
   { name: 'admin', path: '/admin', title: 'Tags', needs: PRIVILEGE.AccessAdmin },
   /* Its own privilege rather than nesting behind AccessAdmin, so the two can be
      held apart — which is what the rules protecting this page assume. */
   { name: 'layout', path: '/admin/layout', title: 'Layout', needs: PRIVILEGE.AdminLayout },
   { name: 'users', path: '/admin/users', title: 'People', needs: PRIVILEGE.AdminUsers },
+  { name: 'patches', path: '/admin/patches', title: 'Patches', needs: PRIVILEGE.AdminPatches },
   { name: 'ops', path: '/admin/ops', title: 'Operations', needs: PRIVILEGE.AdminOps },
 ]
 

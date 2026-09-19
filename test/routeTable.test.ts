@@ -80,4 +80,13 @@ describe('a captured segment', () => {
     /* /tags/in-use and /tags/:id share a shape; the literal has to win. */
     expect((await server()('GET', '/api/tags/in-use'))!.status).toBe(200)
   })
+
+  /* The same trap under /patches, where it is sharper: `all` and `trash` are
+     names `isSafeName` accepts, so a parameter route declared first would look
+     up a patch by that name and answer 404, which reads as a feature that was
+     never built rather than as a route in the wrong order. */
+  test('and does not swallow the two under patches either', async () => {
+    expect((await server()('GET', '/api/patches/all'))!.status).not.toBe(404)
+    expect((await server()('GET', '/api/patches/trash'))!.status).not.toBe(404)
+  })
 })
