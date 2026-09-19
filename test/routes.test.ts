@@ -79,7 +79,7 @@ describe('the table itself', () => {
   })
 
   /* A row everybody could see would be a door most people find locked. The rail
-     draws Settings itself, from the administration pages this account can open,
+     draws Admin itself, from the administration pages this account can open,
      rather than from a route that says it is in the rail — and home is the mark
      at the top rather than a row of its own. */
   test('keeps administration and home out of the rail', () => {
