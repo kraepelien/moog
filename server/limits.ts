@@ -14,19 +14,33 @@ export interface Limits {
   readonly signInsPerMinute: number
 }
 
+/* The variable that sets each limit, named once. The operations page shows
+   these beside the numbers, and a second copy of the names written there is one
+   that goes stale the day a limit is renamed. Keyed on `keyof Limits`, so a
+   limit added without a variable name fails to typecheck. */
+export const LIMIT_ENV: Record<keyof Limits, string> = {
+  maxPatches: 'MOOG_MAX_PATCHES',
+  maxPatchBytes: 'MOOG_MAX_PATCH_BYTES',
+  maxArrangements: 'MOOG_MAX_ARRANGEMENTS',
+  maxMidiBytes: 'MOOG_MAX_MIDI_BYTES',
+  trashDays: 'MOOG_TRASH_DAYS',
+  writesPerMinute: 'MOOG_WRITES_PER_MINUTE',
+  signInsPerMinute: 'MOOG_SIGN_INS_PER_MINUTE',
+}
+
 export function limitsFromEnv(env: Record<string, string | undefined>): Limits {
-  const number = (name: string, fallback: number) => {
-    const raw = Number(env[name])
+  const number = (name: keyof Limits, fallback: number) => {
+    const raw = Number(env[LIMIT_ENV[name]])
     return Number.isFinite(raw) && raw > 0 ? raw : fallback
   }
   return {
-    maxPatches: number('MOOG_MAX_PATCHES', 2000),
-    maxPatchBytes: number('MOOG_MAX_PATCH_BYTES', 64 * 1024),
-    maxArrangements: number('MOOG_MAX_ARRANGEMENTS', 200),
-    maxMidiBytes: number('MOOG_MAX_MIDI_BYTES', 1024 * 1024),
-    trashDays: number('MOOG_TRASH_DAYS', 30),
-    writesPerMinute: number('MOOG_WRITES_PER_MINUTE', 120),
-    signInsPerMinute: number('MOOG_SIGN_INS_PER_MINUTE', 10),
+    maxPatches: number('maxPatches', 2000),
+    maxPatchBytes: number('maxPatchBytes', 64 * 1024),
+    maxArrangements: number('maxArrangements', 200),
+    maxMidiBytes: number('maxMidiBytes', 1024 * 1024),
+    trashDays: number('trashDays', 30),
+    writesPerMinute: number('writesPerMinute', 120),
+    signInsPerMinute: number('signInsPerMinute', 10),
   }
 }
 

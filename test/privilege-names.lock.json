@@ -3,6 +3,7 @@
   "privileges": [
     "AccessAdmin",
     "AdminLayout",
+    "AdminOps",
     "AdminPatches",
     "AdminTags",
     "AdminUsers",

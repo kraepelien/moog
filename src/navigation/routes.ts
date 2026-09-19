@@ -45,6 +45,7 @@ export const ROUTES: readonly RouteDef[] = [
      held apart — which is what the rules protecting this page assume. */
   { name: 'layout', path: '/admin/layout', title: 'Layout', needs: PRIVILEGE.AdminLayout },
   { name: 'users', path: '/admin/users', title: 'People', needs: PRIVILEGE.AdminUsers },
+  { name: 'ops', path: '/admin/ops', title: 'Operations', needs: PRIVILEGE.AdminOps },
 ]
 
 /* The administration area's own pages, for the nav inside it. */

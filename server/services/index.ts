@@ -1,6 +1,7 @@
 import { systemIdentity } from '@patch/schema.ts'
 import type { AuthConfig } from '@server/identity.ts'
 import type { Limits } from '@server/limits.ts'
+import type { OpsLog } from '@server/ops.ts'
 import type { Repositories } from '@server/repositories/index.ts'
 import { createAccess } from './access.ts'
 import { createArrangementService } from './arrangements.ts'
@@ -18,6 +19,7 @@ export interface ServiceOptions {
   readonly config: AuthConfig
   readonly limits: Limits
   readonly identity?: Identity
+  readonly ops: OpsLog
 }
 
 export function createServices({
@@ -25,11 +27,14 @@ export function createServices({
   config,
   limits,
   identity = systemIdentity,
+  ops,
 }: ServiceOptions) {
   return {
     repositories,
     config,
     limits,
+    /* Not a service: there are no rules here, only a record the route reads. */
+    ops,
     access: createAccess(repositories, config),
     patches: createPatchService(repositories, limits, identity),
     tags: createTagService(repositories),

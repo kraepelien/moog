@@ -31,6 +31,12 @@ export const PRIVILEGE = {
      Factory content is still refused to everybody holding it: the bank comes
      from the image and a write would be overwritten at the next start. */
   AdminPatches: 'AdminPatches',
+  /* The housekeeping this install does to itself: backups, the nightly purge,
+     the bank it seeded and the limits it enforces. Its own privilege rather
+     than AccessAdmin, because it says how the install is tuned and where its
+     backups are written, and handing somebody the tag list should not hand
+     them that as well. */
+  AdminOps: 'AdminOps',
   StoreMidi: 'StoreMidi',
 } as const
 
@@ -49,6 +55,7 @@ export const TITLE: Record<Privilege, string> = {
   AdminTags: 'Keep the tag list',
   AdminLayout: 'Try out the layout',
   AdminPatches: 'Edit anybody’s patch',
+  AdminOps: 'See how the server is running',
   StoreMidi: 'Save MIDI arrangements',
 }
 
@@ -68,6 +75,8 @@ export const DESCRIPTION: Record<Privilege, string> = {
     'Open the Layout page, try the app’s colours out on this browser, and export a prompt that changes the ones it ships with. Nothing done there repaints the app for anybody else.',
   AdminPatches:
     'Edit, delete or unpublish a patch belonging to somebody else. Factory patches stay read-only for everyone.',
+  AdminOps:
+    'See what this server has done since it started: the last backup and whether it worked, the last sweep of the trash, the bank it seeded and the limits it holds people to. Nothing on that page changes anything.',
   StoreMidi:
     'Save a MIDI file together with the sound put on each of its parts, and open it again later.',
 }
@@ -122,6 +131,7 @@ const ADDS: Record<Role, readonly Privilege[]> = {
     PRIVILEGE.AdminTags,
     PRIVILEGE.AdminLayout,
     PRIVILEGE.AdminPatches,
+    PRIVILEGE.AdminOps,
   ],
 }
 
@@ -165,6 +175,7 @@ export const REQUIRES: Partial<Record<Privilege, Privilege>> = {
   [PRIVILEGE.AdminTags]: PRIVILEGE.AccessAdmin,
   [PRIVILEGE.AdminLayout]: PRIVILEGE.AccessAdmin,
   [PRIVILEGE.AdminPatches]: PRIVILEGE.AccessAdmin,
+  [PRIVILEGE.AdminOps]: PRIVILEGE.AccessAdmin,
 }
 
 export function requiredBy(privilege: Privilege): Privilege | null {

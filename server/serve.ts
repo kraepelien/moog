@@ -1,8 +1,9 @@
 import { join, resolve } from 'node:path'
 import { createApi } from './api.ts'
-import { backupTo, openDatabase } from './db.ts'
+import { openDatabase } from './db.ts'
 import { loadFactory } from './factory.ts'
 import { limitsFromEnv } from './limits.ts'
+import { createOpsLog, scheduleMaintenance } from './ops.ts'
 import { createPatches } from './repositories/patches.ts'
 import { authConfigFromEnv } from './identity.ts'
 import { describeAuth, dirAt, envTrouble } from './startup.ts'
@@ -22,8 +23,11 @@ const seed = process.env.MOOG_BANK ?? 'bank'
 const dist = process.env.MOOG_DIST ?? 'dist'
 const port = Number(process.env.PORT ?? 5174)
 
-const db = openDatabase(join(root, 'moog.db'))
+const databasePath = join(root, 'moog.db')
+const db = openDatabase(databasePath)
+const ops = createOpsLog({ databasePath })
 const factory = loadFactory(db, seed)
+ops.recordFactory(factory)
 seedTags(db)
 console.log(
   factory.refreshed
@@ -34,35 +38,15 @@ console.log(`Sign-in: ${describeAuth(authConfigFromEnv(process.env))}`)
 const envTroubleFound = envTrouble(dirAt(process.cwd()), process.env)
 if (envTroubleFound) console.warn(envTroubleFound)
 
-/* Trash is a grace period, not a place things stay. */
+/* Trash is a grace period rather than a place things stay, and the database is
+   copied daily because a plain file copy of one in WAL mode can catch it
+   mid-write. Both live in `ops.ts` now, with the record of what they did, which
+   is what the operations page reads: this process is the only one that runs
+   them, and the dev plugin serving the same routes runs neither. */
 const limits = limitsFromEnv(process.env)
-const patches = createPatches(db)
-const purge = () => {
-  const before = new Date(Date.now() - limits.trashDays * 24 * 60 * 60 * 1000).toISOString()
-  const gone = patches.purgeTrash(before)
-  if (gone > 0) console.log(`Purged ${gone} from the trash, deleted over ${limits.trashDays} days ago`)
-}
-purge()
+scheduleMaintenance({ db, root, limits, patches: createPatches(db), ops })
 
-/* A dated copy every day, because a plain file copy of a database in WAL mode
-   can catch it mid-write and the backup on the NAS is a file copy. */
-const backup = () => {
-  /* A backup that cannot be written is worth a line in the log and nothing
-     more: the editor still works, and a container that exits here would be
-     restarted into the same failure. */
-  try {
-    backupTo(db, join(root, 'backups', `moog-${new Date().toISOString().slice(0, 10)}.db`))
-  } catch (error) {
-    console.error('Backup failed:', error)
-  }
-}
-backup()
-setInterval(() => {
-  purge()
-  backup()
-}, 24 * 60 * 60 * 1000)
-
-const handle = createApi({ db, limits })
+const handle = createApi({ db, limits, ops })
 
 Bun.serve({
   port,

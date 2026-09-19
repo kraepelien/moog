@@ -4,6 +4,7 @@ import type { Plugin, ViteDevServer } from 'vite'
 import { join, relative, sep } from 'node:path'
 import { createApi } from './api.ts'
 import { openDatabase } from './db.ts'
+import { createOpsLog } from './ops.ts'
 import { loadFactory } from './factory.ts'
 import { authConfigFromEnv } from './identity.ts'
 import { describeAuth, dirAt, envTrouble } from './startup.ts'
@@ -88,8 +89,15 @@ export function patchApi(options: PatchApiOptions): Plugin {
     async configureServer(server) {
       watchServerSources(server)
 
-      const db = openDatabase(join(options.root, 'moog.db'))
+      const databasePath = join(options.root, 'moog.db')
+      const db = openDatabase(databasePath)
+      /* Its own record, never marked scheduled: this plugin serves the same
+         routes and runs no timer, so the operations page says nothing runs here
+         rather than reporting a backup of zero that reads as one that failed.
+         The bank is real in both, because both seed it. */
+      const ops = createOpsLog({ databasePath })
       const factory = loadFactory(db, options.seed)
+      ops.recordFactory(factory)
       seedTags(db)
       server.config.logger.info(
         factory.refreshed
@@ -105,7 +113,7 @@ export function patchApi(options: PatchApiOptions): Plugin {
       const trouble = envTrouble(dirAt(process.cwd()), process.env)
       if (trouble) server.config.logger.warn(`  ➜  ${trouble}`)
 
-      const handle = createApi({ db, config })
+      const handle = createApi({ db, config, ops })
       /* Every request, because the handler decides what is its own — filtering
          by prefix here is what made dev and production disagree. */
       server.middlewares.use((req, res, next) => {
