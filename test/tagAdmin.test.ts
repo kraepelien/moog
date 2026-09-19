@@ -27,7 +27,7 @@ async function world() {
   seedTags(db, ['Bass', 'Lead'])
 
   const config = {
-    ...authConfigFromEnv({ MOOG_SESSION_SECRET: SECRET }),
+    ...authConfigFromEnv({ PM_SESSION_SECRET: SECRET }),
     mode: 'oauth' as const,
     secret: SECRET,
     admins: ['boss@example.com'],

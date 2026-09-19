@@ -15,7 +15,7 @@ const SECRET = 'a-test-secret'
 const NOW = Date.UTC(2026, 8, 16, 12, 0, 0)
 
 const config = (over: Partial<ReturnType<typeof authConfigFromEnv>> = {}) => ({
-  ...authConfigFromEnv({ MOOG_SESSION_SECRET: SECRET }),
+  ...authConfigFromEnv({ PM_SESSION_SECRET: SECRET }),
   secret: SECRET,
   ...over,
 })
@@ -126,11 +126,11 @@ describe('with sign-in switched off', () => {
 describe('configuration', () => {
   test('a client id without a secret is refused at startup', () => {
     /* Rather than issuing cookies signed with an empty string. */
-    expect(() => authConfigFromEnv({ MOOG_OAUTH_CLIENT_ID: 'abc' })).toThrow(/SESSION_SECRET/)
+    expect(() => authConfigFromEnv({ PM_OAUTH_CLIENT_ID: 'abc' })).toThrow(/SESSION_SECRET/)
   })
 
   test('admins are a comma-separated list, trimmed', () => {
-    const parsed = authConfigFromEnv({ MOOG_ADMINS: ' one@x.com , two@x.com ,, ' })
+    const parsed = authConfigFromEnv({ PM_ADMINS: ' one@x.com , two@x.com ,, ' })
     expect(parsed.admins).toEqual(['one@x.com', 'two@x.com'])
   })
 })

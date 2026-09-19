@@ -569,14 +569,14 @@ rejected is the reason the current shape looks odd if you meet it cold.
   grant row per privilege. That makes the role a dead shortcut: change what `tester` means and
   nobody already marked one is affected. Stored, a role stays live.
 - **Only `tester` is stored.** `member` was, briefly — every row then had to be backfilled correctly
-  or the account had no privileges at all. `admin` was too, alongside `MOOG_ADMINS`, which gave one
+  or the account had no privileges at all. `admin` was too, alongside `PM_ADMINS`, which gave one
   fact two sources: a column could go on claiming an administrator the environment had stopped
   naming, and the revoke masking it looked like tidy-up waiting to happen. Both are worked out now.
 - **Overrides are a table, not a JSON column on `users`.** `settings.json` looks like the precedent
   and is the wrong one — it is justified by the server never reading inside it, and these are read
   on every request. `ratings` is the real precedent: a per-(user, thing) decision with a composite
   key. The table is also what allows one row to be written without sending the rest back.
-- **A revoke beats everything, including `MOOG_ADMINS`.** The alternative — an env admin immune to
+- **A revoke beats everything, including `PM_ADMINS`.** The alternative — an env admin immune to
   revokes — would mean the person most likely to be testing what a member sees is the one person who
   cannot. The recovery path is protected at the point a revoke is *written* instead, which keeps the
   resolution order a rule without exceptions.
@@ -608,7 +608,7 @@ neither is ever written to a row:
   nothing today: signing in is not itself permission to do anything. The rung stays because it is
   where a privilege everybody should have would go, reaching every account without touching the
   database.
-- `admin` comes from `MOOG_ADMINS` and nowhere else. Storing it as well gave one fact two sources,
+- `admin` comes from `PM_ADMINS` and nowhere else. Storing it as well gave one fact two sources,
   which is what let a column go on claiming an administrator the environment had stopped naming.
   Somebody who needs one administrative power without being an administrator is given that
   privilege, not the role.
@@ -633,7 +633,7 @@ writes and no matching edit on the rungs above.
 ### The rule
 
 ```
-roles   = member + stored tester + (admin, if MOOG_ADMINS names them, or sign-in is off)
+roles   = member + stored tester + (admin, if PM_ADMINS names them, or sign-in is off)
 base    = everything up to the highest rung held
 granted = base ∪ explicit grants
 final   = granted \ explicit revokes            // a revoke wins over everything
@@ -642,7 +642,7 @@ final   = granted \ explicit revokes            // a revoke wins over everything
 
 One function, `resolve()`, and nowhere else. A revoke still takes one privilege off an
 administrator, which is what lets them see what everybody else sees. What a revoke cannot do is
-close the way back in: the two doors cannot be taken from an address `MOOG_ADMINS` names, and that
+close the way back in: the two doors cannot be taken from an address `PM_ADMINS` names, and that
 is a refusal where a revoke is *written*, not an exception in the order above.
 
 **`AccessAdmin` is a boundary, not a door.** Every other administrative privilege is conditional on
@@ -672,7 +672,7 @@ know is kept, never acted on, and shown on the People page.
 ### If nobody can administer users any more
 
 Three rules stop it, all enforced where a write happens: you cannot revoke `AccessAdmin` or
-`AdminUsers` from **yourself**; neither can be revoked from an address listed in `MOOG_ADMINS`; and
+`AdminUsers` from **yourself**; neither can be revoked from an address listed in `PM_ADMINS`; and
 no write may leave **zero** accounts holding `AdminUsers` — counted again inside the write's own
 transaction, because two administrators revoking each other at the same moment both pass a check
 taken beforehand.
@@ -683,7 +683,7 @@ If it happens anyway, the break-glass is the data:
 delete from user_privileges where privilege = 'AdminUsers';
 ```
 
-against `moog.db` on the volume. Restarting with no `MOOG_OAUTH_CLIENT_ID` also brings back the
+against `moog.db` on the volume. Restarting with no `PM_OAUTH_CLIENT_ID` also brings back the
 `off`-mode local admin.
 
 ### Where the check happens
@@ -772,8 +772,8 @@ because that is what `setInterval` does and an operator expecting 03:00 would be
 The size counts the `-wal` file beside the database: in WAL mode the main file stays one page until
 a checkpoint, and a fresh install otherwise reports 4 KiB while its own backup is 139 KB.
 
-**Credentials are not on it.** The limits are configuration worth seeing; `MOOG_OAUTH_CLIENT_ID`,
-the secret and the contents of `MOOG_ADMINS` are not, and a page that showed them would be a new
+**Credentials are not on it.** The limits are configuration worth seeing; `PM_OAUTH_CLIENT_ID`,
+the secret and the contents of `PM_ADMINS` are not, and a page that showed them would be a new
 reason to guard the page rather than a window onto the housekeeping. `/health` stays open for the
 container's healthcheck and gains none of this.
 
@@ -825,7 +825,7 @@ beside the same pair for `/tags/in-use`.
 ### The trash, which was always there
 
 Deleting has always been a grace period: the row is marked and a nightly sweep takes it
-`MOOG_TRASH_DAYS` later. Nothing could reach the middle of that, so `POST /patches/:id/restore`
+`PM_TRASH_DAYS` later. Nothing could reach the middle of that, so `POST /patches/:id/restore`
 existed with no caller anywhere in `src/`.
 
 `/trash` is what a person sees of their own, reached from the account menu beside Preferences

@@ -24,7 +24,7 @@ async function world(admins: readonly string[] = ['boss@example.com']) {
   seedTags(db)
 
   const config = {
-    ...authConfigFromEnv({ MOOG_SESSION_SECRET: SECRET }),
+    ...authConfigFromEnv({ PM_SESSION_SECRET: SECRET }),
     mode: 'oauth' as const,
     secret: SECRET,
     admins,
@@ -94,7 +94,7 @@ describe('the session route', () => {
 
 describe('what the environment grants', () => {
   test('makes a listed address an admin without them signing in again', async () => {
-    /* MOOG_ADMINS already worked this way: a line in .env and a restart. A
+    /* PM_ADMINS already worked this way: a line in .env and a restart. A
        grant that only landed at the next sign-in would look like it was
        ignored. */
     const { person } = await world(['late@example.com'])
@@ -104,7 +104,7 @@ describe('what the environment grants', () => {
   })
 
   /* The column is not a second way to be one. A row left saying `admin` by an
-     older build is ignored, so taking an address out of MOOG_ADMINS really does
+     older build is ignored, so taking an address out of PM_ADMINS really does
      take it away. */
   test('is the only thing that makes an admin, whatever a column says', async () => {
     const { person, repositories } = await world([])

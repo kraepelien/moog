@@ -25,7 +25,7 @@ function server(mode: 'off' | 'oauth' = 'off') {
   const db = openDatabase(join(root, 'moog.db'))
   syncInstruments(db)
 
-  const config = { ...authConfigFromEnv({ MOOG_SESSION_SECRET: SECRET }), mode, secret: SECRET }
+  const config = { ...authConfigFromEnv({ PM_SESSION_SECRET: SECRET }), mode, secret: SECRET }
   const handle = createApi({ db, config })
 
   const call = (method: string, path: string, payload?: unknown, cookie?: string) =>

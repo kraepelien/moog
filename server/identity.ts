@@ -22,23 +22,23 @@ export interface AuthConfig {
 }
 
 export function authConfigFromEnv(env: Record<string, string | undefined>): AuthConfig {
-  const mode = env.MOOG_OAUTH_CLIENT_ID ? 'oauth' : 'off'
-  const secret = env.MOOG_SESSION_SECRET ?? ''
+  const mode = env.PM_OAUTH_CLIENT_ID ? 'oauth' : 'off'
+  const secret = env.PM_SESSION_SECRET ?? ''
   if (mode === 'oauth' && secret === '') {
-    throw new Error('MOOG_SESSION_SECRET is required once MOOG_OAUTH_CLIENT_ID is set')
+    throw new Error('PM_SESSION_SECRET is required once PM_OAUTH_CLIENT_ID is set')
   }
   return {
     mode,
     secret,
-    sessionDays: Number(env.MOOG_SESSION_DAYS ?? 30),
-    admins: (env.MOOG_ADMINS ?? '')
+    sessionDays: Number(env.PM_SESSION_DAYS ?? 30),
+    admins: (env.PM_ADMINS ?? '')
       .split(',')
       .map((entry) => entry.trim().toLowerCase())
       .filter(Boolean),
-    publicOrigin: env.MOOG_PUBLIC_ORIGIN ?? null,
+    publicOrigin: env.PM_PUBLIC_ORIGIN ?? null,
     localUser: LOCAL_USER,
-    clientId: env.MOOG_OAUTH_CLIENT_ID ?? '',
-    clientSecret: env.MOOG_OAUTH_CLIENT_SECRET ?? '',
+    clientId: env.PM_OAUTH_CLIENT_ID ?? '',
+    clientSecret: env.PM_OAUTH_CLIENT_SECRET ?? '',
   }
 }
 
@@ -152,7 +152,7 @@ export function clearedSessionCookie(request: Request): string {
   return `${SESSION_COOKIE}=; ${attributes(request)}; Max-Age=0`
 }
 
-/* Listed in MOOG_ADMINS. That grants the admin role and protects it from being
+/* Listed in PM_ADMINS. That grants the admin role and protects it from being
    taken away in the app; it does not make the account immune to having a single
    privilege revoked. */
 export function isEnvAdmin(email: string | null, config: AuthConfig): boolean {

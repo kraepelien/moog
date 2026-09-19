@@ -82,8 +82,8 @@ describe('a process that takes no backups', () => {
 describe('the limits', () => {
   test('names the variable that sets each one', () => {
     show()
-    expect(screen.getByText('MOOG_TRASH_DAYS')).toBeTruthy()
-    expect(screen.getByText('MOOG_WRITES_PER_MINUTE')).toBeTruthy()
+    expect(screen.getByText('PM_TRASH_DAYS')).toBeTruthy()
+    expect(screen.getByText('PM_WRITES_PER_MINUTE')).toBeTruthy()
   })
 
   /* Configuration is worth seeing; credentials are not, and a page that showed
@@ -91,9 +91,9 @@ describe('the limits', () => {
      housekeeping. */
   test('says nothing about the credentials or who administers the install', () => {
     const { container } = show()
-    expect(container.textContent).not.toContain('MOOG_ADMINS')
-    expect(container.textContent).not.toContain('MOOG_OAUTH_CLIENT_ID')
-    expect(container.textContent).not.toContain('MOOG_SESSION_SECRET')
+    expect(container.textContent).not.toContain('PM_ADMINS')
+    expect(container.textContent).not.toContain('PM_OAUTH_CLIENT_ID')
+    expect(container.textContent).not.toContain('PM_SESSION_SECRET')
   })
 })
 

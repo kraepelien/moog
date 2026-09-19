@@ -7,9 +7,9 @@ import { authConfigFromEnv, isLoopback, originOf } from '@server/identity.ts'
    its port is whichever was free when it started. */
 
 const deployed = authConfigFromEnv({
-  MOOG_OAUTH_CLIENT_ID: 'client',
-  MOOG_SESSION_SECRET: 'secret',
-  MOOG_PUBLIC_ORIGIN: 'https://moog.example',
+  PM_OAUTH_CLIENT_ID: 'client',
+  PM_SESSION_SECRET: 'secret',
+  PM_PUBLIC_ORIGIN: 'https://moog.example',
 })
 
 const at = (url: string) => new Request(url)

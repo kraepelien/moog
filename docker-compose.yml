@@ -4,7 +4,7 @@
 #   docker compose pull && docker compose up -d
 #
 # Traefik is not configured from here. It reads the file provider, so the route
-# lives in traefik/dynamic/moog.yml and points at this published port — there are
+# lives in traefik/dynamic/patchmemory.yml and points at this published port — there are
 # no labels, and no shared network to join.
 #
 # No red/green: two containers writing one database is the thing worth avoiding.
@@ -13,28 +13,28 @@
 
 services:
   moog:
-    image: ${MOOG_IMAGE:-ghcr.io/kraepelien/moog:latest}
-    container_name: moog
+    image: ${PM_IMAGE:-ghcr.io/kraepelien/patchmemory:latest}
+    container_name: patchmemory
     restart: unless-stopped
 
     # 1027 is the Synology `docker` account; 65536 is the `docker` group, which
     # the data folder belongs to and which contains the login account too, so
     # both the container and a person can work on the same files.
-    user: "${MOOG_UID:-1027}:${MOOG_GID:-65536}"
+    user: "${PM_UID:-1027}:${PM_GID:-65536}"
 
     # Every key of the .env beside this file, so a setting added there needs no
-    # change here. A key the image already sets (PORT, MOOG_DATA, MOOG_BANK,
-    # MOOG_DIST) wins over its value, so keep container paths out of the .env.
+    # change here. A key the image already sets (PORT, PM_DATA, PM_BANK,
+    # PM_DIST) wins over its value, so keep container paths out of the .env.
     env_file: .env
 
     # Published so Traefik can reach it by host and port, the way its dynamic
-    # configuration expects. Change it here and in traefik/dynamic/moog.yml
+    # configuration expects. Change it here and in traefik/dynamic/patchmemory.yml
     # together, or the route points at nothing.
     ports:
-      - "${MOOG_PORT:-10072}:8080"
+      - "${PM_PORT:-10072}:8080"
 
     volumes:
       # Everything the editor writes: every patch, factory or saved. The bank
       # shipped in the image is seeded in here the first time, and from then on
       # this folder is the truth.
-      - ${MOOG_DATA_DIR:-/volume1/docker/moog/data}:/data
+      - ${PM_DATA_DIR:-/volume1/docker/patchmemory/data}:/data

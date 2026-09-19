@@ -129,7 +129,7 @@ export async function handleAuth(
 
     const uid = await userIdFor(provider.id, profile.subject)
     /* A member, always. Whether they are also an admin is decided per request
-       from MOOG_ADMINS and from what has been granted, not here. */
+       from PM_ADMINS and from what has been granted, not here. */
     createUsers(options.db).ensure({
       uid,
       provider: provider.id,

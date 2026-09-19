@@ -23,7 +23,7 @@ afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
 })
 
-/* Administrators are named by uid and become `MOOG_ADMINS` entries, because
+/* Administrators are named by uid and become `PM_ADMINS` entries, because
    that is now the only thing that makes one: the role is not stored and cannot
    be given here. `u-boss` is one in every case, since somebody has to be able
    to reach the page at all. */
@@ -34,7 +34,7 @@ async function world(admins: readonly string[] = ['u-boss']) {
   syncInstruments(db)
 
   const config = {
-    ...authConfigFromEnv({ MOOG_SESSION_SECRET: SECRET }),
+    ...authConfigFromEnv({ PM_SESSION_SECRET: SECRET }),
     mode: 'oauth' as const,
     secret: SECRET,
     admins: admins.map((uid) => `${uid}@example.com`),
@@ -310,7 +310,7 @@ describe('an override row naming a privilege this build does not know', () => {
    behind it, not only hide the pages. Before this, every admin API stayed open
    to somebody who had just had it revoked. */
 describe('AccessAdmin as a boundary', () => {
-  /* Administered by grant rather than by MOOG_ADMINS, because an address the
+  /* Administered by grant rather than by PM_ADMINS, because an address the
      environment lists cannot have either door taken away — that is the way back
      into a locked-out install. Somebody handed the privileges here can. */
   const administered = async (
@@ -398,7 +398,7 @@ describe('the rules that keep an install reachable', () => {
     ).toBe(200)
   })
 
-  /* MOOG_ADMINS is the documented way back into a locked-out install, so a
+  /* PM_ADMINS is the documented way back into a locked-out install, so a
      revoke must not be able to close it. */
   test('refuse to close the environment’s way back in', async () => {
     const { person } = await world(['u-boss', 'u-env'])
@@ -494,7 +494,7 @@ describe('roles', () => {
     const refused = (await boss('PUT', '/api/users/u-punter/roles', { roles: [ROLE.admin] }))!
     expect(refused.status).toBe(400)
     expect((await refused.json()) as { error: string }).toMatchObject({
-      error: expect.stringContaining('MOOG_ADMINS'),
+      error: expect.stringContaining('PM_ADMINS'),
     })
 
     const list = await body<AdminUser[]>(await boss('GET', '/api/users'))

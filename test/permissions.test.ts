@@ -25,7 +25,7 @@ async function world() {
   const store = createRepositories(db)
 
   const config = {
-    ...authConfigFromEnv({ MOOG_SESSION_SECRET: SECRET }),
+    ...authConfigFromEnv({ PM_SESSION_SECRET: SECRET }),
     mode: 'oauth' as const,
     secret: SECRET,
     admins: ['boss@example.com'],
@@ -270,7 +270,7 @@ describe('a request from another site', () => {
   test('is refused when it would change something', async () => {
     const { db } = await world()
     const config = {
-      ...authConfigFromEnv({ MOOG_SESSION_SECRET: SECRET }),
+      ...authConfigFromEnv({ PM_SESSION_SECRET: SECRET }),
       secret: SECRET,
     }
     const handle = createApi({ db, config })

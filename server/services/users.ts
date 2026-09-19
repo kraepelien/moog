@@ -106,7 +106,7 @@ export function createUserService(repositories: Repositories, config: AuthConfig
         return {
           error:
             refused.includes(ROLE.admin)
-              ? 'Being an administrator comes from MOOG_ADMINS, not from here. Add the address and restart, or grant the individual privileges.'
+              ? 'Being an administrator comes from PM_ADMINS, not from here. Add the address and restart, or grant the individual privileges.'
               : 'Everybody signed in is a member; it is not a role to give.',
           status: 400,
         }
@@ -160,7 +160,7 @@ export function createUserService(repositories: Repositories, config: AuthConfig
        resolution order. */
     if (listed(target)) {
       return {
-        error: `${target.email} is listed in MOOG_ADMINS, which is how an install is recovered. ${privilege} cannot be revoked from them.`,
+        error: `${target.email} is listed in PM_ADMINS, which is how an install is recovered. ${privilege} cannot be revoked from them.`,
         status: 400,
       }
     }

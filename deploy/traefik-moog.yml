@@ -1,7 +1,7 @@
 # Copied to the NAS as traefik/dynamic/moog.yml — Traefik's file provider picks
 # it up without a restart.
 #
-# The port here and MOOG_PORT in the deploy folder's .env are the same number in
+# The port here and PM_PORT in the deploy folder's .env are the same number in
 # two places. Change one without the other and the route points at nothing.
 
 http:

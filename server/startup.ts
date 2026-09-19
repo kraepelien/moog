@@ -9,7 +9,7 @@ import type { AuthConfig } from './identity.ts'
 
 export function describeAuth(config: AuthConfig): string {
   if (config.mode === 'off') {
-    return 'off — everything belongs to the local user (MOOG_OAUTH_CLIENT_ID is unset)'
+    return 'off — everything belongs to the local user (PM_OAUTH_CLIENT_ID is unset)'
   }
   const admins = config.admins.length > 0 ? `, ${config.admins.length} admin(s)` : ''
   /* Where a sign-in comes back to, stated rather than warned about: it is right
@@ -87,7 +87,7 @@ export function dirAt(cwd: string): Dir {
    a development machine with no OAuth at all is the ordinary case and must not
    be nagged. */
 export function envTrouble(dir: Dir, env: Record<string, string | undefined>): string | null {
-  if (env.MOOG_OAUTH_CLIENT_ID) return null
+  if (env.PM_OAUTH_CLIENT_ID) return null
 
   const names = dir.list()
 
@@ -98,15 +98,15 @@ export function envTrouble(dir: Dir, env: Record<string, string | undefined>): s
     const bom = raw.charCodeAt(0) === 0xfeff
     const text = bom ? raw.slice(1) : raw
 
-    const line = /^[ \t]*(?:export[ \t]+)?MOOG_OAUTH_CLIENT_ID[ \t]*=[ \t]*(.*)$/m.exec(text)
+    const line = /^[ \t]*(?:export[ \t]+)?PM_OAUTH_CLIENT_ID[ \t]*=[ \t]*(.*)$/m.exec(text)
     const written = (line?.[1] ?? '').trim().replace(/^['"]|['"]$/g, '')
 
     /* Written but not arrived. A value left deliberately blank is not this, and
        says nothing. */
     if (written !== '') {
       return bom
-        ? `${ENV_FILE} sets MOOG_OAUTH_CLIENT_ID, but its first line starts with a byte order mark, which hides the first key. Re-save it as UTF-8 without BOM.`
-        : `${ENV_FILE} sets MOOG_OAUTH_CLIENT_ID, but this process did not receive it. Check the key for stray characters or spaces before the =.`
+        ? `${ENV_FILE} sets PM_OAUTH_CLIENT_ID, but its first line starts with a byte order mark, which hides the first key. Re-save it as UTF-8 without BOM.`
+        : `${ENV_FILE} sets PM_OAUTH_CLIENT_ID, but this process did not receive it. Check the key for stray characters or spaces before the =.`
     }
     return null
   }

@@ -206,7 +206,7 @@ Three resolvers have to agree on the map, and only two of them fail loudly:
 - **`localStorage` does not exist in Bun's runtime.** The storage adapter takes its `Storage` object
   as a parameter; keep it injected rather than reaching for `window`.
 - **Bun loads `.env`, and the server reads its configuration from the environment.** Before
-  `test/setup.ts` emptied every `MOOG_*` variable, a developer who had set up sign-in ran the suite
+  `test/setup.ts` emptied every `PM_*` variable, a developer who had set up sign-in ran the suite
   against a different application than CI did: oauth rather than off, and 45 tests failing on a 401
   that nobody else could reproduce. A test that needs configuration states it rather than inheriting
   it.

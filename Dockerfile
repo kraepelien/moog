@@ -54,9 +54,9 @@ COPY --from=build /app/package.json ./package.json
 # administrator has corrected.
 COPY --from=build /app/bank ./bank
 
-ENV MOOG_DATA=/data \
-    MOOG_BANK=/app/bank \
-    MOOG_DIST=/app/dist \
+ENV PM_DATA=/data \
+    PM_BANK=/app/bank \
+    PM_DIST=/app/dist \
     PORT=8080
 
 # Created here so the container starts even with no volume attached; a mount

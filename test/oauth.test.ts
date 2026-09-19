@@ -39,10 +39,10 @@ function signIn(options: { token?: object; status?: number } = {}) {
 
   const config = {
     ...authConfigFromEnv({
-      MOOG_SESSION_SECRET: SECRET,
-      MOOG_OAUTH_CLIENT_ID: 'client-abc',
-      MOOG_OAUTH_CLIENT_SECRET: 'secret-xyz',
-      MOOG_PUBLIC_ORIGIN: 'https://moog.example',
+      PM_SESSION_SECRET: SECRET,
+      PM_OAUTH_CLIENT_ID: 'client-abc',
+      PM_OAUTH_CLIENT_SECRET: 'secret-xyz',
+      PM_PUBLIC_ORIGIN: 'https://moog.example',
     }),
   }
   const handle = createApi({ db, config, doFetch })

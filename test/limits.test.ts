@@ -21,7 +21,7 @@ async function world(over: Partial<Limits> = {}) {
   syncInstruments(db)
 
   const config = {
-    ...authConfigFromEnv({ MOOG_SESSION_SECRET: SECRET }),
+    ...authConfigFromEnv({ PM_SESSION_SECRET: SECRET }),
     mode: 'oauth' as const,
     secret: SECRET,
     admins: ['boss@example.com'],
@@ -183,7 +183,7 @@ describe('how fast anyone may write', () => {
   test('holds the door on sign-in too', async () => {
     const { db } = await world()
     const config = {
-      ...authConfigFromEnv({ MOOG_SESSION_SECRET: SECRET }),
+      ...authConfigFromEnv({ PM_SESSION_SECRET: SECRET }),
       mode: 'oauth' as const,
       secret: SECRET,
       clientId: 'client',
