@@ -783,6 +783,16 @@ Unknown, somebody else's private one, and deleted are **one message**, because t
 to tell them apart: a 403 would confirm that an id exists. Saying more would invent a distinction
 it withheld.
 
+**The notes are drawn under the panel**, where the manual's own sheets print their Notes box, and
+in the editor under the same panel. `PatchNotes` is in `components/library/` beside `PatchBar`, for
+the reason the header is there: both are the patch's own fields drawn around the panel.
+
+They are deliberately **not** on `LibraryEntry`. Notes are the one field besides `values` with no
+natural size, several of the 35 that carry one run to multiple sentences, and a row is one line,
+where a truncated note reads worse than none. So they are read where a whole patch is already
+loaded, which costs no request and no payload; `test/libraryIndex.test.ts` fails if the summary
+grows them. A patch with none draws nothing rather than an empty box.
+
 Opening a row used to load the patch and adopt it *before* navigating, and `navigate` is what asks
 about an unsaved draft, so answering Cancel left the library showing with the draft already gone.
 `navigate` answers whether it went, and the editor button adopts only once it has.

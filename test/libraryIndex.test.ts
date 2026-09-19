@@ -114,6 +114,27 @@ describe('what a viewer is shown', () => {
   })
 })
 
+/* The summary is what a list can be drawn from without fetching each patch, and
+   it is deliberately thin. `notes` is the one field besides `values` with no
+   natural size, so it is read where a whole patch is already loaded, and a
+   later change putting it on the row should have to argue with this. */
+describe('what a row deliberately does not carry', () => {
+  test('no notes, and no control values', () => {
+    const { db, store, person } = library()
+    const me = person('me')
+    const made = createPatch({
+      name: 'Wordy',
+      notes: 'A long performance instruction that a one-line row could only truncate.',
+      values: { osc2Frequency: 3 },
+    })
+    store.patches.put(made.id, made, me.id)
+
+    const row = createLibrary(db).entriesFor(me.id)[0]!
+    expect(row).not.toHaveProperty('notes')
+    expect(row).not.toHaveProperty('values')
+  })
+})
+
 describe('the ratings on a row', () => {
   test('are mine, and everyone else averaged beside them', () => {
     const { db, store, person, patch } = library()

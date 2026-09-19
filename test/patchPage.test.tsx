@@ -73,6 +73,11 @@ describe('the patch sheet', () => {
     expect(screen.queryByRole('button', { name: /BASS/ })).toBeNull()
   })
 
+  test('shows the notes, which nothing else in the app ever draws', () => {
+    renderSheet()
+    expect(screen.getByText(/Bring the mod wheel up/)).toBeTruthy()
+  })
+
   test('reports a press of the editor button once', () => {
     const sheet = renderSheet()
     fireEvent.click(screen.getByRole('button', { name: 'Open in the editor' }))
